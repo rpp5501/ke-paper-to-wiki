@@ -1,0 +1,33 @@
+{
+  "meta": { "kind": "concept", "source": "arXiv:1706.03762", "generated": "2026-07-08", "version": 1 },
+  "nodes": [
+    { "id": "transformer", "kind": "concept", "label": "The Transformer", "level": 0,
+      "page": "01_transformer.md", "anchor": "#tldr", "source_ref": "sec:1" },
+    { "id": "encoder-decoder-stack", "kind": "concept", "label": "Encoder–Decoder Stack", "level": 1, "source_ref": "sec:3.1" },
+    { "id": "attention", "kind": "concept", "label": "Attention", "level": 1,
+      "page": "03_attention.md", "anchor": "#intuition", "source_ref": "sec:3.2" },
+    { "id": "positional-encoding", "kind": "concept", "label": "Positional Encoding", "level": 1, "source_ref": "sec:3.5" },
+    { "id": "why-self-attention", "kind": "concept", "label": "Why Self-Attention?", "level": 2, "source_ref": "sec:4" },
+    { "id": "scaled-dot-product-attention", "kind": "concept", "label": "Scaled Dot-Product Attention", "level": 2,
+      "page": "04_sdpa.md", "anchor": "#mechanics", "source_ref": "sec:3.2.1" },
+    { "id": "multi-head-attention", "kind": "concept", "label": "Multi-Head Attention", "level": 2, "source_ref": "sec:3.2.2" },
+    { "id": "feed-forward-network", "kind": "concept", "label": "Position-wise Feed-Forward", "level": 2, "source_ref": "sec:3.3" },
+    { "id": "residual-layer-norm", "kind": "concept", "label": "Residuals + LayerNorm", "level": 2, "source_ref": "sec:3.1" },
+    { "id": "attention-equation", "kind": "equation", "label": "Attention(Q,K,V) = softmax(QKᵀ/√dₖ)V", "level": 3, "source_ref": "eq:1" },
+    { "id": "sqrt-dk-scaling", "kind": "concept", "label": "The √dₖ Scaling", "level": 3, "source_ref": "sec:3.2.1" }
+  ],
+  "edges": [
+    { "src": "encoder-decoder-stack", "dst": "transformer", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "attention", "dst": "transformer", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "positional-encoding", "dst": "transformer", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "why-self-attention", "dst": "transformer", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "scaled-dot-product-attention", "dst": "attention", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "multi-head-attention", "dst": "attention", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "feed-forward-network", "dst": "encoder-decoder-stack", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "residual-layer-norm", "dst": "encoder-decoder-stack", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "attention-equation", "dst": "scaled-dot-product-attention", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "sqrt-dk-scaling", "dst": "scaled-dot-product-attention", "kind": "part-of", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "multi-head-attention", "dst": "scaled-dot-product-attention", "kind": "builds-on", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 },
+    { "src": "attention", "dst": "why-self-attention", "kind": "prerequisite", "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0 }
+  ]
+}
