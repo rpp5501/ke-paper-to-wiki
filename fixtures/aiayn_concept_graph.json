@@ -7,7 +7,7 @@
     { "id": "attention", "kind": "concept", "label": "Attention", "level": 1,
       "page": "03_attention.md", "anchor": "#intuition", "source_ref": "sec:3.2" },
     { "id": "positional-encoding", "kind": "concept", "label": "Positional Encoding", "level": 1, "source_ref": "sec:3.5" },
-    { "id": "why-self-attention", "kind": "concept", "label": "Why Self-Attention?", "level": 2, "source_ref": "sec:4" },
+    { "id": "why-self-attention", "kind": "concept", "label": "Why Self-Attention?", "level": 1, "source_ref": "sec:4" },
     { "id": "scaled-dot-product-attention", "kind": "concept", "label": "Scaled Dot-Product Attention", "level": 2,
       "page": "04_sdpa.md", "anchor": "#mechanics", "source_ref": "sec:3.2.1" },
     { "id": "multi-head-attention", "kind": "concept", "label": "Multi-Head Attention", "level": 2, "source_ref": "sec:3.2.2" },
