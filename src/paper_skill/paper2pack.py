@@ -44,12 +44,18 @@ def _pack_from_ar5iv(html: bytes, source: str) -> dict:
     from selectolax.parser import HTMLParser
     doc = HTMLParser(html)
     sections, equations = [], []
-    for i, h in enumerate(doc.css("h2, h3"), 1):
-        sections.append({"id": f"sec_{i}", "title": h.text(strip=True),
-                         "level": 2 if h.tag == "h2" else 3, "text": ""})
-    for i, m in enumerate(doc.css("math[alttext]"), 1):
-        equations.append({"id": f"eq_{i}", "latex": m.attributes["alttext"],
-                          "section": sections[-1]["id"] if sections else "sec_0"})
+    current_section = "sec_0"
+    sec_n = eq_n = 0
+    for node in doc.root.traverse():
+        if node.tag in ("h2", "h3"):
+            sec_n += 1
+            current_section = f"sec_{sec_n}"
+            sections.append({"id": current_section, "title": node.text(strip=True),
+                             "level": 2 if node.tag == "h2" else 3, "text": ""})
+        elif node.tag == "math" and node.attributes.get("alttext") is not None:
+            eq_n += 1
+            equations.append({"id": f"eq_{eq_n}", "latex": node.attributes["alttext"],
+                              "section": current_section})
     return {"meta": {"source": source, "title": doc.css_first("title").text()
                      if doc.css_first("title") else "",
                      "generated": datetime.date.today().isoformat()},
@@ -88,13 +94,19 @@ def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
         arxiv_id = _ARXIV_ID.match(target.strip()).group(2)
         source = f"arXiv:{arxiv_id}"
         try:
-            blob = get(f"https://arxiv.org/e-print/{arxiv_id}",
-                       timeout=60, headers=UA).content
-            return _pack_from_tarball(blob, source)
+            resp = get(f"https://arxiv.org/e-print/{arxiv_id}",
+                       timeout=60, headers=UA)
+            resp.raise_for_status()
+            return _pack_from_tarball(resp.content, source)
         except Exception:
-            html = get(f"https://ar5iv.labs.arxiv.org/html/{arxiv_id}",
-                       timeout=60, headers=UA).content
-            return _pack_from_ar5iv(html, source)
+            try:
+                resp = get(f"https://ar5iv.labs.arxiv.org/html/{arxiv_id}",
+                           timeout=60, headers=UA)
+                resp.raise_for_status()
+                return _pack_from_ar5iv(resp.content, source)
+            except Exception:
+                return {"status": "fetch_failed",
+                        "hint": "both arXiv e-print and ar5iv unreachable"}
     return {"status": "unsupported_input",
             "hint": f"cannot route '{target}' — supported: arXiv id, .tex, .pdf "
                     "(docx/ocr rungs are backlog)"}

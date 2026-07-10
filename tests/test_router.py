@@ -1,5 +1,5 @@
 import io, tarfile
-from paper_skill.paper2pack import build_pack, detect
+from paper_skill.paper2pack import build_pack, detect, _pack_from_ar5iv
 
 class Resp:
     def __init__(self, content): self.content = content
@@ -45,3 +45,30 @@ def test_no_apis_blocks_download_not_local(tmp_path, monkeypatch):
     tex.write_text(r"\section{A}\begin{equation}x=1\end{equation}")
     local = build_pack(str(tex), get=None, cache_dir=tmp_path)
     assert local["extraction"]["equation_fidelity"] == "exact"
+
+
+def test_ar5iv_fallback_anchors_equations_to_their_section():
+    html = (
+        b"<html><head><title>T</title></head><body>"
+        b"<h2>Section A</h2>"
+        b'<math alttext="a=1"></math>'
+        b"<h2>Section B</h2>"
+        b'<math alttext="b=2"></math>'
+        b"</body></html>"
+    )
+    pack = _pack_from_ar5iv(html, source="arXiv:1706.03762")
+    assert pack["extraction"] == {"path": "ar5iv", "equation_fidelity": "converted-mathml"}
+    sec_a = pack["sections"][0]["id"]
+    sec_b = pack["sections"][1]["id"]
+    eq_a = next(e for e in pack["equations"] if e["latex"] == "a=1")
+    eq_b = next(e for e in pack["equations"] if e["latex"] == "b=2")
+    assert eq_a["section"] == sec_a
+    assert eq_b["section"] == sec_b
+    assert eq_b["section"] != sec_a
+
+
+def test_arxiv_total_failure_is_success_shaped():
+    def get(url, timeout, headers):
+        raise RuntimeError("network down")
+    pack = build_pack("1706.03762", get=get)
+    assert pack["status"] == "fetch_failed"
