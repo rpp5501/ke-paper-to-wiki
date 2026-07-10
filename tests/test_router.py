@@ -1,9 +1,10 @@
-import io, tarfile
+import io, json, tarfile
 from paper_skill.paper2pack import build_pack, detect, _pack_from_ar5iv
 
 class Resp:
     def __init__(self, content): self.content = content
     def raise_for_status(self): pass
+    def json(self): return json.loads(self.content)
 
 
 def _tarball():
@@ -90,7 +91,8 @@ def test_arxiv_total_failure_is_success_shaped():
     assert pack["status"] == "fetch_failed"
 
 
-def test_pdf_rung_extracts_text(tmp_path):
+def test_pdf_rung_extracts_text(tmp_path, monkeypatch):
+    monkeypatch.setenv("RESEARCH_MCP_NO_APIS", "1")
     import fitz
     p = tmp_path / "sample.pdf"
     d = fitz.open()
@@ -103,3 +105,54 @@ def test_pdf_rung_extracts_text(tmp_path):
     assert pack["sections"][0]["id"] == "sec_1"
     assert "Hello world sample body." in pack["sections"][0]["text"]
     assert pack["equations"] == []
+
+
+def test_pdf_climbs_to_latex_when_arxiv_sibling_found(tmp_path):
+    import fitz
+    p = tmp_path / "sample.pdf"
+    d = fitz.open()
+    pg = d.new_page()
+    pg.insert_text((72, 72), "Attention Is All You Need")
+    d.save(str(p))
+    d.close()
+
+    def get(url, timeout=None, headers=None, params=None):
+        if "openalex" in url:
+            return Resp(json.dumps(
+                {"results": [{"ids": {"arxiv": "https://arxiv.org/abs/1706.03762"}}]}
+            ).encode())
+        return Resp(_tarball())
+
+    pack = build_pack(str(p), get=get)
+    assert pack["extraction"]["path"] == "latex"
+    assert pack["equations"][0]["latex"] == "E=mc^2"
+
+
+def test_pdf_stays_rung4_when_no_sibling(tmp_path):
+    import fitz
+    p = tmp_path / "sample.pdf"
+    d = fitz.open()
+    pg = d.new_page()
+    pg.insert_text((72, 72), "Some Obscure Unmatched Paper Title")
+    d.save(str(p))
+    d.close()
+
+    def get(url, timeout=None, headers=None, params=None):
+        return Resp(json.dumps({"results": []}).encode())
+
+    pack = build_pack(str(p), get=get)
+    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent"}
+
+
+def test_pdf_no_apis_skips_upgrade(tmp_path, monkeypatch):
+    monkeypatch.setenv("RESEARCH_MCP_NO_APIS", "1")
+    import fitz
+    p = tmp_path / "sample.pdf"
+    d = fitz.open()
+    pg = d.new_page()
+    pg.insert_text((72, 72), "Hello world sample body.")
+    d.save(str(p))
+    d.close()
+
+    pack = build_pack(str(p), get=None)
+    assert pack["extraction"]["path"] == "pdf"

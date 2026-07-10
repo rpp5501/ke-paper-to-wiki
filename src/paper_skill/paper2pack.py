@@ -83,12 +83,34 @@ def _pack_from_pdf(path: str, source: str) -> dict:
             "equations": [], "references": [], "figures": []}
 
 
+def _pdf_title(path: str) -> str:
+    import fitz
+    doc = fitz.open(path)
+    title = (doc.metadata or {}).get("title") or ""
+    title = title.strip()
+    if title:
+        doc.close()
+        return title
+    text = "\n".join(page.get_text() for page in doc)
+    doc.close()
+    for line in text.splitlines():
+        if line.strip():
+            return line.strip()
+    return Path(path).stem
+
+
 def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
     kind = detect(target)
     if kind == "tex":
         return latex_to_pack(Path(target).read_text(encoding="utf-8"),
                              source=f"file:{target}")
     if kind == "pdf":
+        if not _no_apis():
+            from .upgrade import find_arxiv_sibling
+            title = _pdf_title(target)
+            ax = find_arxiv_sibling(title, get=get)
+            if ax:
+                return build_pack(ax, get=get, cache_dir=cache_dir)
         return _pack_from_pdf(target, source=f"file:{target}")
     if kind == "arxiv":
         if _no_apis():
