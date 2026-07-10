@@ -15,6 +15,9 @@ def load_approved_toc(path) -> dict:
     if not p.is_file():
         return {"status": "not_approved", "hint": f"{p} does not exist — run P2 first"}
     doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    if not isinstance(doc, dict):
+        return {"status": "not_approved",
+                "hint": "concept_toc.yaml is empty or malformed — re-run P2"}
     if not doc.get("approved"):
         return {"status": "not_approved",
                 "hint": "set approved: true in concept_toc.yaml after review"}

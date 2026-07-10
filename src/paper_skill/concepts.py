@@ -39,8 +39,9 @@ def _parse(raw: str) -> dict | None:
 
 def _problems(doc: dict, pack: dict) -> list[str]:
     probs = []
-    if not isinstance(doc, dict) or "nodes" not in doc or "edges" not in doc:
-        return ["missing nodes/edges"]
+    if (not isinstance(doc, dict) or not isinstance(doc.get("nodes"), list)
+            or not isinstance(doc.get("edges"), list)):
+        return ["missing or non-list nodes/edges"]
     section_ids = {s["id"] for s in pack["sections"]}
     node_ids = set()
     for n in doc["nodes"]:

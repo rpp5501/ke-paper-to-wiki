@@ -14,6 +14,16 @@ def test_written_toc_defaults_unapproved(tmp_path):
     assert load_approved_toc(p)["status"] == "not_approved"
 
 
+def test_empty_toc_file_is_not_approved(tmp_path):
+    p = tmp_path / "concept_toc.yaml"
+    p.write_text("", encoding="utf-8")
+    assert load_approved_toc(p)["status"] == "not_approved"
+
+    p2 = tmp_path / "concept_toc_list.yaml"
+    p2.write_text("- a\n- b\n", encoding="utf-8")
+    assert load_approved_toc(p2)["status"] == "not_approved"
+
+
 def test_approved_toc_loads_included_rows(tmp_path):
     p = tmp_path / "concept_toc.yaml"
     write_toc(ROWS + [{**ROWS[0], "id": "skip-me", "include": False}], p)

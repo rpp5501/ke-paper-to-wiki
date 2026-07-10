@@ -55,5 +55,12 @@ def test_valid_json_but_schema_invalid_retries_then_fails():
     assert any("level-0" in p for p in r["problems"])
 
 
+def test_mistyped_nodes_returns_failed_not_crash():
+    def spawn(prompt):
+        return json.dumps({"nodes": {"a": 1}, "edges": []})
+    r = extract_concepts(PACK, spawn=spawn)
+    assert r["status"] == "failed-orchestration"
+
+
 def test_prompt_carries_sections_and_json_contract():
     assert "{sections_digest}" in CONCEPT_PROMPT and "JSON" in CONCEPT_PROMPT
