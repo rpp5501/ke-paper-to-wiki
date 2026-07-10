@@ -72,3 +72,18 @@ def test_arxiv_total_failure_is_success_shaped():
         raise RuntimeError("network down")
     pack = build_pack("1706.03762", get=get)
     assert pack["status"] == "fetch_failed"
+
+
+def test_pdf_rung_extracts_text(tmp_path):
+    import fitz
+    p = tmp_path / "sample.pdf"
+    d = fitz.open()
+    pg = d.new_page()
+    pg.insert_text((72, 72), "Hello world sample body.")
+    d.save(str(p))
+    d.close()
+    pack = build_pack(str(p))
+    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent"}
+    assert pack["sections"][0]["id"] == "sec_1"
+    assert "Hello world sample body." in pack["sections"][0]["text"]
+    assert pack["equations"] == []

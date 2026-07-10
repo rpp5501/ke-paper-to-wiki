@@ -66,8 +66,10 @@ def _pack_from_ar5iv(html: bytes, source: str) -> dict:
 
 def _pack_from_pdf(path: str, source: str) -> dict:
     import datetime
-    from pypdf import PdfReader
-    pages = [p.extract_text() or "" for p in PdfReader(path).pages]
+    import fitz
+    doc = fitz.open(path)
+    pages = [page.get_text() or "" for page in doc]
+    doc.close()
     body = "\n".join(pages)
     body = re.sub(r"-\n(?=[a-z])", "", body)             # de-hyphenate
     body = re.sub(r"^\s*\d+\s*$", "", body, flags=re.M)  # bare page numbers
