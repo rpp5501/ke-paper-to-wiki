@@ -37,6 +37,22 @@ def test_arxiv_rung1_builds_exact_pack(tmp_path):
     assert pack["references"][0]["arxiv_id"] == "1409.0473"
 
 
+def test_tarball_inline_thebibliography_is_parsed():
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as t:
+        tex = (r"\documentclass{article}\begin{document}\section{Intro}"
+               r"\begin{equation}E=mc^2\end{equation}"
+               r"\begin{thebibliography}{2}"
+               r"\bibitem{a} Foo. arXiv:1409.0473, 2014."
+               r"\bibitem{b} Bar. CVPR 2016."
+               r"\end{thebibliography}\end{document}").encode()
+        info = tarfile.TarInfo("main.tex"); info.size = len(tex)
+        t.addfile(info, io.BytesIO(tex))
+    pack = build_pack("1706.03762", get=lambda url, timeout, headers: Resp(buf.getvalue()))
+    assert len(pack["references"]) == 2
+    assert pack["references"][0]["arxiv_id"] == "1409.0473"
+
+
 def test_no_apis_blocks_download_not_local(tmp_path, monkeypatch):
     monkeypatch.setenv("RESEARCH_MCP_NO_APIS", "1")
     pack = build_pack("1706.03762", get=None, cache_dir=tmp_path)

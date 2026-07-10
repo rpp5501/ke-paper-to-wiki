@@ -34,6 +34,8 @@ def _pack_from_tarball(blob: bytes, source: str) -> dict:
         return files.get(name) or files.get(name + ".tex") or ""
     pack = latex_to_pack(main, resolve_input=resolve, source=source)
     bbl = next((t for n, t in files.items() if n.endswith(".bbl")), "")
+    if not bbl:
+        bbl = next((t for t in files.values() if r"\begin{thebibliography}" in t), "")
     if bbl:
         pack["references"] = parse_bbl(bbl)
     return pack
