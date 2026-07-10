@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["meta", "extraction", "sections", "equations", "references"],
+  "properties": {
+    "meta": {"type": "object", "required": ["source", "title", "generated"]},
+    "extraction": {"type": "object",
+      "required": ["path", "equation_fidelity"],
+      "properties": {
+        "path": {"enum": ["latex", "ar5iv", "docx", "pdf", "ocr"]},
+        "equation_fidelity": {"enum": ["exact", "converted-mathml",
+                                        "converted-omml", "vlm", "ocr", "absent"]}}},
+    "sections": {"type": "array", "items": {"type": "object",
+      "required": ["id", "title", "level", "text"]}},
+    "equations": {"type": "array", "items": {"type": "object",
+      "required": ["id", "latex", "section"]}},
+    "references": {"type": "array", "items": {"type": "object",
+      "required": ["key", "text"]}},
+    "figures": {"type": "array"}
+  }
+}
