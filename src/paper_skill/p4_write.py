@@ -69,7 +69,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
                 page = spawn(PAGE_PROMPT.format(**ctx))
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
-                continue
+                break
             problems = _page_problems(page)
             if not problems:
                 break

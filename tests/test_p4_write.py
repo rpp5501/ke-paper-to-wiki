@@ -52,5 +52,21 @@ def test_page_missing_tiers_fails_to_inbox(tmp_path):
     assert inbox_list(home=tmp_path)
 
 
+def test_spawn_exception_fails_immediately_no_retry(tmp_path):
+    calls = []
+
+    def flaky(p):
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("boom")
+        return GOOD_PAGE
+
+    r = write_pages(PACK, GRAPH, ROWS, spawn=flaky,
+                    home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path)
+    assert r["failed"] == ["sdpa"]
+    assert "sdpa" not in r["done"]
+    assert len(calls) == 1
+
+
 def test_prompt_encodes_anchor_rule_and_tiers():
     assert "{#tldr}" in PAGE_PROMPT and "[§" in PAGE_PROMPT
