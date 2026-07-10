@@ -1,0 +1,116 @@
+"""Fidelity-laddered router (§15). Rungs implemented: 1 latex, 2 ar5iv, 4 pdf."""
+import argparse, io, json, os, re, sys, tarfile
+from pathlib import Path
+import requests
+from .latex_pack import latex_to_pack
+from .references import parse_bbl
+
+UA = {"User-Agent": "paper-skill/0.1 (keyless research tool)"}
+_ARXIV_ID = re.compile(r"^(arXiv:)?(\d{4}\.\d{4,5})(v\d+)?$")
+
+
+def _no_apis() -> bool:
+    return os.environ.get("RESEARCH_MCP_NO_APIS", "") == "1"
+
+
+def detect(target: str) -> str:
+    if _ARXIV_ID.match(target.strip()):
+        return "arxiv"
+    p = Path(target)
+    if p.suffix == ".tex":
+        return "tex"
+    if p.suffix == ".pdf":
+        return "pdf"
+    return "unknown"
+
+
+def _pack_from_tarball(blob: bytes, source: str) -> dict:
+    tf = tarfile.open(fileobj=io.BytesIO(blob), mode="r:*")
+    files = {m.name: tf.extractfile(m).read().decode("utf-8", "replace")
+             for m in tf.getmembers() if m.isfile()}
+    main = next((t for t in files.values() if "\\documentclass" in t),
+                next(iter(files.values()), ""))
+    def resolve(name):
+        return files.get(name) or files.get(name + ".tex") or ""
+    pack = latex_to_pack(main, resolve_input=resolve, source=source)
+    bbl = next((t for n, t in files.items() if n.endswith(".bbl")), "")
+    if bbl:
+        pack["references"] = parse_bbl(bbl)
+    return pack
+
+
+def _pack_from_ar5iv(html: bytes, source: str) -> dict:
+    import datetime
+    from selectolax.parser import HTMLParser
+    doc = HTMLParser(html)
+    sections, equations = [], []
+    for i, h in enumerate(doc.css("h2, h3"), 1):
+        sections.append({"id": f"sec_{i}", "title": h.text(strip=True),
+                         "level": 2 if h.tag == "h2" else 3, "text": ""})
+    for i, m in enumerate(doc.css("math[alttext]"), 1):
+        equations.append({"id": f"eq_{i}", "latex": m.attributes["alttext"],
+                          "section": sections[-1]["id"] if sections else "sec_0"})
+    return {"meta": {"source": source, "title": doc.css_first("title").text()
+                     if doc.css_first("title") else "",
+                     "generated": datetime.date.today().isoformat()},
+            "extraction": {"path": "ar5iv", "equation_fidelity": "converted-mathml"},
+            "sections": sections, "equations": equations,
+            "references": [], "figures": []}
+
+
+def _pack_from_pdf(path: str, source: str) -> dict:
+    import datetime
+    from pypdf import PdfReader
+    pages = [p.extract_text() or "" for p in PdfReader(path).pages]
+    body = "\n".join(pages)
+    body = re.sub(r"-\n(?=[a-z])", "", body)             # de-hyphenate
+    body = re.sub(r"^\s*\d+\s*$", "", body, flags=re.M)  # bare page numbers
+    return {"meta": {"source": source, "title": Path(path).stem,
+                     "generated": datetime.date.today().isoformat()},
+            "extraction": {"path": "pdf", "equation_fidelity": "absent"},
+            "sections": [{"id": "sec_1", "title": "full-text", "level": 1,
+                          "text": " ".join(body.split())}],
+            "equations": [], "references": [], "figures": []}
+
+
+def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
+    kind = detect(target)
+    if kind == "tex":
+        return latex_to_pack(Path(target).read_text(encoding="utf-8"),
+                             source=f"file:{target}")
+    if kind == "pdf":
+        return _pack_from_pdf(target, source=f"file:{target}")
+    if kind == "arxiv":
+        if _no_apis():
+            return {"status": "apis_disabled",
+                    "hint": "arXiv download blocked by RESEARCH_MCP_NO_APIS — "
+                            "pass a local .tex or .pdf instead"}
+        arxiv_id = _ARXIV_ID.match(target.strip()).group(2)
+        source = f"arXiv:{arxiv_id}"
+        try:
+            blob = get(f"https://arxiv.org/e-print/{arxiv_id}",
+                       timeout=60, headers=UA).content
+            return _pack_from_tarball(blob, source)
+        except Exception:
+            html = get(f"https://ar5iv.labs.arxiv.org/html/{arxiv_id}",
+                       timeout=60, headers=UA).content
+            return _pack_from_ar5iv(html, source)
+    return {"status": "unsupported_input",
+            "hint": f"cannot route '{target}' — supported: arXiv id, .tex, .pdf "
+                    "(docx/ocr rungs are backlog)"}
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(prog="paper2pack")
+    p.add_argument("target")
+    p.add_argument("-o", "--output", default="paper_pack.json")
+    a = p.parse_args(argv)
+    pack = build_pack(a.target)
+    Path(a.output).write_text(json.dumps(pack, ensure_ascii=False, indent=1),
+                              encoding="utf-8")
+    print(f"{a.output}: path={pack.get('extraction', {}).get('path', pack.get('status'))}")
+    return 0 if "status" not in pack else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
