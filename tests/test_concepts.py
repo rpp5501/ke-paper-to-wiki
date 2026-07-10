@@ -35,5 +35,25 @@ def test_invalid_json_retries_once_then_stub():
     assert len(calls) == 2                       # one retry, then stop
 
 
+SCHEMA_INVALID = json.dumps({
+    "nodes": [{"id": "transformer", "kind": "concept", "label": "The Transformer",
+               "level": 0, "source_ref": "sec_1"},
+              {"id": "attention", "kind": "concept", "label": "Attention Mechanism",
+               "level": 0, "source_ref": "sec_1"}],
+    "edges": []})
+
+
+def test_valid_json_but_schema_invalid_retries_then_fails():
+    calls = []
+    def spawn(prompt):
+        calls.append(prompt)
+        return SCHEMA_INVALID
+    r = extract_concepts(PACK, spawn=spawn)
+    assert r["status"] == "failed-orchestration"
+    assert len(calls) == 2                       # one retry, then stop
+    assert r["problems"]
+    assert any("level-0" in p for p in r["problems"])
+
+
 def test_prompt_carries_sections_and_json_contract():
     assert "{sections_digest}" in CONCEPT_PROMPT and "JSON" in CONCEPT_PROMPT
