@@ -17,10 +17,10 @@ _INLINE = re.compile(r"\\\((.+?)\\\)", re.S)
 
 def _mathify(md_text: str) -> str:
     md_text = _DISPLAY.sub(
-        lambda match: f'<span class="math">{match.group(1).strip()}</span>', md_text
+        lambda match: f'<span class="math">{match.group(0).strip()}</span>', md_text
     )
     return _INLINE.sub(
-        lambda match: f'<span class="math">{match.group(1).strip()}</span>', md_text
+        lambda match: f'<span class="math">{match.group(0).strip()}</span>', md_text
     )
 
 
@@ -40,12 +40,14 @@ def build_explorer(pack: dict, graph: dict, pages_dir, out_path) -> dict:
     from graphify.exporters.explorer import to_explorer_html
 
     pages = {}
+    page_names = {}
     for page_file in sorted(Path(pages_dir).glob("*.md")):
         concept_id = page_file.stem.split("_", 1)[1] if "_" in page_file.stem else page_file.stem
         pages[concept_id] = split_tiers(page_file.read_text(encoding="utf-8"))
+        page_names[concept_id] = page_file.name
     for node in graph["nodes"]:
         if node["id"] in pages:
-            node["page"] = f'{node["id"]}.md'
+            node.setdefault("page", page_names[node["id"]])
             node.setdefault("anchor", "#tldr")
     html = to_explorer_html(graph, title=pack["meta"]["title"], pages=pages)
     Path(out_path).write_text(html, encoding="utf-8")
