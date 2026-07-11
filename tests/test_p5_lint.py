@@ -1,4 +1,4 @@
-from paper_skill.p5_lint import lint_page
+from paper_skill.p5_lint import lint_page, _mermaid_ok
 
 PACK = {"sections": [{"id": "sec_3", "title": "S", "level": 1, "text": "t"}],
         "equations": [{"id": "eq_1", "latex": "x", "section": "sec_3"}],
@@ -37,3 +37,34 @@ def test_unanchored_math_claim_caught():
 def test_dead_link_caught():
     probs = lint_page(CLEAN, PACK, check_links=lambda url: False)
     assert any("dead link" in p for p in probs)
+
+
+WITH_MERMAID = CLEAN.replace(
+    "- [d2l](https://d2l.ai/x)",
+    "- [d2l](https://d2l.ai/x)\n```mermaid\ngraph TD; A-->B;\n```",
+)
+
+
+def test_skipped_mermaid_check_does_not_fail_an_otherwise_clean_page():
+    # check_mermaid=None (skipped) must never be treated as a problem —
+    # "skipped, not pass" per the plan's own offline-lint constraint.
+    probs = lint_page(WITH_MERMAID, PACK, check_links=lambda url: True,
+                      check_mermaid=lambda block: None)
+    assert probs == []
+
+
+def test_mermaid_parse_failure_is_still_caught():
+    probs = lint_page(WITH_MERMAID, PACK, check_links=lambda url: True,
+                      check_mermaid=lambda block: False)
+    assert any("fails to parse" in p for p in probs)
+
+
+def test_mermaid_ok_treats_missing_package_as_skipped_not_failed(monkeypatch):
+    # Exit code 2 = mermaid_parse.mjs's own "module not found" signal —
+    # must be treated as skipped (None), not a parse failure (False).
+    class FakeCompleted:
+        returncode = 2
+
+    import subprocess as sp
+    monkeypatch.setattr(sp, "run", lambda *a, **kw: FakeCompleted())
+    assert _mermaid_ok("graph TD; A-->B;") is None

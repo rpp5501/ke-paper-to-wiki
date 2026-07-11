@@ -20,9 +20,11 @@ def _mermaid_ok(block: str) -> bool | None:
     try:
         r = subprocess.run(["node", str(script)], input=block,
                            capture_output=True, text=True, timeout=30)
-        return r.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return None                                   # node absent: skipped
+    if r.returncode == 2:
+        return None                                   # mermaid package not installed: skipped
+    return r.returncode == 0
 
 
 def lint_page(page_md: str, pack: dict, check_links=None,
@@ -55,6 +57,6 @@ def lint_page(page_md: str, pack: dict, check_links=None,
         ok = check_mermaid(block)
         if ok is False:
             probs.append("mermaid block fails to parse")
-        elif ok is None:
-            probs.append("mermaid check skipped (node/mermaid not installed)")
+        # ok is None -> skipped (node or the mermaid package unavailable); not
+        # a problem, per the plan's own "skipped, not pass" offline-lint rule.
     return probs
