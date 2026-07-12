@@ -7,7 +7,7 @@ import yaml
 
 _CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|[_\-\s.:]+")
 _STOP = {"the", "a", "an", "of", "and"}
-_VERDICT = re.compile(r"(YES|NO):[ \t]*(\S[^\r\n]*)", re.IGNORECASE)
+_VERDICT = re.compile(r"(YES|NO):[ \t]*(\S[^\r\n]*)")
 
 
 def _tokens(name: str) -> set:
@@ -31,7 +31,7 @@ def propose_candidates(concept_graph: dict, code_graph: dict,
             if score >= 0.25:
                 out.append({"concept": c["id"], "code": k["id"], "score": score,
                             "evidence": f"shared tokens: {sorted(ct & kt)}"})
-    out.sort(key=lambda r: -r["score"])
+    out.sort(key=lambda r: (-r["score"], r["concept"], r["code"]))
     return out[:top]
 
 
@@ -48,9 +48,15 @@ def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
     out = []
     for c in cands:
         cn, kn = concepts[c["concept"]], code[c["code"]]
-        raw = spawn(VERIFY_PROMPT.format(
-            label=cn["label"], definition=cn.get("definition", cn["label"]),
-            code_label=kn["label"], source_ref=kn.get("source_ref", "?"))).strip()
+        try:
+            raw = spawn(VERIFY_PROMPT.format(
+                label=cn["label"], definition=cn.get("definition", cn["label"]),
+                code_label=kn["label"],
+                source_ref=kn.get("source_ref", "?"))).strip()
+        except Exception as exc:
+            out.append({**c, "verdict": "no",
+                        "reason": f"verifier error: {type(exc).__name__}"})
+            continue
         match = _VERDICT.fullmatch(raw)
         if match:
             verdict, reason = match.group(1).lower(), match.group(2).strip()
@@ -79,10 +85,26 @@ def load_confirmed(path) -> list[dict]:
 
 def merge_bridge(concept_graph: dict, code_graph: dict,
                  confirmed: list[dict]) -> dict:
+    concept_ids = {node["id"] for node in concept_graph["nodes"]}
+    code_ids = {node["id"] for node in code_graph["nodes"]}
+    collisions = sorted(concept_ids & code_ids)
+    if collisions:
+        raise ValueError(f"node id collision across graphs: {', '.join(collisions)}")
+
+    pairs = {}
+    for candidate in confirmed:
+        code_id = candidate["code"]
+        concept_id = candidate["concept"]
+        if code_id not in code_ids:
+            raise ValueError(f"unknown code candidate endpoint: {code_id}")
+        if concept_id not in concept_ids:
+            raise ValueError(f"unknown concept candidate endpoint: {concept_id}")
+        pair = (code_id, concept_id)
+        pairs[pair] = pairs.get(pair, False) or candidate.get("confirmed") is True
+
     edges = concept_graph["edges"] + code_graph["edges"]
-    for c in confirmed:
-        strong = c.get("confirmed") is True
-        edges.append({"src": c["code"], "dst": c["concept"], "kind": "implements",
+    for (code_id, concept_id), strong in pairs.items():
+        edges.append({"src": code_id, "dst": concept_id, "kind": "implements",
                       "weight": 1.0,
                       "confidence": "extracted" if strong else "inferred",
                       "confidence_score": 1.0 if strong else 0.6})

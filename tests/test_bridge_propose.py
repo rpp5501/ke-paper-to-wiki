@@ -29,3 +29,23 @@ def test_no_pair_for_unrelated():
     cands = propose_candidates(CONCEPTS, CODE)
     assert not any(c["code"].endswith("subsequent_mask")
                    and c["concept"] == "positional-encoding" for c in cands)
+
+
+def test_tie_order_is_independent_of_input_node_order():
+    concepts = {"nodes": [
+        {"id": "concept-z", "kind": "concept", "label": "Shared"},
+        {"id": "concept-a", "kind": "concept", "label": "Shared"},
+    ], "edges": [], "meta": {}}
+    code = {"nodes": [
+        {"id": "code-z", "kind": "function", "label": "Shared"},
+        {"id": "code-a", "kind": "function", "label": "Shared"},
+    ], "edges": [], "meta": {}}
+
+    pairs = [(row["concept"], row["code"])
+             for row in propose_candidates(concepts, code)]
+    assert pairs == [
+        ("concept-a", "code-a"),
+        ("concept-a", "code-z"),
+        ("concept-z", "code-a"),
+        ("concept-z", "code-z"),
+    ]

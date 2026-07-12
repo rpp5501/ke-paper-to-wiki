@@ -30,6 +30,19 @@ def test_garbled_verdict_defaults_no():
 
 
 @pytest.mark.parametrize("raw", (
+    "yes: lowercase",
+    "Yes: mixed case",
+    "no: lowercase",
+    "No: mixed case",
+))
+def test_verdict_grammar_is_case_sensitive(raw):
+    cands = propose_candidates(CONCEPTS, CODE)
+    v = verify_candidates(cands, CONCEPTS, CODE, spawn=lambda p: raw)
+    assert all(row["verdict"] == "no" and
+               row["reason"].startswith("unparseable verdict:") for row in v)
+
+
+@pytest.mark.parametrize("raw", (
     "YESNO: malformed",
     "NOPE: malformed",
     "YES: ok\nextra",
@@ -40,6 +53,18 @@ def test_malformed_verdicts_are_not_parsed_as_affirmative(raw):
     v = verify_candidates(cands, CONCEPTS, CODE, spawn=lambda p: raw)
     assert all(row["verdict"] == "no" and
                row["reason"].startswith("unparseable verdict:") for row in v)
+
+
+def test_verifier_spawn_exception_fails_candidate_closed():
+    cands = propose_candidates(CONCEPTS, CODE)
+
+    def unavailable(_prompt):
+        raise RuntimeError("worker unavailable")
+
+    verified = verify_candidates(cands, CONCEPTS, CODE, spawn=unavailable)
+    assert all(row["verdict"] == "no" for row in verified)
+    assert all(row["reason"] == "verifier error: RuntimeError" for row in verified)
+    assert not any(row.get("confirmed") is True for row in verified)
 
 
 def test_string_confirmed_does_not_confirm(tmp_path):
@@ -102,3 +127,38 @@ def test_confirm_roundtrip_and_merge(tmp_path):
     assert imp[0]["confidence"] == "extracted"
     assert imp[0]["confidence_score"] == 1.0
     assert merged["meta"]["kind"] == "bridged"
+
+
+def test_merge_rejects_cross_graph_node_id_collision():
+    code = {**CODE, "nodes": [
+        {**CODE["nodes"][0], "id": CONCEPTS["nodes"][0]["id"]},
+    ]}
+    with pytest.raises(ValueError, match="node id collision across graphs: multi-head-attention"):
+        merge_bridge(CONCEPTS, code, [])
+
+
+@pytest.mark.parametrize(("candidate", "message"), (
+    ({"concept": "multi-head-attention", "code": "missing-code"},
+     "unknown code candidate endpoint: missing-code"),
+    ({"concept": "missing-concept", "code": "model.py::MultiHeadedAttention"},
+     "unknown concept candidate endpoint: missing-concept"),
+))
+def test_merge_rejects_unknown_candidate_endpoints(candidate, message):
+    with pytest.raises(ValueError, match=message):
+        merge_bridge(CONCEPTS, CODE, [candidate])
+
+
+def test_merge_deduplicates_implements_pair_and_human_confirmation_wins():
+    pair = {"concept": "multi-head-attention",
+            "code": "model.py::MultiHeadedAttention", "verdict": "yes"}
+    merged = merge_bridge(CONCEPTS, CODE, [pair, {**pair, "confirmed": True}])
+    implements = [edge for edge in merged["edges"]
+                  if edge["kind"] == "implements"]
+    assert implements == [{
+        "src": "model.py::MultiHeadedAttention",
+        "dst": "multi-head-attention",
+        "kind": "implements",
+        "weight": 1.0,
+        "confidence": "extracted",
+        "confidence_score": 1.0,
+    }]
