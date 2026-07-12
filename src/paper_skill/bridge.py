@@ -1,8 +1,13 @@
 """M6 bridge: propose (deterministic) -> verify (leased) -> confirm (human)."""
+import datetime
 import re
+from pathlib import Path
+
+import yaml
 
 _CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|[_\-\s.:]+")
 _STOP = {"the", "a", "an", "of", "and"}
+_VERDICT = re.compile(r"(YES|NO):[ \t]*(\S[^\r\n]*)", re.IGNORECASE)
 
 
 def _tokens(name: str) -> set:
@@ -30,10 +35,6 @@ def propose_candidates(concept_graph: dict, code_graph: dict,
     return out[:top]
 
 
-import datetime
-from pathlib import Path
-import yaml
-
 VERIFY_PROMPT = """Does this code entity implement this paper concept?
 Concept: {label} — {definition}
 Code: {code_label} at {source_ref}
@@ -50,10 +51,9 @@ def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
         raw = spawn(VERIFY_PROMPT.format(
             label=cn["label"], definition=cn.get("definition", cn["label"]),
             code_label=kn["label"], source_ref=kn.get("source_ref", "?"))).strip()
-        if raw.upper().startswith("YES"):
-            verdict, reason = "yes", raw[3:].lstrip(": ").strip()
-        elif raw.upper().startswith("NO"):
-            verdict, reason = "no", raw[2:].lstrip(": ").strip()
+        match = _VERDICT.fullmatch(raw)
+        if match:
+            verdict, reason = match.group(1).lower(), match.group(2).strip()
         else:
             verdict, reason = "no", f"unparseable verdict: {raw[:60]}"
         out.append({**c, "verdict": verdict, "reason": reason})
@@ -70,10 +70,10 @@ def write_candidates_yaml(cands: list[dict], path) -> None:
 
 def load_confirmed(path) -> list[dict]:
     doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
-    rows = [c for c in doc["candidates"] if c.get("confirmed")]
-    if doc.get("include_unconfirmed"):
+    rows = [c for c in doc["candidates"] if c.get("confirmed") is True]
+    if doc.get("include_unconfirmed") is True:
         rows += [c for c in doc["candidates"]
-                 if not c.get("confirmed") and c.get("verdict") == "yes"]
+                 if c.get("confirmed") is not True and c.get("verdict") == "yes"]
     return rows
 
 
@@ -81,7 +81,7 @@ def merge_bridge(concept_graph: dict, code_graph: dict,
                  confirmed: list[dict]) -> dict:
     edges = concept_graph["edges"] + code_graph["edges"]
     for c in confirmed:
-        strong = c.get("confirmed", False)
+        strong = c.get("confirmed") is True
         edges.append({"src": c["code"], "dst": c["concept"], "kind": "implements",
                       "weight": 1.0,
                       "confidence": "extracted" if strong else "inferred",
