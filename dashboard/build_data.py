@@ -6,6 +6,7 @@ dashboard, so this file IS the data path.
 import argparse
 import json
 import re
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 
@@ -14,6 +15,7 @@ import yaml
 
 _IMG = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _DEPENDENT_SIDE = {"part-of": "dst", "prerequisite": "dst", "builds-on": "src"}
+_CODE_KINDS = {"function", "class", "file", "route"}
 
 
 def reading_path(plan_graph):
@@ -132,10 +134,34 @@ def _load_notes(wiki_dir, fallback_date):
         if note.get("glossary"):
             glossary[cid] = note["glossary"]
         trace_date = note.get("date") or note.get("generated") or fallback_date
+        note["date"] = trace_date
         trace.append({"nodeId": cid, "phase": "researched",
                       "status": note.get("status", "unknown"),
                       "date": trace_date})
     return notes, glossary, trace
+
+
+def _source_dates(plan_graph, repo_dir):
+    repo = Path(repo_dir)
+    fallback_date = plan_graph["meta"].get("generated", "")
+    dates = {}
+    for node in plan_graph["nodes"]:
+        source_ref = node.get("source_ref")
+        if node.get("kind") not in _CODE_KINDS or not source_ref:
+            continue
+        relative_path = source_ref.rsplit(":", 1)[0]
+        if not (repo / relative_path).is_file():
+            continue
+        try:
+            result = subprocess.run(
+                ["git", "log", "-1", "--format=%cs", "--", relative_path],
+                cwd=repo, capture_output=True, text=True, check=False,
+            )
+            git_date = result.stdout.strip() if result.returncode == 0 else ""
+        except OSError:
+            git_date = ""
+        dates[node["id"]] = git_date or fallback_date
+    return dates
 
 
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
@@ -149,16 +175,19 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                       "date": plan_graph["meta"].get("generated", "")})
     if stripped:
         print(f"stripped {stripped} image block(s) (rich media is v2)")
-    return {"meta": plan_graph["meta"], "nodes": plan_graph["nodes"],
-            "edges": plan_graph["edges"], "pages": pages, "notes": notes,
-            "hotspots": hotspots, "clusters": _clusters(plan_graph),
-            "tour": _tour(plan_graph, hotspots),
-            "provenance": (pack or {}).get("extraction", {}),
-            "centrality": _centrality(plan_graph),
-            "eqIndex": _eq_index(plan_graph, pack),
-            "trace": sorted(trace, key=lambda t: (t["nodeId"], t["phase"])),
-            "glossary": glossary,
-            "dependentSide": _DEPENDENT_SIDE}
+    bundle = {"meta": plan_graph["meta"], "nodes": plan_graph["nodes"],
+              "edges": plan_graph["edges"], "pages": pages, "notes": notes,
+              "hotspots": hotspots, "clusters": _clusters(plan_graph),
+              "tour": _tour(plan_graph, hotspots),
+              "provenance": (pack or {}).get("extraction", {}),
+              "centrality": _centrality(plan_graph),
+              "eqIndex": _eq_index(plan_graph, pack),
+              "trace": sorted(trace, key=lambda t: (t["nodeId"], t["phase"])),
+              "glossary": glossary,
+              "dependentSide": _DEPENDENT_SIDE}
+    if repo_dir:
+        bundle["mtimes"] = _source_dates(plan_graph, repo_dir)
+    return bundle
 
 
 def to_data_ts(bundle) -> str:

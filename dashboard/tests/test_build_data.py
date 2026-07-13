@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -106,9 +107,65 @@ def test_note_trace_dates_are_content_based_and_mtime_stable(tmp_path):
         "encoder-decoder-stack": "2024-02-03",
         "positional-encoding": FIXTURE["meta"]["generated"],
     }
+    assert {node_id: note["date"] for node_id, note in first["notes"].items()} == {
+        "attention": "2024-01-02",
+        "encoder-decoder-stack": "2024-02-03",
+        "positional-encoding": FIXTURE["meta"]["generated"],
+    }
     assert first["pages"]["attention"] == "before  after"
     assert {item["date"] for item in first["trace"]
             if item["phase"] == "written"} == {FIXTURE["meta"]["generated"]}
+
+
+def test_repo_dir_source_dates_prefer_git_and_use_generated_fallback(tmp_path):
+    repo = tmp_path / "repo"
+    source_dir = repo / "src"
+    source_dir.mkdir(parents=True)
+    tracked = source_dir / "tracked.py"
+    untracked = source_dir / "untracked.py"
+    tracked.write_text("def tracked(): pass\n", encoding="utf-8")
+    untracked.write_text("def untracked(): pass\n", encoding="utf-8")
+
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "src/tracked.py"], cwd=repo, check=True)
+    commit_env = os.environ | {
+        "GIT_AUTHOR_DATE": "2024-01-02T12:00:00+00:00",
+        "GIT_COMMITTER_DATE": "2024-01-02T12:00:00+00:00",
+    }
+    subprocess.run(
+        ["git", "-c", "user.name=Dashboard Tests",
+         "-c", "user.email=dashboard@example.invalid",
+         "commit", "-q", "-m", "fixture"],
+        cwd=repo, env=commit_env, check=True,
+    )
+
+    graph = {
+        "meta": {"kind": "code", "generated": "2026-07-09"},
+        "nodes": [
+            {"id": "tracked", "kind": "function", "label": "tracked",
+             "source_ref": "src/tracked.py:L1"},
+            {"id": "untracked", "kind": "function", "label": "untracked",
+             "source_ref": "src/untracked.py:L1"},
+        ],
+        "edges": [],
+    }
+
+    os.utime(tracked, (946684800, 946684800))
+    os.utime(untracked, (946684800, 946684800))
+    first = build_bundle(graph, repo_dir=repo)
+    os.utime(tracked, (1893456000, 1893456000))
+    os.utime(untracked, (1893456000, 1893456000))
+    second = build_bundle(graph, repo_dir=repo)
+
+    assert first["mtimes"] == {
+        "tracked": "2024-01-02",
+        "untracked": graph["meta"]["generated"],
+    }
+    assert second["mtimes"] == first["mtimes"]
+
+
+def test_bundle_without_repo_dir_omits_mtimes():
+    assert "mtimes" not in build_bundle(FIXTURE, pack=PACK)
 
 
 def test_ts_output_is_wellformed_and_unicode_raw():
