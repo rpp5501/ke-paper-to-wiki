@@ -4,7 +4,6 @@ Everything deterministic; runs without internet access. No runtime fetch exists 
 dashboard, so this file IS the data path.
 """
 import argparse
-import datetime
 import json
 import re
 from collections import defaultdict
@@ -120,7 +119,7 @@ def _load_pages(pages_dir):
     return pages, stripped
 
 
-def _load_notes(wiki_dir):
+def _load_notes(wiki_dir, fallback_date):
     notes, glossary, trace = {}, {}, []
     if not wiki_dir:
         return notes, glossary, trace
@@ -132,10 +131,10 @@ def _load_notes(wiki_dir):
         notes[cid] = note
         if note.get("glossary"):
             glossary[cid] = note["glossary"]
+        trace_date = note.get("date") or note.get("generated") or fallback_date
         trace.append({"nodeId": cid, "phase": "researched",
                       "status": note.get("status", "unknown"),
-                      "date": datetime.date.fromtimestamp(
-                          f.stat().st_mtime).isoformat()})
+                      "date": trace_date})
     return notes, glossary, trace
 
 
@@ -143,7 +142,8 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir)
-    notes, glossary, trace = _load_notes(wiki_dir)
+    notes, glossary, trace = _load_notes(
+        wiki_dir, plan_graph["meta"].get("generated", ""))
     for cid in pages:
         trace.append({"nodeId": cid, "phase": "written", "status": "ok",
                       "date": plan_graph["meta"].get("generated", "")})
@@ -183,7 +183,7 @@ def main(argv=None):
                           hotspots=(load(a.hotspots) or {}).get("hotspots")
                           if a.hotspots else None,
                           repo_dir=a.repo_dir)
-    Path(a.out).write_text(to_data_ts(bundle), encoding="utf-8")
+    Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
     print(f"{a.out}: {len(bundle['nodes'])} nodes, {len(bundle['tour'])} tour steps")
     return 0
 
