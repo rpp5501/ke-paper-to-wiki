@@ -60,3 +60,15 @@ def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
                                     "sources": [f"{source_file.name}:{line_number}"]},
                     })
     return gaps
+
+
+def forward_gaps(paper_id: str, walk=None) -> list[dict]:
+    if walk is None:
+        from research_mcp.citation_walk import citation_walk
+        walk = citation_walk
+    result = walk(paper_id, direction="in", limit=15)
+    return [{
+        "kind": "field-follow-up",
+        "text": paper["title"],
+        "anchors": {"nodes": [], "sources": [paper["id"]]},
+    } for paper in result.get("papers", [])]
