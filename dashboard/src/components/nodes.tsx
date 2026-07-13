@@ -1,6 +1,14 @@
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import {
+  Handle,
+  Position,
+  useReactFlow,
+  type Node,
+  type NodeProps,
+  type ReactFlowInstance,
+} from "@xyflow/react";
 
 import { KE_DATA } from "../data.gen";
+import { nodeAccessibleName } from "../lib/nodePresentation";
 import { useApp } from "../store";
 
 type CardData = {
@@ -11,6 +19,7 @@ type CardData = {
 type ClusterData = {
   label: string;
   count: number;
+  onActivate?: () => void;
 };
 
 type CardNode = Node<CardData, "concept" | "code">;
@@ -26,27 +35,51 @@ const hotspotRank = new Map(
   ]),
 );
 
+function focusNode(
+  flow: ReactFlowInstance,
+  positionAbsoluteX: number,
+  positionAbsoluteY: number,
+): void {
+  const reducedMotion = typeof window !== "undefined"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  void flow.setCenter(positionAbsoluteX + 90, positionAbsoluteY + 32, {
+    zoom: flow.getZoom(),
+    duration: reducedMotion ? 0 : 600,
+  });
+}
+
 function Card({
   id,
   data,
   selected,
   className,
+  positionAbsoluteX,
+  positionAbsoluteY,
 }: {
   id: string;
   data: CardData;
   selected: boolean;
   className: string;
+  positionAbsoluteX: number;
+  positionAbsoluteY: number;
 }) {
   const setSelected = useApp((state) => state.setSelected);
+  const flow = useReactFlow();
   const bridge = centrality[id] >= p90 && centralityValues.length > 1;
   const hot = hotspotRank.get(id);
 
   return (
     <button
-      aria-label={data.label}
+      aria-label={nodeAccessibleName({
+        label: data.label,
+        level: data.level,
+        bridge,
+        hotspotRank: hot,
+      })}
       aria-pressed={selected}
       className={`node-card ${className}`}
       onClick={() => setSelected(id)}
+      onFocus={() => focusNode(flow, positionAbsoluteX, positionAbsoluteY)}
       title={data.label}
       type="button"
     >
@@ -69,6 +102,8 @@ function ConceptNode(props: NodeProps<CardNode>) {
       data={props.data}
       selected={props.selected}
       className="node-concept"
+      positionAbsoluteX={props.positionAbsoluteX}
+      positionAbsoluteY={props.positionAbsoluteY}
     />
   );
 }
@@ -80,19 +115,26 @@ function CodeNode(props: NodeProps<CardNode>) {
       data={props.data}
       selected={props.selected}
       className="node-code"
+      positionAbsoluteX={props.positionAbsoluteX}
+      positionAbsoluteY={props.positionAbsoluteY}
     />
   );
 }
 
 function ClusterNodeCard(props: NodeProps<ClusterNode>) {
-  const setSelected = useApp((state) => state.setSelected);
+  const flow = useReactFlow();
 
   return (
     <button
-      aria-label={`${props.data.label}, ${props.data.count} nodes`}
-      aria-pressed={props.selected}
+      aria-label={`${props.data.label}, cluster, ${props.data.count} nodes`}
       className="node-card node-cluster"
-      onClick={() => setSelected(props.id)}
+      disabled={!props.data.onActivate}
+      onClick={props.data.onActivate}
+      onFocus={() => focusNode(
+        flow,
+        props.positionAbsoluteX,
+        props.positionAbsoluteY,
+      )}
       title={props.data.label}
       type="button"
     >

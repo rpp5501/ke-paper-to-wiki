@@ -142,7 +142,7 @@ input:focus-visible,
   border-bottom: 0;
 }
 
-.react-flow__controls-button:hover {
+.react-flow__controls-button:not(:disabled):hover {
   background: var(--border);
 }
 
@@ -153,6 +153,7 @@ input:focus-visible,
 .react-flow__controls-button:disabled {
   cursor: default;
   opacity: 0.5;
+  transition: none;
 }
 
 .react-flow__handle {
@@ -177,13 +178,19 @@ input:focus-visible,
     transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.node-card:hover {
+.node-card:not(:disabled):hover {
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }
 
-.node-card:active {
+.node-card:active:not(:disabled) {
   transform: scale(0.97);
+}
+
+.node-card:disabled {
+  cursor: default;
+  opacity: 0.5;
+  transition: none;
 }
 
 .node-concept {
@@ -463,6 +470,7 @@ input:focus-visible,
 @media (max-width: 1279px) {
   .topbar {
     height: auto;
+    flex: 0 0 auto;
     flex-wrap: wrap;
   }
 

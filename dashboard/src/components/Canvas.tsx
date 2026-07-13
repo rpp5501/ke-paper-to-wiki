@@ -3,7 +3,6 @@ import {
   Controls,
   ReactFlow,
   useReactFlow,
-  type Edge,
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -12,7 +11,8 @@ import { useEffect, useMemo, useState } from "react";
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
 import { dependencyRings } from "../lib/deps";
-import { layoutGraph } from "../lib/layout";
+import { makeFlowEdges } from "../lib/flowModel";
+import { layoutGraph, resetLayoutGraph } from "../lib/layout";
 import { useApp } from "../store";
 import type { KEEdge, KENode } from "../types";
 import { nodeTypes } from "./nodes";
@@ -28,16 +28,6 @@ type LayoutState =
   | { phase: "empty" }
   | { phase: "ready"; positions: Map<string, Position> }
   | { phase: "error"; diagnostic: string };
-
-function edgeStyle(kind: string) {
-  if (kind === "implements") {
-    return { stroke: "#4a9b5e", strokeDasharray: "6 3", strokeWidth: 2 };
-  }
-  if (kind === "prerequisite" || kind === "builds-on") {
-    return { stroke: "#cc8855", strokeDasharray: "4 3" };
-  }
-  return { stroke: "#475569" };
-}
 
 function diagnosticFor(error: unknown): string {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
@@ -67,11 +57,6 @@ export default function Canvas() {
     setLayout({ phase: "loading" });
     void layoutGraph(KE_NODES, KE_EDGES)
       .then((positions) => {
-        if (positions.size !== KE_NODES.length) {
-          throw new Error(
-            `Worker returned ${positions.size} of ${KE_NODES.length} node positions.`,
-          );
-        }
         if (!cancelled) setLayout({ phase: "ready", positions });
       })
       .catch((error: unknown) => {
@@ -146,21 +131,8 @@ export default function Canvas() {
   }, [blastOn, equationHits, ghost, layout, selected, view]);
 
   const shownIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
-  const edges = useMemo<Edge[]>(
-    () => KE_EDGES
-      .filter((edge) => (
-        !hiddenKinds.has(edge.kind)
-        && shownIds.has(edge.src)
-        && shownIds.has(edge.dst)
-      ))
-      .map((edge, index) => ({
-        id: `e${index}`,
-        source: edge.src,
-        target: edge.dst,
-        focusable: false,
-        ariaLabel: `${edge.src} ${edge.kind} ${edge.dst}`,
-        style: edgeStyle(edge.kind),
-      })),
+  const edges = useMemo(
+    () => makeFlowEdges(KE_EDGES, hiddenKinds, shownIds),
     [hiddenKinds, shownIds],
   );
 
@@ -174,7 +146,7 @@ export default function Canvas() {
 
   const ready = layout.phase === "ready";
   const statusMessage = layout.phase === "loading"
-    ? `Laying out ${KE_NODES.length} nodesâ€¦`
+    ? `Laying out ${KE_NODES.length} nodes…`
     : layout.phase === "ready"
       ? `Graph layout ready. ${KE_NODES.length} nodes positioned.`
       : layout.phase === "empty"
@@ -189,7 +161,8 @@ export default function Canvas() {
         deleteKeyCode={null}
         edges={edges}
         edgesFocusable={false}
-        elementsSelectable={ready}
+        elementsSelectable={false}
+        multiSelectionKeyCode={null}
         nodes={nodes}
         nodesConnectable={false}
         nodesDraggable={false}
@@ -199,6 +172,9 @@ export default function Canvas() {
           if (ready) setSelected(node.id);
         }}
         onPaneClick={() => setSelected(null)}
+        selectionKeyCode={null}
+        selectionOnDrag={false}
+        selectNodesOnDrag={false}
       >
         <Background color="#1e293b" gap={24} />
         <Controls
@@ -227,7 +203,10 @@ export default function Canvas() {
           <span className="layout-diagnostic">{layout.diagnostic}</span>
           <button
             className="retry-layout"
-            onClick={() => setAttempt((value) => value + 1)}
+            onClick={() => {
+              resetLayoutGraph();
+              setAttempt((value) => value + 1);
+            }}
             type="button"
           >
             Retry layout

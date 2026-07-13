@@ -12,7 +12,7 @@ describe("App", () => {
     expect(markup).toContain('id="left-panel"');
     expect(markup).toContain('id="topbar"');
     expect(markup).toContain('id="drawer"');
-    expect(markup).toContain(`Laying out ${KE_DATA.nodes.length} nodesâ€¦`);
+    expect(markup).toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);
     expect(markup).not.toContain("nodes loaded");
   });
 });
