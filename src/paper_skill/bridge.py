@@ -26,7 +26,9 @@ def propose_candidates(concept_graph: dict, code_graph: dict,
             if not kt:
                 continue
             jac = len(ct & kt) / len(ct | kt)
-            bonus = 0.2 if any(t in k.get("source_ref", "").lower() for t in ct) else 0.0
+            source_path = k.get("source_ref", "").split(":L", 1)[0]
+            filename = re.split(r"[\\/]", source_path)[-1].lower()
+            bonus = 0.2 if any(t in filename for t in ct) else 0.0
             score = round(jac + bonus, 3)
             if score >= 0.25:
                 out.append({"concept": c["id"], "code": k["id"], "score": score,

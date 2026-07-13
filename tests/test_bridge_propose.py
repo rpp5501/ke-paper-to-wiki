@@ -49,3 +49,22 @@ def test_tie_order_is_independent_of_input_node_order():
         ("concept-z", "code-a"),
         ("concept-z", "code-z"),
     ]
+
+
+def test_structural_bonus_uses_filename_only():
+    concepts = {"nodes": [{
+        "id": "attention-route",
+        "kind": "concept",
+        "label": "Attention Query Key Value Output",
+    }], "edges": [], "meta": {}}
+    code = {"nodes": [{
+        "id": "attention-code",
+        "kind": "function",
+        "label": "Attention",
+        "source_ref": "attention_helpers/model.py:L10",
+    }], "edges": [], "meta": {}}
+
+    assert propose_candidates(concepts, code) == []
+
+    code["nodes"][0]["source_ref"] = "helpers/attention.py:L10"
+    assert propose_candidates(concepts, code)[0]["score"] == 0.4
