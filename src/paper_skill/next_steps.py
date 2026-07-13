@@ -197,3 +197,21 @@ def write_outputs(ideas: list[dict], out_dir) -> None:
         {"note": "confirm per idea; N3 novelty runs only on confirmed/top-k",
          "ideas": [{**idea, "confirmed": False} for idea in ideas]},
         allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+
+def novelty_briefs(ideas: list[dict], top: int = 3) -> list[dict]:
+    briefs = []
+    for idea in ideas[:top]:
+        slug = re.sub(r"[^a-z0-9]+", "-", idea["title"].lower()).strip("-")
+        briefs.append({
+            "concept": f"novelty--{slug}",
+            "definition": idea["rationale"],
+            "content_type": "background",
+            "sub_questions": [
+                "Has this been done? Find the closest prior work.",
+                "What would differentiate this from existing work?",
+            ],
+            "do_not_research": [],
+            "budget": {"searches": 3, "fetches": 3, "api_calls": 2},
+        })
+    return briefs
