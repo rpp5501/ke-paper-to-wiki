@@ -38,6 +38,17 @@ def test_harvests_future_work_section():
     assert future_work and "sec_7" in future_work[0]["anchors"]["sources"][0]
 
 
+def test_future_work_anchors_matching_concepts_without_bridge():
+    concepts = {**CONCEPTS, "nodes": [
+        {**CONCEPTS["nodes"][0], "source_ref": "sec_7"},
+    ]}
+
+    gaps = harvest(PACK, concepts)
+
+    future_work = [gap for gap in gaps if gap["kind"] == "paper-limitation"]
+    assert future_work[0]["anchors"]["nodes"] == ["mha"]
+
+
 def test_harvests_unresolved_ledger(tmp_path):
     wiki_put("mha", NOTE, home=tmp_path)
     gaps = harvest(PACK, CONCEPTS, wiki_home=tmp_path)
@@ -78,3 +89,24 @@ def test_todo_scan_is_deterministic(tmp_path):
     assert [gap["anchors"]["sources"][0] for gap in todos] == [
         "a.py:1", "b.py:1",
     ]
+
+
+def test_todo_anchors_matching_code_node_with_relative_path(tmp_path):
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "m.py").write_text("# TODO: cache this\n", encoding="utf-8")
+    code_graph = {
+        "meta": {"kind": "code", "source": "repo",
+                 "generated": "x", "version": 1},
+        "nodes": [{"id": "src/m.py::work", "kind": "function",
+                   "label": "work", "source_ref": "src/m.py:L1"}],
+        "edges": [],
+    }
+
+    gaps = harvest(PACK, CONCEPTS, code_graph=code_graph, repo_dir=tmp_path)
+
+    todo = next(gap for gap in gaps if gap["kind"] == "todo-comment")
+    assert todo["anchors"] == {
+        "nodes": ["src/m.py::work"],
+        "sources": ["src/m.py:1"],
+    }

@@ -92,6 +92,34 @@ def test_synthesis_rejects_non_list_ideas():
     assert any("ideas list" in problem for problem in result["problems"])
 
 
+def test_synthesis_rejects_wrapped_json():
+    wrapped = f"```json\n{GOOD}\n```"
+
+    result = synthesize_ideas(GAPS, spawn=lambda prompt: wrapped)
+
+    assert result["status"] == "failed-orchestration"
+    assert any("parseable JSON" in problem for problem in result["problems"])
+
+
+@pytest.mark.parametrize(("nodes", "sources"), (
+    ([[]], ["mha.yaml"]),
+    ([None], ["mha.yaml"]),
+    ([""], ["mha.yaml"]),
+    (["mha"], [" "]),
+))
+def test_malformed_anchor_items_fail_closed(nodes, sources):
+    malformed = json.dumps({"ideas": [{
+        "title": "Malformed anchors",
+        "rationale": "r",
+        "anchors": {"nodes": nodes, "sources": sources},
+    }]})
+
+    result = synthesize_ideas(GAPS, spawn=lambda prompt: malformed)
+
+    assert result["status"] == "failed-orchestration"
+    assert any("non-empty strings" in problem for problem in result["problems"])
+
+
 def test_synthesis_rejects_invented_anchors():
     invented = json.dumps({"ideas": [{
         "title": "Invented direction",

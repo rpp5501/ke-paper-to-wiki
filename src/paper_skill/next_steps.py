@@ -24,12 +24,20 @@ GAPS:
 def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
             wiki_home=None, repo_dir=None) -> list[dict]:
     gaps: list[dict] = []
+    graphs = [concept_graph]
+    if code_graph is not None and code_graph is not concept_graph:
+        graphs.append(code_graph)
     for section in pack["sections"]:
         if _LIMIT_TITLES.search(section["title"]):
+            nodes = sorted({
+                node["id"] for graph in graphs for node in graph["nodes"]
+                if node["kind"] == "concept" and
+                node.get("source_ref") == section["id"]
+            })
             gaps.append({
                 "kind": "paper-limitation",
                 "text": section["text"][:300],
-                "anchors": {"nodes": [],
+                "anchors": {"nodes": nodes,
                             "sources": [f'§{section["id"]}']},
             })
 
@@ -46,8 +54,8 @@ def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
                                 "sources": [note_file.name]},
                 })
 
-    bridged_graph = next((graph for graph in (concept_graph, code_graph)
-                          if graph is not None and
+    bridged_graph = next((graph for graph in graphs
+                          if
                           graph.get("meta", {}).get("kind") == "bridged"), None)
     if bridged_graph is not None:
         implemented = {edge["dst"] for edge in bridged_graph["edges"]
@@ -62,7 +70,15 @@ def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
                 })
 
     if repo_dir is not None:
-        for source_file in sorted(Path(repo_dir).rglob("*.py")):
+        repo_root = Path(repo_dir)
+        for source_file in sorted(repo_root.rglob("*.py")):
+            relative_path = source_file.relative_to(repo_root).as_posix()
+            nodes = sorted({
+                node["id"] for graph in graphs for node in graph["nodes"]
+                if node["kind"] in {"file", "class", "function", "route"}
+                and node.get("source_ref", "").split(":L", 1)[0]
+                .replace("\\", "/").removeprefix("./") == relative_path
+            })
             lines = source_file.read_text(
                 encoding="utf-8", errors="replace").splitlines()
             for line_number, line in enumerate(lines, 1):
@@ -71,8 +87,8 @@ def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
                     gaps.append({
                         "kind": "todo-comment",
                         "text": match.group(2).strip(),
-                        "anchors": {"nodes": [],
-                                    "sources": [f"{source_file.name}:{line_number}"]},
+                        "anchors": {"nodes": nodes,
+                                    "sources": [f"{relative_path}:{line_number}"]},
                     })
     return gaps
 
@@ -105,8 +121,7 @@ def synthesize_ideas(gaps: list[dict], spawn, top: int = 8) -> dict:
                 "ideas": [],
             }
         try:
-            match = re.search(r"\{.*\}", raw, re.S)
-            document = _json.loads(match.group(0))
+            document = _json.loads(raw.strip())
             ideas = document["ideas"]
             if not isinstance(ideas, list):
                 raise TypeError("ideas must be a list")
@@ -145,6 +160,18 @@ def lint_ideas(ideas: list[dict]) -> list[str]:
         if not isinstance(sources, list):
             problems.append(f"idea anchor sources must be a list: {title}")
         if not isinstance(nodes, list) or not isinstance(sources, list):
+            continue
+        nodes_valid = all(isinstance(node, str) and node.strip()
+                          for node in nodes)
+        sources_valid = all(isinstance(source, str) and source.strip()
+                            for source in sources)
+        if not nodes_valid:
+            problems.append(
+                f"idea anchor nodes must contain non-empty strings: {title}")
+        if not sources_valid:
+            problems.append(
+                f"idea anchor sources must contain non-empty strings: {title}")
+        if not nodes_valid or not sources_valid:
             continue
         if not nodes and not sources:
             problems.append(f"unanchored idea: {title}")
