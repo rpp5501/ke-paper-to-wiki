@@ -52,6 +52,14 @@ def test_no_implements_needs_bridged_graph():
     assert "no-implements-concept" in {gap["kind"] for gap in gaps}
 
 
+def test_bridged_code_graph_enables_missing_implementation_gaps():
+    bridged = {**CONCEPTS, "meta": {**CONCEPTS["meta"], "kind": "bridged"}}
+
+    gaps = harvest(PACK, CONCEPTS, code_graph=bridged)
+
+    assert "no-implements-concept" in {gap["kind"] for gap in gaps}
+
+
 def test_todo_scan(tmp_path):
     (tmp_path / "m.py").write_text(
         "x = 1  # TODO: cache this\n", encoding="utf-8")

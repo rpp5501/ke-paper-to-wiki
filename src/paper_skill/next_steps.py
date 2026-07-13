@@ -46,10 +46,13 @@ def harvest(pack: dict, concept_graph: dict, code_graph: dict | None = None,
                                 "sources": [note_file.name]},
                 })
 
-    if concept_graph.get("meta", {}).get("kind") == "bridged":
-        implemented = {edge["dst"] for edge in concept_graph["edges"]
+    bridged_graph = next((graph for graph in (concept_graph, code_graph)
+                          if graph is not None and
+                          graph.get("meta", {}).get("kind") == "bridged"), None)
+    if bridged_graph is not None:
+        implemented = {edge["dst"] for edge in bridged_graph["edges"]
                        if edge["kind"] == "implements"}
-        for node in concept_graph["nodes"]:
+        for node in bridged_graph["nodes"]:
             if node["kind"] == "concept" and node["id"] not in implemented:
                 gaps.append({
                     "kind": "no-implements-concept",
