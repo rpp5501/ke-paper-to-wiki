@@ -57,6 +57,24 @@ input:focus-visible,
   background: var(--surface);
 }
 
+.sidebar-sheet-backdrop {
+  display: none;
+}
+
+.sidebar-content {
+  min-height: 100%;
+}
+
+.sidebar-sheet-header {
+  display: none;
+}
+
+.sidebar-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+}
+
 .main {
   position: relative;
   display: flex;
@@ -74,6 +92,25 @@ input:focus-visible,
   gap: 8px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+  padding: 0 8px;
+}
+
+.topbar-group,
+.search-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-separator {
+  width: 18px;
+  height: 1px;
+  flex: 0 0 18px;
+}
+
+.sidebar-sheet-trigger {
+  display: none;
 }
 
 .workspace {
@@ -349,18 +386,62 @@ input:focus-visible,
 }
 
 .pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
   padding: 4px 12px;
   color: var(--muted);
   font-size: 13px;
-  cursor: pointer;
+  line-height: 1.35;
+  white-space: nowrap;
+  transition:
+    background-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pill.active {
   background: var(--accent);
   color: #fff;
+}
+
+.pill-hit {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pill-hit:not(:disabled):hover .pill {
+  border-color: var(--accent);
+}
+
+.pill-hit:not(:disabled):hover .pill:not(.active) {
+  color: var(--text);
+}
+
+.pill-hit:not(:disabled):active .pill {
+  transform: scale(0.97);
+}
+
+.pill-hit:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.pill-hit:disabled .pill {
+  transition: none;
 }
 
 .card {
@@ -369,11 +450,118 @@ input:focus-visible,
   border-radius: 8px;
   background: var(--bg);
   padding: 10px;
-  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
-.card:hover {
+.card-button {
+  display: block;
+  width: calc(100% - 24px);
+  min-height: 44px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card-button:not(:disabled):hover,
+.card-button[aria-current="true"] {
   border-color: var(--accent);
+}
+
+.card-button[aria-current="true"] {
+  background: var(--border);
+}
+
+.card-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.card-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+  transition: none;
+}
+
+.card-rule,
+.card-supporting {
+  display: block;
+}
+
+.card-rule {
+  margin-top: 6px;
+}
+
+.card-supporting,
+.empty-card,
+.trace-date {
+  color: var(--muted);
+}
+
+.card-supporting,
+.trace-card {
+  font-size: 12px;
+}
+
+.trace-card,
+.trace-date {
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-card {
+  cursor: default;
+}
+
+.search-group {
+  margin-left: 12px;
+}
+
+.search-field {
+  position: relative;
+  display: flex;
+  min-width: 180px;
+  min-height: 44px;
+  align-items: center;
+}
+
+.search-field::before {
+  position: absolute;
+  inset: 7px 0;
+  content: "";
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.search-input {
+  position: relative;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 5px 10px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.search-input:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.search-input::placeholder {
+  color: var(--muted);
+}
+
+.search-status {
+  min-width: 0;
+  color: var(--bad);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .sev {
@@ -472,6 +660,7 @@ input:focus-visible,
     height: auto;
     flex: 0 0 auto;
     flex-wrap: wrap;
+    padding-block: 4px;
   }
 
   .drawer:not(:empty) {
@@ -497,18 +686,57 @@ input:focus-visible,
     height: 100%;
   }
 
-  .sidebar:not(:empty) {
+  .sidebar {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 0;
     z-index: 35;
     width: min(300px, 90vw);
+    max-width: 90vw;
+    flex: none;
     box-shadow: none;
+    pointer-events: none;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+      visibility 180ms step-end;
   }
 
-  .sidebar:empty {
-    display: none;
+  .sidebar.sidebar-open {
+    pointer-events: auto;
+    transform: translateX(0);
+    visibility: visible;
+    transition:
+      transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+      visibility 0ms step-start;
+  }
+
+  .sidebar-sheet-backdrop.is-open {
+    position: absolute;
+    inset: 0;
+    z-index: 34;
+    display: block;
+    border: 0;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    cursor: pointer;
+  }
+
+  .sidebar-sheet-trigger {
+    display: inline-flex;
+  }
+
+  .sidebar-sheet-header {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding: 4px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
   }
 }
 
@@ -518,6 +746,11 @@ input:focus-visible,
     justify-content: flex-start;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
+  }
+
+  .topbar-group,
+  .search-group {
+    flex: none;
   }
 
   .playerbar {
@@ -535,15 +768,26 @@ input:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .card-button,
   .node-card,
+  .pill,
   .react-flow__controls-button,
   .retry-layout {
     transition-duration: 0.01ms;
   }
 
+  .card-button:active,
   .node-card:active,
+  .pill-hit:active .pill,
   .react-flow__controls-button:active,
   .retry-layout:active {
     transform: none;
+  }
+
+  @media (max-width: 899px) {
+    .sidebar,
+    .sidebar.sidebar-open {
+      transition: none;
+    }
   }
 }
