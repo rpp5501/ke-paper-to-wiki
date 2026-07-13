@@ -1,15 +1,28 @@
-import ELK from "elkjs/lib/elk-api";
+import ELK, { type ELK as ELKInstance } from "elkjs/lib/elk-api";
 import elkWorkerUrl from "elkjs/lib/elk-worker.min.js?url";
 import type { KEEdge, KENode } from "../types";
 
 // Vite emits the worker as a local build asset. localhost supplies the normal
 // origin required to start it; all topology calculation stays off-thread.
-const elk = new ELK({ workerUrl: elkWorkerUrl });
+let elkPromise: Promise<ELKInstance> | undefined;
+
+function getElk(): Promise<ELKInstance> {
+  if (!elkPromise) {
+    elkPromise = Promise.resolve()
+      .then(() => new ELK({ workerUrl: elkWorkerUrl }))
+      .catch((error: unknown) => {
+        elkPromise = undefined;
+        throw error;
+      });
+  }
+  return elkPromise;
+}
 
 export async function layoutGraph(
   nodes: KENode[],
   edges: KEEdge[],
 ): Promise<Map<string, { x: number; y: number }>> {
+  const elk = await getElk();
   const result = await elk.layout({
     id: "root",
     layoutOptions: {

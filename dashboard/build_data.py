@@ -146,8 +146,11 @@ def _source_dates(plan_graph, repo_dir):
     fallback_date = plan_graph["meta"].get("generated", "")
     dates = {}
     for node in plan_graph["nodes"]:
+        if node.get("kind") not in _CODE_KINDS:
+            continue
+        dates[node["id"]] = fallback_date
         source_ref = node.get("source_ref")
-        if node.get("kind") not in _CODE_KINDS or not source_ref:
+        if not source_ref:
             continue
         relative_path = source_ref.rsplit(":", 1)[0]
         if not (repo / relative_path).is_file():
@@ -160,7 +163,8 @@ def _source_dates(plan_graph, repo_dir):
             git_date = result.stdout.strip() if result.returncode == 0 else ""
         except OSError:
             git_date = ""
-        dates[node["id"]] = git_date or fallback_date
+        if git_date:
+            dates[node["id"]] = git_date
     return dates
 
 

@@ -146,6 +146,12 @@ def test_repo_dir_source_dates_prefer_git_and_use_generated_fallback(tmp_path):
              "source_ref": "src/tracked.py:L1"},
             {"id": "untracked", "kind": "function", "label": "untracked",
              "source_ref": "src/untracked.py:L1"},
+            {"id": "missing-ref", "kind": "class", "label": "missing-ref"},
+            {"id": "empty-ref", "kind": "file", "label": "empty-ref",
+             "source_ref": ""},
+            {"id": "missing-file", "kind": "route", "label": "missing-file",
+             "source_ref": "src/missing.py:L1"},
+            {"id": "concept", "kind": "concept", "label": "concept"},
         ],
         "edges": [],
     }
@@ -160,8 +166,29 @@ def test_repo_dir_source_dates_prefer_git_and_use_generated_fallback(tmp_path):
     assert first["mtimes"] == {
         "tracked": "2024-01-02",
         "untracked": graph["meta"]["generated"],
+        "missing-ref": graph["meta"]["generated"],
+        "empty-ref": graph["meta"]["generated"],
+        "missing-file": graph["meta"]["generated"],
     }
     assert second["mtimes"] == first["mtimes"]
+
+
+def test_repo_dir_source_dates_fall_back_when_git_is_unavailable(tmp_path):
+    repo = tmp_path / "not-a-git-repo"
+    repo.mkdir()
+    (repo / "module.py").write_text("value = 1\n", encoding="utf-8")
+    graph = {
+        "meta": {"kind": "code", "generated": "2026-07-09"},
+        "nodes": [
+            {"id": "module", "kind": "function", "label": "module",
+             "source_ref": "module.py:L1"},
+        ],
+        "edges": [],
+    }
+
+    assert build_bundle(graph, repo_dir=repo)["mtimes"] == {
+        "module": graph["meta"]["generated"],
+    }
 
 
 def test_bundle_without_repo_dir_omits_mtimes():

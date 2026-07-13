@@ -1,14 +1,29 @@
 import type { Insight, KEEdge, KENode } from "../types";
-import { dependentsOf } from "./deps";
+import {
+  normalizeDependencies,
+  type NormalizedDependency,
+} from "./deps";
 
-const CODE_KINDS = new Set(["function", "class", "file", "route"]);
+const DEAD_CODE_KINDS = new Set(["function", "class", "file"]);
+const ENTRY_NAMES = new Set(["main", "__main__"]);
 
-function findCycle(nodes: KENode[], edges: KEEdge[]): string[] | null {
+function isEntryNode(node: KENode): boolean {
+  return [node.id, node.label].some((value) => {
+    const normalized = value.trim().toLowerCase();
+    const symbol = normalized.split("::").at(-1) ?? normalized;
+    return ENTRY_NAMES.has(symbol);
+  });
+}
+
+function findCycle(
+  nodes: KENode[],
+  relations: NormalizedDependency[],
+): string[] | null {
   const adj = new Map<string, string[]>();
-  for (const e of edges) {
-    const outgoing = adj.get(e.src) ?? [];
-    outgoing.push(e.dst);
-    adj.set(e.src, outgoing);
+  for (const { dependent, dependency } of relations) {
+    const outgoing = adj.get(dependency) ?? [];
+    outgoing.push(dependent);
+    adj.set(dependency, outgoing);
   }
   const state = new Map<string, 1 | 2>();
   const stack: string[] = [];
@@ -45,16 +60,14 @@ export function computeInsights(data: {
   meta: { kind?: string };
 }): Insight[] {
   const out: Insight[] = [];
-  const indeg = new Map<string, number>();
-  for (const e of data.edges) {
-    indeg.set(e.dst, (indeg.get(e.dst) ?? 0) + 1);
-  }
+  const relations = normalizeDependencies(data.edges);
+  const hasDependents = new Set(relations.map(({ dependency }) => dependency));
 
   for (const n of data.nodes) {
     if (
-      CODE_KINDS.has(n.kind)
-      && !(indeg.get(n.id) ?? 0)
-      && dependentsOf(n.id, data.edges).length === 0
+      DEAD_CODE_KINDS.has(n.kind)
+      && !isEntryNode(n)
+      && !hasDependents.has(n.id)
     ) {
       out.push({
         severity: "MED",
@@ -77,7 +90,7 @@ export function computeInsights(data: {
     }
   }
 
-  const cycle = findCycle(data.nodes, data.edges);
+  const cycle = findCycle(data.nodes, relations);
   if (cycle) {
     out.push({
       severity: "MED",

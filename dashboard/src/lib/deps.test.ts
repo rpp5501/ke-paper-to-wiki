@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dependencyRings, dependentsOf } from "./deps";
+import { dependencyRings, dependentsOf, normalizeDependencies } from "./deps";
 
 const EDGES = [
   { src: "sdpa", dst: "attention", kind: "part-of" },
@@ -11,6 +11,16 @@ describe("dependentsOf", () => {
   it("mirrors the python dependent-side map", () => {
     expect(new Set(dependentsOf("sdpa", EDGES)))
       .toEqual(new Set(["attention", "mha"]));
+  });
+});
+
+describe("normalizeDependencies", () => {
+  it("returns one dependent-to-dependency relationship per edge kind", () => {
+    expect(normalizeDependencies(EDGES)).toEqual([
+      { dependent: "attention", dependency: "sdpa" },
+      { dependent: "mha", dependency: "sdpa" },
+      { dependent: "transformer", dependency: "attention" },
+    ]);
   });
 });
 

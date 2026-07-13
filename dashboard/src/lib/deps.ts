@@ -8,20 +8,33 @@ const DEPENDENT_SIDE: Record<string, "src" | "dst"> = {
   "builds-on": "src",
 };
 
-function split(e: KEEdge): { dependent: string; dependency: string } {
-  const side = DEPENDENT_SIDE[e.kind] ?? "src";
-  return side === "src"
-    ? { dependent: e.src, dependency: e.dst }
-    : { dependent: e.dst, dependency: e.src };
+export type NormalizedDependency = {
+  dependent: string;
+  dependency: string;
+};
+
+export function normalizeDependencies(edges: KEEdge[]): NormalizedDependency[] {
+  return edges.map((edge) => {
+    const side = DEPENDENT_SIDE[edge.kind] ?? "src";
+    return side === "src"
+      ? { dependent: edge.src, dependency: edge.dst }
+      : { dependent: edge.dst, dependency: edge.src };
+  });
+}
+
+function dependentsFrom(
+  id: string,
+  relations: NormalizedDependency[],
+): string[] {
+  return [...new Set(
+    relations
+      .filter(({ dependency }) => dependency === id)
+      .map(({ dependent }) => dependent),
+  )];
 }
 
 export function dependentsOf(id: string, edges: KEEdge[]): string[] {
-  const out = new Set<string>();
-  for (const e of edges) {
-    const { dependent, dependency } = split(e);
-    if (dependency === id) out.add(dependent);
-  }
-  return [...out];
+  return dependentsFrom(id, normalizeDependencies(edges));
 }
 
 export function dependencyRings(
@@ -29,13 +42,14 @@ export function dependencyRings(
   edges: KEEdge[],
   maxDepth = 2,
 ): Map<string, number> {
+  const relations = normalizeDependencies(edges);
   const rings = new Map<string, number>();
   let frontier = [id];
   const seen = new Set([id]);
   for (let depth = 1; depth <= maxDepth; depth++) {
     const next: string[] = [];
     for (const cur of frontier) {
-      for (const dep of dependentsOf(cur, edges)) {
+      for (const dep of dependentsFrom(cur, relations)) {
         if (!seen.has(dep)) {
           seen.add(dep);
           rings.set(dep, depth);
