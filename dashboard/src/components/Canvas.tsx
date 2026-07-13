@@ -6,7 +6,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
@@ -34,41 +34,51 @@ function diagnosticFor(error: unknown): string {
   return `Unknown worker error: ${String(error)}`;
 }
 
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export default function Canvas() {
-  const { selected, setSelected, view, hiddenKinds, blastOn, hoverEq } = useApp();
+  const {
+    selected,
+    setSelected,
+    view,
+    hiddenKinds,
+    blastOn,
+    hoverEq,
+    setLayoutPhase,
+  } = useApp();
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
     KE_NODES.length === 0 ? { phase: "empty" } : { phase: "loading" },
   );
   const flow = useReactFlow();
+  const fittedAttempt = useRef<number | null>(null);
 
   useEffect(() => {
     if (KE_NODES.length === 0) {
       setLayout({ phase: "empty" });
+      setLayoutPhase("empty");
       return;
     }
 
     let cancelled = false;
     setLayout({ phase: "loading" });
+    setLayoutPhase("loading");
     void layoutGraph(KE_NODES, KE_EDGES)
       .then((positions) => {
-        if (!cancelled) setLayout({ phase: "ready", positions });
+        if (!cancelled) {
+          setLayout({ phase: "ready", positions });
+          setLayoutPhase("ready");
+        }
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setLayout({ phase: "error", diagnostic: diagnosticFor(error) });
+          setLayoutPhase("error");
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [attempt]);
+  }, [attempt, setLayoutPhase]);
 
   const rings = useMemo(
     () => (blastOn && selected ? dependencyRings(selected, KE_EDGES) : new Map()),
@@ -137,12 +147,17 @@ export default function Canvas() {
   );
 
   useEffect(() => {
-    if (layout.phase !== "ready" || nodes.length === 0) return;
+    if (
+      layout.phase !== "ready"
+      || nodes.length === 0
+      || fittedAttempt.current === attempt
+    ) return;
     const frame = window.requestAnimationFrame(() => {
+      fittedAttempt.current = attempt;
       void flow.fitView({ padding: 0.16 });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [flow, layout, nodes.length]);
+  }, [attempt, flow, layout.phase, nodes.length]);
 
   const ready = layout.phase === "ready";
   const statusMessage = layout.phase === "loading"
@@ -204,6 +219,8 @@ export default function Canvas() {
           <button
             className="retry-layout"
             onClick={() => {
+              setLayout({ phase: "loading" });
+              setLayoutPhase("loading");
               resetLayoutGraph();
               setAttempt((value) => value + 1);
             }}
@@ -215,17 +232,4 @@ export default function Canvas() {
       )}
     </div>
   );
-}
-
-export function useCenterOn() {
-  const flow = useReactFlow();
-
-  return (id: string) => {
-    const node = flow.getNode(id);
-    if (!node) return;
-    void flow.setCenter(node.position.x + 90, node.position.y + 32, {
-      zoom: 1.2,
-      duration: prefersReducedMotion() ? 0 : 600,
-    });
-  };
 }

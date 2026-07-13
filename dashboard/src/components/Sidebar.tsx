@@ -1,8 +1,12 @@
-import { useMemo, useRef, type KeyboardEvent } from "react";
+import { Fragment, useMemo, useRef, type KeyboardEvent } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { computeInsights } from "../lib/insights";
-import { moveIndex, type ArrowKey } from "../lib/navigation";
+import {
+  moveIndex,
+  navigationDisabledReason,
+  type ArrowKey,
+} from "../lib/navigation";
 import { useApp } from "../store";
 import CompactPill from "./CompactPill";
 import { useNodeNavigation } from "./useNodeNavigation";
@@ -27,7 +31,7 @@ type SidebarProps = {
 const NODE_IDS = new Set((KE_DATA.nodes as { id: string }[]).map((node) => node.id));
 
 export default function Sidebar({ onCloseSheet }: SidebarProps) {
-  const { sidebarTab, setSidebarTab, selected } = useApp();
+  const { sidebarTab, setSidebarTab, selected, layoutPhase } = useApp();
   const navigateToNode = useNodeNavigation();
   const insights = useMemo(() => computeInsights(KE_DATA as never), []);
   const trace = KE_DATA.trace as TraceEntry[];
@@ -89,22 +93,33 @@ export default function Sidebar({ onCloseSheet }: SidebarProps) {
         role="tabpanel"
         tabIndex={0}
       >
-        {insights.map((insight, index) => (
-          <button
-            aria-current={selected === insight.nodeId ? "true" : undefined}
-            className="card card-button"
-            disabled={!NODE_IDS.has(insight.nodeId)}
-            key={`${insight.rule}-${insight.nodeId}-${index}`}
-            onClick={() => navigateToNode(insight.nodeId)}
-            type="button"
-          >
-            <span className={`sev sev-${insight.severity}`}>
-              {insight.severity}
-            </span>
-            <span className="card-rule">{insight.rule}</span>
-            <span className="card-supporting">{insight.text}</span>
-          </button>
-        ))}
+        {insights.map((insight, index) => {
+          const reason = navigationDisabledReason(
+            layoutPhase,
+            NODE_IDS.has(insight.nodeId),
+          );
+          const reasonId = `insight-${index}-disabled-reason`;
+          return (
+            <Fragment key={`${insight.rule}-${insight.nodeId}-${index}`}>
+              <button
+                aria-current={selected === insight.nodeId ? "true" : undefined}
+                aria-describedby={reason ? reasonId : undefined}
+                className="card card-button"
+                disabled={reason !== null}
+                onClick={() => navigateToNode(insight.nodeId)}
+                title={reason ?? undefined}
+                type="button"
+              >
+                <span className={`sev sev-${insight.severity}`}>
+                  {insight.severity}
+                </span>
+                <span className="card-rule">{insight.rule}</span>
+                <span className="card-supporting">{insight.text}</span>
+              </button>
+              {reason && <span className="sr-only" id={reasonId}>{reason}</span>}
+            </Fragment>
+          );
+        })}
         {insights.length === 0 && (
           <div className="card empty-card">no findings — healthy graph</div>
         )}
@@ -117,19 +132,30 @@ export default function Sidebar({ onCloseSheet }: SidebarProps) {
         role="tabpanel"
         tabIndex={0}
       >
-        {trace.map((entry, index) => (
-          <button
-            aria-current={selected === entry.nodeId ? "true" : undefined}
-            className="card card-button trace-card"
-            disabled={!NODE_IDS.has(entry.nodeId)}
-            key={`${entry.nodeId}-${entry.phase}-${index}`}
-            onClick={() => navigateToNode(entry.nodeId)}
-            type="button"
-          >
-            <strong>{entry.nodeId}</strong> — {entry.phase} [{entry.status}]{" "}
-            <span className="trace-date">{entry.date}</span>
-          </button>
-        ))}
+        {trace.map((entry, index) => {
+          const reason = navigationDisabledReason(
+            layoutPhase,
+            NODE_IDS.has(entry.nodeId),
+          );
+          const reasonId = `trace-${index}-disabled-reason`;
+          return (
+            <Fragment key={`${entry.nodeId}-${entry.phase}-${index}`}>
+              <button
+                aria-current={selected === entry.nodeId ? "true" : undefined}
+                aria-describedby={reason ? reasonId : undefined}
+                className="card card-button trace-card"
+                disabled={reason !== null}
+                onClick={() => navigateToNode(entry.nodeId)}
+                title={reason ?? undefined}
+                type="button"
+              >
+                <strong>{entry.nodeId}</strong> — {entry.phase} [{entry.status}]{" "}
+                <span className="trace-date">{entry.date}</span>
+              </button>
+              {reason && <span className="sr-only" id={reasonId}>{reason}</span>}
+            </Fragment>
+          );
+        })}
         {trace.length === 0 && (
           <div className="card empty-card">no build trace available</div>
         )}

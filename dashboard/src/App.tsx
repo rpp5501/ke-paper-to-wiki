@@ -9,6 +9,7 @@ import {
 
 import Canvas from "./components/Canvas";
 import Legend from "./components/Legend";
+import NavigationCoordinator from "./components/NavigationCoordinator";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 
@@ -80,8 +81,10 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
+      <NavigationCoordinator />
       <div className="shell">
         <button
+          aria-hidden="true"
           aria-label="Close Insights / Trace"
           className={`sidebar-sheet-backdrop${sidebarOpen ? " is-open" : ""}`}
           onClick={closeSidebar}
@@ -91,15 +94,21 @@ export default function App() {
         <aside
           aria-hidden={narrow && !sidebarOpen ? true : undefined}
           aria-label="Insights and build trace"
+          aria-modal={narrow && sidebarOpen ? true : undefined}
           className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}
           id="left-panel"
           inert={narrow && !sidebarOpen ? true : undefined}
           onKeyDown={trapSidebarFocus}
           ref={sidebarRef}
+          role={narrow ? "dialog" : "complementary"}
         >
           <Sidebar onCloseSheet={closeSidebar} />
         </aside>
-        <main className="main">
+        <main
+          aria-hidden={narrow && sidebarOpen ? true : undefined}
+          className="main"
+          inert={narrow && sidebarOpen ? true : undefined}
+        >
           <header className="topbar" id="topbar">
             <TopBar
               onOpenSidebar={() => setSidebarOpen(true)}

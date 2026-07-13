@@ -12,7 +12,10 @@ beforeEach(() => {
     player: null,
     tourIdx: null,
     sidebarTab: "insights",
-  });
+    layoutPhase: "loading",
+    navigationRequestId: 0,
+    pendingNavigation: null,
+  } as never);
 });
 
 describe("useApp", () => {
@@ -50,5 +53,65 @@ describe("useApp", () => {
     useApp.getState().step(1);
     useApp.getState().step(1);
     expect(useApp.getState().player?.idx).toBe(1);
+  });
+
+  it("publishes graph layout phases", () => {
+    const state = useApp.getState() as unknown as {
+      layoutPhase?: string;
+      setLayoutPhase?: (phase: string) => void;
+    };
+    expect(typeof state.setLayoutPhase).toBe("function");
+    if (!state.setLayoutPhase) return;
+
+    state.setLayoutPhase("error");
+    expect((useApp.getState() as unknown as { layoutPhase: string }).layoutPhase)
+      .toBe("error");
+  });
+
+  it("queues only while ready and supersedes requests monotonically", () => {
+    const state = useApp.getState() as unknown as {
+      setLayoutPhase?: (phase: string) => void;
+      queueNavigation?: (nodeId: string, view: string) => void;
+      clearNavigation?: (requestId: number) => void;
+    };
+    expect(typeof state.queueNavigation).toBe("function");
+    expect(typeof state.clearNavigation).toBe("function");
+    if (!state.queueNavigation || !state.clearNavigation || !state.setLayoutPhase) return;
+
+    state.queueNavigation("attention", "concepts");
+    expect((useApp.getState() as unknown as { pendingNavigation: unknown })
+      .pendingNavigation).toBeNull();
+
+    state.setLayoutPhase("ready");
+    state.queueNavigation("attention", "concepts");
+    expect(useApp.getState()).toMatchObject({
+      navigationRequestId: 1,
+      pendingNavigation: {
+        requestId: 1,
+        nodeId: "attention",
+        requiredView: "concepts",
+      },
+      view: "concepts",
+    });
+
+    state.queueNavigation("attention-code", "code");
+    expect(useApp.getState()).toMatchObject({
+      navigationRequestId: 2,
+      pendingNavigation: {
+        requestId: 2,
+        nodeId: "attention-code",
+        requiredView: "code",
+      },
+      view: "code",
+    });
+
+    state.clearNavigation(1);
+    expect((useApp.getState() as unknown as {
+      pendingNavigation: { requestId: number };
+    }).pendingNavigation.requestId).toBe(2);
+
+    state.clearNavigation(2);
+    expect((useApp.getState() as unknown as { pendingNavigation: unknown })
+      .pendingNavigation).toBeNull();
   });
 });

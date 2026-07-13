@@ -1,6 +1,12 @@
 import { create } from "zustand";
 
 export type View = "concepts" | "clusters" | "code" | "bridged";
+export type LayoutPhase = "loading" | "ready" | "empty" | "error";
+export type PendingNavigation = {
+  requestId: number;
+  nodeId: string;
+  requiredView: View;
+};
 export type PlayerState = {
   steps: string[];
   idx: number;
@@ -25,6 +31,12 @@ export interface AppState {
   setTourIdx: (index: number | null) => void;
   sidebarTab: "insights" | "trace";
   setSidebarTab: (tab: "insights" | "trace") => void;
+  layoutPhase: LayoutPhase;
+  setLayoutPhase: (phase: LayoutPhase) => void;
+  navigationRequestId: number;
+  pendingNavigation: PendingNavigation | null;
+  queueNavigation: (nodeId: string, requiredView: View) => void;
+  clearNavigation: (requestId: number) => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -61,4 +73,24 @@ export const useApp = create<AppState>((set) => ({
   setTourIdx: (tourIdx) => set({ tourIdx }),
   sidebarTab: "insights",
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
+  layoutPhase: "loading",
+  setLayoutPhase: (layoutPhase) => set({ layoutPhase }),
+  navigationRequestId: 0,
+  pendingNavigation: null,
+  queueNavigation: (nodeId, requiredView) =>
+    set((state) => {
+      if (state.layoutPhase !== "ready") return {};
+      const requestId = state.navigationRequestId + 1;
+      return {
+        navigationRequestId: requestId,
+        pendingNavigation: { requestId, nodeId, requiredView },
+        view: requiredView,
+      };
+    }),
+  clearNavigation: (requestId) =>
+    set((state) => (
+      state.pendingNavigation?.requestId === requestId
+        ? { pendingNavigation: null }
+        : {}
+    )),
 }));

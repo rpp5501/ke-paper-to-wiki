@@ -1,7 +1,12 @@
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type Ref } from "react";
 
 import { KE_DATA } from "../data.gen";
-import { moveIndex, resolveSearch, type ArrowKey } from "../lib/navigation";
+import {
+  moveIndex,
+  navigationDisabledReason,
+  resolveSearch,
+  type IndexNavigationKey,
+} from "../lib/navigation";
 import { useApp } from "../store";
 import type { KENode } from "../types";
 import CompactPill from "./CompactPill";
@@ -10,6 +15,14 @@ import { useNodeNavigation } from "./useNodeNavigation";
 const VIEWS = ["concepts", "clusters", "code", "bridged"] as const;
 const EDGE_KINDS = ["implements", "prerequisite", "builds-on"] as const;
 const KE_NODES = KE_DATA.nodes as KENode[];
+const VIEW_KEYS = new Set([
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+]);
 
 type TopBarProps = {
   onOpenSidebar: () => void;
@@ -29,6 +42,7 @@ export default function TopBar({
     toggleKind,
     blastOn,
     setBlastOn,
+    layoutPhase,
   } = useApp();
   const viewRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const noNodes = KE_NODES.length === 0;
@@ -37,9 +51,13 @@ export default function TopBar({
     event: KeyboardEvent<HTMLButtonElement>,
     index: number,
   ) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (!VIEW_KEYS.has(event.key)) return;
     event.preventDefault();
-    const next = moveIndex(index, VIEWS.length, event.key as ArrowKey);
+    const next = moveIndex(
+      index,
+      VIEWS.length,
+      event.key as IndexNavigationKey,
+    );
     setView(VIEWS[next]);
     viewRefs.current[next]?.focus();
   };
@@ -104,14 +122,30 @@ export default function TopBar({
         </CompactPill>
       </div>
 
-      <SearchBox disabled={noNodes} view={view} />
+      <SearchBox
+        disabledReason={navigationDisabledReason(
+          noNodes ? "empty" : layoutPhase,
+          true,
+        )}
+        view={view}
+      />
     </>
   );
 }
 
-function SearchBox({ disabled, view }: { disabled: boolean; view: typeof VIEWS[number] }) {
+function SearchBox({
+  disabledReason,
+  view,
+}: {
+  disabledReason: string | null;
+  view: typeof VIEWS[number];
+}) {
   const navigateToNode = useNodeNavigation();
   const [message, setMessage] = useState("");
+  const describedBy = [
+    message ? "search-status" : "",
+    disabledReason ? "search-disabled-reason" : "",
+  ].filter(Boolean).join(" ") || undefined;
 
   const clearMessage = (_event: ChangeEvent<HTMLInputElement>) => {
     if (message) setMessage("");
@@ -121,10 +155,10 @@ function SearchBox({ disabled, view }: { disabled: boolean; view: typeof VIEWS[n
     <div className="search-group">
       <span className="search-field">
         <input
-          aria-describedby={message ? "search-status" : undefined}
+          aria-describedby={describedBy}
           aria-label="Search graph nodes"
           className="search-input"
-          disabled={disabled}
+          disabled={disabledReason !== null}
           onChange={clearMessage}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return;
@@ -137,9 +171,15 @@ function SearchBox({ disabled, view }: { disabled: boolean; view: typeof VIEWS[n
             navigateToNode(match.nodeId, match.view);
           }}
           placeholder="search… (Enter)"
+          title={disabledReason ?? undefined}
           type="search"
         />
       </span>
+      {disabledReason && (
+        <span className="sr-only" id="search-disabled-reason">
+          {disabledReason}
+        </span>
+      )}
       <span
         aria-atomic="true"
         aria-live="polite"
