@@ -144,11 +144,16 @@ def lint_ideas(ideas: list[dict]) -> list[str]:
         if not isinstance(idea, dict):
             problems.append(f"idea {index} must be an object")
             continue
-        title = idea.get("title") or "?"
-        if not idea.get("title"):
-            problems.append(f"idea missing title: {index}")
-        if not idea.get("rationale"):
-            problems.append(f"idea missing rationale: {title}")
+        raw_title = idea.get("title")
+        title_valid = isinstance(raw_title, str) and bool(raw_title.strip())
+        title = raw_title if title_valid else "?"
+        if not title_valid:
+            problems.append(
+                f"idea title must be a non-empty string: {index}")
+        rationale = idea.get("rationale")
+        if not isinstance(rationale, str) or not rationale.strip():
+            problems.append(
+                f"idea rationale must be a non-empty string: {title}")
         anchors = idea.get("anchors") or {}
         if not isinstance(anchors, dict):
             problems.append(f"idea anchors must be an object: {title}")

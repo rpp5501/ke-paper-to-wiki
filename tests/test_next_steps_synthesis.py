@@ -61,6 +61,28 @@ def test_required_idea_fields_fail_lint(missing):
     assert any(missing in problem for problem in lint_ideas([idea]))
 
 
+@pytest.mark.parametrize(("field", "value"), (
+    ("title", []),
+    ("title", {}),
+    ("title", 7),
+    ("title", " "),
+    ("rationale", []),
+    ("rationale", {}),
+    ("rationale", 7),
+    ("rationale", " "),
+))
+def test_idea_text_fields_must_be_non_empty_strings(field, value):
+    idea = {
+        "title": "Direction",
+        "rationale": "Reason",
+        "anchors": {"nodes": ["mha"], "sources": ["mha.yaml"]},
+    }
+    idea[field] = value
+
+    assert any(f"{field} must be a non-empty string" in problem
+               for problem in lint_ideas([idea]))
+
+
 @pytest.mark.parametrize("anchor_name", ("nodes", "sources"))
 def test_anchor_values_must_be_lists(anchor_name):
     anchors = {"nodes": ["mha"], "sources": ["mha.yaml"]}
