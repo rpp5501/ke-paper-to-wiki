@@ -11,6 +11,7 @@ export type PlayerState = {
   steps: string[];
   idx: number;
   label: string;
+  playing: boolean;
 } | null;
 
 export interface AppState {
@@ -29,6 +30,8 @@ export interface AppState {
   step: (direction: 1 | -1) => void;
   tourIdx: number | null;
   setTourIdx: (index: number | null) => void;
+  tourDismissed: boolean;
+  dismissTour: () => void;
   sidebarTab: "insights" | "trace";
   setSidebarTab: (tab: "insights" | "trace") => void;
   layoutPhase: LayoutPhase;
@@ -71,6 +74,8 @@ export const useApp = create<AppState>((set) => ({
     }),
   tourIdx: null,
   setTourIdx: (tourIdx) => set({ tourIdx }),
+  tourDismissed: false,
+  dismissTour: () => set({ tourDismissed: true, tourIdx: null }),
   sidebarTab: "insights",
   setSidebarTab: (sidebarTab) => set({ sidebarTab }),
   layoutPhase: "loading",

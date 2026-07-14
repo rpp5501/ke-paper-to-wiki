@@ -32,4 +32,30 @@ describe("responsive layer ordering", () => {
     expect(rule?.[1]).toContain("text-decoration: underline");
     expect(rule?.[1]).not.toMatch(/#[0-9a-f]{3,8}/i);
   });
+
+  it("keeps code excerpts class-based and makes mobile overlays non-overlapping", () => {
+    expect(styles).toMatch(/\.code-viewer\s*\{[^}]*font-size:\s*12px/s);
+    expect(styles).toMatch(/\.code-viewer\s*\{[^}]*padding:\s*10px/s);
+    expect(styles).toMatch(/\.code-viewer\s*\{[^}]*overflow-x:\s*auto/s);
+    expect(styles).toContain(".token.keyword");
+
+    const mobileStart = styles.indexOf("@media (max-width: 639px)");
+    const reducedMotionStart = styles.indexOf("@media (prefers-reduced-motion: reduce)");
+    const mobileCss = styles.slice(mobileStart, reducedMotionStart);
+    expect(mobileCss).toMatch(/\.tour-overlay\s*\{[^}]*bottom:/s);
+    expect(mobileCss).toMatch(/\.react-flow__controls\s*\{[^}]*top:/s);
+    expect(mobileCss).toMatch(/\.legend\s*\{[^}]*top:/s);
+  });
+
+  it("reserves player space globally and shifts controls beside overlay drawers", () => {
+    expect(styles).toMatch(
+      /\.tour-overlay\s*\{[^}]*bottom:\s*max\(92px,/s,
+    );
+    expect(styles).toMatch(
+      /\.workspace\.drawer-open \.playerbar\s*\{[^}]*right:/s,
+    );
+    expect(styles).toMatch(
+      /\.workspace\.drawer-open \.tour-overlay\s*\{[^}]*right:/s,
+    );
+  });
 });

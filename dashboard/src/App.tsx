@@ -11,13 +11,19 @@ import Canvas from "./components/Canvas";
 import Drawer from "./components/Drawer";
 import Legend from "./components/Legend";
 import NavigationCoordinator from "./components/NavigationCoordinator";
+import PlayerBar from "./components/PlayerBar";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
+import TourOverlay, {
+  hasNavigableTourStep,
+  type TourSourceStep,
+} from "./components/TourOverlay";
 import { KE_DATA } from "./data.gen";
 import { useApp } from "./store";
 import type { KENode } from "./types";
 
 const DRAWER_NODES = KE_DATA.nodes as KENode[];
+const DRAWER_NODE_IDS = new Set(DRAWER_NODES.map((node) => node.id));
 
 export function drawerAnnouncementFor(selected: string | null) {
   if (!selected) return "";
@@ -73,6 +79,37 @@ export function getDrawerLifecycleAction({
   return { origin, focus };
 }
 
+export type EscapeLayer = "sidebar" | "drawer" | "tour" | null;
+
+export function getEscapeLayer({
+  drawerModalOpen,
+  drawerOpen,
+  sidebarModalOpen,
+  tourVisible,
+}: {
+  drawerModalOpen: boolean;
+  drawerOpen: boolean;
+  sidebarModalOpen: boolean;
+  tourVisible: boolean;
+}): EscapeLayer {
+  if (drawerModalOpen) return "drawer";
+  if (sidebarModalOpen) return "sidebar";
+  if (tourVisible) return "tour";
+  return drawerOpen ? "drawer" : null;
+}
+
+export function tourIsVisible({
+  dismissed,
+  nodeIds,
+  tour,
+}: {
+  dismissed: boolean;
+  nodeIds: Set<string>;
+  tour: Pick<TourSourceStep, "nodeIds">[];
+}) {
+  return !dismissed && hasNavigableTourStep(tour, nodeIds);
+}
+
 function useNarrowViewport() {
   const [narrow, setNarrow] = useState(() => (
     typeof window !== "undefined"
@@ -95,6 +132,7 @@ export default function App() {
   const narrow = useNarrowViewport();
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
+  const tourDismissed = useApp((state) => state.tourDismissed);
   const selectedNode = DRAWER_NODES.find((node) => node.id === selected);
   const [drawerStatus, setDrawerStatus] = useState<DrawerAnnouncementState>(
     () => nextDrawerAnnouncement({ message: "", revision: 0 }, selected),
@@ -102,6 +140,17 @@ export default function App() {
   const drawerOpen = selected !== null;
   const drawerModalOpen = narrow && drawerOpen;
   const sidebarModalOpen = narrow && sidebarOpen && !drawerModalOpen;
+  const tourVisible = tourIsVisible({
+    dismissed: tourDismissed,
+    nodeIds: DRAWER_NODE_IDS,
+    tour: KE_DATA.tour,
+  });
+  const escapeLayer = getEscapeLayer({
+    drawerModalOpen,
+    drawerOpen,
+    sidebarModalOpen,
+    tourVisible,
+  });
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
@@ -118,7 +167,7 @@ export default function App() {
   }, [narrow]);
 
   useEffect(() => {
-    if (!sidebarModalOpen) return;
+    if (escapeLayer !== "sidebar") return;
     const frame = window.requestAnimationFrame(() => {
       sidebarRef.current
         ?.querySelector<HTMLButtonElement>(".sidebar-sheet-close")
@@ -132,7 +181,7 @@ export default function App() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [closeSidebar, sidebarModalOpen]);
+  }, [closeSidebar, escapeLayer]);
 
   useEffect(() => {
     if (drawerModalOpen && sidebarOpen) setSidebarOpen(false);
@@ -193,13 +242,13 @@ export default function App() {
   }, [drawerModalOpen, drawerOpen, selected]);
 
   useEffect(() => {
-    if (!drawerOpen) return;
+    if (escapeLayer !== "drawer") return;
     const onEscape = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") setSelected(null);
     };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
-  }, [drawerOpen, setSelected]);
+  }, [escapeLayer, setSelected]);
 
   const trapSidebarFocus = (event: KeyboardEvent<HTMLElement>) => {
     if (!sidebarModalOpen || event.key !== "Tab") return;
@@ -292,7 +341,7 @@ export default function App() {
               sidebarTriggerRef={sidebarTriggerRef}
             />
           </header>
-          <div className="workspace">
+          <div className={`workspace${drawerOpen ? " drawer-open" : ""}`}>
             <div
               aria-hidden={drawerModalOpen ? true : undefined}
               className="canvas-wrap"
@@ -300,8 +349,8 @@ export default function App() {
             >
               <Canvas />
               <Legend />
-              <div id="playerbar" />
-              <div id="tour-overlay" />
+              <PlayerBar />
+              <TourOverlay escapeEnabled={escapeLayer === "tour"} />
             </div>
             {drawerModalOpen && (
               <button

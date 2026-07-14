@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import App, {
   drawerAnnouncementFor,
+  getEscapeLayer,
   getDrawerLifecycleAction,
   nextDrawerAnnouncement,
+  tourIsVisible,
 } from "./App";
 import { KE_DATA } from "./data.gen";
 import { useApp } from "./store";
@@ -125,6 +127,49 @@ describe("App", () => {
       previousSelected: "attention",
       selected: null,
     })).toEqual({ origin: "restore", focus: null });
+  });
+
+  it("gives visible modal sheets Escape priority over the tour", () => {
+    expect(getEscapeLayer({
+      drawerModalOpen: true,
+      drawerOpen: true,
+      sidebarModalOpen: false,
+      tourVisible: true,
+    })).toBe("drawer");
+    expect(getEscapeLayer({
+      drawerModalOpen: false,
+      drawerOpen: false,
+      sidebarModalOpen: true,
+      tourVisible: true,
+    })).toBe("sidebar");
+    expect(getEscapeLayer({
+      drawerModalOpen: false,
+      drawerOpen: true,
+      sidebarModalOpen: false,
+      tourVisible: true,
+    })).toBe("tour");
+    expect(getEscapeLayer({
+      drawerModalOpen: false,
+      drawerOpen: true,
+      sidebarModalOpen: false,
+      tourVisible: false,
+    })).toBe("drawer");
+  });
+
+  it("does not give Escape to a raw tour with no valid node targets", () => {
+    const visible = tourIsVisible({
+      dismissed: false,
+      nodeIds: new Set(["attention"]),
+      tour: [{ nodeIds: ["missing-node"] }],
+    });
+
+    expect(visible).toBe(false);
+    expect(getEscapeLayer({
+      drawerModalOpen: false,
+      drawerOpen: true,
+      sidebarModalOpen: false,
+      tourVisible: visible,
+    })).toBe("drawer");
   });
 
 });

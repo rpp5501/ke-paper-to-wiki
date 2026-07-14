@@ -25,6 +25,7 @@ import {
 import { navigationDisabledReason } from "../lib/navigation";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
+import CodeViewer from "./CodeViewer";
 import { useNodeNavigation } from "./useNodeNavigation";
 
 type DrawerNode = KENode & { page?: string; anchor?: string };
@@ -407,6 +408,8 @@ export function DrawerPresentation({
           </div>
         </section>
       )}
+
+      <CodeViewer nodeId={selected} />
 
       {equations.length > 0 && (
         <section aria-labelledby="drawer-equations-heading" className="drawer-section drawer-equations">

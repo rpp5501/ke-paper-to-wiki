@@ -8,12 +8,16 @@ import json
 import re
 import subprocess
 from collections import defaultdict
+from itertools import islice
 from pathlib import Path
 
 import networkx as nx
 import yaml
 
 _IMG = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_SOURCE_LOCATION = re.compile(
+    r"^(?P<path>.+):(?:L|line\s*)?(?P<line>[1-9]\d*)"
+    r"(?:-(?:L)?(?P<end>[1-9]\d*))?$", re.IGNORECASE)
 _DEPENDENT_SIDE = {"part-of": "dst", "prerequisite": "dst", "builds-on": "src"}
 _CODE_KINDS = {"function", "class", "file", "route"}
 
@@ -189,6 +193,58 @@ def _source_dates(plan_graph, repo_dir):
     return dates
 
 
+def _excerpts(plan_graph, hotspots, repo_dir):
+    if not repo_dir or plan_graph["meta"].get("kind") not in {
+            "code", "bridged"}:
+        return {}
+
+    keep = {
+        hotspot["id"] for hotspot in hotspots[:20]
+        if isinstance(hotspot, dict) and hotspot.get("id")
+    }
+    keep.update(
+        edge["src"] for edge in plan_graph["edges"]
+        if edge.get("kind") == "implements" and edge.get("src")
+    )
+    try:
+        repo = Path(repo_dir).resolve()
+    except (OSError, RuntimeError):
+        return {}
+    excerpts = {}
+    for node in plan_graph["nodes"]:
+        if node["id"] not in keep:
+            continue
+        match = _SOURCE_LOCATION.fullmatch(node.get("source_ref") or "")
+        if not match:
+            continue
+        try:
+            start_line = int(match.group("line"))
+            end_line = int(match.group("end")) if match.group("end") else None
+            if end_line is not None and end_line < start_line:
+                continue
+            relative_path = Path(match.group("path"))
+            if relative_path.is_absolute():
+                continue
+            source_path = (repo / relative_path).resolve()
+            source_path.relative_to(repo)
+            if not source_path.is_file():
+                continue
+            start = start_line - 1
+            stop = min(end_line or start_line + 79, start_line + 79)
+            with source_path.open(
+                    "r", encoding="utf-8", errors="replace") as source:
+                lines = [
+                    line.rstrip("\r\n")
+                    for line in islice(source, start, stop)
+                ]
+        except (OSError, RuntimeError, ValueError):
+            continue
+        excerpt = "\n".join(lines)
+        if excerpt:
+            excerpts[node["id"]] = excerpt
+    return excerpts
+
+
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None):
     hotspots = hotspots or []
@@ -215,6 +271,7 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
               "eqIndex": _eq_index(plan_graph, pack),
               "trace": sorted(trace, key=lambda t: (t["nodeId"], t["phase"])),
               "glossary": glossary,
+              "excerpts": _excerpts(plan_graph, hotspots, repo_dir),
               "dependentSide": _DEPENDENT_SIDE}
     if repo_dir:
         bundle["mtimes"] = _source_dates(plan_graph, repo_dir)

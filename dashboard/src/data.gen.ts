@@ -330,6 +330,7 @@ export const KE_DATA = {
    "softmax": "A normalized exponential distribution over scores."
   }
  },
+ "excerpts": {},
  "dependentSide": {
   "part-of": "dst",
   "prerequisite": "dst",

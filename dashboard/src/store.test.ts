@@ -11,6 +11,7 @@ beforeEach(() => {
     hoverEq: null,
     player: null,
     tourIdx: null,
+    tourDismissed: false,
     sidebarTab: "insights",
     layoutPhase: "loading",
     navigationRequestId: 0,
@@ -45,6 +46,7 @@ describe("useApp", () => {
       steps: ["attention", "transformer"],
       idx: 0,
       label: "reading path",
+      playing: false,
     });
 
     useApp.getState().step(-1);
@@ -53,6 +55,22 @@ describe("useApp", () => {
     useApp.getState().step(1);
     useApp.getState().step(1);
     expect(useApp.getState().player?.idx).toBe(1);
+  });
+
+  it("dismisses the tour for the current app session", () => {
+    const state = useApp.getState() as unknown as {
+      dismissTour?: () => void;
+    };
+    expect(typeof state.dismissTour).toBe("function");
+    if (!state.dismissTour) return;
+
+    useApp.getState().setTourIdx(2);
+    state.dismissTour();
+
+    expect(useApp.getState()).toMatchObject({
+      tourDismissed: true,
+      tourIdx: null,
+    });
   });
 
   it("publishes graph layout phases", () => {
