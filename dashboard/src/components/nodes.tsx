@@ -78,6 +78,7 @@ function Card({
       })}
       aria-pressed={selected}
       className={`node-card ${className}`}
+      data-node-id={id}
       onClick={() => setSelected(id)}
       onFocus={() => focusNode(flow, positionAbsoluteX, positionAbsoluteY)}
       title={data.label}
@@ -128,6 +129,7 @@ function ClusterNodeCard(props: NodeProps<ClusterNode>) {
     <button
       aria-label={`${props.data.label}, cluster, ${props.data.count} nodes`}
       className="node-card node-cluster"
+      data-node-id={props.id}
       disabled={!props.data.onActivate}
       onClick={props.data.onActivate}
       onFocus={() => focusNode(

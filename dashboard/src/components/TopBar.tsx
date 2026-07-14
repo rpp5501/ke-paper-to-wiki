@@ -81,6 +81,7 @@ export default function TopBar({
             active={view === candidate}
             aria-checked={view === candidate}
             disabled={noNodes}
+            id={`graph-view-${candidate}`}
             key={candidate}
             onClick={() => setView(candidate)}
             onKeyDown={(event) => onViewKeyDown(event, index)}

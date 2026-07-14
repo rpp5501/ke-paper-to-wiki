@@ -3,6 +3,7 @@ import {
   Controls,
   ReactFlow,
   useReactFlow,
+  useStore,
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -13,6 +14,13 @@ import { ghostStyles } from "../lib/blastRadius";
 import { dependencyRings } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
+import {
+  clusterActivation,
+  clusterCards,
+  focusTargetForHiddenNode,
+  selectionForCanvasNode,
+  visibleAtZoom,
+} from "../lib/lod";
 import { useApp } from "../store";
 import type { KEEdge, KENode } from "../types";
 import { nodeTypes } from "./nodes";
@@ -21,6 +29,14 @@ const CODE_KINDS = new Set(["function", "class", "file", "route"]);
 const RING_COLOR = ["#ef4444", "#f97316", "#eab308"];
 const KE_NODES = KE_DATA.nodes as KENode[];
 const KE_EDGES = KE_DATA.edges as KEEdge[];
+const GRAPH_KIND = (KE_DATA.meta as {
+  kind: "concept" | "code" | "bridged";
+}).kind;
+const CLUSTERS = KE_DATA.clusters as {
+  id: string;
+  label: string;
+  nodeIds: string[];
+}[];
 
 type Position = { x: number; y: number };
 type LayoutState =
@@ -39,6 +55,7 @@ export default function Canvas() {
     selected,
     setSelected,
     view,
+    setView,
     hiddenKinds,
     blastOn,
     hoverEq,
@@ -48,8 +65,14 @@ export default function Canvas() {
   const [layout, setLayout] = useState<LayoutState>(
     KE_NODES.length === 0 ? { phase: "empty" } : { phase: "loading" },
   );
+  const [visibilityStatus, setVisibilityStatus] = useState({
+    message: "",
+    revision: 0,
+  });
   const flow = useReactFlow();
+  const zoomedOut = useStore((state) => state.transform[2] < 0.5);
   const fittedAttempt = useRef<number | null>(null);
+  const focusedNodeId = useRef<string | null>(null);
 
   useEffect(() => {
     if (KE_NODES.length === 0) {
@@ -101,12 +124,32 @@ export default function Canvas() {
     [hoverEq],
   );
 
+  const viewNodeIds = useMemo(() => new Set(
+    KE_NODES
+      .filter((node) => view !== "concepts" || !CODE_KINDS.has(node.kind))
+      .filter((node) => view !== "code" || CODE_KINDS.has(node.kind))
+      .map((node) => node.id),
+  ), [view]);
+  const viewClusters = useMemo(() => CLUSTERS
+    .map((cluster) => ({
+      ...cluster,
+      nodeIds: cluster.nodeIds.filter((nodeId) => viewNodeIds.has(nodeId)),
+    }))
+    .filter((cluster) => cluster.nodeIds.length > 0), [viewNodeIds]);
+  const lod = useMemo(() => visibleAtZoom(
+    zoomedOut ? 0 : 1,
+    0.5,
+    viewClusters,
+    [...viewNodeIds],
+    view === "clusters",
+  ), [view, viewClusters, viewNodeIds, zoomedOut]);
+
   const nodes = useMemo<Node[]>(() => {
     if (layout.phase !== "ready") return [];
 
-    return KE_NODES
-      .filter((node) => view !== "concepts" || !CODE_KINDS.has(node.kind))
-      .filter((node) => view !== "code" || CODE_KINDS.has(node.kind))
+    const memberNodes = KE_NODES
+      .filter((node) => viewNodeIds.has(node.id))
+      .filter((node) => !lod.hiddenNodes.has(node.id))
       .flatMap<Node>((node) => {
         const position = layout.positions.get(node.id);
         if (!position) return [];
@@ -138,13 +181,91 @@ export default function Canvas() {
           },
         } satisfies Node];
       });
-  }, [blastOn, equationHits, ghost, layout, selected, view]);
+    const syntheticClusters = clusterCards(
+      lod.showClusters,
+      viewClusters,
+      layout.positions,
+    ).map<Node>((cluster) => ({
+      id: cluster.id,
+      type: "cluster",
+      position: cluster.position,
+      width: 180,
+      height: 64,
+      data: {
+        label: cluster.label,
+        count: cluster.count,
+        onActivate: () => {
+          const reducedMotion = window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches;
+          const activation = clusterActivation(GRAPH_KIND, reducedMotion);
+          void flow.zoomTo(activation.zoom, {
+            duration: activation.duration,
+          });
+          if (view === "clusters") setView(activation.view);
+        },
+      },
+      focusable: false,
+      draggable: false,
+      connectable: false,
+    }));
+    return [...syntheticClusters, ...memberNodes];
+  }, [
+    blastOn,
+    equationHits,
+    flow,
+    ghost,
+    layout,
+    lod,
+    selected,
+    setView,
+    view,
+    viewClusters,
+    viewNodeIds,
+  ]);
 
   const shownIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const edges = useMemo(
     () => makeFlowEdges(KE_EDGES, hiddenKinds, shownIds),
     [hiddenKinds, shownIds],
   );
+
+  useEffect(() => {
+    const trackFocusedNode = (event: FocusEvent) => {
+      const target = event.target;
+      focusedNodeId.current = target instanceof HTMLElement
+        ? target.closest<HTMLElement>("[data-node-id]")?.dataset.nodeId ?? null
+        : null;
+    };
+    document.addEventListener("focusin", trackFocusedNode);
+    return () => document.removeEventListener("focusin", trackFocusedNode);
+  }, []);
+
+  useEffect(() => {
+    const focusTarget = focusTargetForHiddenNode(
+      focusedNodeId.current,
+      shownIds,
+      lod.showClusters ? viewClusters : [],
+      view,
+    );
+    if (!focusTarget) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = focusTarget.kind === "cluster"
+        ? Array.from(document.querySelectorAll<HTMLElement>("[data-node-id]"))
+          .find((element) => element.dataset.nodeId === focusTarget.id)
+        : document.getElementById(focusTarget.id);
+      if (!target) return;
+      target.focus();
+      const message = focusTarget.kind === "cluster"
+        ? "Focused graph node hidden by semantic zoom; focus moved to its cluster."
+        : "Focused graph node hidden by the active view; focus moved to the view control.";
+      setVisibilityStatus((current) => ({
+        message,
+        revision: current.revision + 1,
+      }));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [lod.showClusters, shownIds, view, viewClusters]);
 
   useEffect(() => {
     if (
@@ -184,7 +305,8 @@ export default function Canvas() {
         nodesFocusable={false}
         nodeTypes={nodeTypes}
         onNodeClick={(_, node) => {
-          if (ready) setSelected(node.id);
+          const selectedNodeId = selectionForCanvasNode(node.id);
+          if (ready && selectedNodeId) setSelected(selectedNodeId);
         }}
         onPaneClick={() => setSelected(null)}
         selectionKeyCode={null}
@@ -201,6 +323,9 @@ export default function Canvas() {
 
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {statusMessage}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        <span key={visibilityStatus.revision}>{visibilityStatus.message}</span>
       </div>
 
       {layout.phase === "loading" && (
