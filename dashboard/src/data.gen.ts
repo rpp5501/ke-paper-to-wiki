@@ -189,8 +189,23 @@ export const KE_DATA = {
    "confidence_score": 1.0
   }
  ],
- "pages": {},
- "notes": {},
+ "pages": {
+  "sdpa": "# Scaled Dot-Product Attention\n\n## TL;DR {#tldr}\n\nScaled dot-product attention compares each query Q with keys K, scales the scores, and uses them to mix values V.\n\n## Intuition {#intuition}\n\nThink of softmax as a relevance dial: similar keys receive more of the available attention.\n\n## Mechanics {#mechanics}\n\nCompute query-key scores, divide by the key dimension scale, apply softmax, and multiply by V.\n\n## The Math {#the-math}\n\n$$\\operatorname{Attention}(Q,K,V)=\\operatorname{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right)V$$\n\nThe factor \\(\\sqrt{d_k}\\) keeps large dot products from saturating softmax.\n\n## Go Deeper {#go-deeper}\n\nEquation eq_1 anchors the scaling operation to the graph nodes that explain it.\n"
+ },
+ "notes": {
+  "scaled-dot-product-attention": {
+   "concept": "scaled-dot-product-attention",
+   "status": "verified",
+   "date": "2026-07-08",
+   "synthesis": "Scaled dot-product attention uses softmax over scaled query-key scores.",
+   "glossary": {
+    "Q": "Query vectors used to request relevant information.",
+    "K": "Key vectors compared with each query.",
+    "V": "Value vectors blended by the attention weights.",
+    "softmax": "A normalized exponential distribution over scores."
+   }
+  }
+ },
  "hotspots": [],
  "clusters": [
   {
@@ -270,7 +285,10 @@ export const KE_DATA = {
    ]
   }
  ],
- "provenance": {},
+ "provenance": {
+  "path": "latex",
+  "equation_fidelity": "exact"
+ },
  "centrality": {
   "transformer": 0.0,
   "encoder-decoder-stack": 0.0222,
@@ -284,9 +302,34 @@ export const KE_DATA = {
   "attention-equation": 0.0,
   "sqrt-dk-scaling": 0.0
  },
- "eqIndex": {},
- "trace": [],
- "glossary": {},
+ "eqIndex": {
+  "eq_1": [
+   "scaled-dot-product-attention",
+   "sqrt-dk-scaling"
+  ]
+ },
+ "trace": [
+  {
+   "nodeId": "scaled-dot-product-attention",
+   "phase": "researched",
+   "status": "verified",
+   "date": "2026-07-08"
+  },
+  {
+   "nodeId": "scaled-dot-product-attention",
+   "phase": "written",
+   "status": "ok",
+   "date": "2026-07-08"
+  }
+ ],
+ "glossary": {
+  "scaled-dot-product-attention": {
+   "Q": "Query vectors used to request relevant information.",
+   "K": "Key vectors compared with each query.",
+   "V": "Value vectors blended by the attention weights.",
+   "softmax": "A normalized exponential distribution over scores."
+  }
+ },
  "dependentSide": {
   "part-of": "dst",
   "prerequisite": "dst",

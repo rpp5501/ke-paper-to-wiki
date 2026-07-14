@@ -1,0 +1,10 @@
+concept: scaled-dot-product-attention
+status: verified
+date: "2026-07-08"
+synthesis: >-
+  Scaled dot-product attention uses softmax over scaled query-key scores.
+glossary:
+  Q: Query vectors used to request relevant information.
+  K: Key vectors compared with each query.
+  V: Value vectors blended by the attention weights.
+  softmax: A normalized exponential distribution over scores.

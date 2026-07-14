@@ -11,6 +11,9 @@ from build_data import (build_bundle, main, reading_path, strip_images,
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_PATH = ROOT / "fixtures" / "aiayn_concept_graph.json"
 COMMITTED_DATA = ROOT / "dashboard" / "src" / "data.gen.ts"
+TINY_PACK_PATH = ROOT / "fixtures" / "aiayn_tiny_pack.json"
+PAGES_DIR = ROOT / "fixtures" / "pages"
+WIKI_DIR = ROOT / "fixtures" / "wiki"
 FIXTURE = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
 PACK = {"meta": {"source": "arXiv:1706.03762", "title": "AIAYN",
                  "generated": "2026-07-09"},
@@ -61,6 +64,90 @@ def test_eq_index_maps_equation_to_anchored_concepts():
     g["nodes"][0]["source_ref"] = "sec_3_2"
     b = build_bundle(g, pack=PACK)
     assert g["nodes"][0]["id"] in b["eqIndex"]["eq_1"]
+
+
+def test_eq_index_normalizes_dotted_pack_sections_to_graph_source_refs():
+    graph = {
+        "meta": {"kind": "concept", "generated": "2026-07-09"},
+        "nodes": [{
+            "id": "scaled-dot-product-attention",
+            "kind": "concept",
+            "label": "Scaled dot-product attention",
+            "source_ref": "sec:3.2.1",
+        }],
+        "edges": [],
+    }
+    pack = {
+        "meta": {"source": "paper", "title": "Attention",
+                 "generated": "2026-07-09"},
+        "extraction": {"path": "latex", "equation_fidelity": "exact"},
+        "sections": [{"id": "sec_3_2_1", "title": "Attention Function",
+                      "level": 3, "text": "scaled attention"}],
+        "equations": [{"id": "eq_attention", "latex": r"1/\sqrt{d_k}",
+                       "section": "sec_3_2_1"}],
+        "references": [],
+        "figures": [],
+    }
+
+    bundle = build_bundle(graph, pack=pack)
+
+    assert bundle["eqIndex"]["eq_attention"] == [
+        "scaled-dot-product-attention"
+    ]
+
+
+def test_eq_index_does_not_join_blank_sections_or_node_refs():
+    graph = {
+        "meta": {"kind": "concept", "generated": "2026-07-09"},
+        "nodes": [
+            {"id": "missing-ref", "kind": "concept", "label": "Missing"},
+            {"id": "blank-ref", "kind": "concept", "label": "Blank",
+             "source_ref": "  "},
+        ],
+        "edges": [],
+    }
+    pack = {
+        "meta": {"source": "paper", "title": "Attention",
+                 "generated": "2026-07-09"},
+        "extraction": {},
+        "sections": [],
+        "equations": [
+            {"id": "missing-section", "latex": "x"},
+            {"id": "blank-section", "latex": "y", "section": "  "},
+        ],
+        "references": [],
+        "figures": [],
+    }
+
+    bundle = build_bundle(graph, pack=pack)
+
+    assert bundle["eqIndex"] == {
+        "blank-section": [],
+        "missing-section": [],
+    }
+
+
+def test_repo_fixture_bundle_exercises_explain_drawer_contract():
+    pack = json.loads(TINY_PACK_PATH.read_text(encoding="utf-8"))
+
+    bundle = build_bundle(
+        FIXTURE, pack=pack, pages_dir=PAGES_DIR, wiki_dir=WIKI_DIR)
+
+    concept = "scaled-dot-product-attention"
+    assert "sdpa" in bundle["pages"]
+    assert all(anchor in bundle["pages"]["sdpa"] for anchor in (
+        "{#tldr}", "{#intuition}", "{#mechanics}",
+        "{#the-math}", "{#go-deeper}",
+    ))
+    assert r"\sqrt{d_k}" in bundle["pages"]["sdpa"]
+    assert bundle["notes"][concept]["synthesis"]
+    assert bundle["glossary"][concept]["softmax"]
+    assert concept in bundle["eqIndex"]["eq_1"]
+    written = [item for item in bundle["trace"]
+               if item["phase"] == "written"]
+    assert [item["nodeId"] for item in written] == [concept]
+    node_ids = {node["id"] for node in bundle["nodes"]}
+    assert {item["nodeId"] for item in bundle["trace"]} <= node_ids
 
 
 def test_strip_images_removes_and_counts():
@@ -219,7 +306,13 @@ def test_cli_writes_utf8_with_byte_stable_lf(tmp_path):
 def test_repo_fixture_regeneration_matches_committed_data(tmp_path):
     out = tmp_path / "data.gen.ts"
 
-    assert main(["--graph", str(FIXTURE_PATH), "--out", str(out)]) == 0
+    assert main([
+        "--graph", str(FIXTURE_PATH),
+        "--pack", str(TINY_PACK_PATH),
+        "--pages-dir", str(PAGES_DIR),
+        "--wiki-dir", str(WIKI_DIR),
+        "--out", str(out),
+    ]) == 0
 
     assert (out.read_text(encoding="utf-8") ==
             COMMITTED_DATA.read_text(encoding="utf-8"))

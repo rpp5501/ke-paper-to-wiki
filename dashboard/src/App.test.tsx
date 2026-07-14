@@ -1,12 +1,18 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import App from "./App";
+import App, {
+  drawerAnnouncementFor,
+  getDrawerLifecycleAction,
+  nextDrawerAnnouncement,
+} from "./App";
 import { KE_DATA } from "./data.gen";
 import { useApp } from "./store";
 
 beforeEach(() => {
   useApp.setState({
+    selected: null,
+    hoverEq: null,
     layoutPhase: "loading",
     navigationRequestId: 0,
     pendingNavigation: null,
@@ -20,7 +26,7 @@ describe("App", () => {
     expect(markup).toContain('class="shell"');
     expect(markup).toContain('id="left-panel"');
     expect(markup).toContain('id="topbar"');
-    expect(markup).toContain('id="drawer"');
+    expect(markup).not.toContain('id="drawer"');
     expect(markup).toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);
     expect(markup).not.toContain("nodes loaded");
   });
@@ -36,4 +42,89 @@ describe("App", () => {
     expect(markup).toContain('title="Graph layout is still loading."');
     expect(markup).toContain('id="search-disabled-reason"');
   });
+
+  it("keeps one polite drawer status region mounted while the drawer is closed", () => {
+    const markup = renderToStaticMarkup(<App />);
+
+    expect(markup).toContain('id="drawer-live-status"');
+    expect(markup).toContain('aria-live="polite"');
+    expect(markup).toContain('role="status"');
+    expect(markup).not.toContain("Explanation opened.");
+    expect(markup).not.toContain("Selected item is unavailable.");
+  });
+
+  it("announces invalid and valid selections from the app-owned status model", () => {
+    expect(drawerAnnouncementFor("missing-node"))
+      .toBe("Selected item is unavailable.");
+    expect(drawerAnnouncementFor("scaled-dot-product-attention"))
+      .toBe("Scaled Dot-Product Attention selected. Explanation opened.");
+  });
+
+  it("clears on close and gives a repeated selection a fresh announcement", () => {
+    const initial = { message: "", revision: 0 };
+    const firstOpen = nextDrawerAnnouncement(
+      initial,
+      "scaled-dot-product-attention",
+    );
+    const closed = nextDrawerAnnouncement(firstOpen, null);
+    const secondOpen = nextDrawerAnnouncement(
+      closed,
+      "scaled-dot-product-attention",
+    );
+
+    expect(firstOpen.message).toBe(
+      "Scaled Dot-Product Attention selected. Explanation opened.",
+    );
+    expect(closed.message).toBe("");
+    expect(secondOpen.message).toBe(firstOpen.message);
+    expect(secondOpen.revision).toBeGreaterThan(firstOpen.revision);
+  });
+
+  it("exposes an invalid announcement before the closed state clears it", () => {
+    const invalid = nextDrawerAnnouncement(
+      { message: "", revision: 0 },
+      "missing-node",
+    );
+    const closed = nextDrawerAnnouncement(invalid, null);
+
+    expect(invalid.message).toBe("Selected item is unavailable.");
+    expect(invalid.revision).toBe(1);
+    expect(closed.message).toBe("");
+  });
+
+  it("plans origin capture, restoration, and modal-only focus deliberately", () => {
+    expect(getDrawerLifecycleAction({
+      wasOpen: false,
+      isOpen: true,
+      wasModalOpen: false,
+      isModalOpen: false,
+      previousSelected: null,
+      selected: "attention",
+    })).toEqual({ origin: "capture", focus: null });
+    expect(getDrawerLifecycleAction({
+      wasOpen: false,
+      isOpen: true,
+      wasModalOpen: false,
+      isModalOpen: true,
+      previousSelected: null,
+      selected: "attention",
+    })).toEqual({ origin: "capture", focus: "close" });
+    expect(getDrawerLifecycleAction({
+      wasOpen: true,
+      isOpen: true,
+      wasModalOpen: true,
+      isModalOpen: true,
+      previousSelected: "attention",
+      selected: "scaled-dot-product-attention",
+    })).toEqual({ origin: null, focus: "heading" });
+    expect(getDrawerLifecycleAction({
+      wasOpen: true,
+      isOpen: false,
+      wasModalOpen: false,
+      isModalOpen: false,
+      previousSelected: "attention",
+      selected: null,
+    })).toEqual({ origin: "restore", focus: null });
+  });
+
 });

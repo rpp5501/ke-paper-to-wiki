@@ -100,12 +100,33 @@ def _tour(plan_graph, hotspots):
 def _eq_index(plan_graph, pack):
     if not pack:
         return {}
-    sec_of_eq = {e["id"]: e["section"] for e in pack.get("equations", [])}
+
+    def section_key(value):
+        """Join pack ids such as sec_3_2_1 to graph refs such as sec:3.2.1."""
+        value = str(value or "").strip().lower().replace("§", "")
+        value = re.sub(r"^sec(?:tion)?[:._-]*", "", value)
+        parts = re.findall(r"\d+|[a-z]+", value)
+        return ".".join(parts)
+
+    sec_of_eq = {
+        e["id"]: section_key(e.get("section"))
+        for e in pack.get("equations", [])
+    }
     by_sec = defaultdict(list)
     for n in plan_graph["nodes"]:
-        ref = (n.get("source_ref") or "").replace("§", "")
+        ref = section_key(n.get("source_ref"))
+        if not ref:
+            continue
         by_sec[ref].append(n["id"])
-    return {eq: sorted(by_sec.get(sec, [])) for eq, sec in sec_of_eq.items()}
+    return {
+        eq: sorted(by_sec.get(sec, [])) if sec else []
+        for eq, sec in sec_of_eq.items()
+    }
+
+
+def _page_key(value):
+    stem = Path(value).stem
+    return stem.split("_", 1)[1] if "_" in stem else stem
 
 
 def _load_pages(pages_dir):
@@ -114,7 +135,7 @@ def _load_pages(pages_dir):
         return pages, 0
     stripped = 0
     for f in sorted(Path(pages_dir).glob("*.md")):
-        cid = f.stem.split("_", 1)[1] if "_" in f.stem else f.stem
+        cid = _page_key(f)
         text, n = strip_images(f.read_text(encoding="utf-8"))
         stripped += n
         pages[cid] = text
@@ -174,8 +195,14 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
     pages, stripped = _load_pages(pages_dir)
     notes, glossary, trace = _load_notes(
         wiki_dir, plan_graph["meta"].get("generated", ""))
+    page_owners = {
+        _page_key(node["page"]): node["id"]
+        for node in plan_graph["nodes"]
+        if node.get("page")
+    }
     for cid in pages:
-        trace.append({"nodeId": cid, "phase": "written", "status": "ok",
+        trace.append({"nodeId": page_owners.get(cid, cid),
+                      "phase": "written", "status": "ok",
                       "date": plan_graph["meta"].get("generated", "")})
     if stripped:
         print(f"stripped {stripped} image block(s) (rich media is v2)")

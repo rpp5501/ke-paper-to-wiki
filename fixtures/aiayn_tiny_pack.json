@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "source": "arXiv:1706.03762",
+    "title": "Attention Is All You Need",
+    "generated": "2026-07-08"
+  },
+  "extraction": {
+    "path": "latex",
+    "equation_fidelity": "exact"
+  },
+  "sections": [
+    {
+      "id": "sec_3_2_1",
+      "title": "Scaled Dot-Product Attention",
+      "level": 3,
+      "text": "Scaled attention"
+    }
+  ],
+  "equations": [
+    {
+      "id": "eq_1",
+      "latex": "\\operatorname{Attention}(Q,K,V)=\\operatorname{softmax}(QK^T/\\sqrt{d_k})V",
+      "section": "sec_3_2_1"
+    }
+  ],
+  "references": [],
+  "figures": []
+}

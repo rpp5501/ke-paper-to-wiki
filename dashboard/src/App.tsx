@@ -8,10 +8,70 @@ import {
 } from "react";
 
 import Canvas from "./components/Canvas";
+import Drawer from "./components/Drawer";
 import Legend from "./components/Legend";
 import NavigationCoordinator from "./components/NavigationCoordinator";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
+import { KE_DATA } from "./data.gen";
+import { useApp } from "./store";
+import type { KENode } from "./types";
+
+const DRAWER_NODES = KE_DATA.nodes as KENode[];
+
+export function drawerAnnouncementFor(selected: string | null) {
+  if (!selected) return "";
+  const node = DRAWER_NODES.find((candidate) => candidate.id === selected);
+  return node
+    ? `${node.label} selected. Explanation opened.`
+    : "Selected item is unavailable.";
+}
+
+export type DrawerAnnouncementState = {
+  message: string;
+  revision: number;
+};
+
+export function nextDrawerAnnouncement(
+  current: DrawerAnnouncementState,
+  selected: string | null,
+): DrawerAnnouncementState {
+  const message = drawerAnnouncementFor(selected);
+  if (!message) {
+    return current.message ? { ...current, message: "" } : current;
+  }
+  return { message, revision: current.revision + 1 };
+}
+
+export function getDrawerLifecycleAction({
+  wasOpen,
+  isOpen,
+  wasModalOpen,
+  isModalOpen,
+  previousSelected,
+  selected,
+}: {
+  wasOpen: boolean;
+  isOpen: boolean;
+  wasModalOpen: boolean;
+  isModalOpen: boolean;
+  previousSelected: string | null;
+  selected: string | null;
+}) {
+  const origin = !wasOpen && isOpen
+    ? "capture"
+    : wasOpen && !isOpen
+      ? "restore"
+      : null;
+  const focus = isModalOpen
+    ? !wasModalOpen
+      ? "close"
+      : selected !== previousSelected
+        ? "heading"
+        : null
+    : null;
+  return { origin, focus };
+}
 
 function useNarrowViewport() {
   const [narrow, setNarrow] = useState(() => (
@@ -33,8 +93,22 @@ function useNarrowViewport() {
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const narrow = useNarrowViewport();
+  const selected = useApp((state) => state.selected);
+  const setSelected = useApp((state) => state.setSelected);
+  const selectedNode = DRAWER_NODES.find((node) => node.id === selected);
+  const [drawerStatus, setDrawerStatus] = useState<DrawerAnnouncementState>(
+    () => nextDrawerAnnouncement({ message: "", revision: 0 }, selected),
+  );
+  const drawerOpen = selected !== null;
+  const drawerModalOpen = narrow && drawerOpen;
+  const sidebarModalOpen = narrow && sidebarOpen && !drawerModalOpen;
   const sidebarRef = useRef<HTMLElement>(null);
   const sidebarTriggerRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerOriginRef = useRef<HTMLElement | null>(null);
+  const drawerWasOpenRef = useRef(false);
+  const drawerWasModalRef = useRef(false);
+  const drawerPreviousSelectedRef = useRef<string | null>(null);
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
@@ -44,7 +118,7 @@ export default function App() {
   }, [narrow]);
 
   useEffect(() => {
-    if (!narrow || !sidebarOpen) return;
+    if (!sidebarModalOpen) return;
     const frame = window.requestAnimationFrame(() => {
       sidebarRef.current
         ?.querySelector<HTMLButtonElement>(".sidebar-sheet-close")
@@ -58,10 +132,77 @@ export default function App() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [closeSidebar, narrow, sidebarOpen]);
+  }, [closeSidebar, sidebarModalOpen]);
+
+  useEffect(() => {
+    if (drawerModalOpen && sidebarOpen) setSidebarOpen(false);
+  }, [drawerModalOpen, sidebarOpen]);
+
+  useEffect(() => {
+    setDrawerStatus((current) => nextDrawerAnnouncement(current, selected));
+    if (!selected || selectedNode) return;
+    let clearFrame: number | null = null;
+    const announceFrame = window.requestAnimationFrame(() => {
+      clearFrame = window.requestAnimationFrame(() => setSelected(null));
+    });
+    return () => {
+      window.cancelAnimationFrame(announceFrame);
+      if (clearFrame !== null) window.cancelAnimationFrame(clearFrame);
+    };
+  }, [selected, selectedNode, setSelected]);
+
+  useEffect(() => {
+    const action = getDrawerLifecycleAction({
+      wasOpen: drawerWasOpenRef.current,
+      isOpen: drawerOpen,
+      wasModalOpen: drawerWasModalRef.current,
+      isModalOpen: drawerModalOpen,
+      previousSelected: drawerPreviousSelectedRef.current,
+      selected,
+    });
+    let frame: number | null = null;
+
+    if (action.origin === "capture") {
+      const active = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+      drawerOriginRef.current = active && sidebarRef.current?.contains(active)
+        ? sidebarTriggerRef.current
+        : active;
+    } else if (action.origin === "restore") {
+      const returnTarget = drawerOriginRef.current;
+      drawerOriginRef.current = null;
+      frame = window.requestAnimationFrame(() => returnTarget?.focus());
+    }
+
+    if (action.focus) {
+      const selector = action.focus === "close"
+        ? ".drawer-close"
+        : ".drawer-title";
+      frame = window.requestAnimationFrame(() => {
+        drawerRef.current?.querySelector<HTMLElement>(selector)?.focus();
+      });
+    }
+
+    drawerWasOpenRef.current = drawerOpen;
+    drawerWasModalRef.current = drawerModalOpen;
+    drawerPreviousSelectedRef.current = selected;
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [drawerModalOpen, drawerOpen, selected]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [drawerOpen, setSelected]);
 
   const trapSidebarFocus = (event: KeyboardEvent<HTMLElement>) => {
-    if (!narrow || !sidebarOpen || event.key !== "Tab") return;
+    if (!sidebarModalOpen || event.key !== "Tab") return;
     const focusable = Array.from(
       sidebarRef.current?.querySelectorAll<HTMLElement>(
         "button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex='-1'])",
@@ -79,25 +220,55 @@ export default function App() {
     }
   };
 
+  const trapDrawerFocus = (event: KeyboardEvent<HTMLElement>) => {
+    if (!drawerModalOpen || event.key !== "Tab") return;
+    const focusable = Array.from(
+      drawerRef.current?.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), a[href], summary, [tabindex]:not([tabindex='-1'])",
+      ) ?? [],
+    ).filter((element) => element.tabIndex >= 0 && element.getClientRects().length > 0);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <ReactFlowProvider>
       <NavigationCoordinator />
+      <p
+        aria-atomic="true"
+        aria-live="polite"
+        className="sr-only"
+        id="drawer-live-status"
+        role="status"
+      >
+        <span key={`${drawerOpen ? "open" : "closed"}-${drawerStatus.revision}`}>
+          {drawerOpen ? drawerStatus.message : ""}
+        </span>
+      </p>
       <div className="shell">
         <button
           aria-hidden="true"
           aria-label="Close Insights / Trace"
-          className={`sidebar-sheet-backdrop${sidebarOpen ? " is-open" : ""}`}
+          className={`sidebar-sheet-backdrop${sidebarModalOpen ? " is-open" : ""}`}
           onClick={closeSidebar}
           tabIndex={-1}
           type="button"
         />
         <aside
-          aria-hidden={narrow && !sidebarOpen ? true : undefined}
+          aria-hidden={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
           aria-label="Insights and build trace"
-          aria-modal={narrow && sidebarOpen ? true : undefined}
+          aria-modal={sidebarModalOpen ? true : undefined}
           className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}
           id="left-panel"
-          inert={narrow && !sidebarOpen ? true : undefined}
+          inert={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
           onKeyDown={trapSidebarFocus}
           ref={sidebarRef}
           role={narrow ? "dialog" : "complementary"}
@@ -105,11 +276,16 @@ export default function App() {
           <Sidebar onCloseSheet={closeSidebar} />
         </aside>
         <main
-          aria-hidden={narrow && sidebarOpen ? true : undefined}
+          aria-hidden={sidebarModalOpen ? true : undefined}
           className="main"
-          inert={narrow && sidebarOpen ? true : undefined}
+          inert={sidebarModalOpen ? true : undefined}
         >
-          <header className="topbar" id="topbar">
+          <header
+            aria-hidden={drawerModalOpen ? true : undefined}
+            className="topbar"
+            id="topbar"
+            inert={drawerModalOpen ? true : undefined}
+          >
             <TopBar
               onOpenSidebar={() => setSidebarOpen(true)}
               sidebarOpen={sidebarOpen}
@@ -117,13 +293,38 @@ export default function App() {
             />
           </header>
           <div className="workspace">
-            <div className="canvas-wrap">
+            <div
+              aria-hidden={drawerModalOpen ? true : undefined}
+              className="canvas-wrap"
+              inert={drawerModalOpen ? true : undefined}
+            >
               <Canvas />
               <Legend />
               <div id="playerbar" />
               <div id="tour-overlay" />
             </div>
-            <aside className="drawer" id="drawer" />
+            {drawerModalOpen && (
+              <button
+                aria-hidden="true"
+                className="drawer-backdrop"
+                onClick={() => setSelected(null)}
+                tabIndex={-1}
+                type="button"
+              />
+            )}
+            {drawerOpen && (
+              <aside
+                aria-label="Explanation drawer"
+                aria-modal={drawerModalOpen ? true : undefined}
+                className="drawer"
+                id="drawer"
+                onKeyDown={trapDrawerFocus}
+                ref={drawerRef}
+                role={drawerModalOpen ? "dialog" : "complementary"}
+              >
+                <Drawer />
+              </aside>
+            )}
           </div>
         </main>
       </div>
