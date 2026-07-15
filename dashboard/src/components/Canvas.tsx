@@ -141,17 +141,21 @@ export default function Canvas() {
       nodeIds: cluster.nodeIds.filter((nodeId) => viewNodeIds.has(nodeId)),
     }))
     .filter((cluster) => cluster.nodeIds.length > 0), [viewNodeIds]);
-  const lod = useMemo(() => visibleAtZoom(
-    zoomedOut ? 0 : 1,
-    0.5,
-    viewClusters,
-    [...viewNodeIds],
-    view === "clusters",
-  ), [view, viewClusters, viewNodeIds, zoomedOut]);
   const focus = useMemo(
     () => learnFocus(mode, tourIdx, LEARN_STEPS, KE_EDGES, completedSteps),
     [completedSteps, mode, tourIdx],
   );
+  const lod = useMemo(() => (
+    focus
+      ? { showClusters: false, hiddenNodes: new Set<string>() }
+      : visibleAtZoom(
+        zoomedOut ? 0 : 1,
+        0.5,
+        viewClusters,
+        [...viewNodeIds],
+        view === "clusters",
+      )
+  ), [focus, view, viewClusters, viewNodeIds, zoomedOut]);
 
   const nodes = useMemo<Node[]>(() => {
     if (layout.phase !== "ready") return [];
@@ -191,7 +195,7 @@ export default function Canvas() {
           },
         } satisfies Node];
       });
-    const syntheticClusters = focus ? [] : clusterCards(
+    const syntheticClusters = clusterCards(
       lod.showClusters,
       viewClusters,
       layout.positions,
