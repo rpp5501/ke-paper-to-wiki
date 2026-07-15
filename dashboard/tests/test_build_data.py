@@ -565,3 +565,18 @@ def test_tour_descriptions_use_page_tldr():
     by_title = {t["title"]: t["description"] for t in tour}
     assert by_title["Alpha"] == "Alpha is the core idea."
     assert by_title["Beta"] == "Next stop on the dependency-ordered reading path."
+
+
+def test_tour_descriptions_fall_back_when_page_lacks_tldr():
+    plan_graph = {
+        "meta": {"kind": "concept"},
+        "nodes": [
+            {"id": "c", "kind": "concept", "label": "Gamma", "level": 0,
+             "page": "01_c.md"},
+        ],
+        "edges": [],
+    }
+    pages = {"c": "# Title\nSome intro text."}
+    tour = _tour(plan_graph, [], pages)
+    by_title = {t["title"]: t["description"] for t in tour}
+    assert by_title["Gamma"] == "Next stop on the dependency-ordered reading path."

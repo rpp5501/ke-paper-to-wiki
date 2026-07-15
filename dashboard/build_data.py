@@ -102,7 +102,9 @@ def _page_for(node, pages):
 
 def _first_sentence(markdown, limit=180):
     match = _TLDR_RE.search(markdown or "")
-    body = (match.group(1) if match else markdown or "").strip()
+    if not match:
+        return ""
+    body = match.group(1).strip()
     body = re.sub(r"\$\$.*?\$\$", "", body, flags=re.S)
     body = re.sub(r"\\\(.*?\\\)", "", body, flags=re.S)
     body = re.sub(r"[#*_`>\[\]]", "", body)
