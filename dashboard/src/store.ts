@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type View = "concepts" | "clusters" | "code" | "bridged";
+export type Mode = "learn" | "explore";
 export type LayoutPhase = "loading" | "ready" | "empty" | "error";
 export type PendingNavigation = {
   requestId: number;
@@ -40,6 +41,10 @@ export interface AppState {
   pendingNavigation: PendingNavigation | null;
   queueNavigation: (nodeId: string, requiredView: View) => void;
   clearNavigation: (requestId: number) => void;
+  mode: Mode;
+  setMode: (mode: Mode) => void;
+  completedSteps: Set<string>;
+  markStepComplete: (nodeId: string) => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -98,4 +103,14 @@ export const useApp = create<AppState>((set) => ({
         ? { pendingNavigation: null }
         : {}
     )),
+  mode: "learn",
+  setMode: (mode) => set({ mode }),
+  completedSteps: new Set(),
+  markStepComplete: (nodeId) =>
+    set((state) => {
+      if (state.completedSteps.has(nodeId)) return {};
+      const completedSteps = new Set(state.completedSteps);
+      completedSteps.add(nodeId);
+      return { completedSteps };
+    }),
 }));

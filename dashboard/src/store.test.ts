@@ -16,6 +16,8 @@ beforeEach(() => {
     layoutPhase: "loading",
     navigationRequestId: 0,
     pendingNavigation: null,
+    mode: "learn",
+    completedSteps: new Set(),
   } as never);
 });
 
@@ -131,5 +133,28 @@ describe("useApp", () => {
     state.clearNavigation(2);
     expect((useApp.getState() as unknown as { pendingNavigation: unknown })
       .pendingNavigation).toBeNull();
+  });
+});
+
+describe("mode & learn progress", () => {
+  it("defaults to learn mode with no completed steps", () => {
+    expect(useApp.getState().mode).toBe("learn");
+    expect(useApp.getState().completedSteps.size).toBe(0);
+  });
+
+  it("switches modes without clearing progress", () => {
+    useApp.getState().markStepComplete("attention");
+    useApp.getState().setMode("explore");
+    expect(useApp.getState().mode).toBe("explore");
+    expect(useApp.getState().completedSteps.has("attention")).toBe(true);
+  });
+
+  it("markStepComplete is idempotent and does not mutate the previous set", () => {
+    const before = useApp.getState().completedSteps;
+    useApp.getState().markStepComplete("transformer");
+    useApp.getState().markStepComplete("transformer");
+    const after = useApp.getState().completedSteps;
+    expect(after).toEqual(new Set(["transformer"]));
+    expect(before.size).toBe(0); // immutability, matches hiddenKinds pattern
   });
 });
