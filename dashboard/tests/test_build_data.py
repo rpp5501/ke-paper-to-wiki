@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from build_data import (build_bundle, main, reading_path, strip_images,
-                        to_data_ts)
+                        to_data_ts, _tour)
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_PATH = ROOT / "fixtures" / "aiayn_concept_graph.json"
@@ -548,3 +548,20 @@ def test_repo_fixture_regeneration_matches_committed_data(tmp_path):
 
     assert (out.read_text(encoding="utf-8") ==
             COMMITTED_DATA.read_text(encoding="utf-8"))
+
+
+def test_tour_descriptions_use_page_tldr():
+    plan_graph = {
+        "meta": {"kind": "concept"},
+        "nodes": [
+            {"id": "a", "kind": "concept", "label": "Alpha", "level": 0,
+             "page": "01_a.md"},
+            {"id": "b", "kind": "concept", "label": "Beta", "level": 1},
+        ],
+        "edges": [{"src": "a", "dst": "b", "kind": "prerequisite"}],
+    }
+    pages = {"a": "## TL;DR {#tldr}\nAlpha is the core idea. More.\n"}
+    tour = _tour(plan_graph, [], pages)
+    by_title = {t["title"]: t["description"] for t in tour}
+    assert by_title["Alpha"] == "Alpha is the core idea."
+    assert by_title["Beta"] == "Next stop on the dependency-ordered reading path."

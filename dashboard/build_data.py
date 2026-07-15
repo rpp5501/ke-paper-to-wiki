@@ -89,16 +89,45 @@ def _centrality(plan_graph):
     return {k: round(v, 4) for k, v in nx.betweenness_centrality(g).items()}
 
 
-def _tour(plan_graph, hotspots):
-    labels = {n["id"]: n["label"] for n in plan_graph["nodes"]}
+_TLDR_RE = re.compile(r"^##\s+.+?\{#tldr\}\s*$(.*?)(?=^##\s|\Z)", re.M | re.S)
+
+
+def _page_for(node, pages):
+    if node.get("id") in pages:
+        return pages[node["id"]]
+    stem = re.sub(r"\.md$", "", node.get("page") or "", flags=re.I)
+    stem = re.sub(r"^\d+_", "", stem)
+    return pages.get(stem)
+
+
+def _first_sentence(markdown, limit=180):
+    match = _TLDR_RE.search(markdown or "")
+    body = (match.group(1) if match else markdown or "").strip()
+    body = re.sub(r"\$\$.*?\$\$", "", body, flags=re.S)
+    body = re.sub(r"\\\(.*?\\\)", "", body, flags=re.S)
+    body = re.sub(r"[#*_`>\[\]]", "", body)
+    body = " ".join(body.split())
+    if not body:
+        return ""
+    sentence = re.split(r"(?<=[.!?])\s", body)[0]
+    return sentence if len(sentence) <= limit else sentence[: limit - 1].rstrip() + "…"
+
+
+def _tour(plan_graph, hotspots, pages):
+    nodes = {n["id"]: n for n in plan_graph["nodes"]}
     if plan_graph["meta"].get("kind") == "code" and hotspots:
         picks = [h["id"] for h in hotspots[:5]]
-        blurb = "High-churn, high-dependency hotspot — start here."
+        fallback = "High-churn, high-dependency hotspot — start here."
     else:
         picks = reading_path(plan_graph)[:5]
-        blurb = "Next stop on the dependency-ordered reading path."
-    return [{"order": i + 1, "title": labels.get(p, p), "description": blurb,
-             "nodeIds": [p]} for i, p in enumerate(picks)]
+        fallback = "Next stop on the dependency-ordered reading path."
+    steps = []
+    for i, p in enumerate(picks):
+        node = nodes.get(p, {"id": p, "label": p})
+        blurb = _first_sentence(_page_for(node, pages)) or fallback
+        steps.append({"order": i + 1, "title": node.get("label", p),
+                      "description": blurb, "nodeIds": [p]})
+    return steps
 
 
 def _eq_index(plan_graph, pack):
@@ -265,7 +294,7 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
     bundle = {"meta": plan_graph["meta"], "nodes": plan_graph["nodes"],
               "edges": plan_graph["edges"], "pages": pages, "notes": notes,
               "hotspots": hotspots, "clusters": _clusters(plan_graph),
-              "tour": _tour(plan_graph, hotspots),
+              "tour": _tour(plan_graph, hotspots, pages),
               "provenance": (pack or {}).get("extraction", {}),
               "centrality": _centrality(plan_graph),
               "eqIndex": _eq_index(plan_graph, pack),
