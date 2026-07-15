@@ -8,7 +8,7 @@ import {
 } from "@xyflow/react";
 
 import { KE_DATA } from "../data.gen";
-import { nodeAccessibleName } from "../lib/nodePresentation";
+import { levelBadgeLabel, nodeAccessibleName } from "../lib/nodePresentation";
 import { useApp } from "../store";
 
 type CardData = {
@@ -67,6 +67,7 @@ function Card({
   const flow = useReactFlow();
   const bridge = centrality[id] >= p90 && centralityValues.length > 1;
   const hot = hotspotRank.get(id);
+  const levelBadge = levelBadgeLabel(data.level);
 
   return (
     <button
@@ -87,7 +88,7 @@ function Card({
       <Handle type="target" position={Position.Top} />
       <span className="node-label">{data.label}</span>
       <span className="node-badges">
-        {data.level !== undefined && <span className="badge">L{data.level}</span>}
+        {levelBadge && <span className="badge">{levelBadge}</span>}
         {bridge && <span className="badge badge-bridge">bridge</span>}
         {hot && <span className="badge badge-hot">hotspot #{hot}</span>}
       </span>

@@ -59,3 +59,24 @@ describe("responsive layer ordering", () => {
     );
   });
 });
+
+describe("learn mode styling", () => {
+  it("styles learn mode with only locked palette colors", () => {
+    const start = styles.indexOf("/* ── Learn mode");
+    expect(start).toBeGreaterThan(-1);
+    const learnCss = styles.slice(start);
+    const allowed = new Set([
+      "#64748b", "#4a9b5e", "#cc8855", "#475569", "#f97316",
+      "#0e1626", "#1c2a44", "#3b2f14", "#3a1420", "#fff", "#ffffff",
+    ]);
+    const hexes = learnCss.match(/#[0-9a-fA-F]{3,8}/g) ?? [];
+    const offenders = hexes.filter((hex) => !allowed.has(hex.toLowerCase()));
+    expect(offenders).toEqual([]);
+  });
+
+  it("keeps learn-mode transitions within the motion contract", () => {
+    const start = styles.indexOf("/* ── Learn mode");
+    const learnCss = styles.slice(start);
+    expect(learnCss).not.toContain("transition: all");
+  });
+});
