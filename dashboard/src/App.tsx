@@ -9,6 +9,7 @@ import {
 
 import Canvas from "./components/Canvas";
 import Drawer from "./components/Drawer";
+import LearnPanel, { LEARN_STEPS } from "./components/LearnPanel";
 import Legend from "./components/Legend";
 import NavigationCoordinator from "./components/NavigationCoordinator";
 import PlayerBar from "./components/PlayerBar";
@@ -18,8 +19,10 @@ import TourOverlay, {
   hasNavigableTourStep,
   type TourSourceStep,
 } from "./components/TourOverlay";
+import { useNodeNavigation } from "./components/useNodeNavigation";
 import { KE_DATA } from "./data.gen";
-import { useApp } from "./store";
+import type { LearnStep } from "./lib/learnPath";
+import { useApp, type LayoutPhase, type Mode } from "./store";
 import type { KENode } from "./types";
 
 const DRAWER_NODES = KE_DATA.nodes as KENode[];
@@ -100,14 +103,29 @@ export function getEscapeLayer({
 
 export function tourIsVisible({
   dismissed,
+  mode,
   nodeIds,
   tour,
 }: {
   dismissed: boolean;
+  mode: Mode;
   nodeIds: Set<string>;
   tour: Pick<TourSourceStep, "nodeIds">[];
 }) {
+  if (mode !== "explore") return false;
   return !dismissed && hasNavigableTourStep(tour, nodeIds);
+}
+
+export function autoStartStep({ mode, layoutPhase, tourIdx, selected, steps }: {
+  mode: Mode;
+  layoutPhase: LayoutPhase;
+  tourIdx: number | null;
+  selected: string | null;
+  steps: LearnStep[];
+}): { index: number; nodeId: string } | null {
+  if (mode !== "learn" || layoutPhase !== "ready") return null;
+  if (tourIdx !== null || selected !== null || steps.length === 0) return null;
+  return { index: 0, nodeId: steps[0].nodeId };
 }
 
 function useNarrowViewport() {
@@ -133,6 +151,12 @@ export default function App() {
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
   const tourDismissed = useApp((state) => state.tourDismissed);
+  const mode = useApp((state) => state.mode);
+  const tourIdx = useApp((state) => state.tourIdx);
+  const setTourIdx = useApp((state) => state.setTourIdx);
+  const layoutPhase = useApp((state) => state.layoutPhase);
+  const markStepComplete = useApp((state) => state.markStepComplete);
+  const navigateToNode = useNodeNavigation();
   const selectedNode = DRAWER_NODES.find((node) => node.id === selected);
   const [drawerStatus, setDrawerStatus] = useState<DrawerAnnouncementState>(
     () => nextDrawerAnnouncement({ message: "", revision: 0 }, selected),
@@ -142,6 +166,7 @@ export default function App() {
   const sidebarModalOpen = narrow && sidebarOpen && !drawerModalOpen;
   const tourVisible = tourIsVisible({
     dismissed: tourDismissed,
+    mode,
     nodeIds: DRAWER_NODE_IDS,
     tour: KE_DATA.tour,
   });
@@ -165,6 +190,20 @@ export default function App() {
       window.requestAnimationFrame(() => sidebarTriggerRef.current?.focus());
     }
   }, [narrow]);
+
+  useEffect(() => {
+    const target = autoStartStep({
+      mode,
+      layoutPhase,
+      tourIdx,
+      selected,
+      steps: LEARN_STEPS,
+    });
+    if (!target) return;
+    setTourIdx(target.index);
+    markStepComplete(target.nodeId);
+    navigateToNode(target.nodeId);
+  }, [layoutPhase, markStepComplete, mode, navigateToNode, selected, setTourIdx, tourIdx]);
 
   useEffect(() => {
     if (escapeLayer !== "sidebar") return;
@@ -322,7 +361,9 @@ export default function App() {
           ref={sidebarRef}
           role={narrow ? "dialog" : "complementary"}
         >
-          <Sidebar onCloseSheet={closeSidebar} />
+          {mode === "learn"
+            ? <LearnPanel onCloseSheet={closeSidebar} />
+            : <Sidebar onCloseSheet={closeSidebar} />}
         </aside>
         <main
           aria-hidden={sidebarModalOpen ? true : undefined}
@@ -350,7 +391,9 @@ export default function App() {
               <Canvas />
               <Legend />
               <PlayerBar />
-              <TourOverlay escapeEnabled={escapeLayer === "tour"} />
+              {mode === "explore" && (
+                <TourOverlay escapeEnabled={escapeLayer === "tour"} />
+              )}
             </div>
             {drawerModalOpen && (
               <button

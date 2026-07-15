@@ -2,12 +2,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import App, {
+  autoStartStep,
   drawerAnnouncementFor,
   getEscapeLayer,
   getDrawerLifecycleAction,
   nextDrawerAnnouncement,
   tourIsVisible,
 } from "./App";
+import { LEARN_STEPS } from "./components/LearnPanel";
+import Sidebar from "./components/Sidebar";
 import { KE_DATA } from "./data.gen";
 import { useApp } from "./store";
 
@@ -37,12 +40,29 @@ describe("App", () => {
     const markup = renderToStaticMarkup(<App />);
 
     expect(markup).toContain('role="complementary"');
-    expect(markup).toContain('role="tablist"');
     expect(markup).toContain('role="radiogroup"');
     expect(markup).toContain('placeholder="search… (Enter)"');
     expect(markup).toContain('aria-describedby="search-disabled-reason"');
     expect(markup).toContain('title="Graph layout is still loading."');
     expect(markup).toContain('id="search-disabled-reason"');
+  });
+
+  it("lands in learn mode: learning path rendered, diagnostics and tour card absent", () => {
+    const markup = renderToStaticMarkup(<App />);
+    expect(markup).toContain("ideas that matter");
+    expect(markup).not.toContain("Insights &amp; Health");
+    expect(markup).not.toContain("Guided tour");
+  });
+
+  it("exposes the diagnostics tablist when rendered directly (explore mode's left rail)", () => {
+    // App defaults to learn mode, whose left rail is LearnPanel rather than
+    // Sidebar (see the "lands in learn mode" test above). renderToStaticMarkup
+    // only ever sees the store's initial state (zustand v5 serves
+    // getInitialState() for SSR), so explore mode can't be exercised through
+    // <App /> here — render Sidebar directly to preserve the tablist
+    // assertion's original intent.
+    const markup = renderToStaticMarkup(<Sidebar onCloseSheet={() => {}} />);
+    expect(markup).toContain('role="tablist"');
   });
 
   it("keeps one polite drawer status region mounted while the drawer is closed", () => {
@@ -159,6 +179,7 @@ describe("App", () => {
   it("does not give Escape to a raw tour with no valid node targets", () => {
     const visible = tourIsVisible({
       dismissed: false,
+      mode: "explore",
       nodeIds: new Set(["attention"]),
       tour: [{ nodeIds: ["missing-node"] }],
     });
@@ -170,6 +191,40 @@ describe("App", () => {
       sidebarModalOpen: false,
       tourVisible: visible,
     })).toBe("drawer");
+  });
+
+  it("hides the tour in learn mode even with valid, non-dismissed steps", () => {
+    expect(tourIsVisible({
+      dismissed: false,
+      mode: "learn",
+      nodeIds: new Set(["attention"]),
+      tour: [{ nodeIds: ["attention"] }],
+    })).toBe(false);
+  });
+
+  describe("autoStartStep", () => {
+    const base = {
+      mode: "learn" as const,
+      layoutPhase: "ready" as const,
+      tourIdx: null,
+      selected: null,
+      steps: LEARN_STEPS,
+    };
+
+    it("starts step 1 exactly once when learn mode is ready and idle", () => {
+      expect(autoStartStep(base)).toEqual({
+        index: 0,
+        nodeId: LEARN_STEPS[0].nodeId,
+      });
+    });
+
+    it("does not fire in explore mode, before layout, mid-tour, with a selection, or with no steps", () => {
+      expect(autoStartStep({ ...base, mode: "explore" })).toBeNull();
+      expect(autoStartStep({ ...base, layoutPhase: "loading" })).toBeNull();
+      expect(autoStartStep({ ...base, tourIdx: 0 })).toBeNull();
+      expect(autoStartStep({ ...base, selected: "transformer" })).toBeNull();
+      expect(autoStartStep({ ...base, steps: [] })).toBeNull();
+    });
   });
 
 });
