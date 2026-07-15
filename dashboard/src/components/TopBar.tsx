@@ -28,6 +28,20 @@ const VIEW_KEYS = new Set([
   "End",
 ]);
 
+function rovingKeyDownHandler(
+  refs: { current: Array<HTMLButtonElement | null> },
+  length: number,
+  onSelect: (nextIndex: number) => void,
+) {
+  return (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!VIEW_KEYS.has(event.key)) return;
+    event.preventDefault();
+    const next = moveIndex(index, length, event.key as IndexNavigationKey);
+    onSelect(next);
+    refs.current[next]?.focus();
+  };
+}
+
 export type TopBarPresentationProps = {
   blastOn: boolean;
   hiddenKinds: Set<string>;
@@ -62,35 +76,16 @@ export function TopBarPresentation({
   const viewRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const modeRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const onViewKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
-    if (!VIEW_KEYS.has(event.key)) return;
-    event.preventDefault();
-    const next = moveIndex(
-      index,
-      VIEWS.length,
-      event.key as IndexNavigationKey,
-    );
-    onSetView(VIEWS[next]);
-    viewRefs.current[next]?.focus();
-  };
-
-  const onModeKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    index: number,
-  ) => {
-    if (!VIEW_KEYS.has(event.key)) return;
-    event.preventDefault();
-    const next = moveIndex(
-      index,
-      MODES.length,
-      event.key as IndexNavigationKey,
-    );
-    onSetMode(MODES[next][0]);
-    modeRefs.current[next]?.focus();
-  };
+  const onViewKeyDown = rovingKeyDownHandler(
+    viewRefs,
+    VIEWS.length,
+    (next) => onSetView(VIEWS[next]),
+  );
+  const onModeKeyDown = rovingKeyDownHandler(
+    modeRefs,
+    MODES.length,
+    (next) => onSetMode(MODES[next][0]),
+  );
 
   return (
     <>
