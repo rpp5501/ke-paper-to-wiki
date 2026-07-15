@@ -20,6 +20,20 @@ function languageFor(node: KENode): Language {
   return "python";
 }
 
+export function nodeHasCode(
+  node: KENode | undefined,
+  excerpt: string | undefined,
+): boolean {
+  return !!node && CODE_KINDS.has(node.kind) && !!excerpt?.trim();
+}
+
+export function hasCodeFor(nodeId: string): boolean {
+  return nodeHasCode(
+    NODES.find((candidate) => candidate.id === nodeId),
+    EXCERPTS[nodeId],
+  );
+}
+
 export function CodeViewerPresentation({
   excerpt,
   node,
@@ -27,12 +41,12 @@ export function CodeViewerPresentation({
   excerpt: string | undefined;
   node: KENode;
 }) {
-  if (!CODE_KINDS.has(node.kind) || !excerpt?.trim()) return null;
+  if (!nodeHasCode(node, excerpt)) return null;
 
   return (
     <section aria-labelledby="drawer-code-heading" className="drawer-section drawer-code">
       <h3 id="drawer-code-heading">Code excerpt</h3>
-      <Highlight code={excerpt} language={languageFor(node)}>
+      <Highlight code={excerpt as string} language={languageFor(node)}>
         {({ tokens }) => (
           <pre className="code-viewer">
             <code aria-label={`Code excerpt for ${node.label}`}>

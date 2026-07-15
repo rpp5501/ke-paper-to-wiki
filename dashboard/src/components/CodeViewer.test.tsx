@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { CodeViewerPresentation } from "./CodeViewer";
+import { CodeViewerPresentation, nodeHasCode } from "./CodeViewer";
 
 describe("CodeViewer", () => {
   it("renders local Prism tokens as class-based semantic code", () => {
@@ -32,5 +32,12 @@ describe("CodeViewer", () => {
         node={{ id: "route", kind: "route", label: "Route" }}
       />,
     )).toBe("");
+  });
+
+  it("nodeHasCode requires a code-kind node with a non-blank excerpt", () => {
+    expect(nodeHasCode({ id: "f", kind: "function", label: "f" }, "def x(): pass")).toBe(true);
+    expect(nodeHasCode({ id: "c", kind: "concept", label: "c" }, "code")).toBe(false);
+    expect(nodeHasCode({ id: "f", kind: "function", label: "f" }, "   ")).toBe(false);
+    expect(nodeHasCode(undefined, "x")).toBe(false);
   });
 });

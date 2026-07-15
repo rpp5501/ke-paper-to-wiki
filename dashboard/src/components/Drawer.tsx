@@ -26,7 +26,7 @@ import {
 import { navigationDisabledReason } from "../lib/navigation";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
-import CodeViewer from "./CodeViewer";
+import CodeViewer, { hasCodeFor } from "./CodeViewer";
 import { useNodeNavigation } from "./useNodeNavigation";
 
 type DrawerNode = KENode & { page?: string; anchor?: string };
@@ -46,6 +46,8 @@ const TIER_ORDER = [
   "the-math",
   "go-deeper",
 ] as const;
+
+const DEEPER_TIERS = ["intuition", "mechanics", "the-math", "go-deeper"] as const;
 
 const TIER_LABEL: Record<(typeof TIER_ORDER)[number], string> = {
   tldr: "TL;DR",
@@ -355,8 +357,9 @@ export function DrawerPresentation({
 
   const immediateImpact = [...rings.values()].filter((depth) => depth === 1).length;
   const secondaryImpact = [...rings.values()].filter((depth) => depth === 2).length;
-  const hasTiers = TIER_ORDER.some((tier) => tiers[tier]);
+  const hasDeeperTiers = DEEPER_TIERS.some((tier) => tiers[tier]);
   const fallbackMarkdown = note?.synthesis?.trim();
+  const hasCode = selected ? hasCodeFor(selected) : false;
 
   return (
     <div className="drawer-content">
@@ -375,37 +378,43 @@ export function DrawerPresentation({
         </button>
       </div>
 
-      <p className="drawer-meta">
-        {node.kind} · {node.source_ref ?? "—"} · depends-on-this: immediate {immediateImpact}, secondary {secondaryImpact}
-      </p>
-
-      {bridges.length > 0 && (
-        <section aria-labelledby="drawer-bridge-heading" className="drawer-section">
-          <h3 id="drawer-bridge-heading">Concept-code bridge</h3>
-          <div className="drawer-bridge-list">
-            {bridges.map(({ id, relation }) => {
-              const target = NODES.find((candidate) => candidate.id === id);
-              return (
-                <BridgeButton
-                  id={id}
-                  key={`${relation}-${id}`}
-                  label={target?.label ?? id}
-                  layoutPhase={layoutPhase}
-                  navigateToNode={navigateToNode}
-                  relation={relation}
-                  targetExists={Boolean(target)}
-                />
-              );
-            })}
-          </div>
+      {tiers.tldr && (
+        <section aria-label="In plain words" className="drawer-lead">
+          <RichMarkdown glossary={glossary} markdown={tiers.tldr} />
         </section>
       )}
 
-      <CodeViewer nodeId={selected} />
+      {pageMarkdown && hasDeeperTiers && (
+        <section aria-label="Explanation tiers" className="tier">
+          {DEEPER_TIERS.filter((tier) => tiers[tier]).map((tier) => (
+            <details key={tier} open={tier === "intuition"}>
+              <summary>{TIER_LABEL[tier]}</summary>
+              <div className="tier-body">
+                <RichMarkdown glossary={glossary} markdown={tiers[tier] ?? ""} />
+              </div>
+            </details>
+          ))}
+        </section>
+      )}
+
+      {!tiers.tldr && !hasDeeperTiers && (
+        fallbackMarkdown ? (
+          <section aria-label="Research note" className="drawer-note">
+            <h3>Research note</h3>
+            <RichMarkdown glossary={glossary} markdown={fallbackMarkdown} />
+          </section>
+        ) : pageMarkdown ? (
+          <section aria-label="Explanation" className="drawer-note">
+            <RichMarkdown glossary={glossary} markdown={pageMarkdown} />
+          </section>
+        ) : (
+          <p className="drawer-empty">no page or note for this node yet</p>
+        )
+      )}
 
       {equations.length > 0 && (
         <section aria-labelledby="drawer-equations-heading" className="drawer-section drawer-equations">
-          <h3 id="drawer-equations-heading">Graph equations</h3>
+          <h3 id="drawer-equations-heading">Key equations — hover to highlight in the graph</h3>
           <EquationList
             equations={equations}
             key={selected}
@@ -414,29 +423,34 @@ export function DrawerPresentation({
         </section>
       )}
 
-      {pageMarkdown && hasTiers ? (
-        <section aria-label="Explanation tiers" className="tier">
-          {TIER_ORDER.filter((tier) => tiers[tier]).map((tier) => (
-            <details key={tier} open={tier === "tldr"}>
-              <summary>{TIER_LABEL[tier]}</summary>
-              <div className="tier-body">
-                <RichMarkdown glossary={glossary} markdown={tiers[tier] ?? ""} />
-              </div>
-            </details>
-          ))}
-        </section>
-      ) : fallbackMarkdown ? (
-        <section aria-label="Research note" className="drawer-note">
-          <h3>Research note</h3>
-          <RichMarkdown glossary={glossary} markdown={fallbackMarkdown} />
-        </section>
-      ) : pageMarkdown ? (
-        <section aria-label="Explanation" className="drawer-note">
-          <RichMarkdown glossary={glossary} markdown={pageMarkdown} />
-        </section>
-      ) : (
-        <p className="drawer-empty">no page or note for this node yet</p>
+      {(bridges.length > 0 || hasCode) && (
+        <details className="drawer-section drawer-code">
+          <summary>See it in code</summary>
+          {bridges.length > 0 && (
+            <div className="drawer-bridge-list">
+              {bridges.map(({ id, relation }) => {
+                const target = NODES.find((candidate) => candidate.id === id);
+                return (
+                  <BridgeButton
+                    id={id}
+                    key={`${relation}-${id}`}
+                    label={target?.label ?? id}
+                    layoutPhase={layoutPhase}
+                    navigateToNode={navigateToNode}
+                    relation={relation}
+                    targetExists={Boolean(target)}
+                  />
+                );
+              })}
+            </div>
+          )}
+          <CodeViewer nodeId={selected} />
+        </details>
       )}
+
+      <p className="drawer-meta">
+        {node.kind} · {node.source_ref ?? "—"} · unlocks {immediateImpact} concept(s) directly, {secondaryImpact} more downstream
+      </p>
     </div>
   );
 }
