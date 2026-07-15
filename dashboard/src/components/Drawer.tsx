@@ -15,6 +15,7 @@ import remarkGfm from "remark-gfm";
 
 import { KE_DATA } from "../data.gen";
 import { dependencyRings } from "../lib/deps";
+import { pageMarkdownFor } from "../lib/learnPath";
 import {
   safeKatexOptions,
   splitTiers,
@@ -157,12 +158,6 @@ export function RichMarkdown({ glossary, markdown }: {
       {preserveInlineMathForMarkdown(markdown)}
     </ReactMarkdown>
   );
-}
-
-function pageKey(node: DrawerNode) {
-  if (!node.page) return null;
-  const stem = node.page.replace(/\.md$/i, "");
-  return stem.replace(/^\d+_/, "");
 }
 
 export function equationHoverValue(
@@ -316,10 +311,7 @@ export function DrawerPresentation({
     () => NODES.find((candidate) => candidate.id === selected),
     [selected],
   );
-  const fallbackPageKey = node ? pageKey(node) : null;
-  const pageMarkdown = selected
-    ? PAGES[selected] ?? (fallbackPageKey ? PAGES[fallbackPageKey] : undefined)
-    : undefined;
+  const pageMarkdown = node ? pageMarkdownFor(node, PAGES) : undefined;
   const note = selected ? NOTES[selected] : undefined;
   const glossary = selected ? GLOSSARY[selected] ?? {} : {};
   const tiers = useMemo(

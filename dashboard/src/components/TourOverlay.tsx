@@ -1,17 +1,13 @@
 import { useEffect, useId, useMemo } from "react";
 
 import { KE_DATA } from "../data.gen";
+import type { TourSourceStep } from "../lib/learnPath";
 import { navigationDisabledReason } from "../lib/navigation";
 import { useApp } from "../store";
 import type { KENode } from "../types";
 import { useNodeNavigation } from "./useNodeNavigation";
 
-export type TourSourceStep = {
-  order: number;
-  title: string;
-  description: string;
-  nodeIds: string[];
-};
+export type { TourSourceStep };
 
 export type TourStep = Omit<TourSourceStep, "nodeIds"> & { nodeId: string };
 
