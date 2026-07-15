@@ -359,7 +359,7 @@ export function DrawerPresentation({
   const secondaryImpact = [...rings.values()].filter((depth) => depth === 2).length;
   const hasDeeperTiers = DEEPER_TIERS.some((tier) => tiers[tier]);
   const fallbackMarkdown = note?.synthesis?.trim();
-  const hasCode = selected ? hasCodeFor(selected) : false;
+  const hasCode = hasCodeFor(selected);
 
   return (
     <div className="drawer-content">
@@ -444,7 +444,7 @@ export function DrawerPresentation({
               })}
             </div>
           )}
-          <CodeViewer nodeId={selected} />
+          <CodeViewer embedded nodeId={selected} />
         </details>
       )}
 

@@ -23,7 +23,7 @@ function languageFor(node: KENode): Language {
 export function nodeHasCode(
   node: KENode | undefined,
   excerpt: string | undefined,
-): boolean {
+): excerpt is string {
   return !!node && CODE_KINDS.has(node.kind) && !!excerpt?.trim();
 }
 
@@ -37,42 +37,64 @@ export function hasCodeFor(nodeId: string): boolean {
 export function CodeViewerPresentation({
   excerpt,
   node,
+  embedded = false,
 }: {
   excerpt: string | undefined;
   node: KENode;
+  embedded?: boolean;
 }) {
   if (!nodeHasCode(node, excerpt)) return null;
+
+  const listing = (
+    <Highlight code={excerpt} language={languageFor(node)}>
+      {({ tokens }) => (
+        <pre className="code-viewer">
+          <code aria-label={`Code excerpt for ${node.label}`}>
+            {tokens.map((line, lineIndex) => (
+              <span className="code-line" key={lineIndex}>
+                {line.map((token, tokenIndex) => (
+                  <span
+                    className={["token", ...token.types].join(" ")}
+                    key={tokenIndex}
+                  >
+                    {token.content}
+                  </span>
+                ))}
+                {lineIndex < tokens.length - 1 ? "\n" : null}
+              </span>
+            ))}
+          </code>
+        </pre>
+      )}
+    </Highlight>
+  );
+
+  // Embedded inside the drawer's "See it in code" disclosure, which already
+  // supplies the section chrome and heading.
+  if (embedded) return listing;
 
   return (
     <section aria-labelledby="drawer-code-heading" className="drawer-section drawer-code">
       <h3 id="drawer-code-heading">Code excerpt</h3>
-      <Highlight code={excerpt as string} language={languageFor(node)}>
-        {({ tokens }) => (
-          <pre className="code-viewer">
-            <code aria-label={`Code excerpt for ${node.label}`}>
-              {tokens.map((line, lineIndex) => (
-                <span className="code-line" key={lineIndex}>
-                  {line.map((token, tokenIndex) => (
-                    <span
-                      className={["token", ...token.types].join(" ")}
-                      key={tokenIndex}
-                    >
-                      {token.content}
-                    </span>
-                  ))}
-                  {lineIndex < tokens.length - 1 ? "\n" : null}
-                </span>
-              ))}
-            </code>
-          </pre>
-        )}
-      </Highlight>
+      {listing}
     </section>
   );
 }
 
-export default function CodeViewer({ nodeId }: { nodeId: string }) {
+export default function CodeViewer({
+  nodeId,
+  embedded = false,
+}: {
+  nodeId: string;
+  embedded?: boolean;
+}) {
   const node = NODES.find((candidate) => candidate.id === nodeId);
   if (!node) return null;
-  return <CodeViewerPresentation excerpt={EXCERPTS[nodeId]} node={node} />;
+  return (
+    <CodeViewerPresentation
+      embedded={embedded}
+      excerpt={EXCERPTS[nodeId]}
+      node={node}
+    />
+  );
 }

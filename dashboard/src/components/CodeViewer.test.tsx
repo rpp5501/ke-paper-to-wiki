@@ -34,6 +34,29 @@ describe("CodeViewer", () => {
     )).toBe("");
   });
 
+  it("drops its own section chrome when embedded in the drawer disclosure", () => {
+    const node = {
+      id: "attention.py::attention",
+      kind: "function",
+      label: "attention",
+    };
+    const excerpt = "def attention(query):\n    return query";
+
+    const standalone = renderToStaticMarkup(
+      <CodeViewerPresentation excerpt={excerpt} node={node} />,
+    );
+    const embedded = renderToStaticMarkup(
+      <CodeViewerPresentation embedded excerpt={excerpt} node={node} />,
+    );
+
+    expect(standalone).toContain("drawer-code");
+    expect(standalone).toContain("Code excerpt</h3>");
+    expect(embedded).not.toContain("drawer-code");
+    expect(embedded).not.toContain("<h3");
+    expect(embedded).toContain('class="code-viewer"');
+    expect(embedded).toContain('aria-label="Code excerpt for attention"');
+  });
+
   it("nodeHasCode requires a code-kind node with a non-blank excerpt", () => {
     expect(nodeHasCode({ id: "f", kind: "function", label: "f" }, "def x(): pass")).toBe(true);
     expect(nodeHasCode({ id: "c", kind: "concept", label: "c" }, "code")).toBe(false);
