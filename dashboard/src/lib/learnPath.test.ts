@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLearnSteps, focusNodeIds, pageMarkdownFor } from "./learnPath";
+import { buildLearnSteps, focusNodeIds, learnFocus, pageMarkdownFor } from "./learnPath";
 
 const NODES = [
   { id: "a", kind: "concept", label: "Alpha", page: "01_a.md" },
@@ -55,5 +55,31 @@ describe("focusNodeIds", () => {
   });
   it("works with no edges", () => {
     expect(focusNodeIds("a", [], new Set())).toEqual(new Set(["a"]));
+  });
+});
+
+describe("learnFocus", () => {
+  const STEPS = [
+    { nodeId: "a", title: "A", blurb: "" },
+    { nodeId: "d", title: "D", blurb: "" },
+  ];
+  const EDGES = [
+    { src: "a", dst: "b", kind: "prerequisite" },
+    { src: "c", dst: "a", kind: "builds-on" },
+    { src: "d", dst: "e", kind: "prerequisite" },
+  ];
+  it("returns null in explore mode and for empty steps", () => {
+    expect(learnFocus("explore", 0, STEPS, EDGES, new Set())).toBeNull();
+    expect(learnFocus("learn", 0, [], EDGES, new Set())).toBeNull();
+  });
+  it("focuses the current step's neighborhood plus completed steps", () => {
+    expect(learnFocus("learn", 1, STEPS, EDGES, new Set(["a"])))
+      .toEqual(new Set(["d", "e", "a"]));
+  });
+  it("clamps a null or out-of-range index to a valid step", () => {
+    expect(learnFocus("learn", null, STEPS, EDGES, new Set()))
+      .toEqual(new Set(["a", "b", "c"]));
+    expect(learnFocus("learn", 99, STEPS, EDGES, new Set()))
+      .toEqual(new Set(["d", "e"]));
   });
 });

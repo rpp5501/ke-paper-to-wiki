@@ -67,3 +67,15 @@ export function focusNodeIds(
   });
   return visible;
 }
+
+export function learnFocus(
+  mode: "learn" | "explore",
+  tourIdx: number | null,
+  steps: LearnStep[],
+  edges: KEEdge[],
+  completed: Set<string>,
+): Set<string> | null {
+  if (mode !== "learn" || steps.length === 0) return null;
+  const bounded = Math.min(Math.max(tourIdx ?? 0, 0), steps.length - 1);
+  return focusNodeIds(steps[bounded].nodeId, edges, completed);
+}

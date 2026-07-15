@@ -14,6 +14,7 @@ import { ghostStyles } from "../lib/blastRadius";
 import { dependencyRings } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
+import { learnFocus } from "../lib/learnPath";
 import {
   clusterActivation,
   clusterCards,
@@ -23,6 +24,7 @@ import {
 } from "../lib/lod";
 import { useApp } from "../store";
 import type { KEEdge, KENode } from "../types";
+import { LEARN_STEPS } from "./LearnPanel";
 import { nodeTypes } from "./nodes";
 
 const CODE_KINDS = new Set(["function", "class", "file", "route"]);
@@ -60,6 +62,9 @@ export default function Canvas() {
     blastOn,
     hoverEq,
     setLayoutPhase,
+    mode,
+    tourIdx,
+    completedSteps,
   } = useApp();
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
@@ -143,6 +148,10 @@ export default function Canvas() {
     [...viewNodeIds],
     view === "clusters",
   ), [view, viewClusters, viewNodeIds, zoomedOut]);
+  const focus = useMemo(
+    () => learnFocus(mode, tourIdx, LEARN_STEPS, KE_EDGES, completedSteps),
+    [completedSteps, mode, tourIdx],
+  );
 
   const nodes = useMemo<Node[]>(() => {
     if (layout.phase !== "ready") return [];
@@ -150,6 +159,7 @@ export default function Canvas() {
     const memberNodes = KE_NODES
       .filter((node) => viewNodeIds.has(node.id))
       .filter((node) => !lod.hiddenNodes.has(node.id))
+      .filter((node) => !focus || focus.has(node.id))
       .flatMap<Node>((node) => {
         const position = layout.positions.get(node.id);
         if (!position) return [];
@@ -181,7 +191,7 @@ export default function Canvas() {
           },
         } satisfies Node];
       });
-    const syntheticClusters = clusterCards(
+    const syntheticClusters = focus ? [] : clusterCards(
       lod.showClusters,
       viewClusters,
       layout.positions,
@@ -214,6 +224,7 @@ export default function Canvas() {
     blastOn,
     equationHits,
     flow,
+    focus,
     ghost,
     layout,
     lod,
@@ -279,6 +290,15 @@ export default function Canvas() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [attempt, flow, layout.phase, nodes.length]);
+
+  useEffect(() => {
+    if (!focus || layout.phase !== "ready") return;
+    const frame = window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      void flow.fitView({ padding: 0.3, duration: reducedMotion ? 0 : 400 });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [flow, layout.phase, focus]);
 
   const ready = layout.phase === "ready";
   const statusMessage = layout.phase === "loading"
