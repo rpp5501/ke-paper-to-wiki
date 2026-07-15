@@ -41,7 +41,7 @@ describe("App", () => {
 
     expect(markup).toContain('role="complementary"');
     expect(markup).toContain('role="radiogroup"');
-    expect(markup).toContain('placeholder="search… (Enter)"');
+    expect(markup).toContain('placeholder="Find a concept… (Enter)"');
     expect(markup).toContain('aria-describedby="search-disabled-reason"');
     expect(markup).toContain('title="Graph layout is still loading."');
     expect(markup).toContain('id="search-disabled-reason"');
@@ -50,6 +50,7 @@ describe("App", () => {
   it("lands in learn mode: learning path rendered, diagnostics and tour card absent", () => {
     const markup = renderToStaticMarkup(<App />);
     expect(markup).toContain("ideas that matter");
+    expect(markup).toContain("Guided");
     expect(markup).not.toContain("Insights &amp; Health");
     expect(markup).not.toContain("Guided tour");
   });
