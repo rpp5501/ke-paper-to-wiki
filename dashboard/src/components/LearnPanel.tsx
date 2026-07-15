@@ -103,8 +103,12 @@ export function LearnPanelPresentation({
   );
 }
 
+export function switchToExplore() {
+  useApp.getState().setMode("explore");
+}
+
 export default function LearnPanel({ onCloseSheet }: { onCloseSheet: () => void }) {
-  const { tourIdx, setTourIdx, completedSteps, markStepComplete, setMode, layoutPhase } =
+  const { tourIdx, setTourIdx, completedSteps, markStepComplete, layoutPhase } =
     useApp();
   const navigateToNode = useNodeNavigation();
 
@@ -120,7 +124,7 @@ export default function LearnPanel({ onCloseSheet }: { onCloseSheet: () => void 
     <LearnPanelPresentation
       completedSteps={completedSteps}
       onCloseSheet={onCloseSheet}
-      onExplore={() => setMode("explore")}
+      onExplore={switchToExplore}
       onStep={goTo}
       tourIdx={tourIdx}
     />

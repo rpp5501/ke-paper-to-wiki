@@ -6,6 +6,7 @@ import LearnPanel, {
   LEARN_STEPS,
   LearnPanelPresentation,
   stepActivation,
+  switchToExplore,
 } from "./LearnPanel";
 
 beforeEach(() => {
@@ -41,9 +42,13 @@ describe("LearnPanel", () => {
         tourIdx={1}
       />,
     );
-    expect(markup).toContain('aria-current="step"');
-    expect(markup).toContain("is-done");
-    expect(markup).toContain("✓");
+    const items = markup.split("<li>").slice(1);
+    expect(items).toHaveLength(LEARN_STEPS.length);
+    expect(items[1]).toContain('aria-current="step"');
+    expect(items[0]).not.toContain('aria-current="step"');
+    expect(items[0]).toContain("is-done");
+    expect(items[0]).toContain("✓");
+    expect(items[1]).not.toContain("is-done");
     expect(markup).toContain(`1 of ${LEARN_STEPS.length} visited`);
   });
 
@@ -59,5 +64,11 @@ describe("LearnPanel", () => {
   it("renders the full-map escape hatch with the node count", () => {
     const markup = renderToStaticMarkup(<LearnPanel onCloseSheet={() => {}} />);
     expect(markup).toContain("Show the full map");
+  });
+
+  it("switches the store to explore mode via the bound escape-hatch handler", () => {
+    expect(useApp.getState().mode).toBe("learn");
+    switchToExplore();
+    expect(useApp.getState().mode).toBe("explore");
   });
 });
