@@ -1,5 +1,4 @@
 """P4 writers: one spawn per concept page, tier template enforced."""
-import subprocess
 from pathlib import Path
 from research_mcp.inbox import inbox_add
 from research_mcp.wiki import wiki_get
@@ -33,8 +32,8 @@ LOCAL CONTEXT:
 
 
 def _spawn_claude(prompt: str) -> str:
-    return subprocess.run(["claude", "-p", prompt, "--max-turns", "3"],
-                          capture_output=True, text=True, timeout=600).stdout
+    from .llm_spawn import claude_spawn
+    return claude_spawn(prompt, max_turns=3, timeout=600)
 
 
 def _page_problems(page: str) -> list[str]:

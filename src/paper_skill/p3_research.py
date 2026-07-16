@@ -1,6 +1,6 @@
 """P3: one leased researcher run per flagged concept. Deterministic shell;
 LLM only inside spawn. Checkpoint per concept; resume free (round-4)."""
-import argparse, json, subprocess, sys
+import argparse, json, sys
 from pathlib import Path
 import yaml
 from research_mcp.inbox import inbox_add
@@ -19,8 +19,8 @@ BRIEF:
 
 
 def _spawn_claude(prompt: str) -> str:
-    return subprocess.run(["claude", "-p", prompt, "--max-turns", "15"],
-                          capture_output=True, text=True, timeout=900).stdout
+    from .llm_spawn import claude_spawn
+    return claude_spawn(prompt, max_turns=15, timeout=900)
 
 
 def _parse_note(raw: str) -> dict | None:

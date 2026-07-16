@@ -86,3 +86,38 @@ def extract_concepts(pack: dict, spawn, max_retries: int = 1) -> dict:
                       "generated": datetime.date.today().isoformat(), "version": 1},
              "nodes": nodes, "edges": doc["edges"]}
     return {"status": "ok", "graph": graph, "toc": toc}
+
+
+class ConceptExtractionError(RuntimeError):
+    """Raised when concept extraction did not produce a validated graph."""
+
+
+def require_ok(result: dict) -> dict:
+    """Return the extraction ``result`` only if it is a real concept graph.
+
+    The pipeline's crash-safe habit is to swallow a failed extraction and reuse
+    the pack's section list as the graph -- that is exactly the "every dashboard
+    is the paper's table of contents" bug. Call this at the boundary that would
+    write ``graph.json`` so a failed extraction stops the build loudly instead
+    of shipping a TOC dashboard.
+    """
+    if result.get("status") != "ok":
+        raise ConceptExtractionError(
+            "concept extraction failed -- refusing to build a table-of-contents "
+            f"dashboard from section headings. problems={result.get('problems')}"
+        )
+    return result
+
+
+def is_toc_graph(graph: dict) -> bool:
+    """Heuristic: does this graph look like raw section headings, not concepts?
+
+    A TOC fallback graph has ``sec_N`` node ids and only structural edges.
+    Useful as a build-time tripwire on graphs from unknown provenance.
+    """
+    nodes = graph.get("nodes", [])
+    if not nodes:
+        return True
+    sec_like = sum(1 for n in nodes if re.fullmatch(r"sec_[\d_]+", str(n.get("id", ""))))
+    kinds = {e.get("kind") for e in graph.get("edges", [])}
+    return sec_like >= max(1, len(nodes) // 2) and kinds <= {"prerequisite", None}
