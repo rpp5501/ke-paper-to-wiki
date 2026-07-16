@@ -63,7 +63,7 @@ export default function Canvas() {
     hoverEq,
     setLayoutPhase,
     mode,
-    tourIdx,
+    learnIdx,
     completedSteps,
   } = useApp();
   const [attempt, setAttempt] = useState(0);
@@ -142,8 +142,8 @@ export default function Canvas() {
     }))
     .filter((cluster) => cluster.nodeIds.length > 0), [viewNodeIds]);
   const focus = useMemo(
-    () => learnFocus(mode, tourIdx, LEARN_STEPS, KE_EDGES, completedSteps),
-    [completedSteps, mode, tourIdx],
+    () => learnFocus(mode, learnIdx, LEARN_STEPS, KE_EDGES, completedSteps),
+    [completedSteps, mode, learnIdx],
   );
   const lod = useMemo(() => (
     focus

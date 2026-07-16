@@ -116,15 +116,15 @@ export function tourIsVisible({
   return !dismissed && hasNavigableTourStep(tour, nodeIds);
 }
 
-export function autoStartStep({ mode, layoutPhase, tourIdx, selected, steps }: {
+export function autoStartStep({ mode, layoutPhase, learnIdx, selected, steps }: {
   mode: Mode;
   layoutPhase: LayoutPhase;
-  tourIdx: number | null;
+  learnIdx: number | null;
   selected: string | null;
   steps: LearnStep[];
 }): { index: number; nodeId: string } | null {
   if (mode !== "learn" || layoutPhase !== "ready") return null;
-  if (tourIdx !== null || selected !== null || steps.length === 0) return null;
+  if (learnIdx !== null || selected !== null || steps.length === 0) return null;
   return { index: 0, nodeId: steps[0].nodeId };
 }
 
@@ -152,8 +152,8 @@ export default function App() {
   const setSelected = useApp((state) => state.setSelected);
   const tourDismissed = useApp((state) => state.tourDismissed);
   const mode = useApp((state) => state.mode);
-  const tourIdx = useApp((state) => state.tourIdx);
-  const setTourIdx = useApp((state) => state.setTourIdx);
+  const learnIdx = useApp((state) => state.learnIdx);
+  const setLearnIdx = useApp((state) => state.setLearnIdx);
   const layoutPhase = useApp((state) => state.layoutPhase);
   const markStepComplete = useApp((state) => state.markStepComplete);
   const navigateToNode = useNodeNavigation();
@@ -195,15 +195,15 @@ export default function App() {
     const target = autoStartStep({
       mode,
       layoutPhase,
-      tourIdx,
+      learnIdx,
       selected,
       steps: LEARN_STEPS,
     });
     if (!target) return;
-    setTourIdx(target.index);
+    setLearnIdx(target.index);
     markStepComplete(target.nodeId);
     navigateToNode(target.nodeId);
-  }, [layoutPhase, markStepComplete, mode, navigateToNode, selected, setTourIdx, tourIdx]);
+  }, [layoutPhase, learnIdx, markStepComplete, mode, navigateToNode, selected, setLearnIdx]);
 
   useEffect(() => {
     if (escapeLayer !== "sidebar") return;

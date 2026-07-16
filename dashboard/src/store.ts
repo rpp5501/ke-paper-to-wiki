@@ -31,6 +31,8 @@ export interface AppState {
   step: (direction: 1 | -1) => void;
   tourIdx: number | null;
   setTourIdx: (index: number | null) => void;
+  learnIdx: number | null;
+  setLearnIdx: (index: number | null) => void;
   tourDismissed: boolean;
   dismissTour: () => void;
   sidebarTab: "insights" | "trace";
@@ -79,6 +81,8 @@ export const useApp = create<AppState>((set) => ({
     }),
   tourIdx: null,
   setTourIdx: (tourIdx) => set({ tourIdx }),
+  learnIdx: null,
+  setLearnIdx: (learnIdx) => set({ learnIdx }),
   tourDismissed: false,
   dismissTour: () => set({ tourDismissed: true, tourIdx: null }),
   sidebarTab: "insights",

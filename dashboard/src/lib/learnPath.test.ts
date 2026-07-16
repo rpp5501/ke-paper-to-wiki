@@ -14,14 +14,10 @@ const TOUR = [
 ];
 
 describe("buildLearnSteps", () => {
-  it("orders by tour order and prefers the TL;DR first sentence as blurb", () => {
-    const steps = buildLearnSteps(TOUR, NODES, PAGES);
+  it("orders by tour order and uses the tour description verbatim as blurb", () => {
+    const steps = buildLearnSteps(TOUR, NODES);
     expect(steps.map((s) => s.nodeId)).toEqual(["a", "b"]);
-    expect(steps[0].blurb).toBe("Alpha is the core idea.");
-  });
-
-  it("falls back to the tour description when no page exists", () => {
-    const steps = buildLearnSteps(TOUR, NODES, PAGES);
+    expect(steps[0].blurb).toBe("generic");
     expect(steps[1].blurb).toBe("fallback blurb");
   });
 
@@ -29,7 +25,6 @@ describe("buildLearnSteps", () => {
     const steps = buildLearnSteps(
       [{ order: 1, title: "Ghost", description: "", nodeIds: ["ghost"] }],
       NODES,
-      PAGES,
     );
     expect(steps).toEqual([]);
   });

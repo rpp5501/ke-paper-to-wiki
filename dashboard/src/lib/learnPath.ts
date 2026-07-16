@@ -1,5 +1,4 @@
 import type { KEEdge, KENode } from "../types";
-import { splitTiers } from "./mathHtml";
 
 export type TourSourceStep = {
   order: number;
@@ -20,26 +19,9 @@ export function pageMarkdownFor(
   return pages[stem];
 }
 
-const MAX_BLURB = 180;
-
-function firstSentence(markdown: string): string {
-  const body = markdown
-    .replace(/\$\$[\s\S]*?\$\$/g, "")
-    .replace(/\\\([\s\S]*?\\\)/g, "")
-    .replace(/[#*_`>[\]]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!body) return "";
-  const sentence = body.split(/(?<=[.!?])\s/)[0] ?? "";
-  return sentence.length > MAX_BLURB
-    ? `${sentence.slice(0, MAX_BLURB - 1).trimEnd()}…`
-    : sentence;
-}
-
 export function buildLearnSteps(
   tour: TourSourceStep[],
   nodes: KENode[],
-  pages: Record<string, string>,
 ): LearnStep[] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   return [...tour]
@@ -47,11 +29,7 @@ export function buildLearnSteps(
     .flatMap((step) => {
       const nodeId = step.nodeIds.find((candidate) => byId.has(candidate));
       if (!nodeId) return [];
-      const node = byId.get(nodeId) as KENode & { page?: string };
-      const markdown = pageMarkdownFor(node, pages);
-      const tldr = markdown ? splitTiers(markdown).tldr : undefined;
-      const blurb = (tldr && firstSentence(tldr)) || step.description;
-      return [{ nodeId, title: step.title, blurb }];
+      return [{ nodeId, title: step.title, blurb: step.description }];
     });
 }
 

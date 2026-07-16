@@ -11,6 +11,7 @@ beforeEach(() => {
     hoverEq: null,
     player: null,
     tourIdx: null,
+    learnIdx: null,
     tourDismissed: false,
     sidebarTab: "insights",
     layoutPhase: "loading",
@@ -73,6 +74,14 @@ describe("useApp", () => {
       tourDismissed: true,
       tourIdx: null,
     });
+  });
+
+  it("leaves learnIdx intact when explore mode dismisses the tour", () => {
+    useApp.getState().setLearnIdx(3);
+    useApp.getState().setMode("explore");
+    useApp.getState().dismissTour();
+
+    expect(useApp.getState().learnIdx).toBe(3);
   });
 
   it("publishes graph layout phases", () => {

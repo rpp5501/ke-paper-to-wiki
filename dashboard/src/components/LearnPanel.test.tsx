@@ -12,7 +12,7 @@ import LearnPanel, {
 beforeEach(() => {
   useApp.setState({
     mode: "learn",
-    tourIdx: 0,
+    learnIdx: 0,
     completedSteps: new Set(),
     selected: null,
     layoutPhase: "ready",
@@ -39,7 +39,7 @@ describe("LearnPanel", () => {
         onCloseSheet={() => {}}
         onExplore={() => {}}
         onStep={() => {}}
-        tourIdx={1}
+        learnIdx={1}
       />,
     );
     const items = markup.split("<li>").slice(1);

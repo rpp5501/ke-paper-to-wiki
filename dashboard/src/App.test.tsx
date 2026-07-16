@@ -36,11 +36,11 @@ describe("App", () => {
     expect(markup).not.toContain("nodes loaded");
   });
 
-  it("renders diagnostic and view semantics with a disabled search reason", () => {
+  it("renders mode switch and search semantics with a disabled search reason", () => {
     const markup = renderToStaticMarkup(<App />);
 
     expect(markup).toContain('role="complementary"');
-    expect(markup).toContain('role="radiogroup"');
+    expect(markup).toContain('aria-label="Dashboard mode"');
     expect(markup).toContain('placeholder="Find a concept… (Enter)"');
     expect(markup).toContain('aria-describedby="search-disabled-reason"');
     expect(markup).toContain('title="Graph layout is still loading."');
@@ -207,7 +207,7 @@ describe("App", () => {
     const base = {
       mode: "learn" as const,
       layoutPhase: "ready" as const,
-      tourIdx: null,
+      learnIdx: null,
       selected: null,
       steps: LEARN_STEPS,
     };
@@ -222,7 +222,7 @@ describe("App", () => {
     it("does not fire in explore mode, before layout, mid-tour, with a selection, or with no steps", () => {
       expect(autoStartStep({ ...base, mode: "explore" })).toBeNull();
       expect(autoStartStep({ ...base, layoutPhase: "loading" })).toBeNull();
-      expect(autoStartStep({ ...base, tourIdx: 0 })).toBeNull();
+      expect(autoStartStep({ ...base, learnIdx: 0 })).toBeNull();
       expect(autoStartStep({ ...base, selected: "transformer" })).toBeNull();
       expect(autoStartStep({ ...base, steps: [] })).toBeNull();
     });

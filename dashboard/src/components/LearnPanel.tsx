@@ -13,7 +13,6 @@ import { useNodeNavigation } from "./useNodeNavigation";
 export const LEARN_STEPS: LearnStep[] = buildLearnSteps(
   KE_DATA.tour as TourSourceStep[],
   KE_DATA.nodes as KENode[],
-  KE_DATA.pages as Record<string, string>,
 );
 
 const SOURCE = (KE_DATA.meta as { source?: string }).source ?? "this paper";
@@ -33,13 +32,13 @@ export function LearnPanelPresentation({
   onCloseSheet,
   onExplore,
   onStep,
-  tourIdx,
+  learnIdx,
 }: {
   completedSteps: Set<string>;
   onCloseSheet: () => void;
   onExplore: () => void;
   onStep: (index: number) => void;
-  tourIdx: number | null;
+  learnIdx: number | null;
 }) {
   const done = LEARN_STEPS.filter((step) => completedSteps.has(step.nodeId)).length;
 
@@ -68,7 +67,7 @@ export function LearnPanelPresentation({
 
       <ol className="learn-steps">
         {LEARN_STEPS.map((step, index) => {
-          const isCurrent = tourIdx === index;
+          const isCurrent = learnIdx === index;
           const isDone = completedSteps.has(step.nodeId);
           return (
             <li key={step.nodeId}>
@@ -108,14 +107,14 @@ export function switchToExplore() {
 }
 
 export default function LearnPanel({ onCloseSheet }: { onCloseSheet: () => void }) {
-  const { tourIdx, setTourIdx, completedSteps, markStepComplete, layoutPhase } =
+  const { learnIdx, setLearnIdx, completedSteps, markStepComplete, layoutPhase } =
     useApp();
   const navigateToNode = useNodeNavigation();
 
   const goTo = (index: number) => {
     const target = stepActivation(LEARN_STEPS, index, layoutPhase);
     if (!target) return;
-    setTourIdx(target.index);
+    setLearnIdx(target.index);
     markStepComplete(target.nodeId);
     navigateToNode(target.nodeId);
   };
@@ -126,7 +125,7 @@ export default function LearnPanel({ onCloseSheet }: { onCloseSheet: () => void 
       onCloseSheet={onCloseSheet}
       onExplore={switchToExplore}
       onStep={goTo}
-      tourIdx={tourIdx}
+      learnIdx={learnIdx}
     />
   );
 }
