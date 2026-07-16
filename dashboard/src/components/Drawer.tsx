@@ -39,6 +39,28 @@ const NOTES = KE_DATA.notes as Record<string, Note>;
 const GLOSSARY = KE_DATA.glossary as Record<string, Record<string, string>>;
 const EQ_INDEX = KE_DATA.eqIndex as Record<string, string[]>;
 
+export type Bridge = { id: string; relation: "implemented by" | "implements" };
+
+/** The "See it in code" links for `selected`: which code nodes implement it,
+ *  and which it implements. Pure over `edges` so it is testable with an
+ *  injected bridge (the shipped AIAYN fixture carries no `implements` edges). */
+export function deriveBridges(
+  selected: string | null,
+  edges: KEEdge[],
+): Bridge[] {
+  if (!selected) return [];
+  const relationships: Bridge[] = [];
+  edges.forEach((edge) => {
+    if (edge.kind !== "implements") return;
+    if (edge.dst === selected) {
+      relationships.push({ id: edge.src, relation: "implemented by" });
+    } else if (edge.src === selected) {
+      relationships.push({ id: edge.dst, relation: "implements" });
+    }
+  });
+  return relationships;
+}
+
 const TIER_ORDER = [
   "tldr",
   "intuition",
@@ -332,25 +354,10 @@ export function DrawerPresentation({
       : [],
     [selected],
   );
-  const bridges = useMemo<Array<{
-    id: string;
-    relation: "implemented by" | "implements";
-  }>>(() => {
-    if (!selected) return [];
-    const relationships: Array<{
-      id: string;
-      relation: "implemented by" | "implements";
-    }> = [];
-    EDGES.forEach((edge) => {
-      if (edge.kind !== "implements") return;
-      if (edge.dst === selected) {
-        relationships.push({ id: edge.src, relation: "implemented by" });
-      } else if (edge.src === selected) {
-        relationships.push({ id: edge.dst, relation: "implements" });
-      }
-    });
-    return relationships;
-  }, [selected]);
+  const bridges = useMemo<Bridge[]>(
+    () => deriveBridges(selected, EDGES),
+    [selected],
+  );
 
   if (!selected) return null;
   if (!node) return null;

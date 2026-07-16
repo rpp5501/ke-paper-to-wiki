@@ -580,3 +580,27 @@ def test_tour_descriptions_fall_back_when_page_lacks_tldr():
     tour = _tour(plan_graph, [], pages)
     by_title = {t["title"]: t["description"] for t in tour}
     assert by_title["Gamma"] == "Next stop on the dependency-ordered reading path."
+
+
+# --- code-bridge path (the AIAYN fixture has no implements edges / excerpts) ---
+BRIDGE_DIR = ROOT / "fixtures" / "bridge_mini"
+BRIDGE_GRAPH = json.loads((BRIDGE_DIR / "concept_graph.json").read_text(encoding="utf-8"))
+
+
+def test_bridged_graph_yields_excerpt_and_implements_edge():
+    b = build_bundle(BRIDGE_GRAPH, repo_dir=str(BRIDGE_DIR / "repo"))
+    # the implements edge survives into the bundle
+    assert any(e["kind"] == "implements"
+               and e["src"] == "attention.py::attention"
+               and e["dst"] == "scaled-dot-product-attention"
+               for e in b["edges"])
+    # the excerpt data path (empty for AIAYN) is populated for a real code node
+    excerpt = b["excerpts"]["attention.py::attention"]
+    assert "def attention" in excerpt and "softmax" in excerpt
+
+
+def test_bridged_excerpt_is_embedded_in_generated_module():
+    b = build_bundle(BRIDGE_GRAPH, repo_dir=str(BRIDGE_DIR / "repo"))
+    ts = to_data_ts(b)
+    assert "attention.py::attention" in ts
+    assert "def attention" in ts
