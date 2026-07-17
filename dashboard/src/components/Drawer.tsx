@@ -14,6 +14,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { KE_DATA } from "../data.gen";
+import { parseContent } from "../lib/contentBlocks";
 import { dependencyRings } from "../lib/deps";
 import { pageMarkdownFor } from "../lib/learnPath";
 import {
@@ -26,6 +27,7 @@ import {
 import { navigationDisabledReason } from "../lib/navigation";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
+import BlockRenderer from "./blocks/BlockRenderer";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
 import { useNodeNavigation } from "./useNodeNavigation";
 
@@ -156,6 +158,27 @@ function decorateChildren(
     }
     return child;
   });
+}
+
+/** Markdown that may contain typed content-block fences (annotated-eq,
+ *  derivation, algorithm, figure) — segments render through BlockRenderer so
+ *  the drawer shows the same rich blocks as the article. */
+export function BlockContent({ glossary, markdown }: {
+  glossary: Record<string, string>;
+  markdown: string;
+}) {
+  const segments = useMemo(() => parseContent(markdown), [markdown]);
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <BlockRenderer
+          key={`${segment.type}-${index}`}
+          renderMarkdown={(md) => <RichMarkdown glossary={glossary} markdown={md} />}
+          segment={segment}
+        />
+      ))}
+    </>
+  );
 }
 
 export function RichMarkdown({ glossary, markdown }: {
@@ -397,7 +420,7 @@ export function DrawerPresentation({
             <details key={tier} open={tier === "intuition"}>
               <summary>{TIER_LABEL[tier]}</summary>
               <div className="tier-body">
-                <RichMarkdown glossary={glossary} markdown={tiers[tier] ?? ""} />
+                <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
               </div>
             </details>
           ))}
