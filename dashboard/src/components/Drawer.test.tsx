@@ -17,6 +17,10 @@ const drawerActions = {
   setSelected: () => undefined,
 };
 
+const ATTACK_SET = String.raw`$$
+\mathbb{D}_{\text{attack}} \;=\; \big\{\, \big((n(x), y),\; s_i\big) \;:\; |Y_{\text{match}}(x)| = 1,\; i \in Y_{\text{match}}(x) \,\big\}
+$$`;
+
 describe("RichMarkdown", () => {
   it("preserves inline math delimiters through CommonMark parsing", () => {
     const markup = renderToStaticMarkup(
@@ -24,6 +28,16 @@ describe("RichMarkdown", () => {
     );
 
     expect(markup).toContain(String.raw`\(\sqrt{d_k}\)`);
+  });
+
+  it("renders the reported display equation without CommonMark corruption", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={ATTACK_SET} />,
+    );
+
+    expect(markup).toContain("katex-display");
+    expect(markup).toContain(String.raw`\mathbb{D}_{\text{attack}}`);
+    expect(markup).not.toContain(";=;");
   });
 });
 

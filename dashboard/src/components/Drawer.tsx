@@ -6,7 +6,6 @@ import {
   useEffect,
   useId,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -20,7 +19,7 @@ import { pageMarkdownFor } from "../lib/learnPath";
 import {
   safeKatexOptions,
   splitTiers,
-  preserveInlineMathForMarkdown,
+  preserveMathForMarkdown,
   tokenizeRichText,
   type RichTextToken,
 } from "../lib/mathHtml";
@@ -98,28 +97,24 @@ function GlossaryTerm({ definition, value }: { definition: string; value: string
 }
 
 function MathFragment({ token }: { token: Extract<RichTextToken, { kind: "math" }> }) {
-  const hostRef = useRef<HTMLSpanElement>(null);
+  let html: string | null = null;
+  try {
+    html = katex.renderToString(token.tex, safeKatexOptions(token.display));
+  } catch {
+    // Invalid TeX remains visible as inert text.
+  }
 
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    try {
-      katex.render(token.tex, host, {
-        ...safeKatexOptions(token.display),
-      });
-    } catch {
-      host.textContent = token.source;
-    }
-  }, [token.display, token.source, token.tex]);
-
-  return (
+  return html ? (
     <span
       aria-label={token.source}
       className={token.display ? "math math-display" : "math"}
-      ref={hostRef}
-    >
-      {token.source}
-    </span>
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  ) : (
+    <span
+      aria-label={token.source}
+      className={token.display ? "math math-display" : "math"}
+    >{token.source}</span>
   );
 }
 
@@ -202,7 +197,7 @@ export function RichMarkdown({ glossary, markdown }: {
 
   return (
     <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
-      {preserveInlineMathForMarkdown(markdown)}
+      {preserveMathForMarkdown(markdown)}
     </ReactMarkdown>
   );
 }

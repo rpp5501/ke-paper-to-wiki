@@ -159,24 +159,83 @@ export function tokenizeRichText(
 }
 
 // CommonMark treats the backslashes in \(…\) as escapes. Character references
-// survive parsing and are decoded back to the original delimiters in text nodes.
-// Fenced and inline code are intentionally left literal.
-export function preserveInlineMathForMarkdown(markdown: string): string {
-  let fenced = false;
-  return markdown.split("\n").map((line) => {
-    if (/^\s*(```|~~~)/.test(line)) {
-      fenced = !fenced;
-      return line;
+// Markdown-significant characters are encoded only inside complete math spans,
+// then decoded back into text nodes. Fenced and inline code remain literal.
+function protectMathInProse(text: string): string {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    if (text[cursor] === "`") {
+      let ticks = 1;
+      while (text[cursor + ticks] === "`") ticks += 1;
+      const delimiter = "`".repeat(ticks);
+      const close = text.indexOf(delimiter, cursor + ticks);
+      if (close < 0) return output + text.slice(cursor);
+      output += text.slice(cursor, close + ticks);
+      cursor = close + ticks;
+      continue;
     }
-    if (fenced) return line;
-    return line.split(/(`+[^`]*`+)/g).map((part, index) => {
-      if (index % 2 === 1) return part;
-      return part.replace(
-        /\\\(([\s\S]+?)\\\)/g,
-        (_source, tex: string) => `&#92;(${tex}&#92;)`,
-      );
-    }).join("");
-  }).join("\n");
+
+    const display = text.startsWith("$$", cursor);
+    const inline = text.startsWith(String.raw`\(`, cursor);
+    if (display || inline) {
+      const closeDelimiter = display ? "$$" : String.raw`\)`;
+      const close = text.indexOf(closeDelimiter, cursor + 2);
+      if (close < 0) return output + text.slice(cursor);
+      const end = close + closeDelimiter.length;
+      output += Array.from(text.slice(cursor, end), (character) => (
+        "\\_*[]<>|&".includes(character)
+          ? `&#${character.charCodeAt(0)};`
+          : character
+      )).join("");
+      cursor = end;
+      continue;
+    }
+
+    output += text[cursor];
+    cursor += 1;
+  }
+
+  return output;
+}
+
+export function preserveMathForMarkdown(markdown: string): string {
+  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
+  let output = "";
+  let prose = "";
+  let fence: { character: string; length: number } | null = null;
+
+  for (const line of lines) {
+    if (!line) continue;
+    const withoutNewline = line.endsWith("\n") ? line.slice(0, -1) : line;
+    const marker = withoutNewline.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+
+    if (fence) {
+      output += line;
+      if (
+        marker
+        && marker[1][0] === fence.character
+        && marker[1].length >= fence.length
+        && marker[2].trim() === ""
+      ) {
+        fence = null;
+      }
+      continue;
+    }
+
+    if (marker) {
+      output += protectMathInProse(prose);
+      prose = "";
+      output += line;
+      fence = { character: marker[1][0], length: marker[1].length };
+      continue;
+    }
+
+    prose += line;
+  }
+
+  return output + protectMathInProse(prose);
 }
 
 function parseMathSource(source: string) {

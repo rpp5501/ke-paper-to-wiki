@@ -1,11 +1,33 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  preserveMathForMarkdown,
   renderMathToString,
   safeKatexOptions,
   splitTiers,
   tokenizeRichText,
 } from "./mathHtml";
+
+const ATTACK_SET = String.raw`$$
+\mathbb{D}_{\text{attack}} \;=\; \big\{\, \big((n(x), y),\; s_i\big) \;:\; |Y_{\text{match}}(x)| = 1,\; i \in Y_{\text{match}}(x) \,\big\}
+$$`;
+
+describe("preserveMathForMarkdown", () => {
+  it("protects TeX punctuation escapes in multiline display math", () => {
+    const preserved = preserveMathForMarkdown(ATTACK_SET);
+
+    expect(preserved).toContain("&#92;;=&#92;;");
+    expect(preserved).toContain("&#92;,");
+    expect(preserved).toContain("&#92;big");
+    expect(preserved).toContain("&#92;text{attack}");
+    expect(preserved).toContain("&#95;{&#92;text{attack}}");
+  });
+
+  it("does not alter fenced or inline code", () => {
+    const code = "`\\(x\\)`\n```tex\n$$\\;$$\n```";
+    expect(preserveMathForMarkdown(code)).toBe(code);
+  });
+});
 
 describe("splitTiers", () => {
   it("extracts all five headed explanation tiers", () => {
@@ -99,6 +121,13 @@ describe("tokenizeRichText", () => {
 });
 
 describe("renderMathToString", () => {
+  it("renders the reported attack-set equation with KaTeX", () => {
+    const html = renderMathToString(ATTACK_SET);
+
+    expect(html).toContain("katex-display");
+    expect(html).not.toContain(ATTACK_SET);
+  });
+
   it("shares one locked-down KaTeX option source with DOM rendering", () => {
     expect(safeKatexOptions(true)).toMatchObject({
       displayMode: true,
