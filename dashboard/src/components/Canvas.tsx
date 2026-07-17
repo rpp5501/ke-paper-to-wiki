@@ -186,7 +186,7 @@ export default function Canvas() {
           style: {
             opacity: ghostStyle?.opacity ?? 1,
             outline: equationHits.has(node.id)
-              ? "3px solid #4a7ebb"
+              ? "3px solid #7aa2f7"
               : ringColor
                 ? `3px solid ${ringColor}`
                 : undefined,
@@ -337,7 +337,7 @@ export default function Canvas() {
         selectionOnDrag={false}
         selectNodesOnDrag={false}
       >
-        <Background color="#1e293b" gap={24} />
+        <Background color="#333846" gap={24} />
         <Controls
           aria-label="Graph viewport controls"
           position="top-right"
