@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const workerHarness = vi.hoisted(() => ({
   created: 0,
+  lastRequest: null as null | {
+    children?: Array<{ id: string; width?: number; height?: number }>;
+  },
   layoutCalls: 0,
   terminated: 0,
   behaviors: [] as Array<() => Promise<{
@@ -15,7 +18,10 @@ vi.mock("elkjs/lib/elk-api", () => ({
       workerHarness.created += 1;
     }
 
-    layout() {
+    layout(request: {
+      children?: Array<{ id: string; width?: number; height?: number }>;
+    }) {
+      workerHarness.lastRequest = request;
       workerHarness.layoutCalls += 1;
       const behavior = workerHarness.behaviors.shift();
       return behavior
@@ -46,12 +52,35 @@ beforeEach(() => {
   vi.resetModules();
   vi.useRealTimers();
   workerHarness.created = 0;
+  workerHarness.lastRequest = null;
   workerHarness.layoutCalls = 0;
   workerHarness.terminated = 0;
   workerHarness.behaviors = [];
 });
 
 describe("layoutGraph worker lifecycle", () => {
+  it("sends the shared label-aware card dimensions to ELK", async () => {
+    const { nodeCardSize } = await import("./nodeDimensions");
+    const { layoutGraph } = await import("./layout");
+
+    await layoutGraph(nodes, edges);
+
+    expect(workerHarness.lastRequest?.children?.[0]).toMatchObject(
+      nodeCardSize("Node"),
+    );
+  });
+
+  it("invalidates cached layout when a node label changes its dimensions", async () => {
+    const { layoutGraph } = await import("./layout");
+
+    await layoutGraph(nodes, edges);
+    await layoutGraph([
+      { ...nodes[0], label: "A substantially longer node label that wraps" },
+    ], edges);
+
+    expect(workerHarness.layoutCalls).toBe(2);
+  });
+
   it("does not construct a worker while importing the layout module", async () => {
     await expect(import("./layout")).resolves.toHaveProperty("layoutGraph");
     expect(workerHarness.created).toBe(0);

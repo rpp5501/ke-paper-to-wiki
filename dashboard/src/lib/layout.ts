@@ -1,6 +1,7 @@
 import ELK, { type ELK as ELKInstance } from "elkjs/lib/elk-api";
 import elkWorkerUrl from "elkjs/lib/elk-worker.min.js?url";
 import type { KEEdge, KENode } from "../types";
+import { nodeCardSize } from "./nodeDimensions";
 
 // Vite emits the worker as a local build asset. localhost supplies the normal
 // origin required to start it; all topology calculation stays off-thread.
@@ -41,7 +42,10 @@ export function resetLayoutGraph(): void {
 
 function layoutKey(nodes: KENode[], edges: KEEdge[]): string {
   return JSON.stringify({
-    nodes: nodes.map((node) => node.id),
+    nodes: nodes.map((node) => {
+      const size = nodeCardSize(node.label);
+      return [node.id, size.width, size.height];
+    }),
     edges: edges.map((edge) => [edge.src, edge.dst]),
   });
 }
@@ -81,7 +85,7 @@ export function layoutGraph(
         "elk.direction": "DOWN",
         "elk.spacing.nodeNode": "40",
       },
-      children: nodes.map((node) => ({ id: node.id, width: 180, height: 64 })),
+      children: nodes.map((node) => ({ id: node.id, ...nodeCardSize(node.label) })),
       edges: edges.map((edge, index) => ({
         id: `e${index}`,
         sources: [edge.src],

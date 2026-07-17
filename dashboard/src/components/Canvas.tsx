@@ -14,6 +14,7 @@ import { ghostStyles } from "../lib/blastRadius";
 import { dependencyRings } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
+import { nodeCardSize } from "../lib/nodeDimensions";
 import { learnFocus } from "../lib/learnPath";
 import {
   clusterActivation,
@@ -172,12 +173,12 @@ export default function Canvas() {
         const ringColor = ghostStyle && ghostStyle.ring >= 0
           ? RING_COLOR[ghostStyle.ring]
           : undefined;
+        const size = nodeCardSize(node.label);
         return [{
           id: node.id,
           type: CODE_KINDS.has(node.kind) ? "code" : "concept",
           position,
-          width: 180,
-          height: 64,
+          ...size,
           data: { label: node.label, level: node.level },
           selected: node.id === selected,
           focusable: false,
@@ -199,30 +200,32 @@ export default function Canvas() {
       lod.showClusters,
       viewClusters,
       layout.positions,
-    ).map<Node>((cluster) => ({
-      id: cluster.id,
-      type: "cluster",
-      position: cluster.position,
-      width: 180,
-      height: 64,
-      data: {
-        label: cluster.label,
-        count: cluster.count,
-        onActivate: () => {
-          const reducedMotion = window.matchMedia(
-            "(prefers-reduced-motion: reduce)",
-          ).matches;
-          const activation = clusterActivation(GRAPH_KIND, reducedMotion);
-          void flow.zoomTo(activation.zoom, {
-            duration: activation.duration,
-          });
-          if (view === "clusters") setView(activation.view);
+    ).map<Node>((cluster) => {
+      const size = nodeCardSize(cluster.label);
+      return {
+        id: cluster.id,
+        type: "cluster",
+        position: cluster.position,
+        ...size,
+        data: {
+          label: cluster.label,
+          count: cluster.count,
+          onActivate: () => {
+            const reducedMotion = window.matchMedia(
+              "(prefers-reduced-motion: reduce)",
+            ).matches;
+            const activation = clusterActivation(GRAPH_KIND, reducedMotion);
+            void flow.zoomTo(activation.zoom, {
+              duration: activation.duration,
+            });
+            if (view === "clusters") setView(activation.view);
+          },
         },
-      },
-      focusable: false,
-      draggable: false,
-      connectable: false,
-    }));
+        focusable: false,
+        draggable: false,
+        connectable: false,
+      };
+    });
     return [...syntheticClusters, ...memberNodes];
   }, [
     blastOn,

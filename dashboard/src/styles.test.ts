@@ -67,6 +67,18 @@ describe("responsive layer ordering", () => {
   });
 });
 
+describe("graph node labels", () => {
+  it("keeps full labels visible and wrapped", () => {
+    const rule = styles.match(/\.node-label\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(rule).toContain("white-space: normal");
+    expect(rule).toContain("overflow-wrap: anywhere");
+    expect(rule).not.toContain("white-space: nowrap");
+    expect(rule).not.toContain("text-overflow: ellipsis");
+    expect(rule).not.toContain("overflow: hidden");
+  });
+});
+
 describe("reader v2 design tokens", () => {
   it("defines the token set", () => {
     for (const token of ["--bg-page", "--bg-rail", "--bg-card", "--ink", "--accent",

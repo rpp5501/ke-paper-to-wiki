@@ -523,9 +523,11 @@ input:focus-visible,
 }
 
 .node-card {
-  display: block;
-  width: 180px;
-  min-height: 64px;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -575,12 +577,14 @@ input:focus-visible,
 
 .node-label {
   display: block;
-  overflow: hidden;
+  overflow: visible;
+  overflow-wrap: anywhere;
   font-size: var(--fs-small);
   font-weight: 600;
   line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  text-wrap: pretty;
+  white-space: normal;
 }
 
 .node-badges {

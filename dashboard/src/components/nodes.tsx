@@ -8,6 +8,7 @@ import {
 } from "@xyflow/react";
 
 import { KE_DATA } from "../data.gen";
+import { nodeCardSize } from "../lib/nodeDimensions";
 import { levelBadgeLabel, nodeAccessibleName } from "../lib/nodePresentation";
 import { useApp } from "../store";
 
@@ -39,10 +40,12 @@ function focusNode(
   flow: ReactFlowInstance,
   positionAbsoluteX: number,
   positionAbsoluteY: number,
+  width: number,
+  height: number,
 ): void {
   const reducedMotion = typeof window !== "undefined"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  void flow.setCenter(positionAbsoluteX + 90, positionAbsoluteY + 32, {
+  void flow.setCenter(positionAbsoluteX + width / 2, positionAbsoluteY + height / 2, {
     zoom: flow.getZoom(),
     duration: reducedMotion ? 0 : 600,
   });
@@ -68,6 +71,7 @@ function Card({
   const bridge = centrality[id] >= p90 && centralityValues.length > 1;
   const hot = hotspotRank.get(id);
   const levelBadge = levelBadgeLabel(data.level);
+  const size = nodeCardSize(data.label);
 
   return (
     <button
@@ -81,7 +85,13 @@ function Card({
       className={`node-card ${className}`}
       data-node-id={id}
       onClick={() => setSelected(id)}
-      onFocus={() => focusNode(flow, positionAbsoluteX, positionAbsoluteY)}
+      onFocus={() => focusNode(
+        flow,
+        positionAbsoluteX,
+        positionAbsoluteY,
+        size.width,
+        size.height,
+      )}
       title={data.label}
       type="button"
     >
@@ -125,6 +135,7 @@ function CodeNode(props: NodeProps<CardNode>) {
 
 function ClusterNodeCard(props: NodeProps<ClusterNode>) {
   const flow = useReactFlow();
+  const size = nodeCardSize(props.data.label);
 
   return (
     <button
@@ -137,6 +148,8 @@ function ClusterNodeCard(props: NodeProps<ClusterNode>) {
         flow,
         props.positionAbsoluteX,
         props.positionAbsoluteY,
+        size.width,
+        size.height,
       )}
       title={props.data.label}
       type="button"
