@@ -31,6 +31,7 @@ describe("App", () => {
     expect(markup).toContain('class="shell"');
     expect(markup).toContain('id="topbar"');
     expect(markup).toContain('class="article-shell"');
+    expect(markup).toContain('aria-label="Resize guided reading panel"');
     expect(markup).not.toContain('id="drawer"');
     expect(markup).not.toContain('id="left-panel"'); // explore-only rail
     expect(markup).not.toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);

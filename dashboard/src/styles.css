@@ -110,8 +110,8 @@ input:focus-visible,
 }
 
 .sidebar {
-  width: 300px;
-  flex: 0 0 300px;
+  width: var(--diagnostics-width, 300px);
+  flex: 0 0 var(--diagnostics-width, 300px);
   overflow-y: auto;
   border-right: 1px solid var(--border);
   background: var(--surface);
@@ -194,8 +194,8 @@ input:focus-visible,
 }
 
 .drawer {
-  width: 380px;
-  flex: 0 0 380px;
+  width: var(--drawer-width, 380px);
+  flex: 0 0 var(--drawer-width, 380px);
   overflow-y: auto;
   border-left: 1px solid var(--border);
   background: var(--surface);
@@ -1138,9 +1138,16 @@ input:focus-visible,
     right: 0;
     bottom: 0;
     z-index: 25;
-    width: min(380px, 90vw);
+    width: min(var(--drawer-width, 380px), 90vw);
     flex: none;
     box-shadow: none;
+  }
+
+  .workspace > .panel-resizer-right {
+    position: absolute;
+    top: 0;
+    right: min(var(--drawer-width, 380px), 90vw);
+    bottom: 0;
   }
 }
 
@@ -1504,8 +1511,8 @@ input:focus-visible,
 
 .progress-rail {
   display: flex;
-  width: 264px;
-  flex: 0 0 264px;
+  width: var(--guided-rail-width, 264px);
+  flex: 0 0 var(--guided-rail-width, 264px);
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;

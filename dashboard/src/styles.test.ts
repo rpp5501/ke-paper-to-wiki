@@ -10,6 +10,13 @@ function zIndexFor(css: string, selector: string) {
 }
 
 describe("responsive layer ordering", () => {
+  it("sizes desktop support panels with adjustable CSS variables", () => {
+    expect(styles).toMatch(/\.sidebar\s*\{[^}]*width:\s*var\(--diagnostics-width/s);
+    expect(styles).toMatch(/\.drawer\s*\{[^}]*width:\s*var\(--drawer-width/s);
+    expect(styles).toMatch(/\.progress-rail\s*\{[^}]*width:\s*var\(--guided-rail-width/s);
+    expect(styles).toMatch(/@media \(max-width: 899px\)[\s\S]*\.panel-resizer\s*\{[^}]*display:\s*none/s);
+  });
+
   it("keeps the mobile drawer above its backdrop", () => {
     const mobileStart = styles.indexOf("@media (max-width: 899px)");
     const mobileEnd = styles.indexOf("@media (max-width: 639px)");

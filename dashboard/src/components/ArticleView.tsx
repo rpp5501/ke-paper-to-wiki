@@ -3,12 +3,14 @@ import { useEffect, useMemo, useRef } from "react";
 import { KE_DATA } from "../data.gen";
 import { buildChapters, readingTimeMinutes, type ChapterTier } from "../lib/article";
 import { parseContent, type ContentSegment } from "../lib/contentBlocks";
+import type { PanelBounds } from "../lib/panelSizing";
 import { useApp } from "../store";
 import type { KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
 import MathReveal from "./blocks/MathReveal";
 import { RichMarkdown } from "./Drawer";
 import { LEARN_STEPS, switchToExplore } from "./LearnPanel";
+import PanelResizer from "./PanelResizer";
 import ProgressRail from "./ProgressRail";
 
 const NODES = KE_DATA.nodes as KENode[];
@@ -77,7 +79,21 @@ function TierSection({
   );
 }
 
-export default function ArticleView() {
+type ArticleViewProps = {
+  onRailReset: () => void;
+  onRailResize: (width: number) => void;
+  railBounds: PanelBounds;
+  railWidth: number;
+  resizable?: boolean;
+};
+
+export default function ArticleView({
+  onRailReset,
+  onRailResize,
+  railBounds,
+  railWidth,
+  resizable = true,
+}: ArticleViewProps) {
   const expandAllMath = useApp((state) => state.expandAllMath);
   const setLearnIdx = useApp((state) => state.setLearnIdx);
   const markStepComplete = useApp((state) => state.markStepComplete);
@@ -119,6 +135,17 @@ export default function ArticleView() {
         hasNotation={Boolean(NOTATION)}
         onJump={jumpTo}
       />
+      {resizable && (
+        <PanelResizer
+          bounds={railBounds}
+          id="guided-rail"
+          label="Resize guided reading panel"
+          onChange={onRailResize}
+          onReset={onRailReset}
+          side="left"
+          value={railWidth}
+        />
+      )}
       <div className="article-scroll">
         <article className="article" ref={articleRef}>
           <header className="article-opening">

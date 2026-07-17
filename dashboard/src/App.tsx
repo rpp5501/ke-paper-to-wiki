@@ -4,6 +4,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
 
@@ -12,6 +13,7 @@ import Drawer from "./components/Drawer";
 import ArticleView from "./components/ArticleView";
 import Legend from "./components/Legend";
 import NavigationCoordinator from "./components/NavigationCoordinator";
+import PanelResizer from "./components/PanelResizer";
 import PlayerBar from "./components/PlayerBar";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
@@ -19,8 +21,15 @@ import TourOverlay, {
   hasNavigableTourStep,
   type TourSourceStep,
 } from "./components/TourOverlay";
+import { usePanelWidths } from "./components/usePanelWidths";
 import { KE_DATA } from "./data.gen";
 import type { LearnStep } from "./lib/learnPath";
+import {
+  RESIZER_SPACE,
+  clampPanelWidth,
+  panelBounds,
+  resolveExplorePanelWidths,
+} from "./lib/panelSizing";
 import { useApp, type LayoutPhase, type Mode } from "./store";
 import type { KENode } from "./types";
 
@@ -147,6 +156,7 @@ function useNarrowViewport() {
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const narrow = useNarrowViewport();
+  const panels = usePanelWidths();
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
   const tourDismissed = useApp((state) => state.tourDismissed);
@@ -177,6 +187,33 @@ export default function App() {
   const drawerWasOpenRef = useRef(false);
   const drawerWasModalRef = useRef(false);
   const drawerPreviousSelectedRef = useRef<string | null>(null);
+  const exploreWidths = resolveExplorePanelWidths(
+    panels.preferred,
+    panels.viewportWidth,
+    drawerOpen,
+  );
+  const drawerInline = drawerOpen && panels.viewportWidth >= 1280;
+  const diagnosticsBounds = panelBounds(
+    "diagnostics",
+    panels.viewportWidth,
+    drawerInline ? exploreWidths.explanation + RESIZER_SPACE : 0,
+  );
+  const explanationBounds = panelBounds(
+    "explanation",
+    panels.viewportWidth,
+    drawerInline ? exploreWidths.diagnostics + RESIZER_SPACE : 0,
+  );
+  const guidedBounds = panelBounds("guided-rail", panels.viewportWidth);
+  const guidedWidth = clampPanelWidth(
+    "guided-rail",
+    panels.preferred["guided-rail"],
+    panels.viewportWidth,
+  );
+  const shellStyle = {
+    "--diagnostics-width": `${exploreWidths.diagnostics}px`,
+    "--drawer-width": `${exploreWidths.explanation}px`,
+    "--guided-rail-width": `${guidedWidth}px`,
+  } as CSSProperties;
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
@@ -325,7 +362,7 @@ export default function App() {
           {drawerOpen ? drawerStatus.message : ""}
         </span>
       </p>
-      <div className="shell">
+      <div className="shell" style={shellStyle}>
         <button
           aria-hidden="true"
           aria-label="Close Insights / Trace"
@@ -349,6 +386,17 @@ export default function App() {
             <Sidebar onCloseSheet={closeSidebar} />
           </aside>
         )}
+        {mode === "explore" && !narrow && (
+          <PanelResizer
+            bounds={diagnosticsBounds}
+            id="diagnostics"
+            label="Resize diagnostics panel"
+            onChange={(width) => panels.setWidth("diagnostics", width)}
+            onReset={() => panels.resetWidth("diagnostics")}
+            side="left"
+            value={exploreWidths.diagnostics}
+          />
+        )}
         <main
           aria-hidden={sidebarModalOpen ? true : undefined}
           className="main"
@@ -367,7 +415,13 @@ export default function App() {
             />
           </header>
           {mode === "learn" ? (
-            <ArticleView />
+            <ArticleView
+              onRailReset={() => panels.resetWidth("guided-rail")}
+              onRailResize={(width) => panels.setWidth("guided-rail", width)}
+              railBounds={guidedBounds}
+              railWidth={guidedWidth}
+              resizable={!narrow}
+            />
           ) : (
             <div className={`workspace${drawerOpen ? " drawer-open" : ""}`}>
               <div
@@ -387,6 +441,17 @@ export default function App() {
                   onClick={() => setSelected(null)}
                   tabIndex={-1}
                   type="button"
+                />
+              )}
+              {drawerOpen && !narrow && (
+                <PanelResizer
+                  bounds={explanationBounds}
+                  id="explanation"
+                  label="Resize explanation panel"
+                  onChange={(width) => panels.setWidth("explanation", width)}
+                  onReset={() => panels.resetWidth("explanation")}
+                  side="right"
+                  value={exploreWidths.explanation}
                 />
               )}
               {drawerOpen && (

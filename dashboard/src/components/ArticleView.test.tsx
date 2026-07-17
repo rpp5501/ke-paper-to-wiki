@@ -6,8 +6,19 @@ import { ProgressRailPresentation } from "./ProgressRail";
 
 describe("ArticleView", () => {
   it("renders the article shell with opening, chapters, and explore handoff", () => {
-    const markup = renderToStaticMarkup(<ArticleView />);
+    const markup = renderToStaticMarkup(
+      <ArticleView
+        onRailReset={() => {}}
+        onRailResize={() => {}}
+        railBounds={{ min: 220, max: 420 }}
+        railWidth={288}
+      />,
+    );
     expect(markup).toContain('class="article-shell"');
+    expect(markup).toMatch(
+      /class="progress-rail"[\s\S]*aria-label="Resize guided reading panel"[\s\S]*class="article-scroll"/,
+    );
+    expect(markup).toContain('aria-valuenow="288"');
     expect(markup).toContain("Guided reading");
     expect(markup).toMatch(/about \d+ min/);
     expect(markup).toContain("Open the full concept map");
@@ -17,7 +28,14 @@ describe("ArticleView", () => {
   });
 
   it("renders every tier of every chapter vertically in the flow", () => {
-    const markup = renderToStaticMarkup(<ArticleView />);
+    const markup = renderToStaticMarkup(
+      <ArticleView
+        onRailReset={() => {}}
+        onRailResize={() => {}}
+        railBounds={{ min: 220, max: 420 }}
+        railWidth={264}
+      />,
+    );
     for (const chapter of CHAPTERS) {
       for (const tier of chapter.tiers) {
         expect(markup).toContain(`id="${chapter.nodeId}--${tier.id}"`);
