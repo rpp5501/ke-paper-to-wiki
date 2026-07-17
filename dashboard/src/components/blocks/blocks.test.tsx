@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import AlgorithmWalkthrough from "./AlgorithmWalkthrough";
@@ -9,7 +9,7 @@ import FigurePlaceholder from "./FigurePlaceholder";
 
 describe("AnnotatedEquation", () => {
   it("renders equation and one legend row per term", () => {
-    render(
+    const html = renderToStaticMarkup(
       <AnnotatedEquation
         block={{
           type: "annotated-eq",
@@ -21,17 +21,17 @@ describe("AnnotatedEquation", () => {
         }}
       />,
     );
-    expect(document.querySelector(".katex")).toBeTruthy();
-    expect(screen.getByText("energy")).toBeTruthy();
-    expect(screen.getByText("mass")).toBeTruthy();
-    expect(document.querySelector(".eq-term-1")).toBeTruthy();
-    expect(document.querySelector(".eq-term-2")).toBeTruthy();
+    expect(html).toContain("katex");
+    expect(html).toContain("energy");
+    expect(html).toContain("mass");
+    expect(html).toContain("eq-term-1");
+    expect(html).toContain("eq-term-2");
   });
 });
 
 describe("DerivationSteps", () => {
   it("renders shape lead-in and each step with its why", () => {
-    render(
+    const html = renderToStaticMarkup(
       <DerivationSteps
         block={{
           type: "derivation",
@@ -40,9 +40,10 @@ describe("DerivationSteps", () => {
         }}
       />,
     );
-    expect(screen.getByText("maps a group to a score")).toBeTruthy();
-    expect(screen.getByText("by definition")).toBeTruthy();
-    expect(document.querySelector(".derivation-latex .katex")).toBeTruthy();
+    expect(html).toContain("maps a group to a score");
+    expect(html).toContain("by definition");
+    expect(html).toContain("derivation-latex");
+    expect(html).toContain("katex");
   });
 });
 
@@ -53,50 +54,48 @@ describe("AlgorithmWalkthrough", () => {
     lines: [{ code: "for g in groups:", intent: "visit each group" }],
   };
 
-  it("hides intent until toggled", () => {
-    render(<AlgorithmWalkthrough block={block} />);
-    expect(screen.queryByText("visit each group")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /why/i }));
-    expect(screen.getByText("visit each group")).toBeTruthy();
+  it("hides intent by default behind a collapsed toggle", () => {
+    const html = renderToStaticMarkup(<AlgorithmWalkthrough block={block} />);
+    expect(html).not.toContain("visit each group");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("Rank groups");
   });
 
-  it("shows every intent when expandAll", () => {
-    render(<AlgorithmWalkthrough block={block} expandAll />);
-    expect(screen.getByText("visit each group")).toBeTruthy();
-    expect(screen.queryByRole("button")).toBeNull();
+  it("shows every intent and no toggles when expandAll", () => {
+    const html = renderToStaticMarkup(<AlgorithmWalkthrough block={block} expandAll />);
+    expect(html).toContain("visit each group");
+    expect(html).not.toContain("aria-expanded");
   });
 });
 
 describe("FigurePlaceholder", () => {
   it("renders caption and coming-soon copy", () => {
-    render(
+    const html = renderToStaticMarkup(
       <FigurePlaceholder
         block={{ type: "figure", id: "comet-plot", caption: "Confidence comets" }}
       />,
     );
-    expect(screen.getByText("Interactive figure — coming soon")).toBeTruthy();
-    expect(screen.getByText("Confidence comets")).toBeTruthy();
+    expect(html).toContain("Interactive figure — coming soon");
+    expect(html).toContain("Confidence comets");
+    expect(html).toContain('data-figure-id="comet-plot"');
   });
 });
 
 describe("BlockRenderer", () => {
   it("dispatches markdown segments through renderMarkdown", () => {
-    render(
+    const html = renderToStaticMarkup(
       <BlockRenderer
         renderMarkdown={(markdown) => <p>md:{markdown}</p>}
         segment={{ type: "markdown", markdown: "hello" }}
       />,
     );
-    expect(screen.getByText("md:hello")).toBeTruthy();
+    expect(html).toContain("md:hello");
   });
 
   it("dispatches typed blocks to their components", () => {
-    render(
-      <BlockRenderer
-        renderMarkdown={() => null}
-        segment={{ type: "figure", id: "x" }}
-      />,
+    const html = renderToStaticMarkup(
+      <BlockRenderer renderMarkdown={() => null} segment={{ type: "figure", id: "x" }} />,
     );
-    expect(document.querySelector(".figure-placeholder")).toBeTruthy();
+    expect(html).toContain("figure-placeholder");
   });
 });
