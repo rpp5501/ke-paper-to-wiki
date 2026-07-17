@@ -7,6 +7,8 @@ import { TopBarPresentation } from "./TopBar";
 function makeProps(mode: Mode) {
   return {
     blastOn: false,
+    expandAllMath: false,
+    onToggleExpandAllMath: () => undefined,
     hiddenKinds: new Set<string>(),
     layoutPhase: "ready" as const,
     mode,
@@ -23,13 +25,14 @@ function makeProps(mode: Mode) {
 }
 
 describe("TopBarPresentation", () => {
-  it("learn mode shows only the mode switch, learning-path trigger, and search", () => {
+  it("learn mode shows only the mode switch, expand-all-math toggle, and search", () => {
     const markup = renderToStaticMarkup(<TopBarPresentation {...makeProps("learn")} />);
 
     expect(markup).toContain('aria-label="Dashboard mode"');
     expect(markup).toContain("Guided");
     expect(markup).toContain("Explore");
-    expect(markup).toContain("Learning path");
+    expect(markup).toContain("Expand all math");
+    expect(markup).toContain('aria-pressed="false"');
     expect(markup).toContain("Find a concept");
     expect(markup).not.toContain('aria-label="Graph view"');
     expect(markup).not.toContain("impact radius");
@@ -47,7 +50,7 @@ describe("TopBarPresentation", () => {
     expect(markup).toContain("Diagnostics");
     expect(markup).not.toContain("blast radius");
     expect(markup).not.toContain("Insights / Trace");
-    expect(markup).not.toContain("Learning path");
+    expect(markup).not.toContain("Expand all math");
   });
 
   it("marks the active mode radio checked", () => {

@@ -44,6 +44,8 @@ function rovingKeyDownHandler(
 
 export type TopBarPresentationProps = {
   blastOn: boolean;
+  expandAllMath: boolean;
+  onToggleExpandAllMath: () => void;
   hiddenKinds: Set<string>;
   layoutPhase: LayoutPhase;
   mode: Mode;
@@ -60,6 +62,8 @@ export type TopBarPresentationProps = {
 
 export function TopBarPresentation({
   blastOn,
+  expandAllMath,
+  onToggleExpandAllMath,
   hiddenKinds,
   layoutPhase,
   mode,
@@ -174,14 +178,12 @@ export function TopBarPresentation({
 
       {mode === "learn" && (
         <CompactPill
-          active={sidebarOpen}
-          aria-controls="left-panel"
-          aria-expanded={sidebarOpen}
-          className="sidebar-sheet-trigger"
-          onClick={onOpenSidebar}
-          ref={sidebarTriggerRef}
+          active={expandAllMath}
+          aria-pressed={expandAllMath}
+          onClick={onToggleExpandAllMath}
+          title="Open every math derivation at once"
         >
-          Learning path
+          Expand all math
         </CompactPill>
       )}
 
@@ -217,12 +219,16 @@ export default function TopBar({
     blastOn,
     setBlastOn,
     layoutPhase,
+    expandAllMath,
+    toggleExpandAllMath,
   } = useApp();
   const noNodes = KE_NODES.length === 0;
 
   return (
     <TopBarPresentation
       blastOn={blastOn}
+      expandAllMath={expandAllMath}
+      onToggleExpandAllMath={toggleExpandAllMath}
       hiddenKinds={hiddenKinds}
       layoutPhase={layoutPhase}
       mode={mode}

@@ -9,7 +9,7 @@ import {
 
 import Canvas from "./components/Canvas";
 import Drawer from "./components/Drawer";
-import LearnPanel, { LEARN_STEPS } from "./components/LearnPanel";
+import ArticleView from "./components/ArticleView";
 import Legend from "./components/Legend";
 import NavigationCoordinator from "./components/NavigationCoordinator";
 import PlayerBar from "./components/PlayerBar";
@@ -19,7 +19,6 @@ import TourOverlay, {
   hasNavigableTourStep,
   type TourSourceStep,
 } from "./components/TourOverlay";
-import { useNodeNavigation } from "./components/useNodeNavigation";
 import { KE_DATA } from "./data.gen";
 import type { LearnStep } from "./lib/learnPath";
 import { useApp, type LayoutPhase, type Mode } from "./store";
@@ -152,11 +151,6 @@ export default function App() {
   const setSelected = useApp((state) => state.setSelected);
   const tourDismissed = useApp((state) => state.tourDismissed);
   const mode = useApp((state) => state.mode);
-  const learnIdx = useApp((state) => state.learnIdx);
-  const setLearnIdx = useApp((state) => state.setLearnIdx);
-  const layoutPhase = useApp((state) => state.layoutPhase);
-  const markStepComplete = useApp((state) => state.markStepComplete);
-  const navigateToNode = useNodeNavigation();
   const selectedNode = DRAWER_NODES.find((node) => node.id === selected);
   const [drawerStatus, setDrawerStatus] = useState<DrawerAnnouncementState>(
     () => nextDrawerAnnouncement({ message: "", revision: 0 }, selected),
@@ -191,19 +185,9 @@ export default function App() {
     }
   }, [narrow]);
 
-  useEffect(() => {
-    const target = autoStartStep({
-      mode,
-      layoutPhase,
-      learnIdx,
-      selected,
-      steps: LEARN_STEPS,
-    });
-    if (!target) return;
-    setLearnIdx(target.index);
-    markStepComplete(target.nodeId);
-    navigateToNode(target.nodeId);
-  }, [layoutPhase, learnIdx, markStepComplete, mode, navigateToNode, selected, setLearnIdx]);
+  // Note: the old learn-mode auto-start effect is gone — learn mode renders
+  // ArticleView (no graph navigation); autoStartStep stays exported for its
+  // unit tests until fully retired.
 
   useEffect(() => {
     if (escapeLayer !== "sidebar") return;
@@ -350,21 +334,21 @@ export default function App() {
           tabIndex={-1}
           type="button"
         />
-        <aside
-          aria-hidden={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
-          aria-label="Insights and build trace"
-          aria-modal={sidebarModalOpen ? true : undefined}
-          className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}
-          id="left-panel"
-          inert={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
-          onKeyDown={trapSidebarFocus}
-          ref={sidebarRef}
-          role={narrow ? "dialog" : "complementary"}
-        >
-          {mode === "learn"
-            ? <LearnPanel onCloseSheet={closeSidebar} />
-            : <Sidebar onCloseSheet={closeSidebar} />}
-        </aside>
+        {mode === "explore" && (
+          <aside
+            aria-hidden={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
+            aria-label="Insights and build trace"
+            aria-modal={sidebarModalOpen ? true : undefined}
+            className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}
+            id="left-panel"
+            inert={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
+            onKeyDown={trapSidebarFocus}
+            ref={sidebarRef}
+            role={narrow ? "dialog" : "complementary"}
+          >
+            <Sidebar onCloseSheet={closeSidebar} />
+          </aside>
+        )}
         <main
           aria-hidden={sidebarModalOpen ? true : undefined}
           className="main"
@@ -382,42 +366,44 @@ export default function App() {
               sidebarTriggerRef={sidebarTriggerRef}
             />
           </header>
-          <div className={`workspace${drawerOpen ? " drawer-open" : ""}`}>
-            <div
-              aria-hidden={drawerModalOpen ? true : undefined}
-              className="canvas-wrap"
-              inert={drawerModalOpen ? true : undefined}
-            >
-              <Canvas />
-              <Legend />
-              <PlayerBar />
-              {mode === "explore" && (
+          {mode === "learn" ? (
+            <ArticleView />
+          ) : (
+            <div className={`workspace${drawerOpen ? " drawer-open" : ""}`}>
+              <div
+                aria-hidden={drawerModalOpen ? true : undefined}
+                className="canvas-wrap"
+                inert={drawerModalOpen ? true : undefined}
+              >
+                <Canvas />
+                <Legend />
+                <PlayerBar />
                 <TourOverlay escapeEnabled={escapeLayer === "tour"} />
+              </div>
+              {drawerModalOpen && (
+                <button
+                  aria-hidden="true"
+                  className="drawer-backdrop"
+                  onClick={() => setSelected(null)}
+                  tabIndex={-1}
+                  type="button"
+                />
+              )}
+              {drawerOpen && (
+                <aside
+                  aria-label="Explanation drawer"
+                  aria-modal={drawerModalOpen ? true : undefined}
+                  className="drawer"
+                  id="drawer"
+                  onKeyDown={trapDrawerFocus}
+                  ref={drawerRef}
+                  role={drawerModalOpen ? "dialog" : "complementary"}
+                >
+                  <Drawer />
+                </aside>
               )}
             </div>
-            {drawerModalOpen && (
-              <button
-                aria-hidden="true"
-                className="drawer-backdrop"
-                onClick={() => setSelected(null)}
-                tabIndex={-1}
-                type="button"
-              />
-            )}
-            {drawerOpen && (
-              <aside
-                aria-label="Explanation drawer"
-                aria-modal={drawerModalOpen ? true : undefined}
-                className="drawer"
-                id="drawer"
-                onKeyDown={trapDrawerFocus}
-                ref={drawerRef}
-                role={drawerModalOpen ? "dialog" : "complementary"}
-              >
-                <Drawer />
-              </aside>
-            )}
-          </div>
+          )}
         </main>
       </div>
     </ReactFlowProvider>

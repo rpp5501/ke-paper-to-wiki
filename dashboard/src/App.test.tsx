@@ -25,21 +25,20 @@ beforeEach(() => {
 });
 
 describe("App", () => {
-  it("renders the local graph workbench in its layout-loading state", () => {
+  it("renders the article shell in learn mode with no graph chrome", () => {
     const markup = renderToStaticMarkup(<App />);
 
     expect(markup).toContain('class="shell"');
-    expect(markup).toContain('id="left-panel"');
     expect(markup).toContain('id="topbar"');
+    expect(markup).toContain('class="article-shell"');
     expect(markup).not.toContain('id="drawer"');
-    expect(markup).toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);
-    expect(markup).not.toContain("nodes loaded");
+    expect(markup).not.toContain('id="left-panel"'); // explore-only rail
+    expect(markup).not.toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);
   });
 
   it("renders mode switch and search semantics with a disabled search reason", () => {
     const markup = renderToStaticMarkup(<App />);
 
-    expect(markup).toContain('role="complementary"');
     expect(markup).toContain('aria-label="Dashboard mode"');
     expect(markup).toContain('placeholder="Find a concept… (Enter)"');
     expect(markup).toContain('aria-describedby="search-disabled-reason"');
@@ -47,10 +46,11 @@ describe("App", () => {
     expect(markup).toContain('id="search-disabled-reason"');
   });
 
-  it("lands in learn mode: learning path rendered, diagnostics and tour card absent", () => {
+  it("lands in learn mode: article rendered, diagnostics and tour card absent", () => {
     const markup = renderToStaticMarkup(<App />);
-    expect(markup).toContain("ideas that matter");
+    expect(markup).toContain("Guided reading");
     expect(markup).toContain("Guided");
+    expect(markup).toContain("Expand all math");
     expect(markup).not.toContain("Insights &amp; Health");
     expect(markup).not.toContain("Guided tour");
   });
