@@ -158,6 +158,14 @@ describe("mode & learn progress", () => {
     expect(useApp.getState().completedSteps.has("attention")).toBe(true);
   });
 
+  it("toggleExpandAllMath flips the flag, starting closed", () => {
+    expect(useApp.getState().expandAllMath).toBe(false);
+    useApp.getState().toggleExpandAllMath();
+    expect(useApp.getState().expandAllMath).toBe(true);
+    useApp.getState().toggleExpandAllMath();
+    expect(useApp.getState().expandAllMath).toBe(false);
+  });
+
   it("markStepComplete is idempotent and does not mutate the previous set", () => {
     const before = useApp.getState().completedSteps;
     useApp.getState().markStepComplete("transformer");

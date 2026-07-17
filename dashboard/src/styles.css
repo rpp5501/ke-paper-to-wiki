@@ -1440,6 +1440,27 @@ input:focus-visible,
   font-style: italic;
 }
 
+.math-reveal {
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+.math-reveal-summary {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+}
+.math-reveal-shape { color: var(--ink); font-style: italic; }
+.math-reveal-hint { flex: 0 0 auto; color: var(--accent); font-weight: 600; }
+.math-reveal-body { padding: 0 14px 12px; }
+
 /* ── Drawer pedagogy ────────────────────────────── */
 .drawer-lead {
   font-size: 14px; line-height: 1.6; color: var(--text);

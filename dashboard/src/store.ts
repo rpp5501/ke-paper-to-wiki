@@ -47,6 +47,8 @@ export interface AppState {
   setMode: (mode: Mode) => void;
   completedSteps: Set<string>;
   markStepComplete: (nodeId: string) => void;
+  expandAllMath: boolean;
+  toggleExpandAllMath: () => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -117,4 +119,7 @@ export const useApp = create<AppState>((set) => ({
       completedSteps.add(nodeId);
       return { completedSteps };
     }),
+  expandAllMath: false,
+  toggleExpandAllMath: () =>
+    set((state) => ({ expandAllMath: !state.expandAllMath })),
 }));
