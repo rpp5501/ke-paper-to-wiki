@@ -34,7 +34,7 @@ describe("responsive layer ordering", () => {
   });
 
   it("keeps code excerpts class-based and makes mobile overlays non-overlapping", () => {
-    expect(styles).toMatch(/\.code-viewer\s*\{[^}]*font-size:\s*12px/s);
+    expect(styles).toMatch(/\.code-viewer\s*\{[^}]*font-size:\s*var\(--fs-small\)/s);
     expect(styles).toMatch(/\.code-viewer\s*\{[^}]*padding:\s*10px/s);
     expect(styles).toMatch(/\.code-viewer\s*\{[^}]*overflow-x:\s*auto/s);
     expect(styles).toContain(".token.keyword");
@@ -57,6 +57,21 @@ describe("responsive layer ordering", () => {
     expect(styles).toMatch(
       /\.workspace\.drawer-open \.tour-overlay\s*\{[^}]*right:/s,
     );
+  });
+});
+
+describe("reader v2 design tokens", () => {
+  it("defines the token set", () => {
+    for (const token of ["--bg-page", "--bg-rail", "--bg-card", "--ink", "--accent",
+      "--fs-body: 18px", "--fs-small: 14px", "--lh-body: 1.65",
+      "--article-width: 700px", "--term-1", "--term-5", "--font-body"]) {
+      expect(styles).toContain(token);
+    }
+  });
+
+  it("has no sub-14px font sizes anywhere", () => {
+    const sizes = [...styles.matchAll(/font-size:\s*([\d.]+)px/g)].map((m) => Number(m[1]));
+    expect(sizes.filter((s) => s < 14)).toEqual([]);
   });
 });
 
