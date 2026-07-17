@@ -17,7 +17,7 @@ Inspiration targets (distill.pub, seeing-theory.brown.edu) do the opposite: pros
 1. **Layout:** Article-first, distill-style. Learn mode becomes a full-width reading experience; the graph is demoted to a progress rail in Learn mode and survives unchanged as Explore mode.
 2. **Scope:** Presentation layer rebuilt for all papers + content upgrade for **2504 only** (flagship). 1306/2205 get the new presentation with existing content.
 3. **Math UX:** Annotated equations + stepped derivations + progressive reveal (scoped — see §4). Worked numeric examples: not in this slice.
-4. **UI redesign:** Full visual redesign, **light-first distill-style theme** (chosen as recommended default when the theme question went unanswered; all colors live in one tokens file, so revisiting is cheap).
+4. **UI redesign:** Full visual redesign, **dark theme, refined** (user's explicit choice). Keep the dark-slate identity but tune it for long-form reading: raised body-text contrast, warmer/less saturated surface tones, clear elevation hierarchy. All colors live in one tokens file.
 5. **Visuals feature:** planned now as a content contract (`figure` block + placeholder renderer), implemented in a later slice.
 
 ## 1. Article structure (per paper)
@@ -44,10 +44,10 @@ One design-tokens file (CSS variables), consumed everywhere:
 
 ## 3. UI redesign (visual system)
 
-- **Theme:** light-first. Warm paper-white reading surface, near-black ink text, one restrained accent color (for links, active states, annotated-equation term colors derive from an accent-adjacent palette). Defined entirely in the tokens file.
+- **Theme:** dark, refined for reading. Deep warm-slate surfaces with a clear elevation ladder (page < rail < cards), high-contrast off-white body ink (WCAG AA+ for long-form), one restrained accent color for links/active states. Annotated-equation term colors are a small bright categorical palette tuned for dark backgrounds. Defined entirely in the tokens file.
 - **App chrome:** slim top header (paper id/title, Learn ↔ Explore switch, "Expand all math", search). No competing panels in Learn mode.
 - **Progress rail** (Learn mode): slim left rail with chapter list (visited/current state), overall progress, and a small static minimap thumbnail of the graph that deep-links into Explore. Collapsible.
-- **Explore mode:** full graph canvas as today, restyled to the light tokens (node colors, edge colors, level badges, panel styling). Functionality unchanged.
+- **Explore mode:** full graph canvas as today, restyled to the refined dark tokens (node colors, edge colors, level badges, panel styling). Functionality unchanged.
 - **States & polish:** consistent focus/hover states, reduced-motion-respecting transitions, tuned empty/loading states. Contrast meets WCAG AA for body text.
 - **Responsive:** the article column degrades gracefully to narrow windows; the rail collapses first.
 
@@ -98,5 +98,5 @@ Unchanged direction: `graph.json` + `pack.json` + pages → `build_data.py` → 
 - Interactive figure runtime (§6 — later slice).
 - Content deepening for 1306/2205.
 - Worked numeric examples.
-- Dark mode (tokens make it a cheap later addition).
+- Light mode (tokens make it a cheap later addition).
 - Any pipeline/extraction changes (`concepts.py`, `build_dashboard.py`).
