@@ -66,6 +66,15 @@ def test_instantiate_replaces_placeholder():
     assert '"seed": 7' in html
 
 
+def test_page_hash_ignores_platform_line_endings(tmp_path):
+    lf_page = tmp_path / "lf.md"
+    crlf_page = tmp_path / "crlf.md"
+    lf_page.write_bytes(b"# Page\n\nEvidence.\n")
+    crlf_page.write_bytes(b"# Page\r\n\r\nEvidence.\r\n")
+
+    assert page_sha256(lf_page) == page_sha256(crlf_page)
+
+
 def test_softmax_rows_are_added_to_their_actual_parent():
     html = instantiate_template("softmax-temperature", {"labels": ["a", "b"]})
     assert "logitsDiv.appendChild(row)" in html

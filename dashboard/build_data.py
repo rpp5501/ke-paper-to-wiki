@@ -299,8 +299,9 @@ def _load_viz(viz_dir, pages_dir):
         stale = True
         page = entry.get("page")
         if pages_dir and page and (Path(pages_dir) / page).exists():
-            digest = hashlib.sha256(
-                (Path(pages_dir) / page).read_bytes()).hexdigest()
+            content = (Path(pages_dir) / page).read_bytes()
+            content = content.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            digest = hashlib.sha256(content).hexdigest()
             stale = digest != entry.get("page_sha256")
         if stale:
             print(f"viz: {node_id}: page evidence stale or missing")

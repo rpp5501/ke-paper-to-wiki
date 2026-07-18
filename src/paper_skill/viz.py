@@ -60,7 +60,8 @@ def instantiate_template(template_id: str, params: dict) -> str:
 
 
 def page_sha256(page_path: Path) -> str:
-    return hashlib.sha256(Path(page_path).read_bytes()).hexdigest()
+    content = Path(page_path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(content).hexdigest()
 
 
 def load_manifest(out_dir: Path) -> dict:
