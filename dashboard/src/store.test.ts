@@ -18,6 +18,7 @@ beforeEach(() => {
     navigationRequestId: 0,
     pendingNavigation: null,
     mode: "learn",
+    drawerOpen: false,
     vizFocus: null,
     completedSteps: new Set(),
   } as never);
@@ -30,6 +31,37 @@ describe("useApp", () => {
 
     expect(useApp.getState().selected).toBe("attention");
     expect(useApp.getState().view).toBe("bridged");
+  });
+
+  it("hides and restores details without clearing the selected node", () => {
+    useApp.getState().setSelected("attention");
+    expect(useApp.getState()).toMatchObject({
+      selected: "attention",
+      drawerOpen: true,
+    });
+
+    useApp.getState().setDrawerOpen(false);
+    expect(useApp.getState()).toMatchObject({
+      selected: "attention",
+      drawerOpen: false,
+    });
+
+    useApp.getState().setDrawerOpen(true);
+    expect(useApp.getState()).toMatchObject({
+      selected: "attention",
+      drawerOpen: true,
+    });
+
+    useApp.getState().setSelected(null);
+    expect(useApp.getState()).toMatchObject({
+      selected: null,
+      drawerOpen: false,
+    });
+  });
+
+  it("does not open details without a selected node", () => {
+    useApp.getState().setDrawerOpen(true);
+    expect(useApp.getState().drawerOpen).toBe(false);
   });
 
   it("toggles edge kinds without mutating the previous set", () => {
@@ -153,6 +185,7 @@ describe("mode & learn progress", () => {
     expect(useApp.getState()).toMatchObject({
       mode: "explore",
       selected: "scaled-dot-product-attention",
+      drawerOpen: true,
       vizFocus: "scaled-dot-product-attention",
     });
   });

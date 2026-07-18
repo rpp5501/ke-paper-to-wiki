@@ -18,6 +18,8 @@ export type PlayerState = {
 export interface AppState {
   selected: string | null;
   setSelected: (id: string | null) => void;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
   view: View;
   setView: (view: View) => void;
   hiddenKinds: Set<string>;
@@ -56,7 +58,14 @@ export interface AppState {
 
 export const useApp = create<AppState>((set) => ({
   selected: null,
-  setSelected: (selected) => set({ selected }),
+  setSelected: (selected) => set({
+    selected,
+    drawerOpen: selected !== null,
+  }),
+  drawerOpen: false,
+  setDrawerOpen: (drawerOpen) => set((state) => ({
+    drawerOpen: drawerOpen && state.selected !== null,
+  })),
   view: "concepts",
   setView: (view) => set({ view }),
   hiddenKinds: new Set(),
@@ -130,6 +139,7 @@ export const useApp = create<AppState>((set) => ({
   openVisualization: (nodeId) => set({
     mode: "explore",
     selected: nodeId,
+    drawerOpen: true,
     vizFocus: nodeId,
   }),
 }));
