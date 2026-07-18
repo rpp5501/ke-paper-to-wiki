@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import * as DrawerModule from "./Drawer";
+
 import {
   activeEquation,
   BridgeButton,
@@ -42,6 +44,27 @@ describe("RichMarkdown", () => {
 });
 
 describe("Drawer", () => {
+  it("uses the panel close callback without clearing graph selection", () => {
+    const closeDrawer = (DrawerModule as unknown as {
+      closeDrawer?: (actions: {
+        onClose?: () => void;
+        setSelected: (selected: string | null) => void;
+      }) => void;
+    }).closeDrawer;
+    expect(typeof closeDrawer).toBe("function");
+    if (!closeDrawer) return;
+    let closed = false;
+    let cleared = false;
+
+    closeDrawer({
+      onClose: () => { closed = true; },
+      setSelected: () => { cleared = true; },
+    });
+
+    expect(closed).toBe(true);
+    expect(cleared).toBe(false);
+  });
+
   it("renders the selected concept explanation from the deterministic fixture", () => {
     const markup = renderToStaticMarkup(
       <DrawerPresentation

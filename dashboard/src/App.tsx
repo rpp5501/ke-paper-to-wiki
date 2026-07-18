@@ -153,19 +153,27 @@ function useNarrowViewport() {
   return narrow;
 }
 
+export function initialSidebarOpen(narrow: boolean) {
+  return !narrow;
+}
+
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const narrow = useNarrowViewport();
+  const [sidebarOpen, setSidebarOpen] = useState(() => initialSidebarOpen(
+    typeof window !== "undefined"
+      && window.matchMedia("(max-width: 899px)").matches,
+  ));
   const panels = usePanelWidths();
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
+  const drawerOpen = useApp((state) => state.drawerOpen);
+  const setDrawerOpen = useApp((state) => state.setDrawerOpen);
   const tourDismissed = useApp((state) => state.tourDismissed);
   const mode = useApp((state) => state.mode);
   const selectedNode = DRAWER_NODES.find((node) => node.id === selected);
   const [drawerStatus, setDrawerStatus] = useState<DrawerAnnouncementState>(
     () => nextDrawerAnnouncement({ message: "", revision: 0 }, selected),
   );
-  const drawerOpen = selected !== null;
   const drawerModalOpen = narrow && drawerOpen;
   const sidebarModalOpen = narrow && sidebarOpen && !drawerModalOpen;
   const tourVisible = tourIsVisible({
@@ -222,6 +230,10 @@ export default function App() {
     }
   }, [narrow]);
 
+  const closeDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, [setDrawerOpen]);
+
   // Note: the old learn-mode auto-start effect is gone — learn mode renders
   // ArticleView (no graph navigation); autoStartStep stays exported for its
   // unit tests until fully retired.
@@ -242,6 +254,10 @@ export default function App() {
       window.removeEventListener("keydown", onEscape);
     };
   }, [closeSidebar, escapeLayer]);
+
+  useEffect(() => {
+    if (narrow) setSidebarOpen(false);
+  }, [narrow]);
 
   useEffect(() => {
     if (drawerModalOpen && sidebarOpen) setSidebarOpen(false);
@@ -304,11 +320,11 @@ export default function App() {
   useEffect(() => {
     if (escapeLayer !== "drawer") return;
     const onEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setSelected(null);
+      if (event.key === "Escape") closeDrawer();
     };
     window.addEventListener("keydown", onEscape);
     return () => window.removeEventListener("keydown", onEscape);
-  }, [escapeLayer, setSelected]);
+  }, [closeDrawer, escapeLayer]);
 
   const trapSidebarFocus = (event: KeyboardEvent<HTMLElement>) => {
     if (!sidebarModalOpen || event.key !== "Tab") return;
@@ -373,12 +389,12 @@ export default function App() {
         />
         {mode === "explore" && (
           <aside
-            aria-hidden={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
+            aria-hidden={drawerModalOpen || !sidebarOpen ? true : undefined}
             aria-label="Insights and build trace"
             aria-modal={sidebarModalOpen ? true : undefined}
             className={`sidebar${sidebarOpen ? " sidebar-open" : ""}`}
             id="left-panel"
-            inert={drawerModalOpen || (narrow && !sidebarOpen) ? true : undefined}
+            inert={drawerModalOpen || !sidebarOpen ? true : undefined}
             onKeyDown={trapSidebarFocus}
             ref={sidebarRef}
             role={narrow ? "dialog" : "complementary"}
@@ -386,7 +402,7 @@ export default function App() {
             <Sidebar onCloseSheet={closeSidebar} />
           </aside>
         )}
-        {mode === "explore" && !narrow && (
+        {mode === "explore" && sidebarOpen && !narrow && (
           <PanelResizer
             bounds={diagnosticsBounds}
             id="diagnostics"
@@ -409,7 +425,7 @@ export default function App() {
             inert={drawerModalOpen ? true : undefined}
           >
             <TopBar
-              onOpenSidebar={() => setSidebarOpen(true)}
+              onToggleSidebar={() => setSidebarOpen((open) => !open)}
               sidebarOpen={sidebarOpen}
               sidebarTriggerRef={sidebarTriggerRef}
             />
@@ -438,7 +454,7 @@ export default function App() {
                 <button
                   aria-hidden="true"
                   className="drawer-backdrop"
-                  onClick={() => setSelected(null)}
+                  onClick={closeDrawer}
                   tabIndex={-1}
                   type="button"
                 />
@@ -464,7 +480,7 @@ export default function App() {
                   ref={drawerRef}
                   role={drawerModalOpen ? "dialog" : "complementary"}
                 >
-                  <Drawer />
+                  <Drawer onClose={closeDrawer} />
                 </aside>
               )}
             </div>

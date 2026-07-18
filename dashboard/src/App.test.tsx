@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import * as AppModule from "./App";
+
 import App, {
   autoStartStep,
   drawerAnnouncementFor,
@@ -25,6 +27,16 @@ beforeEach(() => {
 });
 
 describe("App", () => {
+  it("starts with diagnostics visible only on a wide viewport", () => {
+    const initialSidebarOpen = (AppModule as unknown as {
+      initialSidebarOpen?: (narrow: boolean) => boolean;
+    }).initialSidebarOpen;
+    expect(typeof initialSidebarOpen).toBe("function");
+    if (!initialSidebarOpen) return;
+    expect(initialSidebarOpen(false)).toBe(true);
+    expect(initialSidebarOpen(true)).toBe(false);
+  });
+
   it("renders the article shell in learn mode with no graph chrome", () => {
     const markup = renderToStaticMarkup(<App />);
 
@@ -147,7 +159,7 @@ describe("App", () => {
       wasModalOpen: false,
       isModalOpen: false,
       previousSelected: "attention",
-      selected: null,
+      selected: "attention",
     })).toEqual({ origin: "restore", focus: null });
   });
 

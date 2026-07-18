@@ -45,13 +45,16 @@ function rovingKeyDownHandler(
 
 export type TopBarPresentationProps = {
   blastOn: boolean;
+  drawerAvailable: boolean;
+  drawerOpen: boolean;
   expandAllMath: boolean;
   onToggleExpandAllMath: () => void;
   hiddenKinds: Set<string>;
   layoutPhase: LayoutPhase;
   mode: Mode;
   noNodes: boolean;
-  onOpenSidebar: () => void;
+  onToggleDrawer: () => void;
+  onToggleSidebar: () => void;
   onSetBlastOn: (blastOn: boolean) => void;
   onSetMode: (mode: Mode) => void;
   onSetView: (view: (typeof VIEWS)[number]) => void;
@@ -63,13 +66,16 @@ export type TopBarPresentationProps = {
 
 export function TopBarPresentation({
   blastOn,
+  drawerAvailable,
+  drawerOpen,
   expandAllMath,
   onToggleExpandAllMath,
   hiddenKinds,
   layoutPhase,
   mode,
   noNodes,
-  onOpenSidebar,
+  onToggleDrawer,
+  onToggleSidebar,
   onSetBlastOn,
   onSetMode,
   onSetView,
@@ -115,16 +121,36 @@ export function TopBarPresentation({
 
       {mode === "explore" && (
         <>
-          <CompactPill
-            active={sidebarOpen}
-            aria-controls="left-panel"
-            aria-expanded={sidebarOpen}
-            className="sidebar-sheet-trigger"
-            onClick={onOpenSidebar}
-            ref={sidebarTriggerRef}
-          >
-            Diagnostics
-          </CompactPill>
+          <div aria-label="Panels" className="topbar-group panel-controls" role="group">
+            <CompactPill
+              active={sidebarOpen}
+              aria-controls="left-panel"
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? "Close left panel" : "Open left panel"}
+              aria-pressed={sidebarOpen}
+              className="panel-toggle"
+              onClick={onToggleSidebar}
+              ref={sidebarTriggerRef}
+              title={sidebarOpen ? "Close left panel" : "Open left panel"}
+            >
+              <PanelSideIcon side="left" />
+            </CompactPill>
+            <CompactPill
+              active={drawerOpen}
+              aria-controls="drawer"
+              aria-expanded={drawerOpen}
+              aria-label={drawerOpen ? "Close right panel" : "Open right panel"}
+              aria-pressed={drawerOpen}
+              className="panel-toggle"
+              disabled={!drawerAvailable}
+              onClick={onToggleDrawer}
+              title={drawerAvailable
+                ? drawerOpen ? "Close right panel" : "Open right panel"
+                : "Select a node to open the right panel"}
+            >
+              <PanelSideIcon side="right" />
+            </CompactPill>
+          </div>
 
           <div aria-label="Graph view" className="topbar-group" role="radiogroup">
             {VIEWS.map((candidate, index) => (
@@ -200,13 +226,13 @@ export function TopBarPresentation({
 }
 
 type TopBarProps = {
-  onOpenSidebar: () => void;
+  onToggleSidebar: () => void;
   sidebarOpen: boolean;
   sidebarTriggerRef: Ref<HTMLButtonElement>;
 };
 
 export default function TopBar({
-  onOpenSidebar,
+  onToggleSidebar,
   sidebarOpen,
   sidebarTriggerRef,
 }: TopBarProps) {
@@ -222,6 +248,9 @@ export default function TopBar({
     layoutPhase,
     expandAllMath,
     toggleExpandAllMath,
+    selected,
+    drawerOpen,
+    setDrawerOpen,
   } = useApp();
   const noNodes = KE_NODES.length === 0;
 
@@ -229,13 +258,16 @@ export default function TopBar({
     <>
       <TopBarPresentation
         blastOn={blastOn}
+        drawerAvailable={selected !== null}
+        drawerOpen={drawerOpen}
         expandAllMath={expandAllMath}
         onToggleExpandAllMath={toggleExpandAllMath}
         hiddenKinds={hiddenKinds}
         layoutPhase={layoutPhase}
         mode={mode}
         noNodes={noNodes}
-        onOpenSidebar={onOpenSidebar}
+        onToggleDrawer={() => setDrawerOpen(!drawerOpen)}
+        onToggleSidebar={onToggleSidebar}
         onSetBlastOn={setBlastOn}
         onSetMode={setMode}
         onSetView={setView}
@@ -246,6 +278,22 @@ export default function TopBar({
       />
       <VizGallery />
     </>
+  );
+}
+
+export function PanelSideIcon({ side }: { side: "left" | "right" }) {
+  const divider = side === "left" ? 7 : 17;
+  return (
+    <svg
+      aria-hidden="true"
+      className="panel-toggle-icon"
+      fill="none"
+      focusable="false"
+      viewBox="0 0 24 24"
+    >
+      <rect height="16" rx="2" stroke="currentColor" strokeWidth="1.7" width="20" x="2" y="4" />
+      <path d={`M${divider} 4v16`} stroke="currentColor" strokeWidth="1.7" />
+    </svg>
   );
 }
 

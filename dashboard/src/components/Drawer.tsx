@@ -340,6 +340,7 @@ export function BridgeButton({
 export type DrawerPresentationProps = {
   selected: string | null;
   layoutPhase: LayoutPhase;
+  onClose?: () => void;
   setSelected: (selected: string | null) => void;
   setHoverEq: (equation: string | null) => void;
   navigateToNode: (nodeId: string) => void;
@@ -348,6 +349,7 @@ export type DrawerPresentationProps = {
 export function DrawerPresentation({
   selected,
   layoutPhase,
+  onClose,
   setSelected,
   setHoverEq,
   navigateToNode,
@@ -400,7 +402,7 @@ export function DrawerPresentation({
         <button
           aria-label="Close explanation"
           className="drawer-close"
-          onClick={() => setSelected(null)}
+          onClick={() => closeDrawer({ onClose, setSelected })}
           type="button"
         >
           Close
@@ -496,7 +498,18 @@ export function DrawerPresentation({
   );
 }
 
-export default function Drawer() {
+export function closeDrawer({
+  onClose,
+  setSelected,
+}: {
+  onClose?: () => void;
+  setSelected: (selected: string | null) => void;
+}) {
+  if (onClose) onClose();
+  else setSelected(null);
+}
+
+export default function Drawer({ onClose }: { onClose?: () => void }) {
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
   const setHoverEq = useApp((state) => state.setHoverEq);
@@ -507,6 +520,7 @@ export default function Drawer() {
     <DrawerPresentation
       layoutPhase={layoutPhase}
       navigateToNode={navigateToNode}
+      onClose={onClose}
       selected={selected}
       setHoverEq={setHoverEq}
       setSelected={setSelected}

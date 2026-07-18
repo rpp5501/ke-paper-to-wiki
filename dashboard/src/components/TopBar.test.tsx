@@ -13,7 +13,10 @@ function makeProps(mode: Mode) {
     layoutPhase: "ready" as const,
     mode,
     noNodes: false,
-    onOpenSidebar: () => undefined,
+    drawerAvailable: false,
+    drawerOpen: false,
+    onToggleDrawer: () => undefined,
+    onToggleSidebar: () => undefined,
     onSetBlastOn: () => undefined,
     onSetMode: () => undefined,
     onSetView: () => undefined,
@@ -36,7 +39,8 @@ describe("TopBarPresentation", () => {
     expect(markup).toContain("Find a concept");
     expect(markup).not.toContain('aria-label="Graph view"');
     expect(markup).not.toContain("impact radius");
-    expect(markup).not.toContain("Diagnostics");
+    expect(markup).not.toContain("Open left panel");
+    expect(markup).not.toContain("Open right panel");
   });
 
   it("explore mode shows the full toolbar with plain-language copy", () => {
@@ -47,7 +51,12 @@ describe("TopBarPresentation", () => {
     expect(markup).toContain(
       'title="Highlight everything that depends on the selected node"',
     );
-    expect(markup).toContain("Diagnostics");
+    expect(markup).toContain('aria-label="Open left panel"');
+    expect(markup).toContain('aria-controls="left-panel"');
+    expect(markup).toContain('aria-label="Open right panel"');
+    expect(markup).toContain('aria-controls="drawer"');
+    expect(markup).toMatch(/aria-label="Open right panel"[^>]*disabled/);
+    expect(markup).not.toContain("Diagnostics");
     expect(markup).not.toContain("blast radius");
     expect(markup).not.toContain("Insights / Trace");
     expect(markup).not.toContain("Expand all math");
@@ -58,5 +67,20 @@ describe("TopBarPresentation", () => {
     const group = markup.split('aria-label="Dashboard mode"')[1].split("</div>")[0];
 
     expect(group).toContain('aria-checked="true"');
+  });
+
+  it("describes both open panels as one-click close actions", () => {
+    const markup = renderToStaticMarkup(
+      <TopBarPresentation
+        {...makeProps("explore")}
+        drawerAvailable
+        drawerOpen
+        sidebarOpen
+      />,
+    );
+
+    expect(markup).toContain('aria-label="Close left panel"');
+    expect(markup).toContain('aria-label="Close right panel"');
+    expect(markup).toContain('aria-expanded="true"');
   });
 });

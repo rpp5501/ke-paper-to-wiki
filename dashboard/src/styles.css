@@ -170,8 +170,18 @@ input:focus-visible,
   flex: 0 0 18px;
 }
 
-.sidebar-sheet-trigger {
-  display: none;
+.panel-controls {
+  gap: 2px;
+}
+
+.panel-toggle .pill {
+  padding: 5px 9px;
+}
+
+.panel-toggle-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .workspace {
@@ -1171,6 +1181,12 @@ input:focus-visible,
   }
 }
 
+@media (min-width: 900px) {
+  .sidebar:not(.sidebar-open) {
+    display: none;
+  }
+}
+
 @media (max-width: 899px) {
   .panel-resizer {
     display: none;
@@ -1221,10 +1237,6 @@ input:focus-visible,
     border: 0;
     background: color-mix(in srgb, var(--bg) 72%, transparent);
     cursor: pointer;
-  }
-
-  .sidebar-sheet-trigger {
-    display: inline-flex;
   }
 
   .sidebar-sheet-header {
