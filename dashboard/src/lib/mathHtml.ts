@@ -176,6 +176,12 @@ function findNextUnescapedDollar(text: string, from: number) {
   return next;
 }
 
+function isNumericMathCandidate(value: string) {
+  return /^\d+(?:\.\d+)?$/.test(value)
+    || /^\d+[A-Za-z]$/.test(value)
+    || /^\d+(?:\.\d+)?\s*[+\-*/=]\s*\d+(?:\.\d+)?$/.test(value);
+}
+
 function normalizeLegacyMathInProse(text: string): string {
   let output = "";
   let cursor = 0;
@@ -206,7 +212,10 @@ function normalizeLegacyMathInProse(text: string): string {
       && text[cursor - 1] !== "\\"
     ) {
       const nextDollar = findNextUnescapedDollar(text, cursor + 1);
-      if (nextDollar >= 0 && /\d/.test(text[nextDollar + 1] ?? "")) {
+      const candidate = nextDollar < 0
+        ? ""
+        : text.slice(cursor + 1, nextDollar);
+      if (!isNumericMathCandidate(candidate)) {
         output += String.raw`\$`;
         cursor += 1;
         continue;

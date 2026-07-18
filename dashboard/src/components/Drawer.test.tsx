@@ -96,6 +96,25 @@ describe("RichMarkdown", () => {
     expect(markup).not.toContain(markdown);
   });
 
+  it.each([
+    {
+      markdown: "Costs $5; let $x$ vary",
+      prose: "Costs $5; let ",
+    },
+    {
+      markdown: "Costs $5 and $10; let $x$ vary",
+      prose: "Costs $5 and $10; let ",
+    },
+  ])("preserves mixed currency and math case %#", ({ markdown, prose }) => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup).toContain(prose);
+    expect(markup.match(/class="katex"/g)).toHaveLength(1);
+    expect(markup).not.toContain("$x$");
+  });
+
   it("keeps glossary decoration outside KaTeX output", () => {
     const markup = renderToStaticMarkup(
       <RichMarkdown
