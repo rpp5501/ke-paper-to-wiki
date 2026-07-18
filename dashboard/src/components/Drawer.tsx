@@ -23,6 +23,7 @@ import {
   safeKatexOptions,
   safeKatexPluginOptions,
   restoreEscapedDollars,
+  restoreMathEscapedDollars,
   splitTiers,
   preserveMathForMarkdown,
   tokenizeRichText,
@@ -143,6 +144,9 @@ type MarkdownAstNode = {
   type?: string;
   value?: string;
   children?: MarkdownAstNode[];
+  data?: {
+    hChildren?: MarkdownAstNode[];
+  };
 };
 
 function rehypeRestoreEscapedDollars() {
@@ -150,6 +154,26 @@ function rehypeRestoreEscapedDollars() {
     const visit = (node: MarkdownAstNode) => {
       if (node.type === "text" && typeof node.value === "string") {
         node.value = restoreEscapedDollars(node.value);
+      }
+      node.children?.forEach(visit);
+    };
+    visit(tree);
+  };
+}
+
+function remarkRestoreMathEscapedDollars() {
+  return (tree: MarkdownAstNode) => {
+    const visit = (node: MarkdownAstNode) => {
+      if (
+        (node.type === "inlineMath" || node.type === "math")
+        && typeof node.value === "string"
+      ) {
+        node.value = restoreMathEscapedDollars(node.value);
+        node.data?.hChildren?.forEach((child) => {
+          if (child.type === "text" && typeof child.value === "string") {
+            child.value = restoreMathEscapedDollars(child.value);
+          }
+        });
       }
       node.children?.forEach(visit);
     };
@@ -240,6 +264,7 @@ export function RichMarkdown({ glossary, markdown }: {
       remarkPlugins={[
         remarkGfm,
         [remarkMath, { singleDollarTextMath: true }],
+        remarkRestoreMathEscapedDollars,
       ]}
     >
       {preserveMathForMarkdown(markdown)}

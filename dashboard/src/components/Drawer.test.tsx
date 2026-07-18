@@ -104,6 +104,30 @@ describe("RichMarkdown", () => {
     expect(markup).not.toContain(markdown);
   });
 
+  it("renders TeX ending in an escaped dollar without merging delimiters", () => {
+    const markdown = String.raw`$2\$$`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup.match(/class="katex"/g)).toHaveLength(1);
+    expect(markup).not.toContain("\uE000");
+    expect(markup).not.toContain("\uE001");
+    expect(markup).not.toContain(markdown);
+  });
+
+  it("recognizes an inline-math closer after an even backslash run", () => {
+    const markdown = String.raw`$x\\$ price \$5 and $z$`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup.match(/class="katex"/g)).toHaveLength(2);
+    expect(markup).toContain("price $5 and ");
+    expect(markup).not.toContain("\uE000");
+    expect(markup).not.toContain("\uE001");
+  });
+
   it.each([
     "$2x$",
     "$2 + 2$",

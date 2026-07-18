@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   preserveMathForMarkdown,
   renderMathToString,
+  restoreMathEscapedDollars,
   safeKatexOptions,
   safeKatexPluginOptions,
   splitTiers,
@@ -37,6 +38,21 @@ describe("preserveMathForMarkdown", () => {
     expect(preserveMathForMarkdown(markdown)).toBe(
       "\\(unfinished\n\nThen $x$.",
     );
+  });
+
+  it("protects trailing escaped-dollar TeX without merging delimiters", () => {
+    const markdown = String.raw`$2\$$`;
+    const preserved = preserveMathForMarkdown(markdown);
+
+    expect(preserved).not.toMatch(/^\$\$/);
+    expect(restoreMathEscapedDollars(preserved)).toBe(markdown);
+  });
+
+  it("treats a dollar after an even backslash run as a closing delimiter", () => {
+    const markdown = String.raw`$x\\$ price \$5 and $z$`;
+    const preserved = preserveMathForMarkdown(markdown);
+
+    expect(preserved).toBe(String.raw`$x\\$ price ` + "\uE000" + String.raw`5 and $z$`);
   });
 });
 

@@ -36,6 +36,7 @@ const SAFE_KATEX_OPTIONS = Object.freeze({
 });
 
 const ESCAPED_DOLLAR_PLACEHOLDER = "\uE000";
+const MATH_ESCAPED_DOLLAR_PLACEHOLDER = "\uE001";
 
 export function safeKatexOptions(displayMode: boolean) {
   return { ...SAFE_KATEX_OPTIONS, displayMode };
@@ -52,6 +53,10 @@ export function safeKatexPluginOptions() {
 
 export function restoreEscapedDollars(text: string) {
   return text.replaceAll(ESCAPED_DOLLAR_PLACEHOLDER, "$");
+}
+
+export function restoreMathEscapedDollars(text: string) {
+  return text.replaceAll(MATH_ESCAPED_DOLLAR_PLACEHOLDER, String.raw`\$`);
 }
 
 const isWordCharacter = (character: string | undefined) => (
@@ -173,12 +178,27 @@ export function tokenizeRichText(
   return tokens;
 }
 
+function hasOddBackslashRun(text: string, index: number) {
+  let count = 0;
+  while (text[index - count - 1] === "\\") count += 1;
+  return count % 2 === 1;
+}
+
 function findClosingInlineMathDollar(text: string, from: number) {
   let close = text.indexOf("$", from);
-  while (close >= 0 && text[close - 1] === "\\") {
+  while (close >= 0 && hasOddBackslashRun(text, close)) {
     close = text.indexOf("$", close + 1);
   }
   return close;
+}
+
+function protectMathEscapedDollars(tex: string) {
+  return tex.replace(/\\+\$/g, (match) => {
+    const slashCount = match.length - 1;
+    return slashCount % 2 === 1
+      ? "\\".repeat(slashCount - 1) + MATH_ESCAPED_DOLLAR_PLACEHOLDER
+      : match;
+  });
 }
 
 // Prepare prose for remark-math: normalize legacy spans and escaped dollars.
@@ -210,9 +230,7 @@ function normalizeLegacyMathInProse(text: string): string {
       const close = findClosingInlineMathDollar(text, cursor + 1);
       if (close >= 0) {
         const tex = text.slice(cursor + 1, close);
-        output += tex.includes(String.raw`\$`)
-          ? `$$${tex}$$`
-          : text.slice(cursor, close + 1);
+        output += `$${protectMathEscapedDollars(tex)}$`;
         cursor = close + 1;
         continue;
       }
@@ -232,7 +250,7 @@ function normalizeLegacyMathInProse(text: string): string {
         cursor += 2;
         continue;
       }
-      output += `$${text.slice(cursor + 2, close)}$`;
+      output += `$${protectMathEscapedDollars(text.slice(cursor + 2, close))}$`;
       cursor = close + 2;
       continue;
     }
