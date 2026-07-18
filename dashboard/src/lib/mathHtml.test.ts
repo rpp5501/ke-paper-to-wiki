@@ -30,6 +30,14 @@ describe("preserveMathForMarkdown", () => {
 
     expect(preserveMathForMarkdown(markdown)).toBe(markdown);
   });
+
+  it("continues normalizing after an incomplete legacy span", () => {
+    const markdown = "\\(unfinished\n\nThen \\(x\\).";
+
+    expect(preserveMathForMarkdown(markdown)).toBe(
+      "\\(unfinished\n\nThen $x$.",
+    );
+  });
 });
 
 describe("splitTiers", () => {

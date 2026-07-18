@@ -167,7 +167,7 @@ export function tokenizeRichText(
   return tokens;
 }
 
-// Normalize complete single-line legacy spans; fenced and inline code stay literal.
+// Prepare prose for remark-math: normalize legacy spans and protect currency.
 function normalizeLegacyMathInProse(text: string): string {
   let output = "";
   let cursor = 0;
@@ -184,11 +184,31 @@ function normalizeLegacyMathInProse(text: string): string {
       continue;
     }
 
+    if (text.startsWith("$$", cursor)) {
+      const close = text.indexOf("$$", cursor + 2);
+      if (close < 0) return output + text.slice(cursor);
+      output += text.slice(cursor, close + 2);
+      cursor = close + 2;
+      continue;
+    }
+
+    if (
+      text[cursor] === "$"
+      && /\d/.test(text[cursor + 1] ?? "")
+      && text[cursor - 1] !== "\\"
+    ) {
+      output += String.raw`\$`;
+      cursor += 1;
+      continue;
+    }
+
     if (text.startsWith(String.raw`\(`, cursor)) {
       const close = text.indexOf(String.raw`\)`, cursor + 2);
       const newline = text.indexOf("\n", cursor + 2);
       if (close < 0 || (newline >= 0 && newline < close)) {
-        return output + text.slice(cursor);
+        output += String.raw`\(`;
+        cursor += 2;
+        continue;
       }
       output += `$${text.slice(cursor + 2, close)}$`;
       cursor = close + 2;

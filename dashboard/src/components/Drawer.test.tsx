@@ -74,6 +74,15 @@ describe("RichMarkdown", () => {
     expect(markup).toContain("<code class=\"language-tex\">$D$");
   });
 
+  it("preserves ordinary unescaped currency as prose", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown="Costs $5 and $10 today" />,
+    );
+
+    expect(markup).toContain("Costs $5 and $10 today");
+    expect(markup).not.toContain('class="katex"');
+  });
+
   it("keeps glossary decoration outside KaTeX output", () => {
     const markup = renderToStaticMarkup(
       <RichMarkdown
