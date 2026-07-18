@@ -218,6 +218,12 @@ function normalizeLegacyMathInProse(text: string): string {
       continue;
     }
 
+    if (text[cursor] === "$" && hasOddBackslashRun(text, cursor)) {
+      output = output.slice(0, -1) + ESCAPED_DOLLAR_PLACEHOLDER;
+      cursor += 1;
+      continue;
+    }
+
     if (text.startsWith("$$", cursor)) {
       const close = text.indexOf("$$", cursor + 2);
       if (close < 0) return output + text.slice(cursor);
@@ -234,12 +240,6 @@ function normalizeLegacyMathInProse(text: string): string {
         cursor = close + 1;
         continue;
       }
-    }
-
-    if (text.startsWith(String.raw`\$`, cursor)) {
-      output += ESCAPED_DOLLAR_PLACEHOLDER;
-      cursor += 2;
-      continue;
     }
 
     if (text.startsWith(String.raw`\(`, cursor)) {

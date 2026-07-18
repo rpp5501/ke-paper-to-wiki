@@ -128,6 +128,27 @@ describe("RichMarkdown", () => {
     expect(markup).not.toContain("\uE001");
   });
 
+  it("recognizes an inline-math opener after an even backslash run", () => {
+    const markdown = String.raw`\\$x$`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup.match(/class="katex"/g)).toHaveLength(1);
+    expect(markup).not.toContain("\uE000");
+  });
+
+  it("keeps an inline-math opener after an odd backslash run as prose", () => {
+    const markdown = String.raw`\$x$`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup).not.toContain('class="katex"');
+    expect(markup).toContain("$x$");
+    expect(markup).not.toContain("\uE000");
+  });
+
   it.each([
     "$2x$",
     "$2 + 2$",

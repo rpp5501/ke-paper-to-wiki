@@ -54,6 +54,18 @@ describe("preserveMathForMarkdown", () => {
 
     expect(preserved).toBe(String.raw`$x\\$ price ` + "\uE000" + String.raw`5 and $z$`);
   });
+
+  it("treats a dollar after an even backslash run as a math opener", () => {
+    const markdown = String.raw`\\$x$`;
+
+    expect(preserveMathForMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("keeps a dollar after an odd backslash run as escaped prose", () => {
+    const markdown = String.raw`\$x$`;
+
+    expect(preserveMathForMarkdown(markdown)).toBe("\uE000x$");
+  });
 });
 
 describe("splitTiers", () => {
