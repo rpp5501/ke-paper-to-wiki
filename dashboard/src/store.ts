@@ -61,6 +61,7 @@ export const useApp = create<AppState>((set) => ({
   setSelected: (selected) => set({
     selected,
     drawerOpen: selected !== null,
+    vizFocus: null,
   }),
   drawerOpen: false,
   setDrawerOpen: (drawerOpen) => set((state) => ({

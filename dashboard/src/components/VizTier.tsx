@@ -65,12 +65,7 @@ type VizTierProps = {
 
 export default function VizTier({ nodeId, entry }: VizTierProps) {
   const vizFocus = useApp((state) => state.vizFocus);
-  const setVizFocus = useApp((state) => state.setVizFocus);
   const focused = vizFocus === nodeId;
-
-  useEffect(() => {
-    if (focused) setVizFocus(null); // consume the gallery's focus request
-  }, [focused, setVizFocus]);
 
   return <VizTierPresentation entry={entry} focused={focused} />;
 }

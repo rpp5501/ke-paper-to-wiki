@@ -190,6 +190,17 @@ describe("mode & learn progress", () => {
     });
   });
 
+  it("keeps gallery focus for panel reopen, then clears it on regular selection", () => {
+    useApp.getState().openVisualization("scaled-dot-product-attention");
+    useApp.getState().setDrawerOpen(false);
+    useApp.getState().setDrawerOpen(true);
+
+    expect(useApp.getState().vizFocus).toBe("scaled-dot-product-attention");
+
+    useApp.getState().setSelected("transformer");
+    expect(useApp.getState().vizFocus).toBeNull();
+  });
+
   it("defaults to learn mode with no completed steps", () => {
     expect(useApp.getState().mode).toBe("learn");
     expect(useApp.getState().completedSteps.size).toBe(0);

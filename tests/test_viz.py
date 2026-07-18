@@ -66,6 +66,12 @@ def test_instantiate_replaces_placeholder():
     assert '"seed": 7' in html
 
 
+def test_softmax_rows_are_added_to_their_actual_parent():
+    html = instantiate_template("softmax-temperature", {"labels": ["a", "b"]})
+    assert "logitsDiv.appendChild(row)" in html
+    assert 'insertBefore(row, document.getElementById("tempRow"))' not in html
+
+
 def test_unknown_template_raises():
     with pytest.raises(FileNotFoundError):
         instantiate_template("no-such-template", {})
