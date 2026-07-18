@@ -168,6 +168,14 @@ export function tokenizeRichText(
 }
 
 // Prepare prose for remark-math: normalize legacy spans and protect currency.
+function findNextUnescapedDollar(text: string, from: number) {
+  let next = text.indexOf("$", from);
+  while (next >= 0 && text[next - 1] === "\\") {
+    next = text.indexOf("$", next + 1);
+  }
+  return next;
+}
+
 function normalizeLegacyMathInProse(text: string): string {
   let output = "";
   let cursor = 0;
@@ -197,9 +205,12 @@ function normalizeLegacyMathInProse(text: string): string {
       && /\d/.test(text[cursor + 1] ?? "")
       && text[cursor - 1] !== "\\"
     ) {
-      output += String.raw`\$`;
-      cursor += 1;
-      continue;
+      const nextDollar = findNextUnescapedDollar(text, cursor + 1);
+      if (nextDollar >= 0 && /\d/.test(text[nextDollar + 1] ?? "")) {
+        output += String.raw`\$`;
+        cursor += 1;
+        continue;
+      }
     }
 
     if (text.startsWith(String.raw`\(`, cursor)) {

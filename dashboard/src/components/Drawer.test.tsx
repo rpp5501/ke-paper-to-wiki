@@ -83,6 +83,19 @@ describe("RichMarkdown", () => {
     expect(markup).not.toContain('class="katex"');
   });
 
+  it.each([
+    "$2x$",
+    "$2 + 2$",
+    "$0.5$",
+  ])("renders numeric-leading standard math case %#", (markdown) => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup).toContain('class="katex"');
+    expect(markup).not.toContain(markdown);
+  });
+
   it("keeps glossary decoration outside KaTeX output", () => {
     const markup = renderToStaticMarkup(
       <RichMarkdown
