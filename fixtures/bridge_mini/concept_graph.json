@@ -1,0 +1,13 @@
+{
+ "meta": {"kind": "bridged", "source": "arXiv:1706.03762", "generated": "2026-07-16", "version": 1},
+ "nodes": [
+  {"id": "scaled-dot-product-attention", "kind": "concept", "label": "Scaled Dot-Product Attention",
+   "level": 0, "source_ref": "sec_3_2"},
+  {"id": "attention.py::attention", "kind": "function", "label": "attention",
+   "source_ref": "attention.py:L1-L2"}
+ ],
+ "edges": [
+  {"src": "attention.py::attention", "dst": "scaled-dot-product-attention", "kind": "implements",
+   "weight": 1.0, "confidence": "confirmed", "confidence_score": 0.9}
+ ]
+}

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Softmax temperature, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:18px;}
+  .eq [data-t]{padding:1px 3px;border-radius:3px;transition:background 140ms;}
+  .eq [data-t].hl,.eq [data-t]:hover{background:rgba(74,126,187,.35);outline:1px solid var(--accent);}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
+  .panel h2{font-size:12px;color:var(--muted);margin:0 0 8px;font-weight:600;}
+  .lrow{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;}
+  .lrow span.lab{width:64px;color:var(--muted);text-align:right;}
+  .lrow b{width:38px;}
+  input[type=range]{flex:1;accent-color:var(--accent);}
+  .trow{margin:10px 0 4px;}
+  .trow.hl input{accent-color:var(--warn);}
+  .bars .brow{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:8px;}
+  .bars span.lab{width:64px;color:var(--muted);text-align:right;}
+  .bar{height:16px;background:var(--accent);border-radius:3px;transition:width 140ms;min-width:2px;}
+  .bar.top{background:var(--good);}
+  .bars.hl .bar{outline:2px solid var(--warn);}
+  .lrow.hl input{accent-color:var(--warn);}
+  .verdict{font-size:13px;margin-top:10px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:420px;margin:0;}
+  button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:background 140ms;}
+  button:hover{background:var(--accent);}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .hint{font-size:11px;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{"title": "Softmax as a relevance dial", "labels": ["the", "animal", "crossed"], "logits": [0.8, 2.4, 0.3], "betTemperature": 0.5, "prompt": "At T=0.5, which key do you bet takes more than half the attention?"}</script>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <msub><mrow data-t="out"><mi>p</mi></mrow><mi>i</mi></msub><mo>=</mo>
+        <mfrac>
+          <msup><mi>e</mi><mrow><msub><mrow data-t="z"><mi>z</mi></mrow><mi>i</mi></msub><mo>/</mo><mrow data-t="T"><mi>T</mi></mrow></mrow></msup>
+          <mrow data-t="sum"><munder><mo>&#8721;</mo><mi>j</mi></munder>
+            <msup><mi>e</mi><mrow><msub><mi>z</mi><mi>j</mi></msub><mo>/</mo><mrow data-t="T"><mi>T</mi></mrow></mrow></msup></mrow>
+        </mfrac>
+      </mrow>
+    </math>
+  </div>
+  <div class="grid">
+    <div class="panel" id="logitPanel">
+      <h2>logits z&#7522; — scrub them</h2>
+      <div id="logits"></div>
+      <div class="trow lrow" id="tempRow">
+        <span class="lab">T</span>
+        <input type="range" id="temp" min="-1" max="1" step="0.01" value="0">
+        <b id="tval"></b>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>softmax output p&#7522;</h2>
+      <div class="bars" id="bars"></div>
+      <div class="hint">T&#8594;0 sharpens toward argmax; T&#8594;&#8734; flattens toward uniform. Hover the equation.</div>
+    </div>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay">
+    <p id="prompt"></p>
+    <div id="bets"></div>
+  </div>
+</div>
+<script>
+"use strict";
+const P = JSON.parse(document.getElementById("params").textContent);
+const labels = P.labels || ["cat","dog","fish"];
+let z = (P.logits || [2.0, 1.0, 0.2]).slice();
+const betT = P.betTemperature != null ? P.betTemperature : 0.5;
+let revealed = false, betIndex = null;
+document.getElementById("title").textContent = P.title || "Softmax with temperature";
+document.getElementById("prompt").textContent = P.prompt || "Place your bet before you scrub.";
+
+const T = () => Math.pow(10, +document.getElementById("temp").value); /* 0.1 .. 10 */
+function softmax(zs, t){const m=Math.max(...zs);const ex=zs.map(x=>Math.exp((x-m)/t));const s=ex.reduce((a,b)=>a+b,0);return ex.map(x=>x/s);}
+
+const logitsDiv = document.getElementById("logits");
+labels.forEach((lab,i)=>{
+  const row=document.createElement("div");row.className="lrow";row.dataset.i=i;
+  row.innerHTML=`<span class="lab">${lab}</span><input type="range" min="-5" max="5" step="0.1" value="${z[i]}"><b></b>`;
+  row.querySelector("input").addEventListener("input",e=>{z[i]=+e.target.value;render();});
+  logitsDiv.insertBefore(row, document.getElementById("tempRow"));
+});
+
+const barsDiv=document.getElementById("bars");
+labels.forEach((lab,i)=>{
+  const row=document.createElement("div");row.className="brow";row.dataset.i=i;
+  row.innerHTML=`<span class="lab">${lab}</span><div class="bar"></div><b></b>`;
+  barsDiv.appendChild(row);
+});
+
+function render(){
+  const t=T();
+  document.getElementById("tval").textContent=t.toFixed(2);
+  const p=softmax(z,t);
+  const top=p.indexOf(Math.max(...p));
+  document.querySelectorAll("#logits .lrow:not(.trow)").forEach(row=>{
+    row.querySelector("b").textContent=z[+row.dataset.i].toFixed(1);
+  });
+  document.querySelectorAll(".brow").forEach(row=>{
+    const i=+row.dataset.i;
+    const show = revealed ? p[i] : 0;
+    row.querySelector(".bar").style.width=(show*100*0.8)+"%";
+    row.querySelector(".bar").classList.toggle("top", revealed && i===top);
+    row.querySelector("b").textContent=revealed?p[i].toFixed(3):"?";
+  });
+}
+
+/* symbol <-> visual linking */
+const map={z:"#logitPanel",T:"#tempRow",out:"#bars",sum:"#bars"};
+document.querySelectorAll("[data-t]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{const t=document.querySelector(map[el.dataset.t]);if(t)t.classList.add("hl");});
+  el.addEventListener("mouseleave",()=>{document.querySelectorAll(".hl").forEach(x=>x.classList.remove("hl"));});
+});
+
+/* predict-then-reveal */
+const bets=document.getElementById("bets");
+labels.forEach((lab,i)=>{
+  const b=document.createElement("button");b.textContent=lab;
+  b.addEventListener("click",()=>{
+    betIndex=i;revealed=true;
+    document.getElementById("temp").value=Math.log10(betT).toFixed(2);
+    document.getElementById("overlay").style.display="none";
+    render();
+    const p=softmax(z,T());const actual=p.indexOf(Math.max(...p));
+    const v=document.getElementById("verdict");
+    v.innerHTML = betIndex===actual
+      ? `<span class="win">You bet “${labels[betIndex]}” — correct (p=${p[actual].toFixed(2)} at T=${betT}).</span> Now flatten it: drag T up.`
+      : `<span class="lose">You bet “${labels[betIndex]}” — actually “${labels[actual]}” (p=${p[actual].toFixed(2)}).</span> Scrub the logits to see why.`;
+  });
+  bets.appendChild(b);
+});
+document.getElementById("temp").addEventListener("input",render);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "scaled-dot-product-attention": {
+    "kind": "template",
+    "template_id": "attention-heatmap",
+    "src": "scaled-dot-product-attention.html",
+    "title": "Scaled dot-product attention, live",
+    "caption": "Scrub d_k and toggle √d_k scaling; watch QKᵀ → softmax reweight the values.",
+    "prompt": "Before you scrub: which token do you bet “it” attends to most?",
+    "page": "04_sdpa.md",
+    "page_sha256": "f3fbdc54504785bce5a6d22db12228354cb73f913e405ce866615b2d77aef347",
+    "generated": "2026-07-17"
+  },
+  "attention": {
+    "kind": "template",
+    "template_id": "softmax-temperature",
+    "src": "attention.html",
+    "title": "Softmax as a relevance dial",
+    "caption": "Scrub logits and temperature; T→0 sharpens toward argmax, T→∞ flattens.",
+    "prompt": "At T=0.5, which key do you bet takes more than half the attention?",
+    "page": "04_sdpa.md",
+    "page_sha256": "f3fbdc54504785bce5a6d22db12228354cb73f913e405ce866615b2d77aef347",
+    "generated": "2026-07-17"
+  }
+}

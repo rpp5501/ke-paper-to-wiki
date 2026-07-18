@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaled dot-product attention, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:18px;}
+  .eq [data-t]{padding:1px 3px;border-radius:3px;cursor:default;transition:background 140ms;}
+  .eq [data-t].hl,.eq [data-t]:hover{background:rgba(74,126,187,.35);outline:1px solid var(--accent);}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .controls label{display:flex;gap:6px;align-items:center;}
+  input[type=range]{accent-color:var(--accent);}
+  input[type=checkbox]{accent-color:var(--accent);}
+  svg text{font-family:system-ui,sans-serif;}
+  .cell{stroke:var(--border);stroke-width:1;transition:opacity 140ms;}
+  .cell.hl{stroke:var(--warn);stroke-width:2;}
+  .rowlab,.collab{fill:var(--muted);font-size:11px;cursor:pointer;}
+  .rowlab.sel{fill:var(--text);font-weight:600;}
+  .rowlab.hl,.collab.hl{fill:var(--accent);font-weight:600;}
+  .stats{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:8px;}
+  .stats b{color:var(--text);}
+  .stats .sat b{color:var(--warn);}
+  .verdict{font-size:13px;margin-top:8px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:420px;margin:0;}
+  #overlay button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:background 140ms;}
+  #overlay button:hover{background:var(--accent);}
+  #overlay button:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{"title": "Scaled dot-product attention, live", "tokens": ["the", "animal", "crossed", "it"], "queryIndex": 3, "biasTarget": 1, "seed": 42, "prompt": "Before you scrub: which token do you bet “it” attends to most?"}</script>
+<div class="wrap" id="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <mi>Attention</mi><mo stretchy="false">(</mo>
+        <mi data-t="Q" id="tQ">Q</mi><mo>,</mo>
+        <mi data-t="K" id="tK">K</mi><mo>,</mo>
+        <mi data-t="V" id="tV">V</mi><mo stretchy="false">)</mo><mo>=</mo>
+        <mrow data-t="softmax" id="tSoftmax"><mi>softmax</mi></mrow>
+        <mrow><mo stretchy="false">(</mo>
+          <mfrac>
+            <mrow data-t="QKT" id="tQKT"><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow>
+            <mrow data-t="scale" id="tScale"><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mrow>
+          </mfrac>
+        <mo stretchy="false">)</mo></mrow>
+        <mi data-t="V" id="tV2">V</mi>
+      </mrow>
+    </math>
+  </div>
+  <div class="controls">
+    <label><span>d<sub>k</sub></span>
+      <input type="range" id="dk" min="0" max="4" step="1" value="0">
+      <b id="dkval"></b></label>
+    <label><input type="checkbox" id="scale" checked> divide by &#8730;d<sub>k</sub></label>
+    <span class="hint">click a row label to change the query token &#183; hover cells &#8596; equation</span>
+  </div>
+  <svg id="viz" width="100%" viewBox="0 0 620 300" role="img" aria-label="attention weight heatmap"></svg>
+  <div class="stats">
+    <span>query <b id="qtok"></b> attends most to <b id="argmax"></b></span>
+    <span>max weight <b id="maxw"></b></span>
+    <span class="sat">row entropy <b id="ent"></b></span>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay">
+    <p id="prompt"></p>
+    <div id="bets"></div>
+  </div>
+</div>
+<script>
+"use strict";
+const P = JSON.parse(document.getElementById("params").textContent);
+const tokens = P.tokens || ["the","animal","crossed","it"];
+const qDefault = P.queryIndex != null ? P.queryIndex : tokens.length - 1;
+const seed = P.seed || 42;
+const dkSteps = [4, 8, 16, 32, 64];
+document.getElementById("title").textContent = P.title || "Scaled dot-product attention";
+document.getElementById("prompt").textContent = P.prompt || "Place your bet before you scrub.";
+
+/* deterministic PRNG so the toy is honest and reproducible */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function embeddings(n, dk){
+  const rnd = mulberry32(seed);
+  const E = [];
+  for(let i=0;i<n;i++){const v=[];for(let d=0;d<dk;d++)v.push((rnd()*2-1)*1.2);E.push(v);}
+  if(P.bias!==false && n>=2){ /* seeded story: last token loosely copies params.biasTarget */
+    const tgt = P.biasTarget != null ? P.biasTarget : 1;
+    for(let d=0;d<dk;d++) E[n-1][d] = E[tgt][d]*0.8 + E[n-1][d]*0.4;
+  }
+  return E;
+}
+const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
+function softmax(row){const m=Math.max(...row);const ex=row.map(x=>Math.exp(x-m));const s=ex.reduce((a,b)=>a+b,0);return ex.map(x=>x/s);}
+
+let q = qDefault, betIndex = null, revealed = false;
+const S = { W: [], dk: dkSteps[0] };
+
+function compute(){
+  const dk = dkSteps[+document.getElementById("dk").value];
+  const scaled = document.getElementById("scale").checked;
+  const E = embeddings(tokens.length, dk);
+  const div = scaled ? Math.sqrt(dk) : 1;
+  S.W = E.map(qi => softmax(E.map(kj => dot(qi,kj)/div)));
+  S.dk = dk;
+  document.getElementById("dkval").textContent = dk;
+}
+function entropy(row){return -row.reduce((s,p)=>s+(p>0?p*Math.log2(p):0),0);}
+
+const svg = document.getElementById("viz");
+const NS = "http://www.w3.org/2000/svg";
+function render(){
+  compute();
+  const n = tokens.length, cs = Math.min(52, 260/n), x0 = 120, y0 = 40;
+  svg.innerHTML = "";
+  tokens.forEach((t,j)=>{
+    const tx=document.createElementNS(NS,"text");
+    tx.setAttribute("x",x0+j*cs+cs/2);tx.setAttribute("y",y0-10);tx.setAttribute("text-anchor","middle");
+    tx.setAttribute("class","collab");tx.dataset.col=j;tx.textContent=t;svg.appendChild(tx);
+  });
+  tokens.forEach((t,i)=>{
+    const tx=document.createElementNS(NS,"text");
+    tx.setAttribute("x",x0-8);tx.setAttribute("y",y0+i*cs+cs/2+4);tx.setAttribute("text-anchor","end");
+    tx.setAttribute("class","rowlab"+(i===q?" sel":""));tx.dataset.row=i;tx.textContent=t;
+    tx.addEventListener("click",()=>{q=i;render();});svg.appendChild(tx);
+  });
+  S.W.forEach((row,i)=>row.forEach((w,j)=>{
+    const r=document.createElementNS(NS,"rect");
+    r.setAttribute("x",x0+j*cs);r.setAttribute("y",y0+i*cs);
+    r.setAttribute("width",cs-2);r.setAttribute("height",cs-2);
+    r.setAttribute("class","cell");r.dataset.row=i;r.dataset.col=j;
+    const dim = revealed || i!==q ? 1 : 0;   /* hide the bet row until revealed */
+    r.setAttribute("fill",`rgba(74,126,187,${(0.08+w*0.92)*dim})`);
+    if(revealed && i===q && w===Math.max(...row)) r.setAttribute("stroke","#4a9b5e"), r.setAttribute("stroke-width","2");
+    const title=document.createElementNS(NS,"title");
+    title.textContent=`w(${tokens[i]} → ${tokens[j]}) = ${w.toFixed(3)}`;
+    r.appendChild(title);
+    r.addEventListener("mouseenter",()=>{hl(["tQKT","tSoftmax"],true);});
+    r.addEventListener("mouseleave",()=>{hl(["tQKT","tSoftmax"],false);});
+    svg.appendChild(r);
+  }));
+  const row=S.W[q];
+  document.getElementById("qtok").textContent=tokens[q];
+  document.getElementById("argmax").textContent=revealed?tokens[row.indexOf(Math.max(...row))]:"?";
+  document.getElementById("maxw").textContent=revealed?Math.max(...row).toFixed(3):"?";
+  document.getElementById("ent").textContent=revealed?entropy(row).toFixed(2)+" bits":"?";
+}
+function hl(ids,on){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle("hl",on);});}
+
+/* equation term -> visual highlighting */
+const eqMap={Q:"row",K:"col",QKT:"cell",softmax:"cell",scale:null,V:"col"};
+document.querySelectorAll("[data-t]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{
+    const kind=eqMap[el.dataset.t];
+    if(kind)svg.querySelectorAll(kind==="row"?".rowlab":kind==="col"?".collab":".cell").forEach(x=>x.classList.add("hl"));
+    if(el.dataset.t==="scale")document.getElementById("scale").parentElement.style.color="var(--accent)";
+  });
+  el.addEventListener("mouseleave",()=>{
+    svg.querySelectorAll(".hl").forEach(x=>x.classList.remove("hl"));
+    document.getElementById("scale").parentElement.style.color="";
+  });
+});
+
+/* predict-then-reveal */
+const bets=document.getElementById("bets");
+tokens.forEach((t,j)=>{
+  if(j===qDefault)return;
+  const b=document.createElement("button");b.textContent=t;
+  b.addEventListener("click",()=>{
+    betIndex=j;revealed=true;
+    document.getElementById("overlay").style.display="none";
+    render();
+    const row=S.W[q];const actual=row.indexOf(Math.max(...row));
+    const v=document.getElementById("verdict");
+    v.innerHTML= betIndex===actual
+      ? `<span class="win">You bet “${tokens[betIndex]}” — correct.</span> Now break it: turn off √dₖ scaling and raise dₖ.`
+      : `<span class="lose">You bet “${tokens[betIndex]}” — actually “${tokens[actual]}” (${row[actual].toFixed(2)}).</span> Scrub dₖ to see why.`;
+  });
+  bets.appendChild(b);
+});
+document.getElementById("dk").addEventListener("input",render);
+document.getElementById("scale").addEventListener("change",render);
+render();
+</script>
+</body>
+</html>

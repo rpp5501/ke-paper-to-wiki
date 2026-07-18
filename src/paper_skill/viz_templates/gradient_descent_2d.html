@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gradient descent, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:17px;}
+  .eq [data-t]{padding:1px 3px;border-radius:3px;transition:background 140ms;}
+  .eq [data-t].hl,.eq [data-t]:hover{background:rgba(74,126,187,.35);outline:1px solid var(--accent);}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .controls label{display:flex;gap:6px;align-items:center;}
+  .controls label.hl{color:var(--accent);}
+  input[type=range]{accent-color:var(--accent);}
+  .path{fill:none;stroke:var(--warn);stroke-width:1.6;}
+  .path.hl{stroke-width:3;}
+  .startpt{cursor:crosshair;}
+  .stats{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:8px;}
+  .stats b{color:var(--text);}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .verdict{font-size:13px;margin-top:8px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:440px;margin:0;}
+  #overlay button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:background 140ms;}
+  #overlay button:hover{background:var(--accent);}
+  #overlay button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{{PARAMS_JSON}}</script>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <msub><mrow data-t="theta"><mi>&#952;</mi></mrow><mrow><mi>t</mi><mo>+</mo><mn>1</mn></mrow></msub>
+        <mo>=</mo>
+        <msub><mrow data-t="theta"><mi>&#952;</mi></mrow><mi>t</mi></msub>
+        <mo>&#8722;</mo>
+        <mrow data-t="lr"><mi>&#951;</mi></mrow>
+        <mrow data-t="grad"><mo>&#8711;</mo><mi>f</mi><mo stretchy="false">(</mo><msub><mi>&#952;</mi><mi>t</mi></msub><mo stretchy="false">)</mo></mrow>
+      </mrow>
+    </math>
+  </div>
+  <div class="controls">
+    <label id="lrRow">&#951; <input type="range" id="lr" min="-2" max="0.4" step="0.02" value="-1"> <b id="lrval"></b></label>
+    <label>steps <input type="range" id="steps" min="1" max="60" step="1" value="25"> <b id="stepsval"></b></label>
+    <span class="hint">click the surface to drop a start point</span>
+  </div>
+  <svg id="viz" width="100%" viewBox="0 0 620 340" role="img" aria-label="loss surface with descent path"></svg>
+  <div class="stats">
+    <span>start loss <b id="l0"></b></span>
+    <span>final loss <b id="l1"></b></span>
+    <span>status <b id="status"></b></span>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay"><p id="prompt"></p><div id="bets"></div></div>
+</div>
+<script>
+"use strict";
+const P=JSON.parse(document.getElementById("params").textContent);
+document.getElementById("title").textContent=P.title||"Gradient descent on a loss surface";
+document.getElementById("prompt").textContent=P.prompt||"Place your bet before you scrub.";
+/* surface: bowl at (mx,my) with optional ripple — honest analytic gradient */
+const A=P.a||1.0, B=P.b||2.4, MX=P.mx||0.2, MY=P.my||-0.3, R=P.ripple||0.35;
+const f=(x,y)=>A*(x-MX)*(x-MX)+B*(y-MY)*(y-MY)+R*Math.sin(3*x)*Math.sin(3*y);
+const gx=(x,y)=>2*A*(x-MX)+3*R*Math.cos(3*x)*Math.sin(3*y);
+const gy=(x,y)=>2*B*(y-MY)+3*R*Math.sin(3*x)*Math.cos(3*y);
+const DOM=2.2; /* x,y in [-DOM,DOM] */
+const W=620,H=340,N=44;
+const sx=x=>(x+DOM)/(2*DOM)*W, sy=y=>H-(y+DOM)/(2*DOM)*H;
+const ix=px=>px/W*2*DOM-DOM, iy=py=>(H-py)/H*2*DOM-DOM;
+let start={x:P.startX!=null?P.startX:1.6,y:P.startY!=null?P.startY:1.5};
+let revealed=false;
+const svg=document.getElementById("viz");const NS="http://www.w3.org/2000/svg";
+let fmax=0;for(let i=0;i<N;i++)for(let j=0;j<N;j++)fmax=Math.max(fmax,f(-DOM+2*DOM*i/N,-DOM+2*DOM*j/N));
+
+function descend(){
+  const lr=Math.pow(10,+document.getElementById("lr").value);
+  const steps=+document.getElementById("steps").value;
+  const pts=[{...start}];
+  let p={...start},diverged=false;
+  for(let t=0;t<steps;t++){
+    p={x:p.x-lr*gx(p.x,p.y),y:p.y-lr*gy(p.x,p.y)};
+    pts.push({...p});
+    if(Math.abs(p.x)>10*DOM||Math.abs(p.y)>10*DOM){diverged=true;break;}
+  }
+  return{pts,lr,diverged};
+}
+function render(){
+  const{pts,lr,diverged}=descend();
+  document.getElementById("lrval").textContent=lr.toFixed(2);
+  document.getElementById("stepsval").textContent=document.getElementById("steps").value;
+  svg.innerHTML="";
+  const cw=W/N,ch=H/N;
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){
+    const x=-DOM+2*DOM*(i+0.5)/N,y=-DOM+2*DOM*(j+0.5)/N;
+    const v=Math.min(1,f(x,y)/fmax);
+    const r=document.createElementNS(NS,"rect");
+    r.setAttribute("x",i*cw);r.setAttribute("y",H-(j+1)*ch);
+    r.setAttribute("width",cw+0.5);r.setAttribute("height",ch+0.5);
+    r.setAttribute("fill",`rgba(74,126,187,${0.06+v*0.8})`);
+    svg.appendChild(r);
+  }
+  const clickpad=document.createElementNS(NS,"rect");
+  clickpad.setAttribute("x",0);clickpad.setAttribute("y",0);clickpad.setAttribute("width",W);clickpad.setAttribute("height",H);
+  clickpad.setAttribute("fill","transparent");clickpad.setAttribute("class","startpt");
+  clickpad.addEventListener("click",e=>{
+    const box=svg.getBoundingClientRect();
+    const mx=(e.clientX-box.left)*W/box.width,my=(e.clientY-box.top)*H/box.height;
+    start={x:ix(mx),y:iy(my)};render();
+  });
+  svg.appendChild(clickpad);
+  if(revealed){
+    let d="";pts.forEach((p,k)=>{d+=(k?"L":"M")+sx(p.x)+","+sy(p.y);});
+    const path=document.createElementNS(NS,"path");
+    path.setAttribute("d",d);path.setAttribute("class","path");path.setAttribute("id","gdpath");
+    path.addEventListener("mouseenter",()=>hl(["grad","theta"],true));
+    path.addEventListener("mouseleave",()=>hl(["grad","theta"],false));
+    svg.appendChild(path);
+    pts.forEach((p,k)=>{
+      if(k%Math.ceil(pts.length/20))return;
+      const c=document.createElementNS(NS,"circle");
+      c.setAttribute("cx",sx(p.x));c.setAttribute("cy",sy(p.y));c.setAttribute("r",2.4);
+      c.setAttribute("fill",k===0?"#4a9b5e":"#eab308");svg.appendChild(c);
+    });
+  }
+  const s0=document.createElementNS(NS,"circle");
+  s0.setAttribute("cx",sx(start.x));s0.setAttribute("cy",sy(start.y));s0.setAttribute("r",5);
+  s0.setAttribute("fill","#4a9b5e");svg.appendChild(s0);
+  const last=pts[pts.length-1];
+  document.getElementById("l0").textContent=f(start.x,start.y).toFixed(2);
+  document.getElementById("l1").textContent=revealed?(diverged?"—":f(last.x,last.y).toFixed(3)):"?";
+  document.getElementById("status").textContent=revealed?(diverged?"DIVERGED":"descending"):"?";
+}
+function hl(ts,on){document.querySelectorAll("[data-t]").forEach(el=>{if(ts.includes(el.dataset.t))el.classList.toggle("hl",on);});}
+document.querySelectorAll("[data-t]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{
+    if(el.dataset.t==="lr")document.getElementById("lrRow").classList.add("hl");
+    if(el.dataset.t==="grad"||el.dataset.t==="theta"){const p=document.getElementById("gdpath");if(p)p.classList.add("hl");}
+  });
+  el.addEventListener("mouseleave",()=>{
+    document.getElementById("lrRow").classList.remove("hl");
+    const p=document.getElementById("gdpath");if(p)p.classList.remove("hl");
+  });
+});
+const bets=document.getElementById("bets");
+const options=P.betOptions||["small η converges here","this η overshoots and diverges"];
+const correct=P.betCorrect!=null?P.betCorrect:0;
+options.forEach((opt,i)=>{
+  const b=document.createElement("button");b.textContent=opt;
+  b.addEventListener("click",()=>{
+    revealed=true;document.getElementById("overlay").style.display="none";render();
+    const v=document.getElementById("verdict");
+    v.innerHTML=i===correct
+      ?`<span class="win">You bet “${opt}” — correct.</span> ${P.betReveal||"Now push η above 1 and watch it diverge."}`
+      :`<span class="lose">You bet “${opt}” — actually: “${options[correct]}”.</span> ${P.betReveal||"Scrub η to see why."}`;
+  });
+  bets.appendChild(b);
+});
+document.getElementById("lr").addEventListener("input",render);
+document.getElementById("steps").addEventListener("input",render);
+render();
+</script>
+</body>
+</html>
