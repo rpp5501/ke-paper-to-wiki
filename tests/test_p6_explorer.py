@@ -30,6 +30,28 @@ def test_math_becomes_math_span():
     assert "$$\\sqrt{d_k}$$" in tiers["the-math"]
 
 
+def test_math_is_sanitized_without_markdown_mangling():
+    page = PAGE.replace(
+        "$$\\sqrt{d_k}$$",
+        r"$$\label{eq:test}\maximize_x a_b & = c \\ d$$",
+    )
+
+    math = split_tiers(page)["the-math"]
+
+    assert r"\label" not in math
+    assert r"\operatorname*{maximize}" in math
+    assert r"\begin{aligned}" in math
+    assert "<em>" not in math
+
+
+def test_bare_resource_url_is_clickable_and_keeps_punctuation():
+    page = PAGE.replace("- link", "See https://example.test/guide.")
+
+    deeper = split_tiers(page)["go-deeper"]
+
+    assert '<a href="https://example.test/guide">https://example.test/guide</a>.' in deeper
+
+
 def test_build_explorer_end_to_end(tmp_path):
     graph = json.loads(
         (Path(__file__).resolve().parents[1] / "fixtures" / "aiayn_concept_graph.json").read_text(

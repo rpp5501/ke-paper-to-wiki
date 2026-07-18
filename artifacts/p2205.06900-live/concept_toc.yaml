@@ -1,0 +1,246 @@
+approved: true
+note: 'validated: 22 concepts (15-25), one level-0 thesis, all source_refs valid'
+concepts:
+- id: mm-bd-thesis
+  label: 'MM-BD: Maximum-Margin Backdoor Detection'
+  level: 0
+  include: true
+  definition: A post-training backdoor detector that works for arbitrary backdoor
+    pattern types by exploiting a maximum margin statistic on the classifier's logit
+    landscape.
+  sub_questions:
+  - Why do existing detectors fail on arbitrary backdoor pattern types?
+  - What makes the maximum margin statistic pattern-agnostic?
+  - How does MM-BD compare against prior post-training detectors?
+  research: false
+- id: backdoor-attack
+  label: Backdoor Attack (BA)
+  level: 1
+  include: true
+  definition: An attack where the victim classifier is manipulated to output an attacker-chosen
+    target class whenever a backdoor pattern is present in the input.
+  sub_questions:
+  - What defines the sample space/label space setup for a BA?
+  - How is the backdoor pattern embedded during training?
+  - What attack surfaces (data poisoning, model supply chain) enable BAs?
+  research: false
+- id: backdoor-defense
+  label: Backdoor Defense
+  level: 1
+  include: true
+  definition: Countermeasures deployed at training time or post-training to detect
+    and sanitize backdoor poisoning in classifiers.
+  sub_questions:
+  - What distinguishes training-stage defenses from post-training defenses?
+  - What assumptions do existing defenses make about backdoor pattern type?
+  - How does defense scope trade off against detection accuracy?
+  research: false
+- id: post-training-defense-scenario
+  label: Post-Training Detection Scenario
+  level: 1
+  include: true
+  definition: A defense setting where the defender has no access to the classifier's
+    training set and must detect backdoors after training completes.
+  sub_questions:
+  - What information is available to the defender in this scenario?
+  - Why is this scenario harder than training-stage defense?
+  - How does the image domain focus shape the method's assumptions?
+  research: false
+- id: mm-statistic
+  label: Maximum Margin (MM) Statistic
+  level: 1
+  include: true
+  definition: A statistic based on the influence of a backdoor attack on the landscape
+    of the classifier's logit (pre-softmax output).
+  sub_questions:
+  - Why does a backdoor attack distort the logit landscape in a detectable way?
+  - How is 'margin' defined between the target class logit and others?
+  - Why is this statistic robust across additive, patch, and blending patterns?
+  research: false
+- id: detection-procedure
+  label: Detection Procedure
+  level: 1
+  include: true
+  definition: The pipeline that estimates an MM statistic per putative target class
+    and flags a class as backdoored via anomaly detection over these statistics.
+  sub_questions:
+  - What are the estimation and decision steps of the pipeline?
+  - How is the per-class statistic aggregated into a detection decision?
+  - What computational cost does this procedure add over standard inference?
+  research: false
+- id: estimation-step
+  label: Estimation Step (MM Optimization)
+  level: 2
+  include: true
+  definition: For each putative target class, the MM statistic is estimated by solving
+    a maximization problem via gradient ascent with projection.
+  sub_questions:
+  - What objective function is being maximized?
+  - What constraints does the projection enforce on the input?
+  - How sensitive is the estimate to initialization?
+  research: true
+- id: putative-target-class
+  label: Putative Target Class
+  level: 2
+  include: true
+  definition: Each candidate class in turn is treated as a hypothesized backdoor target
+    class during the estimation step.
+  sub_questions:
+  - Why must every class be tested as a candidate target?
+  - How does this scale with the number of classes?
+  - How are per-class scores compared to find the true target?
+  research: false
+- id: gradient-ascent-projection
+  label: Projected Gradient Ascent
+  level: 3
+  include: true
+  definition: The optimization method used to solve the MM statistic estimation by
+    ascending the logit margin objective under a projection constraint.
+  sub_questions:
+  - What is the projection set (e.g. valid image range)?
+  - How many iterations/step size are used in practice?
+  - How does this differ from adversarial perturbation search methods?
+  research: true
+- id: detection-threshold-null-distribution
+  label: Detection Threshold via Null Distribution
+  level: 2
+  include: true
+  definition: A decision threshold derived from the distribution of MM statistics
+    across classes to flag anomalous (backdoored) target classes.
+  sub_questions:
+  - What statistical model is assumed for the null (no-attack) case?
+  - How is a false-positive rate controlled when setting the threshold?
+  - How robust is the threshold across datasets with varying class counts?
+  research: true
+- id: mitigation-of-ba
+  label: Mitigation of Backdoor Attack
+  level: 1
+  include: true
+  definition: Once a BA is detected, remedies include replacing the classifier with
+    a trustworthy one or repairing the existing classifier.
+  sub_questions:
+  - What trade-offs exist between replacement and repair strategies?
+  - What accuracy cost does mitigation impose on clean inputs?
+  - How is the detected backdoor pattern used during mitigation?
+  research: false
+- id: ba-mitigation-algorithm
+  label: Algorithm for BA Mitigation
+  level: 2
+  include: true
+  definition: A procedure that minimizes a Lagrangian to find the optimal upper bound
+    for the activation of each neuron implicated in the backdoor.
+  sub_questions:
+  - Which neurons are selected as candidates for bounding?
+  - How is the Lagrangian formulated from the detection statistic?
+  - How does bounding neuron activations neutralize the trigger?
+  research: true
+- id: lagrangian-optimization
+  label: Lagrangian Minimization for Neuron Bounding
+  level: 3
+  include: true
+  definition: The optimization in Eq. (referenced) that yields per-neuron activation
+    upper bounds to suppress backdoor behavior.
+  sub_questions:
+  - What are the Lagrange multipliers penalizing in this formulation?
+  - How is convergence of this minimization verified?
+  - How does this compare to pruning-based mitigation approaches?
+  research: true
+- id: experiments
+  label: Experiments
+  level: 1
+  include: true
+  definition: Empirical evaluation conducted mainly on four benchmark datasets with
+    different image resolutions, sizes, and numbers of classes.
+  sub_questions:
+  - Which four datasets were chosen and why?
+  - What metrics measure detection success across datasets?
+  - How does dataset scale (class count, resolution) affect results?
+  research: false
+- id: benchmark-datasets
+  label: Benchmark Datasets
+  level: 2
+  include: true
+  definition: Four image datasets varying in resolution, size, and class count used
+    to evaluate the detector.
+  sub_questions:
+  - What is the range of class counts covered by these datasets?
+  - Why do varied resolutions stress-test the MM statistic differently?
+  - Are results consistent across all four datasets?
+  research: false
+- id: univbd-detector
+  label: UnivBD (Universal Backdoor Detector)
+  level: 1
+  include: true
+  definition: The name given to the paper's detector, evaluated for effectiveness
+    in terms of detection accuracy across multiple backdoor pattern types.
+  sub_questions:
+  - What makes this detector 'universal' relative to prior work?
+  - How is detection accuracy quantified in the experiments?
+  - What failure cases remain for UnivBD?
+  research: false
+- id: bp-types-settings
+  label: Backdoor Pattern (BP) Type Settings
+  level: 2
+  include: true
+  definition: 'Three common backdoor pattern types considered in the literature and
+    tested: additive perturbation, patch replacement, and blending.'
+  sub_questions:
+  - Why were these three BP types chosen as representative?
+  - What associated attack configurations accompany each BP type?
+  - How does BP type affect detection difficulty?
+  research: false
+- id: additive-perturbation
+  label: Additive Perturbation BP
+  level: 3
+  include: true
+  definition: A backdoor pattern type formed by adding a fixed perturbation signal
+    to the input image.
+  sub_questions:
+  - How is the perturbation magnitude bounded to remain stealthy?
+  - How does this pattern affect the logit landscape differently than patches?
+  - What detection accuracy does UnivBD achieve against it?
+  research: false
+- id: patch-replacement
+  label: Patch Replacement BP
+  level: 3
+  include: true
+  definition: A backdoor pattern type where a fixed image patch replaces a region
+    of the input.
+  sub_questions:
+  - How is patch size/location chosen in the experiments?
+  - Why is patch replacement historically the most-studied BP type?
+  - How does UnivBD's margin statistic respond to localized patches?
+  research: false
+- id: blending-attack
+  label: Blending BP
+  level: 3
+  include: true
+  definition: A backdoor pattern type created by blending a trigger image with the
+    input at a set blend ratio.
+  sub_questions:
+  - What blend ratio is used and how sensitive is detection to it?
+  - Why is blending harder to detect than patch replacement for some methods?
+  - Does blending require different projection constraints in estimation?
+  research: false
+- id: detection-performance-comparison
+  label: Detection Performance Comparison
+  level: 2
+  include: true
+  definition: A comparison of UnivBD against several state-of-the-art post-training
+    BA detection methods across detection configurations.
+  sub_questions:
+  - What metrics are used to compare detectors head-to-head?
+  - Under which BP types do baseline methods fail relative to UnivBD?
+  - How is detection configuration standardized for fair comparison?
+  research: false
+- id: baseline-detectors-nc-tabor
+  label: Baseline Detectors (NC, TABOR, etc.)
+  level: 3
+  include: true
+  definition: State-of-the-art post-training backdoor detection methods, including
+    Neural Cleanse (NC) and TABOR, used as comparison baselines.
+  sub_questions:
+  - What pattern-type assumptions do NC and TABOR bake in?
+  - Why do these baselines underperform on non-patch BP types?
+  - What computational cost do these baselines have relative to UnivBD?
+  research: true

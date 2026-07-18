@@ -70,3 +70,15 @@ def test_invalid_note_goes_to_inbox(tmp_path):
     assert set(r["failed"]) == {"c1", "c2"}
     kinds = {i["kind"] for i in inbox_list(home=tmp_path)}
     assert kinds == {"failed-orchestration"}
+
+
+def test_accepts_yaml_wrapped_in_a_markdown_fence(tmp_path):
+    p = _approved_toc(tmp_path)
+
+    def spawn(prompt):
+        cid = "c1" if "c1" in prompt else "c2"
+        return f"```yaml\n{NOTE.format(cid=cid)}```"
+
+    result = run_research(p, GRAPH, spawn=spawn, home=tmp_path, workdir=tmp_path)
+
+    assert result["done"] == ["c1", "c2"]

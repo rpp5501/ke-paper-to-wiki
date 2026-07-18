@@ -1,0 +1,382 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2205.06900",
+  "generated": "2026-07-12",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "mm-bd-thesis",
+   "kind": "concept",
+   "label": "MM-BD: Maximum-Margin Backdoor Detection",
+   "level": 0,
+   "source_ref": "sec_1"
+  },
+  {
+   "id": "backdoor-attack",
+   "kind": "concept",
+   "label": "Backdoor Attack (BA)",
+   "level": 1,
+   "source_ref": "sec_2_1"
+  },
+  {
+   "id": "backdoor-defense",
+   "kind": "concept",
+   "label": "Backdoor Defense",
+   "level": 1,
+   "source_ref": "sec_2_2"
+  },
+  {
+   "id": "post-training-defense-scenario",
+   "kind": "concept",
+   "label": "Post-Training Detection Scenario",
+   "level": 1,
+   "source_ref": "sec_3"
+  },
+  {
+   "id": "mm-statistic",
+   "kind": "concept",
+   "label": "Maximum Margin (MM) Statistic",
+   "level": 1,
+   "source_ref": "sec_3_1"
+  },
+  {
+   "id": "detection-procedure",
+   "kind": "concept",
+   "label": "Detection Procedure",
+   "level": 1,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "estimation-step",
+   "kind": "equation",
+   "label": "Estimation Step (MM Optimization)",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "putative-target-class",
+   "kind": "concept",
+   "label": "Putative Target Class",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "gradient-ascent-projection",
+   "kind": "equation",
+   "label": "Projected Gradient Ascent",
+   "level": 3,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "detection-threshold-null-distribution",
+   "kind": "concept",
+   "label": "Detection Threshold via Null Distribution",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "mitigation-of-ba",
+   "kind": "concept",
+   "label": "Mitigation of Backdoor Attack",
+   "level": 1,
+   "source_ref": "sec_3_3"
+  },
+  {
+   "id": "ba-mitigation-algorithm",
+   "kind": "concept",
+   "label": "Algorithm for BA Mitigation",
+   "level": 2,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "lagrangian-optimization",
+   "kind": "equation",
+   "label": "Lagrangian Minimization for Neuron Bounding",
+   "level": 3,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "experiments",
+   "kind": "concept",
+   "label": "Experiments",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "benchmark-datasets",
+   "kind": "concept",
+   "label": "Benchmark Datasets",
+   "level": 2,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "univbd-detector",
+   "kind": "concept",
+   "label": "UnivBD (Universal Backdoor Detector)",
+   "level": 1,
+   "source_ref": "sec_4_1"
+  },
+  {
+   "id": "bp-types-settings",
+   "kind": "concept",
+   "label": "Backdoor Pattern (BP) Type Settings",
+   "level": 2,
+   "source_ref": "sec_4_1_1"
+  },
+  {
+   "id": "additive-perturbation",
+   "kind": "concept",
+   "label": "Additive Perturbation BP",
+   "level": 3,
+   "source_ref": "sec_4_1_1"
+  },
+  {
+   "id": "patch-replacement",
+   "kind": "concept",
+   "label": "Patch Replacement BP",
+   "level": 3,
+   "source_ref": "sec_4_1_1"
+  },
+  {
+   "id": "blending-attack",
+   "kind": "concept",
+   "label": "Blending BP",
+   "level": 3,
+   "source_ref": "sec_4_1_1"
+  },
+  {
+   "id": "detection-performance-comparison",
+   "kind": "concept",
+   "label": "Detection Performance Comparison",
+   "level": 2,
+   "source_ref": "sec_4_1_2"
+  },
+  {
+   "id": "baseline-detectors-nc-tabor",
+   "kind": "concept",
+   "label": "Baseline Detectors (NC, TABOR, etc.)",
+   "level": 3,
+   "source_ref": "sec_4_1_2"
+  }
+ ],
+ "edges": [
+  {
+   "src": "backdoor-attack",
+   "dst": "mm-bd-thesis",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "backdoor-defense",
+   "dst": "mm-bd-thesis",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "backdoor-attack",
+   "dst": "backdoor-defense",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "post-training-defense-scenario",
+   "dst": "mm-bd-thesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "backdoor-defense",
+   "dst": "post-training-defense-scenario",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mm-statistic",
+   "dst": "post-training-defense-scenario",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-procedure",
+   "dst": "mm-bd-thesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mm-statistic",
+   "dst": "detection-procedure",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "estimation-step",
+   "dst": "detection-procedure",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "putative-target-class",
+   "dst": "estimation-step",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "gradient-ascent-projection",
+   "dst": "estimation-step",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-threshold-null-distribution",
+   "dst": "detection-procedure",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mitigation-of-ba",
+   "dst": "mm-bd-thesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mitigation-of-ba",
+   "dst": "detection-procedure",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ba-mitigation-algorithm",
+   "dst": "mitigation-of-ba",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "lagrangian-optimization",
+   "dst": "ba-mitigation-algorithm",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experiments",
+   "dst": "mm-bd-thesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "benchmark-datasets",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "univbd-detector",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "univbd-detector",
+   "dst": "detection-procedure",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "bp-types-settings",
+   "dst": "univbd-detector",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "additive-perturbation",
+   "dst": "bp-types-settings",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "patch-replacement",
+   "dst": "bp-types-settings",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "blending-attack",
+   "dst": "bp-types-settings",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-performance-comparison",
+   "dst": "univbd-detector",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "baseline-detectors-nc-tabor",
+   "dst": "detection-performance-comparison",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "univbd-detector",
+   "dst": "baseline-detectors-nc-tabor",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

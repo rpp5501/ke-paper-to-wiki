@@ -1,0 +1,468 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2504.04033",
+  "generated": "2026-07-12",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "disparate-privacy-vulnerability",
+   "kind": "concept",
+   "label": "Disparate Privacy Vulnerability",
+   "level": 0,
+   "source_ref": "sec_1"
+  },
+  {
+   "id": "attribute-inference-preliminaries",
+   "kind": "concept",
+   "label": "Attribute Inference Preliminaries",
+   "level": 1,
+   "source_ref": "sec_2"
+  },
+  {
+   "id": "attack-threat-model",
+   "kind": "concept",
+   "label": "Attack Threat Model",
+   "level": 1,
+   "source_ref": "sec_3"
+  },
+  {
+   "id": "high-risk-group-identification",
+   "kind": "concept",
+   "label": "Uncovering High-Risk Groups",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "vulnerability-key-factor",
+   "kind": "concept",
+   "label": "Key Factor Contributing to Vulnerability",
+   "level": 2,
+   "source_ref": "sec_4_1"
+  },
+  {
+   "id": "group-correlation-comparison",
+   "kind": "concept",
+   "label": "Comparing Correlation between Groups",
+   "level": 2,
+   "source_ref": "sec_4_2"
+  },
+  {
+   "id": "attack-methodology",
+   "kind": "concept",
+   "label": "Attack Methodology",
+   "level": 1,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "angular-difference-computation",
+   "kind": "concept",
+   "label": "Computing Angular Difference",
+   "level": 2,
+   "source_ref": "sec_5_1"
+  },
+  {
+   "id": "disparity-inference-attack",
+   "kind": "concept",
+   "label": "Disparity Inference Attack",
+   "level": 2,
+   "source_ref": "sec_5_2"
+  },
+  {
+   "id": "targeted-attribute-inference-attack",
+   "kind": "concept",
+   "label": "Targeted Attribute Inference Attack",
+   "level": 2,
+   "source_ref": "sec_5_3"
+  },
+  {
+   "id": "single-attribute-targeted-attack",
+   "kind": "concept",
+   "label": "Single Attribute-based Targeted Attack",
+   "level": 3,
+   "source_ref": "sec_5_3_1"
+  },
+  {
+   "id": "nested-attribute-targeted-attack",
+   "kind": "concept",
+   "label": "Nested Attribute-based Targeted Attack",
+   "level": 3,
+   "source_ref": "sec_5_3_2"
+  },
+  {
+   "id": "experiments",
+   "kind": "concept",
+   "label": "Experiments",
+   "level": 1,
+   "source_ref": "sec_6"
+  },
+  {
+   "id": "experimental-setup",
+   "kind": "concept",
+   "label": "Experimental Setup",
+   "level": 2,
+   "source_ref": "sec_6_1"
+  },
+  {
+   "id": "ideal-vs-practical-imputation",
+   "kind": "concept",
+   "label": "Ideal vs. Practical Imputation Attacks",
+   "level": 2,
+   "source_ref": "sec_6_2"
+  },
+  {
+   "id": "disparity-inference-performance",
+   "kind": "concept",
+   "label": "Disparity Inference Attack Performance",
+   "level": 2,
+   "source_ref": "sec_6_3"
+  },
+  {
+   "id": "targeted-attack-performance",
+   "kind": "concept",
+   "label": "Targeted Attribute Inference Attack Performance",
+   "level": 2,
+   "source_ref": "sec_6_4"
+  },
+  {
+   "id": "mitigation-strategies",
+   "kind": "concept",
+   "label": "Potential Mitigation Strategies",
+   "level": 1,
+   "source_ref": "sec_7"
+  },
+  {
+   "id": "damir-defense",
+   "kind": "concept",
+   "label": "Disparity-Aware Mutual Information Regularization (DAMIR)",
+   "level": 2,
+   "source_ref": "sec_7_1"
+  },
+  {
+   "id": "bcorr-defense",
+   "kind": "concept",
+   "label": "Balanced Correlation Defense (BCorr)",
+   "level": 2,
+   "source_ref": "sec_7_2"
+  },
+  {
+   "id": "balanced-correlation-defense-process",
+   "kind": "concept",
+   "label": "Balanced Correlation Defense Process",
+   "level": 3,
+   "source_ref": "sec_11_2"
+  },
+  {
+   "id": "correctness-proof-sampling",
+   "kind": "concept",
+   "label": "Correctness Proof of Sampling Technique",
+   "level": 3,
+   "source_ref": "sec_11_1"
+  },
+  {
+   "id": "datasets-census-texas-adult",
+   "kind": "concept",
+   "label": "Census19, Texas-100X, and Adult Datasets",
+   "level": 3,
+   "source_ref": "sec_12_1"
+  },
+  {
+   "id": "related-works",
+   "kind": "concept",
+   "label": "Related Works",
+   "level": 1,
+   "source_ref": "sec_8"
+  }
+ ],
+ "edges": [
+  {
+   "src": "attribute-inference-preliminaries",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attack-threat-model",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "high-risk-group-identification",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attack-methodology",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experiments",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mitigation-strategies",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-works",
+   "dst": "disparate-privacy-vulnerability",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attribute-inference-preliminaries",
+   "dst": "attack-threat-model",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attack-threat-model",
+   "dst": "attack-methodology",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "vulnerability-key-factor",
+   "dst": "high-risk-group-identification",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "group-correlation-comparison",
+   "dst": "high-risk-group-identification",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "vulnerability-key-factor",
+   "dst": "group-correlation-comparison",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "high-risk-group-identification",
+   "dst": "attack-methodology",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "angular-difference-computation",
+   "dst": "attack-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "disparity-inference-attack",
+   "dst": "attack-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "targeted-attribute-inference-attack",
+   "dst": "attack-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "angular-difference-computation",
+   "dst": "disparity-inference-attack",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "angular-difference-computation",
+   "dst": "targeted-attribute-inference-attack",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "single-attribute-targeted-attack",
+   "dst": "targeted-attribute-inference-attack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "nested-attribute-targeted-attack",
+   "dst": "targeted-attribute-inference-attack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "single-attribute-targeted-attack",
+   "dst": "nested-attribute-targeted-attack",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "correctness-proof-sampling",
+   "dst": "single-attribute-targeted-attack",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experimental-setup",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ideal-vs-practical-imputation",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "disparity-inference-performance",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "targeted-attack-performance",
+   "dst": "experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "datasets-census-texas-adult",
+   "dst": "experimental-setup",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attack-methodology",
+   "dst": "experiments",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "disparity-inference-attack",
+   "dst": "disparity-inference-performance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "targeted-attribute-inference-attack",
+   "dst": "targeted-attack-performance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "damir-defense",
+   "dst": "mitigation-strategies",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "bcorr-defense",
+   "dst": "mitigation-strategies",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "balanced-correlation-defense-process",
+   "dst": "bcorr-defense",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "damir-defense",
+   "dst": "bcorr-defense",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mitigation-strategies",
+   "dst": "attack-methodology",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-works",
+   "dst": "attack-methodology",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

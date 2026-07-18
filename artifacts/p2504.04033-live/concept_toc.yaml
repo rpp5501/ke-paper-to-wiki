@@ -1,0 +1,247 @@
+approved: true
+note: 'validated: 24 concepts (15-25), one level-0 thesis, all source_refs valid'
+concepts:
+- id: disparate-privacy-vulnerability
+  label: Disparate Privacy Vulnerability
+  level: 0
+  include: true
+  definition: ML models trained on tabular data exhibit unequal attribute inference
+    risk across population subgroups, which adversaries can exploit via targeted attacks
+    and which can be mitigated via disparity-aware defenses.
+  sub_questions:
+  - Why do some subgroups face higher attribute inference risk than others?
+  - How can adversaries exploit this disparity via targeted attacks?
+  - What defenses reduce disparate vulnerability without sacrificing model utility?
+  research: false
+- id: attribute-inference-preliminaries
+  label: Attribute Inference Preliminaries
+  level: 1
+  include: true
+  definition: Given the non-sensitive portion of a record and a target model, attribute
+    inference aims to recover the record's sensitive attribute value.
+  sub_questions:
+  - What formal notation defines the attribute inference objective?
+  - How does the adversary use the target model's confidence scores?
+  research: false
+- id: attack-threat-model
+  label: Attack Threat Model
+  level: 1
+  include: true
+  definition: The adversary has black-box query access to the target model plus other
+    bounded capabilities defining the attack setting.
+  sub_questions:
+  - What access does the adversary have to the target model?
+  - What auxiliary knowledge or data is assumed available to the adversary?
+  research: false
+- id: high-risk-group-identification
+  label: Uncovering High-Risk Groups
+  level: 1
+  include: true
+  definition: A framework for identifying population subgroups that face disproportionately
+    high risk of attribute inference privacy leakage.
+  sub_questions:
+  - What factors make some groups more vulnerable than others?
+  - How is vulnerability compared across groups?
+  research: false
+- id: vulnerability-key-factor
+  label: Key Factor Contributing to Vulnerability
+  level: 2
+  include: true
+  definition: Correlation strength between the sensitive attribute and the model output
+    is identified as the key factor driving disparate privacy risk.
+  sub_questions:
+  - Why does correlation between sensitive attribute and output drive vulnerability?
+  - How is this factor measured across groups?
+  research: false
+- id: group-correlation-comparison
+  label: Comparing Correlation between Groups
+  level: 2
+  include: true
+  definition: A method to compare correlation levels between the sensitive attribute
+    and outputs across different groups to flag high-risk ones.
+  sub_questions:
+  - How is correlation compared across groups?
+  - What threshold marks a group as high-risk?
+  research: false
+- id: attack-methodology
+  label: Attack Methodology
+  level: 1
+  include: true
+  definition: Two new classes of attacks—disparity inference attack and targeted attribute
+    inference attack—that exploit group-level vulnerability differences.
+  sub_questions:
+  - What distinguishes disparity inference attacks from targeted attribute inference
+    attacks?
+  - How do these attacks leverage identified high-risk groups?
+  research: false
+- id: angular-difference-computation
+  label: Computing Angular Difference
+  level: 2
+  include: true
+  definition: A method computing the angular difference between confidence-score distributions
+    obtained by querying the target model, used to quantify vulnerability.
+  sub_questions:
+  - How are confidence scores converted into an angular difference metric?
+  - What does a large angular difference indicate about vulnerability?
+  research: false
+- id: disparity-inference-attack
+  label: Disparity Inference Attack
+  level: 2
+  include: true
+  definition: An attack that infers which subset of training data a target model was
+    trained on, based on differing attack success rates across subsets.
+  sub_questions:
+  - How is attack success rate used to distinguish dataset subsets?
+  - What does this attack reveal about training data composition?
+  research: false
+- id: targeted-attribute-inference-attack
+  label: Targeted Attribute Inference Attack
+  level: 2
+  include: true
+  definition: An attack that targets specific attribute values or records to maximize
+    attribute inference success rate on a chosen target model and dataset.
+  sub_questions:
+  - How is a target attribute value selected for attack?
+  - How does targeting improve success rate over standard attribute inference?
+  research: false
+- id: single-attribute-targeted-attack
+  label: Single Attribute-based Targeted Attack
+  level: 3
+  include: true
+  definition: A targeted attack that samples records conditioned on a single attribute
+    under a fixed query budget to infer sensitive values.
+  sub_questions:
+  - How does the query budget constrain sampling?
+  - What sampling condition defines a single-attribute target?
+  research: false
+- id: nested-attribute-targeted-attack
+  label: Nested Attribute-based Targeted Attack
+  level: 3
+  include: true
+  definition: An extension of the single attribute-based attack that nests multiple
+    attributes to a specified depth to further increase attack precision.
+  sub_questions:
+  - How does increasing nesting depth affect attack success?
+  - What tradeoffs arise from nesting multiple attributes?
+  research: false
+- id: experiments
+  label: Experiments
+  level: 1
+  include: true
+  definition: Empirical evaluation of the proposed attacks and defenses across three
+    datasets, ML models, and performance metrics.
+  sub_questions:
+  - What datasets and models are used to evaluate the attacks?
+  - How do experimental results validate the disparate vulnerability claim?
+  research: false
+- id: experimental-setup
+  label: Experimental Setup
+  level: 2
+  include: true
+  definition: Experiments use the Census19, Texas-100X, and Adult datasets with defined
+    ML models and metrics.
+  sub_questions:
+  - Why were these three datasets chosen?
+  - What models and metrics are used for evaluation?
+  research: false
+- id: ideal-vs-practical-imputation
+  label: Ideal vs. Practical Imputation Attacks
+  level: 2
+  include: true
+  definition: A comparison between an ideal imputation attack, where the adversary's
+    auxiliary dataset exactly matches the true distribution, and practical imputation
+    attacks with imperfect auxiliary data.
+  sub_questions:
+  - How much does auxiliary data distribution mismatch degrade attack performance?
+  - What is the performance gap between ideal and practical imputation attacks?
+  research: false
+- id: disparity-inference-performance
+  label: Disparity Inference Attack Performance
+  level: 2
+  include: true
+  definition: Evaluation results of the disparity inference attack's ability to distinguish
+    sensitive-attribute-based subsets across the datasets.
+  sub_questions:
+  - How effective is the disparity inference attack across datasets?
+  - Which sensitive attributes yield the strongest disparity signal?
+  research: false
+- id: targeted-attack-performance
+  label: Targeted Attribute Inference Attack Performance
+  level: 2
+  include: true
+  definition: Evaluation results comparing targeted attribute inference attack success
+    rates (e.g., CSMIA, LOMIA) at varying query budgets.
+  sub_questions:
+  - How does attack success rate vary with query budget?
+  - How do targeted attacks compare against baseline attacks like CSMIA and LOMIA?
+  research: false
+- id: mitigation-strategies
+  label: Potential Mitigation Strategies
+  level: 1
+  include: true
+  definition: Strategies examined to mitigate disparate privacy vulnerabilities that
+    an adversary could exploit.
+  sub_questions:
+  - What defense approaches reduce disparate attribute inference risk?
+  - What is the utility-privacy tradeoff of these defenses?
+  research: false
+- id: damir-defense
+  label: Disparity-Aware Mutual Information Regularization (DAMIR)
+  level: 2
+  include: true
+  definition: A training-time defense that incorporates a secondary loss minimization
+    objective to reduce mutual information leakage disparity between groups.
+  sub_questions:
+  - How does mutual information regularization reduce leakage disparity?
+  - What is the utility cost of applying DAMIR?
+  research: false
+- id: bcorr-defense
+  label: Balanced Correlation Defense (BCorr)
+  level: 2
+  include: true
+  definition: A defense strategy that addresses disparities by ensuring similar correlation
+    levels across all relevant groups.
+  sub_questions:
+  - How does equalizing correlation across groups reduce vulnerability?
+  - How does BCorr compare to DAMIR in effectiveness and cost?
+  research: false
+- id: balanced-correlation-defense-process
+  label: Balanced Correlation Defense Process
+  level: 3
+  include: true
+  definition: 'The algorithmic process for BCorr: given a non-sensitive grouping attribute,
+    rank groups by vulnerability and adjust correlation accordingly.'
+  sub_questions:
+  - How are groups ranked in the correlation-balancing process?
+  - What adjustment mechanism equalizes correlation across groups?
+  research: false
+- id: correctness-proof-sampling
+  label: Correctness Proof of Sampling Technique
+  level: 3
+  include: true
+  definition: A formal proof establishing the correctness of the sampling technique
+    that conditions record selection on the sensitive attribute and output.
+  sub_questions:
+  - What guarantees does the correctness proof provide for the sampling technique?
+  - How does this proof justify the attack's sampling condition?
+  research: false
+- id: datasets-census-texas-adult
+  label: Census19, Texas-100X, and Adult Datasets
+  level: 3
+  include: true
+  definition: Census19 (2019 US Census Bureau data, 1.6M+ records, 12 variables),
+    Texas-100X, and Adult datasets used for evaluation.
+  sub_questions:
+  - What are the key characteristics of each dataset (size, attributes)?
+  - Why are these datasets suitable for studying disparate privacy vulnerability?
+  research: false
+- id: related-works
+  label: Related Works
+  level: 1
+  include: true
+  definition: Prior work on model inversion and attribute inference attacks, including
+    Fredrikson et al.'s foundational model inversion attacks.
+  sub_questions:
+  - How does this paper's approach differ from prior model inversion attacks?
+  - What gap in prior attribute inference literature does this paper address?
+  research: false

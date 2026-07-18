@@ -1,0 +1,271 @@
+approved: true
+note: 'owner-authorized approval after validation: 22 concepts (15-25), one level-0 thesis (transformer), all source_refs valid, 2 sensible research flags'
+concepts:
+- id: transformer
+  label: Transformer
+  level: 0
+  include: true
+  definition: A model architecture eschewing recurrence and relying entirely on an
+    attention mechanism to draw global dependencies between input and output.
+  sub_questions:
+  - Why does removing recurrence and convolution entirely still allow modeling sequence
+    order?
+  - What architectural properties let the Transformer parallelize training compared
+    to RNN-based models?
+  - How do the encoder and decoder stacks combine attention and feed-forward sublayers?
+  research: true
+- id: background-related-work
+  label: 'Background: Reducing Sequential Computation'
+  level: 1
+  include: true
+  definition: Prior work reducing sequential computation using CNN-based models (Extended
+    Neural GPU, ByteNet, ConvS2S) as a foundation for attention-based approaches.
+  sub_questions:
+  - How do ByteNet and ConvS2S reduce sequential computation relative to RNNs?
+  - Why does the number of operations to relate distant positions grow with convolutional
+    models but not with self-attention?
+  - What is 'end-to-end memory network' self-attention and how did it precede the
+    Transformer?
+  research: false
+- id: recurrent-models-limitation
+  label: Recurrent Model Limitations
+  level: 1
+  include: true
+  definition: Recurrent models factor computation along symbol positions, generating
+    hidden states sequentially and precluding parallelization within training examples.
+  sub_questions:
+  - Why does sequential hidden-state computation limit batching across long sequences?
+  - How do factorization tricks and conditional computation partially mitigate this
+    constraint?
+  - What memory constraints arise from maintaining hidden states across long sequences?
+  research: false
+- id: self-attention-motivation
+  label: Why Self-Attention
+  level: 1
+  include: true
+  definition: Self-attention layers connect all positions with a constant number of
+    sequentially executed operations, motivating comparison against recurrent and
+    convolutional layers on complexity, parallelizability, and path length.
+  sub_questions:
+  - How does per-layer computational complexity of self-attention compare to recurrent
+    and convolutional layers?
+  - What is meant by 'maximum path length' between long-range dependencies, and why
+    does it matter for learning?
+  - In what cases would restricted (windowed) self-attention be necessary for very
+    long sequences?
+  research: false
+- id: encoder-decoder-stack
+  label: Encoder and Decoder Stacks
+  level: 1
+  include: true
+  definition: The encoder maps an input sequence to a sequence of continuous representations;
+    the decoder generates an output sequence one element at a time, both composed
+    of stacks of identical layers.
+  sub_questions:
+  - Why are residual connections and layer normalization applied around each sublayer?
+  - How does masking in the decoder self-attention preserve the auto-regressive property?
+  - Why do both stacks use 6 identical layers in the base model?
+  research: false
+- id: attention-mechanism
+  label: Attention
+  level: 1
+  include: true
+  definition: A function mapping a query and a set of key-value pairs to an output,
+    computed as a weighted sum of values.
+  sub_questions:
+  - How are the compatibility weights between query and key computed?
+  - What distinguishes additive attention from dot-product attention?
+  - How does attention enable modeling dependencies regardless of distance in the
+    sequence?
+  research: false
+- id: scaled-dot-product-attention
+  label: Scaled Dot-Product Attention
+  level: 2
+  include: true
+  definition: Attention computed as softmax(QK^T/sqrt(d_k))V, where queries and keys
+    have dimension d_k and values have dimension d_v.
+  sub_questions:
+  - Why is the dot product scaled by 1/sqrt(d_k) instead of left unscaled?
+  - How does large d_k push softmax gradients into regions of extremely small gradient?
+  - How does this method compare in speed and space-efficiency to additive attention?
+  research: false
+- id: multi-head-attention
+  label: Multi-Head Attention
+  level: 2
+  include: true
+  definition: Linearly projecting queries, keys, and values h times with different
+    learned projections and performing attention in parallel, then concatenating and
+    projecting the results.
+  sub_questions:
+  - Why does projecting into multiple lower-dimensional subspaces outperform a single
+    attention head at full dimensionality?
+  - How is total computational cost kept similar to single-head attention despite
+    using h heads?
+  - What different types of relationships do different attention heads tend to learn?
+  research: false
+- id: attention-applications
+  label: Applications of Attention in the Model
+  level: 2
+  include: true
+  definition: The Transformer uses multi-head attention in encoder-decoder attention,
+    encoder self-attention, and masked decoder self-attention layers.
+  sub_questions:
+  - Why do encoder-decoder attention queries come from the previous decoder layer
+    while keys and values come from the encoder output?
+  - How does self-attention in the encoder let each position attend to all positions
+    of the previous layer?
+  - Why is leftward information flow masked out in decoder self-attention?
+  research: false
+- id: position-wise-ffn
+  label: Position-wise Feed-Forward Networks
+  level: 1
+  include: true
+  definition: A fully connected feed-forward network applied to each position separately
+    and identically, consisting of two linear transformations with a ReLU activation
+    in between.
+  sub_questions:
+  - Why are the same feed-forward parameters shared across positions but different
+    between layers?
+  - How can this be viewed as two convolutions with kernel size 1?
+  - Why is the inner-layer dimensionality (d_ff) chosen larger than d_model?
+  research: false
+- id: embeddings-softmax
+  label: Embeddings and Softmax
+  level: 1
+  include: true
+  definition: Learned embeddings convert input and output tokens to vectors of dimension
+    d_model, with a shared weight matrix between embedding layers and the pre-softmax
+    linear transformation.
+  sub_questions:
+  - Why are embedding weights multiplied by sqrt(d_model)?
+  - What is the benefit of sharing the same weight matrix between the two embedding
+    layers and the softmax projection?
+  - How does the learned softmax convert decoder output to predicted next-token probabilities?
+  research: false
+- id: positional-encoding
+  label: Positional Encoding
+  level: 1
+  include: true
+  definition: Since the model contains no recurrence or convolution, sinusoidal positional
+    encodings are added to input embeddings to inject information about token order.
+  sub_questions:
+  - Why were sine and cosine functions of varying frequency chosen over learned positional
+    embeddings?
+  - How does the sinusoidal formulation let the model easily learn to attend to relative
+    positions?
+  - Why did learned positional embeddings produce nearly identical results to the
+    sinusoidal version?
+  research: false
+- id: training-regime
+  label: Training
+  level: 1
+  include: true
+  definition: The training regime describing the data, hardware, optimizer, and regularization
+    used to train the Transformer models.
+  sub_questions:
+  - What combination of data, hardware, and optimization choices enabled fast training
+    relative to prior state-of-the-art models?
+  - How were hyperparameter choices validated across base and big model configurations?
+  research: false
+- id: training-data-batching
+  label: Training Data and Batching
+  level: 2
+  include: true
+  definition: Training used the WMT 2014 English-German dataset of about 4.5 million
+    sentence pairs, encoded with byte-pair encoding and batched by approximate sequence
+    length.
+  sub_questions:
+  - Why does batching by approximate sequence length improve training efficiency over
+    random batching?
+  - How does byte-pair encoding help manage vocabulary size across two languages?
+  research: false
+- id: hardware-schedule
+  label: Hardware and Schedule
+  level: 2
+  include: true
+  definition: Models were trained on one machine with 8 NVIDIA P100 GPUs, with base
+    models taking about 12 hours and big models taking 3.5 days.
+  sub_questions:
+  - How does training time scale between base and big model configurations?
+  - What does this training cost imply about compute-efficiency relative to prior
+    state-of-the-art models?
+  research: false
+- id: adam-optimizer
+  label: Optimizer
+  level: 2
+  include: true
+  definition: The Adam optimizer was used with beta1=0.9, beta2=0.98, and a learning
+    rate that increases linearly then decreases proportionally to the inverse square
+    root of the step number.
+  sub_questions:
+  - Why does the learning rate schedule warm up linearly before decaying?
+  - How was the number of warmup steps chosen and what effect does it have on training
+    stability?
+  research: false
+- id: regularization
+  label: Regularization
+  level: 2
+  include: true
+  definition: Three types of regularization are employed during training, including
+    residual dropout applied to sublayer outputs and embeddings, and label smoothing.
+  sub_questions:
+  - Why does label smoothing hurt perplexity but improve BLEU and accuracy?
+  - How is dropout applied differently to sublayer outputs versus embedding sums?
+  research: false
+- id: machine-translation-results
+  label: Machine Translation Results
+  level: 1
+  include: true
+  definition: The Transformer achieves better BLEU scores than previous state-of-the-art
+    models on English-to-German and English-to-French translation at a fraction of
+    the training cost.
+  sub_questions:
+  - How much lower is the Transformer's training cost compared to prior state-of-the-art
+    ensembles at comparable or better BLEU?
+  - What decoding settings (beam size, length penalty) were used to obtain these results?
+  research: false
+- id: model-variations
+  label: Model Variations
+  level: 2
+  include: true
+  definition: Ablations varying number of attention heads, key/value dimensions, model
+    size, and other architectural choices to measure their effect on translation quality.
+  sub_questions:
+  - Why does having too many or too few attention heads both hurt quality?
+  - How does reducing attention key size d_k degrade model quality?
+  - What does the effect of model size scaling suggest about the architecture's capacity?
+  research: false
+- id: constituency-parsing
+  label: English Constituency Parsing
+  level: 2
+  include: true
+  definition: The Transformer generalizes well to English constituency parsing despite
+    the task's strong structural constraints and output length bias.
+  sub_questions:
+  - How does the Transformer perform on constituency parsing without task-specific
+    tuning, compared to specialized parsers?
+  - Why is constituency parsing considered a good generalization test for a non-recurrent
+    architecture?
+  research: false
+- id: attention-visualization
+  label: Attention Visualizations
+  level: 3
+  include: true
+  definition: Examples of the attention mechanism following long-distance dependencies
+    and performing tasks like anaphora resolution in encoder self-attention layers.
+  sub_questions:
+  - What do the visualized attention heads reveal about long-distance dependency resolution?
+  - Do different heads specialize in distinct syntactic or semantic behaviors?
+  research: true
+- id: ffn-as-attention
+  label: Feed-Forward Layers as Attention over Parameters
+  level: 3
+  include: true
+  definition: The two feed-forward layers of the position-wise FFN can be interpreted
+    as a form of attention over a set of learned parameter vectors, akin to memory.
+  sub_questions:
+  - In what precise sense do the two FFN weight matrices act as keys and values in
+    an attention-like operation?
+  - What does this reinterpretation suggest about the relationship between feed-forward
+    and attention sublayers?
+  research: true

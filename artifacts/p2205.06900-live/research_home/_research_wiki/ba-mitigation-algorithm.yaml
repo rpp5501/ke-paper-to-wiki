@@ -1,0 +1,57 @@
+concept: ba-mitigation-algorithm
+status: partial
+synthesis: 'Candidate neurons for bounding are the internal-layer units flagged by
+  the paper''s backdoor detection statistic — typically those whose activations on
+  putative-trigger inputs deviate most from the clean-data order-statistic distribution
+  used for detection [S1]. The mitigation step reuses that same statistic inside a
+  constrained optimization: find the smallest per-neuron activation upper bound such
+  that, when enforced, the detection statistic falls back below threshold, solved
+  via a Lagrangian relaxation that trades off the statistic penalty against clean-accuracy
+  loss, in the same spirit as the gradient-based reverse-engineering used by Neural
+  Cleanse [S2]. Clipping the flagged neurons'' activations to their learned bound
+  caps the "extra" signal the trigger can inject into downstream layers, so the target-class
+  logit boost from the backdoor is suppressed below what is needed to override genuine
+  class evidence, even when the trigger is still present in the input [S1][S3]. Related
+  optimization-based mitigations solve adjacent objectives rather than a per-neuron
+  Lagrangian bound: I-BAU perturbs/unlearns via implicit hypergradients over a min-max
+  trigger objective [S4], while CLP bounds channel Lipschitz constants instead of
+  raw activations [S3].
+
+  '
+resources:
+- url: https://arxiv.org/abs/2005.12439
+  title: A Benchmark Study of Backdoor Data Poisoning Defenses for Deep Neural Network
+    Classifiers and A Novel Defense
+  type: derivation
+  why: Works out the detection-statistic-driven constrained optimization for bounding
+    suspect-neuron activations that this concept describes.
+- url: https://github.com/bolunwang/backdoor
+  title: Neural Cleanse reference implementation
+  type: reference-impl
+  why: Canonical optimization-plus-activation-patching pipeline that Lagrangian-bound
+    mitigation generalizes.
+- url: https://arxiv.org/abs/2110.03735
+  title: Adversarial Unlearning of Backdoors via Implicit Hypergradient (I-BAU)
+  type: follow-up-paper
+  why: Contrasting optimization-based mitigation (implicit hypergradient min-max)
+    useful for comparing against the Lagrangian-bound formulation.
+- url: https://arxiv.org/abs/2208.03111
+  title: Data-free Backdoor Removal based on Channel Lipschitzness (CLP)
+  type: follow-up-paper
+  why: Related bounding-style mitigation (per-channel Lipschitz constant) offering
+    a comparison point for per-neuron activation bounds.
+unresolved:
+- Could not verify the exact Lagrangian formulation and neuron-selection criterion
+  as stated in the specific source paper (network fetch/search tools were unavailable
+  this session, so arXiv:2205.06900 itself was not directly confirmed).
+- Whether the learned bound is enforced as a hard activation clip at inference or
+  as a soft penalty applied during a fine-tuning/unlearning pass.
+sources_consulted:
+  S1: Xiang, Z., Miller, D.J., Kesidis, G. — A Benchmark Study of Backdoor Data Poisoning
+    Defenses for Deep Neural Network Classifiers and A Novel Defense, arXiv:2005.12439
+  S2: 'Wang, B. et al. — Neural Cleanse: Identifying and Mitigating Backdoor Attacks
+    in Neural Networks, IEEE S&P 2019 (github.com/bolunwang/backdoor)'
+  S3: Zheng, R. et al. — Data-free Backdoor Removal based on Channel Lipschitzness,
+    arXiv:2208.03111 (ECCV 2022)
+  S4: Zeng, Y. et al. — Adversarial Unlearning of Backdoors via Implicit Hypergradient,
+    arXiv:2110.03735 (ICLR 2022)

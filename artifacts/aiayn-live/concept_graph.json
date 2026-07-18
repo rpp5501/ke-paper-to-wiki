@@ -1,0 +1,350 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:1706.03762",
+  "generated": "2026-07-12",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "transformer",
+   "kind": "concept",
+   "label": "Transformer",
+   "level": 0,
+   "source_ref": "sec_3"
+  },
+  {
+   "id": "background-related-work",
+   "kind": "concept",
+   "label": "Background: Reducing Sequential Computation",
+   "level": 1,
+   "source_ref": "sec_2"
+  },
+  {
+   "id": "recurrent-models-limitation",
+   "kind": "concept",
+   "label": "Recurrent Model Limitations",
+   "level": 1,
+   "source_ref": "sec_1"
+  },
+  {
+   "id": "self-attention-motivation",
+   "kind": "concept",
+   "label": "Why Self-Attention",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "encoder-decoder-stack",
+   "kind": "concept",
+   "label": "Encoder and Decoder Stacks",
+   "level": 1,
+   "source_ref": "sec_3_1"
+  },
+  {
+   "id": "attention-mechanism",
+   "kind": "concept",
+   "label": "Attention",
+   "level": 1,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "scaled-dot-product-attention",
+   "kind": "equation",
+   "label": "Scaled Dot-Product Attention",
+   "level": 2,
+   "source_ref": "sec_3_2_1"
+  },
+  {
+   "id": "multi-head-attention",
+   "kind": "concept",
+   "label": "Multi-Head Attention",
+   "level": 2,
+   "source_ref": "sec_3_2_2"
+  },
+  {
+   "id": "attention-applications",
+   "kind": "concept",
+   "label": "Applications of Attention in the Model",
+   "level": 2,
+   "source_ref": "sec_3_2_3"
+  },
+  {
+   "id": "position-wise-ffn",
+   "kind": "concept",
+   "label": "Position-wise Feed-Forward Networks",
+   "level": 1,
+   "source_ref": "sec_3_3"
+  },
+  {
+   "id": "embeddings-softmax",
+   "kind": "concept",
+   "label": "Embeddings and Softmax",
+   "level": 1,
+   "source_ref": "sec_3_4"
+  },
+  {
+   "id": "positional-encoding",
+   "kind": "equation",
+   "label": "Positional Encoding",
+   "level": 1,
+   "source_ref": "sec_3_5"
+  },
+  {
+   "id": "training-regime",
+   "kind": "concept",
+   "label": "Training",
+   "level": 1,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "training-data-batching",
+   "kind": "concept",
+   "label": "Training Data and Batching",
+   "level": 2,
+   "source_ref": "sec_5_1"
+  },
+  {
+   "id": "hardware-schedule",
+   "kind": "concept",
+   "label": "Hardware and Schedule",
+   "level": 2,
+   "source_ref": "sec_5_2"
+  },
+  {
+   "id": "adam-optimizer",
+   "kind": "equation",
+   "label": "Optimizer",
+   "level": 2,
+   "source_ref": "sec_5_3"
+  },
+  {
+   "id": "regularization",
+   "kind": "concept",
+   "label": "Regularization",
+   "level": 2,
+   "source_ref": "sec_5_4"
+  },
+  {
+   "id": "machine-translation-results",
+   "kind": "concept",
+   "label": "Machine Translation Results",
+   "level": 1,
+   "source_ref": "sec_6_1"
+  },
+  {
+   "id": "model-variations",
+   "kind": "concept",
+   "label": "Model Variations",
+   "level": 2,
+   "source_ref": "sec_6_2"
+  },
+  {
+   "id": "constituency-parsing",
+   "kind": "concept",
+   "label": "English Constituency Parsing",
+   "level": 2,
+   "source_ref": "sec_6_3"
+  },
+  {
+   "id": "attention-visualization",
+   "kind": "figure",
+   "label": "Attention Visualizations",
+   "level": 3,
+   "source_ref": "sec_8"
+  },
+  {
+   "id": "ffn-as-attention",
+   "kind": "concept",
+   "label": "Feed-Forward Layers as Attention over Parameters",
+   "level": 3,
+   "source_ref": "sec_9"
+  }
+ ],
+ "edges": [
+  {
+   "src": "encoder-decoder-stack",
+   "dst": "transformer",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attention-mechanism",
+   "dst": "encoder-decoder-stack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "position-wise-ffn",
+   "dst": "encoder-decoder-stack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "embeddings-softmax",
+   "dst": "transformer",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "positional-encoding",
+   "dst": "transformer",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "transformer",
+   "dst": "background-related-work",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "transformer",
+   "dst": "recurrent-models-limitation",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "self-attention-motivation",
+   "dst": "recurrent-models-limitation",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "transformer",
+   "dst": "self-attention-motivation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "scaled-dot-product-attention",
+   "dst": "attention-mechanism",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "multi-head-attention",
+   "dst": "attention-mechanism",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "multi-head-attention",
+   "dst": "scaled-dot-product-attention",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attention-applications",
+   "dst": "attention-mechanism",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "training-data-batching",
+   "dst": "training-regime",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hardware-schedule",
+   "dst": "training-regime",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "adam-optimizer",
+   "dst": "training-regime",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "regularization",
+   "dst": "training-regime",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "training-regime",
+   "dst": "machine-translation-results",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "machine-translation-results",
+   "dst": "transformer",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "model-variations",
+   "dst": "machine-translation-results",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "constituency-parsing",
+   "dst": "transformer",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "attention-visualization",
+   "dst": "multi-head-attention",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ffn-as-attention",
+   "dst": "position-wise-ffn",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

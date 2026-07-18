@@ -1,0 +1,66 @@
+```yaml
+concept: attention-visualization
+status: partial
+synthesis: >
+  In the original Transformer paper ("Attention Is All You Need," Vaswani et al.,
+  2017), the appendix includes qualitative examples of encoder self-attention
+  distributions, rendered as colored edges between tokens of an input sentence,
+  to argue that self-attention layers learn interpretable structural relations
+  rather than acting as an opaque mixing operation.
+
+  On long-distance dependency resolution: one example shows the attention
+  distribution for the word "making" in a sentence built around the phrase
+  "making...more difficult." Several attention heads in an upper encoder layer
+  (layer 5 of 6) attend sharply back to the distant token(s) that complete this
+  phrase, skipping over the intervening words. This is presented as evidence
+  that self-attention gives the model a direct, constant-path-length route to
+  connect tokens that are far apart in the sequence, which the paper contrasts
+  with the growing path length required by recurrent or convolutional
+  connections to link the same tokens.
+
+  A second example is offered as an instance of anaphora resolution: attention
+  from the pronoun "its" is shown for two different heads, both producing very
+  sharp (low-entropy) distributions concentrated on the noun phrase the pronoun
+  refers to. The heads' attention effectively performs coreference/anaphora
+  resolution as a side effect of the self-attention computation, without any
+  explicit coreference supervision.
+
+  On head specialization: the paper shows two heads from the same encoder
+  self-attention layer producing visibly different attention patterns over the
+  same sentence, which it interprets as heads having "learned to perform
+  different tasks," with some heads' behavior appearing tied to syntactic
+  structure of the sentence. Combined with the anaphora example, this supports
+  the broader claim that multi-head attention lets separate heads specialize
+  in distinct relations (e.g., local syntactic agreement vs. longer-range
+  coreference-like links) rather than all heads redundantly computing the same
+  mixture.
+
+  Caveats inherent to the source material: these are hand-picked, qualitative
+  visualizations offered as illustrative evidence, not a systematic
+  quantitative study of head specialization (that line of analysis was taken
+  up by later interpretability work, e.g. Clark et al. 2019 "What Does BERT
+  Look At?" and Voita et al. 2019 on head pruning/specialization, which is out
+  of scope for this note).
+resources:
+- title: "Attention Is All You Need (Vaswani et al., 2017) — arXiv:1706.03762"
+  note: >
+    Primary source; qualitative attention visualizations appear in the
+    appendix figures (long-distance dependency example, anaphora-resolution
+    heads, and a pair of heads showing distinct syntactic-like behavior on
+    the same sentence).
+unresolved:
+- Could not re-fetch or re-verify the exact figure numbers/captions and exact
+  sentence examples against the live arXiv source in this session — WebSearch
+  and WebFetch calls were both blocked by permission restrictions in this
+  execution environment (no approval available to grant them), so the
+  synthesis above relies on prior knowledge of the paper rather than a fresh
+  citation-checked read.
+- Whether head specialization is consistent/reproducible beyond the
+  hand-picked examples shown (i.e. quantitative evidence of specialization)
+  is not addressed by these figures and would need later interpretability
+  literature to answer properly.
+sources_consulted:
+- attempted: WebSearch query on Figure 3/4/5 attention visualization — blocked, permission not granted
+- attempted: WebFetch on arxiv.org/abs/1706.03762 — blocked, permission not granted
+- fallback: model prior knowledge of Vaswani et al. 2017 appendix content (no live fetch performed)
+```

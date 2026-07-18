@@ -1,0 +1,19 @@
+# Single Attribute-based Targeted Attack
+
+## TL;DR {#tldr}
+The Single Attribute-based Targeted Attack is a level-L3 technique within the broader Targeted Attribute Inference Attack framework: it picks one non-sensitive attribute to slice the population into subsets, then ranks those subsets by vulnerability so a query-limited attacker can focus on the weakest ones first. It builds on the Nested Attribute-based Targeted Attack and relies on the Correctness Proof of Sampling Technique to justify that its sampling-based subset selection is sound.
+
+## Intuition {#intuition}
+Imagine an attacker who can only afford a limited number of queries against a target model and wants to find the group of individuals whose sensitive attribute is easiest to guess. Rather than searching the entire combinatorial space of attribute combinations, the attacker tries a shortcut: pick just one non-sensitive attribute (say, occupation) and split people into groups based on the values it takes. Some of these groups will turn out to be "loud" — the model's confidence swings widely across possible sensitive-attribute values within that group — while others are "quiet" and uninformative. The attacker's intuition is that the single attribute producing the widest spread of loudness across its groups is the most promising place to keep spending the query budget, so effort is concentrated on the noisiest, most exploitable subsets first.
+
+## Mechanics {#mechanics}
+The attack begins by randomly sampling a working set under a query-budget constraint, then uses the querying algorithm to build a confidence matrix over that sampled set [§sec_5_3_1]. For every candidate non-sensitive attribute, the sampled set is partitioned into subsets, one per possible value of that attribute, so that each subset groups together all records sharing that attribute value [§sec_5_3_1]. For each of these per-attribute subsets, the attacker computes an angular difference score and collects the scores into a vector for that attribute [§sec_5_3_1]. The attribute whose vector of angular differences has the greatest spread is then selected as the one most likely to contain the most vulnerable subsets, since a wide range signals that some of its subsets are far more exploitable than others [§sec_5_3_1]. Having fixed that attribute, the algorithm ranks the attribute's subsets by increasing angular-difference value and produces an ordered index set over them [§sec_5_3_1]. Finally, subsets are aggregated in decreasing order of vulnerability — starting from the most vulnerable end of the ranking — until the attack's query budget is exhausted, and the resulting union of records is returned as the attack output [§sec_5_3_1].
+
+## The Math {#the-math}
+The local context describes this procedure only in prose — sampling under a query budget, per-attribute subset partitioning, angular-difference scoring, and rank-based aggregation — without providing the underlying formulas as extractable display equations, so no [eq_N] entries can be reproduced here [§sec_5_3_1].
+
+## Go Deeper {#go-deeper}
+- **Targeted Attribute Inference Attack** (part-of) — the parent attack category this technique instantiates; read it to see where the single-attribute variant fits among other targeting strategies.
+- **Nested Attribute-based Targeted Attack** (builds-on) — the attack this method extends; worth reading to see how selecting one attribute compares to nesting multiple attributes for subset refinement.
+- **Correctness Proof of Sampling Technique** (prerequisite) — establishes that the random sampling step used to build the confidence matrix is statistically sound, which this attack depends on for its budget-constrained querying to be valid.
+- No dedicated research note exists for this concept, so no additional external resources are listed.

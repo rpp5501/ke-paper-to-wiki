@@ -22,6 +22,14 @@ Intuition use the GLOBAL context only (no equations). Mechanics and The Math
 use the LOCAL context. Go Deeper lists the note's resources with one-line whys.
 Honesty: if the local context lacks material for a tier, write one sentence
 saying so rather than padding.
+Equations (hard): in The Math, reproduce each relevant equation from the LOCAL
+CONTEXT [eq_N] entries VERBATIM as a display block wrapped in $$ ... $$ — keep it
+as LaTeX, never convert to Unicode symbols — and put its [eq_N] anchor right after
+the closing $$ on the same line. EVERY paragraph in Mechanics and The Math,
+including the equation line, any lead-in sentence that introduces an equation,
+and any honesty sentence, MUST end with an anchor ([§sec_x], [eq_N], or [S#]);
+no exceptions. If a sentence introduces an equation, end that sentence with the
+[eq_N] anchor before the $$ block.
 
 GLOBAL CONTEXT:
 {global_slice}

@@ -1,0 +1,51 @@
+concept: attention-visualization
+status: complete
+synthesis: 'The original Transformer paper includes attention-visualization figures
+  in its appendix that qualitatively demonstrate what encoder self-attention layers
+  learn [S1]. Figure 3 shows a head in layer 5 of 6 tracking the long-distance dependency
+  between "making" and the distant phrase completing "...more difficult", with attention
+  edges spanning nearly the full sentence rather than staying local [S1]. Figure 4
+  shows two separate heads whose attention distributions concentrate on resolving
+  the pronoun "its" back to its antecedent, an example the authors present as heads
+  performing anaphora resolution [S1]. Figure 5 shows many heads exhibiting attention
+  patterns tied to sentence structure, suggesting some specialization toward syntactic
+  roles rather than pure positional or lexical similarity [S1]. Follow-on visualization
+  tooling, such as Jay Alammar''s Illustrated Transformer walkthrough and Jesse Vig''s
+  BertViz interactive tool, reproduce and extend this style of head-by-head attention
+  inspection for arbitrary sentences and models, letting readers confirm that different
+  heads do specialize in distinct long-range syntactic/semantic behaviors beyond the
+  paper''s fixed examples [S2][S3].
+
+  '
+resources:
+- url: https://arxiv.org/abs/1706.03762
+  title: Attention Is All You Need (Vaswani et al., 2017)
+  type: reference-impl
+  why: Appendix Figures 3-5 are the original attention-visualization examples the
+    concept refers to (long-distance dependency and anaphora resolution).
+- url: https://jalammar.github.io/illustrated-transformer/
+  title: The Illustrated Transformer
+  type: visual
+  why: Gives an accessible, diagrammed walkthrough of self-attention with visualized
+    attention weights per head.
+- url: https://github.com/jessevig/bertviz
+  title: BertViz
+  type: reference-impl
+  why: Interactive tool to visualize attention heads on arbitrary input text, letting
+    you verify head specialization claims empirically.
+- url: https://nlp.seas.harvard.edu/annotated-transformer/
+  title: The Annotated Transformer
+  type: derivation
+  why: Line-by-line PyTorch implementation paired with explanation, useful for tracing
+    how attention weights are computed before visualizing them.
+unresolved:
+- Do the specific head-specialization patterns shown in the paper's figures generalize
+  consistently across layers/models, or are they cherry-picked illustrative examples?
+- How do later interpretability studies (e.g., probing classifiers on attention heads)
+  qualify or contradict the "heads specialize syntactically" claim from the original
+  figures?
+sources_consulted:
+  S1: Vaswani et al., 2017, 'Attention Is All You Need', arxiv.org/abs/1706.03762
+    (Appendix Figures 3-5)
+  S2: Jay Alammar, 'The Illustrated Transformer', jalammar.github.io/illustrated-transformer/
+  S3: Jesse Vig, BertViz, github.com/jessevig/bertviz

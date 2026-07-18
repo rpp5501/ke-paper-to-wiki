@@ -9,9 +9,26 @@ from research_mcp.wiki import wiki_get, wiki_put
 from .briefs import build_brief
 from .toc import load_approved_toc
 
-RESEARCH_PROMPT = """Follow the research playbook loop exactly for this brief.
-Budgets are hard. Output ONLY the finished note as YAML (schema: concept,
-status, synthesis, resources, unresolved, sources_consulted) — no prose.
+RESEARCH_PROMPT = """Follow the research playbook loop for this brief, using
+your own knowledge of well-known, real, reachable resources for this concept.
+Output ONLY the finished note as YAML — no prose, no markdown code fences.
+
+Use EXACTLY this shape and these key names:
+concept: <the brief's concept slug>
+status: complete | partial | insufficient-sources
+synthesis: >
+  2-6 sentences, at most 200 words. Tag each factual claim with [S1], [S2], ...
+  where each tag matches a key in sources_consulted below.
+resources:            # 1-4 items, each a real canonical URL for this concept
+  - url: https://...
+    title: ...
+    type: visual | lecture | reference-impl | follow-up-paper | derivation
+    why: one line on why it helps
+unresolved:           # list of open questions (may be empty)
+  - ...
+sources_consulted:    # a MAP (not a list); keys are S1, S2, ...
+  S1: citation or URL string
+  S2: citation or URL string
 
 BRIEF:
 {brief_yaml}
@@ -23,9 +40,21 @@ def _spawn_claude(prompt: str) -> str:
     return claude_spawn(prompt, max_turns=15, timeout=900)
 
 
+def _strip_fences(raw: str) -> str:
+    """Peel a ```yaml ... ``` (or bare ```) code fence if the model wrapped the note."""
+    text = raw.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        lines = lines[1:]                              # drop opening ```lang line
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]                         # drop closing ```
+        text = "\n".join(lines)
+    return text
+
+
 def _parse_note(raw: str) -> dict | None:
     try:
-        doc = yaml.safe_load(raw)
+        doc = yaml.safe_load(_strip_fences(raw))
         return doc if isinstance(doc, dict) else None
     except yaml.YAMLError:
         return None

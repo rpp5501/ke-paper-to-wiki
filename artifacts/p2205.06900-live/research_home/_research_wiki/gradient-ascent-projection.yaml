@@ -1,0 +1,60 @@
+concept: gradient-ascent-projection
+status: complete
+synthesis: 'Gradient-ascent-projection is the standard "projected gradient" optimization
+  loop: take a step in the direction of the objective''s gradient (ascent, since the
+  goal is to maximize a logit-margin-style objective) and then project the iterate
+  back onto a feasible set, most commonly the intersection of an epsilon-ball around
+  the starting point with the valid input range such as [0,1]^d for images [S1]. In
+  practice this is run for a small number of iterations (roughly 7-40 in the canonical
+  adversarial-robustness literature) with a per-step size scaled to the epsilon budget
+  divided by the iteration count, clipping after every step [S1][S3]. The single-step
+  version of this idea is the fast gradient sign method, which ascends the loss in
+  one shot using only the gradient''s sign [S2]. What distinguishes an MM-statistic-style
+  use of this loop from classic adversarial perturbation search is the objective and
+  the goal: adversarial search (e.g. PGD attacks) maximizes a classification loss
+  to flip a label subject to an imperceptibility constraint, whereas margin-based
+  statistic estimation ascends a logit-margin objective to estimate a per-example
+  quantity (e.g. a hardness/confidence statistic), typically without necessarily requiring
+  the perturbation to be adversarial or imperceptible—only that the point remains
+  inside the declared projection set [S1][S4].
+
+  '
+resources:
+- url: https://arxiv.org/abs/1706.06083
+  title: Madry et al., Towards Deep Learning Models Resistant to Adversarial Attacks
+  type: derivation
+  why: Canonical derivation of projected gradient ascent/descent as an inner maximization
+    solved via iterative gradient steps plus projection onto an epsilon-ball intersected
+    with the valid input domain.
+- url: https://arxiv.org/abs/1412.6572
+  title: Goodfellow, Shlens, Szegedy, Explaining and Harnessing Adversarial Examples
+  type: follow-up-paper
+  why: Introduces the single-step gradient-sign ascent (FGSM) that PGD generalizes
+    into a multi-step projected version.
+- url: https://github.com/MadryLab/mnist_challenge
+  title: MadryLab PGD adversarial-training reference implementation
+  type: reference-impl
+  why: Widely-used, minimal reference code showing the exact projected-gradient-ascent
+    loop (step, clip to epsilon-ball, clip to valid pixel range) in practice.
+- url: https://adversarial-ml-tutorial.org/
+  title: Kolter & Madry, Adversarial Robustness — Theory and Practice
+  type: lecture
+  why: Freely available lecture/tutorial notes that walk through projected gradient
+    methods, step-size/iteration choices, and how they differ from single-shot perturbation
+    search.
+unresolved:
+- What exact projection set (epsilon, norm, and valid-range clipping) does the MM-statistic
+  estimator in this specific paper use — is it an epsilon-ball as in standard PGD,
+  or an unconstrained valid-image-range projection only?
+- What concrete iteration count and step-size schedule does the paper report for its
+  gradient-ascent-projection procedure?
+- Does "MM statistic" here refer to a margin-based membership/hardness statistic,
+  and if so how does its objective formally differ from the cross-entropy loss maximized
+  in standard adversarial search?
+sources_consulted:
+  S1: Madry, Makelov, Schmidt, Tsipras, Vladu, 'Towards Deep Learning Models Resistant
+    to Adversarial Attacks', arXiv:1706.06083
+  S2: Goodfellow, Shlens, Szegedy, 'Explaining and Harnessing Adversarial Examples',
+    arXiv:1412.6572
+  S3: MadryLab, mnist_challenge reference implementation, https://github.com/MadryLab/mnist_challenge
+  S4: Kolter & Madry, 'Adversarial Robustness — Theory and Practice', https://adversarial-ml-tutorial.org/

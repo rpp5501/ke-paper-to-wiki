@@ -1,0 +1,50 @@
+concept: transformer
+status: complete
+synthesis: 'The Transformer eliminates recurrence and convolution, relying solely
+  on attention plus feed-forward layers; since self-attention is permutation-invariant,
+  order information is injected via fixed sinusoidal positional encodings added to
+  the input embeddings, letting the model infer relative and absolute position from
+  learned phase relationships [S1][S2]. Parallelization over RNNs comes from self-attention
+  connecting any two positions in O(1) sequential operations rather than the O(n)
+  sequential steps an RNN requires, so all positions in a sequence can be processed
+  simultaneously during training [S1][S3]. The encoder stacks 6 identical layers,
+  each with a multi-head self-attention sublayer followed by a position-wise feed-forward
+  sublayer, both wrapped in residual connections and layer normalization [S1][S2].
+  The decoder mirrors this with 6 layers but adds a masked (causal) self-attention
+  sublayer to prevent attending to future tokens, plus a second multi-head attention
+  sublayer that attends over the encoder''s output (cross-attention) [S1][S2]. Multi-head
+  attention runs several scaled dot-product attention functions in parallel on projected
+  subspaces, letting the model jointly attend to information from different representation
+  subspaces at different positions [S1][S3]. This encoder design was later reused
+  directly as the backbone for bidirectional pretraining in BERT [S4].
+
+  '
+resources:
+- url: https://arxiv.org/abs/1706.03762
+  title: Attention Is All You Need (Vaswani et al., 2017)
+  type: derivation
+  why: original paper with the full architecture diagram, equations, and ablations
+- url: https://jalammar.github.io/illustrated-transformer/
+  title: The Illustrated Transformer
+  type: visual
+  why: step-by-step diagrams of Q/K/V, multi-head attention, and the encoder-decoder
+    stack
+- url: https://nlp.seas.harvard.edu/2018/04/03/attention.html
+  title: The Annotated Transformer
+  type: reference-impl
+  why: line-by-line PyTorch implementation mapped directly to each paper equation
+- url: https://arxiv.org/abs/1810.04805
+  title: 'BERT: Pre-training of Deep Bidirectional Transformers (Devlin et al., 2018)'
+  type: follow-up-paper
+  why: shows how the Transformer encoder stack was repurposed for large-scale pretraining
+unresolved:
+- How does the quadratic O(n^2) self-attention cost limit scaling to very long sequences,
+  and how do later variants (sparse/linear attention) address it?
+- What is the empirical effect of choosing learned vs. fixed sinusoidal positional
+  encodings?
+sources_consulted:
+  S1: Vaswani et al., 'Attention Is All You Need,' arXiv:1706.03762 (2017)
+  S2: Jay Alammar, 'The Illustrated Transformer,' https://jalammar.github.io/illustrated-transformer/
+  S3: Harvard NLP, 'The Annotated Transformer,' https://nlp.seas.harvard.edu/2018/04/03/attention.html
+  S4: 'Devlin et al., ''BERT: Pre-training of Deep Bidirectional Transformers for
+    Language Understanding,'' arXiv:1810.04805 (2018)'

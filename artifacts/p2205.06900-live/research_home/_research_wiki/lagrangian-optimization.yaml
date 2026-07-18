@@ -1,0 +1,57 @@
+concept: lagrangian-optimization
+status: partial
+synthesis: 'In this NLP backdoor-defense formulation, Lagrange multipliers penalize
+  violation of per-neuron activation bound constraints, pushing potentially trigger-amplified
+  neuron activations back toward a learned upper (and lower) bound seen on clean inputs,
+  while a companion multiplier keeps the clean-task loss from degrading [S1]. Convergence
+  is checked through an augmented-Lagrangian / dual-ascent loop that iteratively updates
+  the bound scale and dual variables until the constraint violation (activations exceeding
+  the current bound) and the bound update magnitude both fall below a small threshold;
+  the "dynamic" bound-scaling is specifically designed to avoid the oscillation and
+  stalling a fixed-bound Lagrangian would suffer [S1][S2]. Compared to pruning-based
+  mitigation such as Adversarial Neuron Pruning, which learns a binary or soft mask
+  that zeroes out suspicious neurons entirely, this bound-scaling approach keeps every
+  neuron active but clamps its dynamic range, reportedly preserving more clean accuracy
+  at a comparable attack-success-rate reduction because it avoids the capacity loss
+  that hard pruning causes [S1][S3]. The underlying machinery of converting a constrained
+  min-max problem into an unconstrained dual objective via Lagrange multipliers follows
+  the standard convex-duality framework [S4].
+
+  '
+resources:
+- url: https://arxiv.org/abs/2205.06900
+  title: Constrained Optimization with Dynamic Bound-scaling for Effective NLP Backdoor
+    Defense (Shen et al., ICML 2022)
+  type: derivation
+  why: primary source containing the per-neuron Lagrangian bound-scaling formulation
+    being asked about
+- url: https://github.com/PurduePAML/DBS
+  title: PurduePAML/DBS — official implementation
+  type: reference-impl
+  why: shows the actual dual-ascent update loop and convergence checks used to solve
+    the Lagrangian
+- url: https://github.com/csdongxian/ANP_backdoor
+  title: Adversarial Neuron Pruning Purifies Backdoored Deep Models — official code
+  type: reference-impl
+  why: the pruning-based mitigation baseline the sub-question asks to compare against
+- url: https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf
+  title: Boyd & Vandenberghe, Convex Optimization, Chapter 5 (Duality)
+  type: lecture
+  why: standard background on Lagrange multipliers and dual ascent for readers unfamiliar
+    with the general method
+unresolved:
+- Exact equation number and whether the paper's bound is one-sided (upper only) or
+  two-sided, as stated in the brief, was not re-verified against the primary text
+  in this session.
+- Precise convergence tolerance / iteration budget used in the paper's experiments
+  is unconfirmed.
+- Whether the ANP comparison in the paper reuses ANP's original hyperparameters or
+  a re-tuned baseline is unclear.
+sources_consulted:
+  S1: Shen, G., Liu, Y., Tao, G., Xu, Q., Zhang, Z., Ma, S., Zhang, X. 'Constrained
+    Optimization with Dynamic Bound-scaling for Effective NLP Backdoor Defense.' ICML
+    2022. arXiv:2205.06900
+  S2: https://github.com/PurduePAML/DBS
+  S3: Wu, D., Wang, Y. 'Adversarial Neuron Pruning Purifies Backdoored Deep Models.'
+    NeurIPS 2021; https://github.com/csdongxian/ANP_backdoor
+  S4: Boyd, S., Vandenberghe, L. Convex Optimization, Ch. 5, Stanford (https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf)

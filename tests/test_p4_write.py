@@ -68,5 +68,11 @@ def test_spawn_exception_fails_immediately_no_retry(tmp_path):
     assert len(calls) == 1
 
 
+def test_prompt_requires_verbatim_equations_and_paragraph_anchors():
+    assert "reproduce each relevant equation" in PAGE_PROMPT
+    assert "VERBATIM as a display block wrapped in $$ ... $$" in PAGE_PROMPT
+    assert "EVERY paragraph in Mechanics and The Math" in PAGE_PROMPT
+
+
 def test_prompt_encodes_anchor_rule_and_tiers():
     assert "{#tldr}" in PAGE_PROMPT and "[§" in PAGE_PROMPT

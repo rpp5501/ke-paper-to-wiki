@@ -1,0 +1,53 @@
+concept: baseline-detectors-nc-tabor
+status: partial
+synthesis: 'Neural Cleanse (NC) reverse-engineers, per class label, a minimal mask+pattern
+  pair via gradient optimization that flips predictions to that label, then flags
+  a label as backdoored if its mask L1-norm is a statistical outlier (MAD) across
+  labels, which bakes in an assumption that the trigger is a small, static, input-agnostic
+  "patch" [S1]. TABOR keeps this same patch-shaped reverse-engineering objective but
+  adds extra regularization terms (overlay, scattered-pixel, mask coverage, and steganalysis-inspired
+  penalties) to suppress spurious/adversarial triggers and improve fidelity [S2].
+  Both baselines underperform on non-patch backdoor-pattern (BP) types — blended/global,
+  warping-based, feature-space, or sample-specific triggers — because these do not
+  produce a compact, low-L1-norm mask, so the anomaly-detection step fails to flag
+  the true infected label [S3]. Computationally, both require a separate multi-thousand-iteration
+  optimization per candidate target class, so cost scales roughly linearly with the
+  number of classes (worse for TABOR due to its extra loss terms), making them expensive
+  on many-class datasets compared to pattern-agnostic, single-pass detectors [S1][S2].
+
+  '
+resources:
+- url: https://arxiv.org/abs/1902.06531
+  title: 'Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks
+    (Wang et al., IEEE S&P 2019)'
+  type: derivation
+  why: original derivation of the per-label trigger reverse-engineering + MAD outlier
+    objective NC baselines use
+- url: https://arxiv.org/abs/1908.01763
+  title: 'TABOR: A Highly Accurate Approach to Inspecting and Restoring Trojan Backdoors
+    in AI Systems (Guo et al.)'
+  type: derivation
+  why: derives TABOR's added regularization terms on top of the NC objective
+- url: https://github.com/bolunwang/backdoor
+  title: bolunwang/backdoor (official Neural Cleanse implementation)
+  type: reference-impl
+  why: reference code for the exact optimization/anomaly-detection pipeline used as
+    a baseline
+- url: https://arxiv.org/abs/2007.08745
+  title: 'Backdoor Learning: A Survey (Li et al.)'
+  type: follow-up-paper
+  why: surveys NC/TABOR alongside later detectors, useful for framing why patch-assumption
+    baselines struggle on newer BP types
+unresolved:
+- Could not verify live (WebSearch/WebFetch access was denied in this session) the
+  exact identity, venue, and cost model of "UnivBD" referenced in the brief, so the
+  relative-cost claim vs. UnivBD is based on general knowledge of optimization-based
+  baselines rather than a direct comparison in the host paper.
+- No official public TABOR repo was confirmed from memory; third-party reimplementations
+  (e.g., in backdoor-defense benchmark toolkits) may need separate verification.
+sources_consulted:
+  S1: 'Wang et al., ''Neural Cleanse: Identifying and Mitigating Backdoor Attacks
+    in Neural Networks,'' IEEE S&P 2019, arXiv:1902.06531'
+  S2: 'Guo et al., ''TABOR: A Highly Accurate Approach to Inspecting and Restoring
+    Trojan Backdoors in AI Systems,'' arXiv:1908.01763'
+  S3: 'Li et al., ''Backdoor Learning: A Survey,'' arXiv:2007.08745'

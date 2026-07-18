@@ -1,0 +1,15 @@
+# Hardware and Schedule
+## TL;DR {#tldr}
+The Transformer wasn't just algorithmically efficient — it was also fast to train on real hardware. The authors trained on a single machine with 8 GPUs, and their base model reached its reported results in about half a day, while the larger, higher-capacity model took a few days. This was notably cheaper than the recurrent and convolutional architectures it was compared against, reinforcing the paper's central claim that self-attention is a more computationally efficient way to model sequences.
+
+## Intuition {#intuition}
+A model's quality is only half the story — how much compute it takes to get there matters just as much, especially when comparing architectures. By reporting concrete wall-clock numbers (GPU count, seconds per step, total steps, total time), the authors let readers judge the Transformer's training efficiency directly rather than trusting an abstract complexity argument alone. The base model's short training window (half a day) versus the big model's longer one (a few days) also illustrates the basic tradeoff explored elsewhere in the paper: a larger, more expressive model costs more compute and wall-clock time to train, in exchange for better final performance.
+
+## Mechanics {#mechanics}
+Training was carried out on a single machine equipped with 8 NVIDIA P100 GPUs, rather than a distributed cluster [§sec_5_2]. Two training configurations were run on this hardware: the base model, using the hyperparameters described throughout the paper, and the big model, whose specific settings appear on the bottom line of the paper's configuration table [§sec_5_2]. Each configuration has a distinct per-step wall-clock cost — 0.4 seconds per training step for the base model versus 1.0 seconds per step for the big model — reflecting the larger model's greater computational cost per update [§sec_5_2]. The base model was trained for 100,000 steps, while the big model was trained substantially longer, for 300,000 steps, consistent with it needing more updates to converge given its larger capacity [§sec_5_2].
+
+## The Math {#the-math}
+The reported total training durations follow directly from multiplying step count by per-step time. For the base model: 100,000 steps × 0.4 s/step = 40,000 seconds, reported by the authors as approximately 12 hours [§sec_5_2]. For the big model: 300,000 steps × 1.0 s/step = 300,000 seconds, reported as approximately 3.5 days [§sec_5_2]. These figures show that despite training for 3x as many steps at roughly 2.5x the per-step cost, the big model's total training time (~3.5 days) is only about 7x that of the base model (~12 hours) — a direct, if rough, illustration of the per-step-time × step-count relationship that determines total training cost on fixed hardware [§sec_5_2].
+
+## Go Deeper {#go-deeper}
+No research note is attached to this concept, so there are no external resources to summarize here. For further detail, consult Section 5.2 of "Attention Is All You Need," which is the sole source for these hardware and schedule figures.

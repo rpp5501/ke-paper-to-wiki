@@ -1,0 +1,52 @@
+concept: estimation-step
+status: partial
+synthesis: 'The estimation step solves, for each putative target class c, the margin-maximization
+  problem max over x in X of g_c(x) minus the max over other classes k of g_k(x) —
+  the largest achievable gap between class c''s logit and the runner-up logit [S1].
+  This is solved by gradient ascent with projection back onto X after every step;
+  for images X is the compact box [0,1]^(H×W×C), so projection just clips pixel values
+  back to the valid range, and convergence is guaranteed because the logit functions
+  are continuous on a compact domain [S1]. Because logits are non-convex functions
+  of a deep network, a single ascent run can land in a local optimum, so the authors
+  use 50 random restarts with pixel values drawn uniformly from [0,1] and keep the
+  best-objective solution per class, though they only assert (without showing in the
+  extracted text) that this choice is "not critical" to detection accuracy, deferring
+  the full sensitivity ablation to an appendix [S1]. The projected-gradient-ascent
+  mechanics mirror projected gradient descent used to generate adversarial examples
+  under a box constraint [S3], and rest on projection-operator theory from convex
+  optimization that this same paper cites in its own bibliography [S4].
+
+  '
+resources:
+- url: https://arxiv.org/abs/2205.06900
+  title: 'MM-BD: Post-Training Detection of Backdoor Attacks with Arbitrary Backdoor
+    Pattern Types Using a Maximum Margin Statistic'
+  type: derivation
+  why: Primary source; Sec. 3.2 gives the exact estimation-step optimization problem,
+    projection domain, and convergence claim.
+- url: https://arxiv.org/abs/1706.06083
+  title: Towards Deep Learning Models Resistant to Adversarial Attacks (Madry et al.,
+    ICLR 2018)
+  type: derivation
+  why: Canonical derivation of projected gradient ascent/descent under a box constraint,
+    the same mechanism used in the estimation step.
+- url: https://arxiv.org/abs/1405.4980
+  title: 'Convex Optimization: Algorithms and Complexity (Bubeck)'
+  type: derivation
+  why: General theory of projection operators and gradient-based optimization on compact
+    convex sets; cited directly in this paper's own references.
+unresolved:
+- The paper only states initialization/step-size choices are "not critical to the
+  detection accuracy" but the quantitative ablation supporting this is in an appendix
+  not present in this extraction.
+- Exact gradient-ascent step size and convergence tolerance used in the main experiments
+  are redacted (shown as placeholders) in the extracted text.
+sources_consulted:
+  S1: Local extraction of arXiv:2205.06900, Sec. 3.2 'Detection Procedure' (Estimation
+    step) and Eq. 2, from pack.json
+  S2: 'arXiv:2205.06900 — Wang, Xiang, Miller, Kesidis, ''MM-BD: Post-Training Detection
+    of Backdoor Attacks...'' https://arxiv.org/abs/2205.06900'
+  S3: Madry, Makelov, Schmidt, Tsipras, Vladu, 'Towards Deep Learning Models Resistant
+    to Adversarial Attacks,' ICLR 2018, https://arxiv.org/abs/1706.06083
+  S4: 'Bubeck, ''Convex Optimization: Algorithms and Complexity,'' https://arxiv.org/abs/1405.4980
+    (cited in the paper''s own bibliography as key bubeck2014convex)'

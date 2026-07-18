@@ -1,0 +1,15 @@
+# Multi-Head Attention
+## TL;DR {#tldr}
+Multi-Head Attention runs several attention operations side by side, each looking at the input through its own learned lens, then merges what they found into one representation. It is the mechanism that lets the Transformer's attention layers capture several different kinds of relationships between positions at once, rather than being limited to a single averaged view.
+
+## Intuition {#intuition}
+A single attention function forces the model to average over every relationship it might care about — syntax, coreference, position, topic — into one weighted combination, which blurs distinct signals together. Multi-Head Attention instead gives the model several independent "heads," each free to specialize in its own representation subspace and its own notion of relevance between positions. Because it builds directly on Scaled Dot-Product Attention, running many smaller, cheaper versions of that same operation in parallel, it turns a single monolithic attention computation into a committee of narrower ones whose outputs are recombined. This parallel structure is also what makes attention patterns visualizable per head, since each head can be inspected separately for the distinct relationship it learned.
+
+## Mechanics {#mechanics}
+Rather than performing attention once with full-dimensional queries, keys, and values, the queries, keys, and values are each linearly projected h times using separate learned projection matrices, producing lower-dimensional versions for each head [§sec_3_2_2]. Scaled Dot-Product Attention is then applied independently and in parallel to each of these h projected triples, yielding h separate output vectors [§sec_3_2_2]. The per-head outputs are concatenated and passed through one more learned linear projection to produce the final output values [§sec_3_2_2]. Because each head operates on a reduced dimension, running h heads in parallel costs about the same as one full-dimensionality single-head attention would, so the parallel-head design is not a computational tax on top of ordinary attention [§sec_3_2_2].
+
+## The Math {#the-math}
+The overall operation concatenates the outputs of h attention heads and applies an output projection W^O, where each head_i is Scaled Dot-Product Attention computed on the query, key, and value matrices after they've been projected by that head's own learned matrices W^Q_i, W^K_i, W^V_i [eq_2]. This formalizes the mechanics above: the projections give each head its own subspace to attend within, the shared Attention(·) function does the actual weighting, and W^O fuses the h independent results back into a single output of model dimension [eq_2].
+
+## Go Deeper {#go-deeper}
+No research note is attached to this concept, so there are no external resources to summarize here. Within the paper's own concept graph, Multi-Head Attention builds on Scaled Dot-Product Attention (the per-head computation it parallelizes) and is part of the broader Attention concept; Attention Visualizations draws on this concept's per-head structure to show what individual heads learn to attend to.

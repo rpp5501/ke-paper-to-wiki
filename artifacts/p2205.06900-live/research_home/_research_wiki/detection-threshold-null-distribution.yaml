@@ -1,0 +1,54 @@
+concept: detection-threshold-null-distribution
+status: partial
+synthesis: 'MM-BD [S1] computes a per-class maximum-margin (MM) statistic via unconstrained
+  optimization, then treats the set of per-class statistics as samples from a common
+  null distribution that should hold if no class is backdoored [S1]. A class is flagged
+  when its statistic is an outlier relative to a null fitted from the other classes''
+  statistics, extending the simpler approach in Neural Cleanse, which assumes an approximately
+  normal/Laplacian null and flags a class once its anomaly statistic exceeds median
+  + k·MAD, with MAD scaled by 1.4826 for consistency under normality and k calibrated
+  (~2) to a target false-positive rate [S2]. False-positive rate control requires
+  setting the tail probability against the fitted null and correcting for testing
+  every class simultaneously, analogous to multiple-comparisons-adjusted outlier tests
+  [S2][S3]. Robustness across datasets with different class counts is limited by sample
+  size for null estimation: fitting a distribution from only a handful of leave-one-out
+  statistics (e.g., 9 classes for CIFAR-10) is noisier than with hundreds (e.g., ImageNet),
+  so exact calibration is dataset-dependent and only partially detailed without the
+  primary source.
+
+  '
+resources:
+- url: https://arxiv.org/abs/2205.06900
+  title: 'MM-BD: Post-Training Detection of Backdoor Attacks with Arbitrary Backdoor
+    Pattern Types Using a Maximum Margin Statistic'
+  type: derivation
+  why: Primary source defining the MM statistic and the threshold/null-distribution
+    logic used to flag anomalous classes.
+- url: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
+  title: 'Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks
+    (Wang et al., IEEE S&P 2019)'
+  type: derivation
+  why: Establishes the earlier MAD-based anomaly-index threshold (median + k·MAD)
+    that this concept generalizes/compares against.
+- url: https://en.wikipedia.org/wiki/Median_absolute_deviation
+  title: Median absolute deviation
+  type: derivation
+  why: Background on the robust-statistic formula (MAD, 1.4826 consistency constant)
+    underlying MAD-style anomaly thresholds.
+unresolved:
+- Exact parametric family MM-BD fits to the null distribution of per-class MM statistics
+  (e.g., Gamma vs. Gaussian vs. empirical order statistics) — needs confirmation from
+  the paper's method section, excluded here since estimation-step is out of scope.
+- Precise multiple-comparisons/Bonferroni-style correction formula used to hold overall
+  false-positive rate constant as class count varies.
+- Whether the paper reports empirical FPR stability results across datasets of differing
+  class counts (e.g., CIFAR-10 vs. ImageNet) or only asserts robustness theoretically.
+sources_consulted:
+  S1: 'Wang, Xiang, Miller, Kesidis, ''MM-BD: Post-Training Detection of Backdoor
+    Attacks with Arbitrary Backdoor Pattern Types Using a Maximum Margin Statistic'',
+    arXiv:2205.06900 (recalled from training knowledge; live web tools were unavailable
+    this session)'
+  S2: 'Wang et al., ''Neural Cleanse: Identifying and Mitigating Backdoor Attacks
+    in Neural Networks'', IEEE S&P 2019 (recalled from training knowledge)'
+  S3: General extreme-value/outlier-test background on multiple-comparisons correction
+    for order statistics (recalled from training knowledge)

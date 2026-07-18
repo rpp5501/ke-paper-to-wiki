@@ -1,0 +1,18 @@
+# Experimental Setup
+
+## TL;DR {#tldr}
+This concept describes the experimental foundation of the paper's evaluation: the three datasets used (Census19, Texas-100X, and Adult), and how they are prepared to study targeted attribute inference attacks. It is part of the broader Experiments section, and exists specifically to give the attack and defense analyses a controlled, realistic testbed.
+
+## Intuition {#intuition}
+To study whether privacy risk is "disparate" — that is, whether some individuals or groups are more vulnerable to attribute inference than others — the authors need data where they can dial the relationship between a sensitive attribute and the model's output up or down. Real-world datasets don't offer that kind of control by default, so the setup combines large, real datasets (Census19 and Texas-100X) with a custom sampling scheme that lets the experimenters set a desired correlation between sensitive and output attributes, while also keeping a smaller, uncontrolled dataset (Adult) in the mix to ground the findings in a more naturalistic setting.
+
+## Mechanics {#mechanics}
+The experiments rely on three datasets — Census19, Texas-100X, and Adult — with full dataset details deferred to the Appendix [§sec_6_1]. Census19 and Texas-100X are both large (around a million records each), which matters because it allows selective sampling to manage dataset-specific variables, such as the sensitive-output relationship, whereas earlier work using smaller datasets like Adult and GSS lacked enough data to both train a reliably accurate model and perform detailed sampling [§sec_6_1].
+
+For Census19 and Texas-100X, the authors select 50,000 records for the training set and separately sample another 50,000 records from the remaining data for a mutually exclusive test set [§sec_6_1]. For Adult, the full dataset is used and split into training and test data following prior work, without the controlled sampling technique, in order to create a more realistic experimental condition alongside the controlled ones [§sec_6_1]. The default model class across experiments is a Multi-Layer Perceptron (MLP), using Scikit-learn's implementation, with architecture and hyperparameters detailed in the Appendix [§sec_6_1]. The authors also state they have released the full codebase, scripts, and model checkpoints via a public repository to support replication [§sec_6_1].
+
+## The Math {#the-math}
+The local context describes a sampling procedure with named quantities — a target sample count, a ratio between negative- and positive-sensitive-value samples, a desired sensitive-output correlation, and per-cell counts split by sensitive value (subscript) and output value (superscript) — but the underlying formulas are not preserved as taggable equation entries ([eq_N]) in the local context, so no display-block equation can be faithfully reproduced here [§sec_6_1]. Conceptually, the method picks counts for each combination of sensitive value and output value so that the overall correlation and the ratio of negative-to-positive sensitive samples both match chosen targets while keeping positive and negative output samples balanced, with a correctness proof of this claim placed in the Appendix [§sec_6_1]. For experiments on Census19 and Texas-100X, the ratio parameter is fixed at 1 to match the original dataset's sensitive-attribute distribution [§sec_6_1].
+
+## Go Deeper {#go-deeper}
+No research note is available for this concept, so there are no additional resources to list beyond the paper's own Appendix, which the local context repeatedly points to for dataset details, the sampling method's correctness proof, and MLP architecture/hyperparameters [§sec_6_1].

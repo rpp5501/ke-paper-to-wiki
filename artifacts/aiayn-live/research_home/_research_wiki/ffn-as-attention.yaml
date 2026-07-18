@@ -1,0 +1,55 @@
+concept: ffn-as-attention
+status: complete
+synthesis: 'Sukhbaatar et al. first showed formally that a transformer FFN sublayer
+  is mathematically an attention operation over a fixed, input-independent set of
+  key-value memory slots: the first weight matrix W1 plays the role of keys scored
+  against the input via a dot product, a nonlinearity (ReLU/softmax) produces unnormalized
+  attention weights, and the second weight matrix W2 supplies the values that are
+  summed accordingly [S1]. Geva et al. extended this empirically, showing each row
+  of W1 acts as a pattern/key detector (often firing on interpretable input n-grams
+  or shallow patterns), while the corresponding row of W2 encodes a distribution over
+  the output vocabulary, so the FFN output is a weighted combination of these value
+  vectors, i.e. a memory lookup [S2]. A follow-up study further shows these value
+  vectors function as vocabulary-space update vectors that promote or suppress candidate
+  output tokens through the residual stream, reinforcing the memory-recall framing
+  [S3]. The upshot: self-attention performs "dynamic" retrieval from the current sequence''s
+  context, whereas the FFN performs "static" retrieval from parameters learned during
+  training, so a transformer layer can be read uniformly as alternating context-dependent
+  and context-independent key-value lookups [S1][S2].
+
+  '
+resources:
+- url: https://arxiv.org/abs/1907.01470
+  title: Augmenting Self-attention with Persistent Memory (Sukhbaatar et al., 2019)
+  type: derivation
+  why: Gives the formal proof that the FFN sublayer is equivalent to attention over
+    static learned key/value vectors.
+- url: https://arxiv.org/abs/2012.14913
+  title: Transformer Feed-Forward Layers Are Key-Value Memories (Geva et al., EMNLP
+    2021)
+  type: derivation
+  why: Empirically grounds the key-value framing, showing W1 rows act as pattern keys
+    and W2 rows as vocabulary-distribution values.
+- url: https://arxiv.org/abs/2203.14680
+  title: Transformer Feed-Forward Layers Build Predictions by Promoting Concepts in
+    the Vocabulary Space (Geva et al., EMNLP 2022)
+  type: follow-up-paper
+  why: Extends the memory interpretation to show how FFN "values" causally edit the
+    output distribution, clarifying the FFN/attention relationship.
+- url: https://github.com/mega002/ff-layers
+  title: mega002/ff-layers (official code for Geva et al. 2021)
+  type: reference-impl
+  why: Reference implementation for probing FFN keys/values as memory slots, useful
+    for reproducing the key-value analysis directly.
+unresolved:
+- Does the key-value memory interpretation hold cleanly for gated FFN variants (SwiGLU,
+  GEGLU) used in most modern LLMs, or does gating change the "attention weight" analogy?
+- How does the static-memory view of FFNs relate to modern-Hopfield-network interpretations
+  of attention, and do they describe the same underlying phenomenon?
+sources_consulted:
+  S1: Sukhbaatar, Grave, Bojanowski, Joulin, 'Augmenting Self-attention with Persistent
+    Memory,' arXiv:1907.01470
+  S2: Geva, Schuster, Berant, Levy, 'Transformer Feed-Forward Layers Are Key-Value
+    Memories,' EMNLP 2021, arXiv:2012.14913
+  S3: Geva, Caciularu, Wang, Goldberg, 'Transformer Feed-Forward Layers Build Predictions
+    by Promoting Concepts in the Vocabulary Space,' EMNLP 2022, arXiv:2203.14680
