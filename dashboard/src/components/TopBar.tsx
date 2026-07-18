@@ -11,6 +11,7 @@ import { useApp, type LayoutPhase, type Mode } from "../store";
 import type { KENode } from "../types";
 import CompactPill from "./CompactPill";
 import { useNodeNavigation } from "./useNodeNavigation";
+import VizGallery from "./VizGallery";
 
 const VIEWS = ["concepts", "clusters", "code", "bridged"] as const;
 const EDGE_KINDS = ["implements", "prerequisite", "builds-on"] as const;
@@ -225,23 +226,26 @@ export default function TopBar({
   const noNodes = KE_NODES.length === 0;
 
   return (
-    <TopBarPresentation
-      blastOn={blastOn}
-      expandAllMath={expandAllMath}
-      onToggleExpandAllMath={toggleExpandAllMath}
-      hiddenKinds={hiddenKinds}
-      layoutPhase={layoutPhase}
-      mode={mode}
-      noNodes={noNodes}
-      onOpenSidebar={onOpenSidebar}
-      onSetBlastOn={setBlastOn}
-      onSetMode={setMode}
-      onSetView={setView}
-      onToggleKind={toggleKind}
-      sidebarOpen={sidebarOpen}
-      sidebarTriggerRef={sidebarTriggerRef}
-      view={view}
-    />
+    <>
+      <TopBarPresentation
+        blastOn={blastOn}
+        expandAllMath={expandAllMath}
+        onToggleExpandAllMath={toggleExpandAllMath}
+        hiddenKinds={hiddenKinds}
+        layoutPhase={layoutPhase}
+        mode={mode}
+        noNodes={noNodes}
+        onOpenSidebar={onOpenSidebar}
+        onSetBlastOn={setBlastOn}
+        onSetMode={setMode}
+        onSetView={setView}
+        onToggleKind={toggleKind}
+        sidebarOpen={sidebarOpen}
+        sidebarTriggerRef={sidebarTriggerRef}
+        view={view}
+      />
+      <VizGallery />
+    </>
   );
 }
 

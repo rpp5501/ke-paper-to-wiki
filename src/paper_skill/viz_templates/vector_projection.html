@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dot product & projection, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;--bad:#b3595e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:17px;}
+  .eq [data-t]{padding:1px 3px;border-radius:3px;transition:background 140ms;}
+  .eq [data-t].hl,.eq [data-t]:hover{background:rgba(74,126,187,.35);outline:1px solid var(--accent);}
+  .vecA{stroke:var(--accent);}
+  .vecB{stroke:var(--good);}
+  .vecA.hl,.vecB.hl,.proj.hl{stroke-width:4;}
+  .proj{stroke:var(--warn);}
+  .handle{cursor:grab;}
+  .stats{display:flex;gap:18px;font-size:12px;color:var(--muted);margin-top:8px;}
+  .stats b{color:var(--text);}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .verdict{font-size:13px;margin-top:8px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:440px;margin:0;}
+  #overlay button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:background 140ms;}
+  #overlay button:hover{background:var(--accent);}
+  #overlay button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{{PARAMS_JSON}}</script>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <mrow data-t="a"><mi mathvariant="bold">a</mi></mrow><mo>&#8901;</mo>
+        <mrow data-t="b"><mi mathvariant="bold">b</mi></mrow><mo>=</mo>
+        <mrow data-t="mag"><mo>|</mo><mi mathvariant="bold">a</mi><mo>|</mo><mo>|</mo><mi mathvariant="bold">b</mi><mo>|</mo></mrow>
+        <mi>cos</mi><mrow data-t="angle"><mi>&#952;</mi></mrow>
+        <mo>=</mo>
+        <mrow data-t="sum"><munder><mo>&#8721;</mo><mi>i</mi></munder>
+          <msub><mi>a</mi><mi>i</mi></msub><msub><mi>b</mi><mi>i</mi></msub></mrow>
+      </mrow>
+    </math>
+  </div>
+  <svg id="viz" width="100%" viewBox="0 0 620 340" role="img" aria-label="two draggable vectors with projection"></svg>
+  <div class="stats">
+    <span>a&#8901;b <b id="dot"></b></span>
+    <span>&#952; <b id="theta"></b></span>
+    <span>|proj<sub>b</sub>a| <b id="proj"></b></span>
+  </div>
+  <div class="hint">drag the arrowheads · the yellow segment is a's shadow on b · hover the equation</div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay"><p id="prompt"></p><div id="bets"></div></div>
+</div>
+<script>
+"use strict";
+const P=JSON.parse(document.getElementById("params").textContent);
+document.getElementById("title").textContent=P.title||"Dot product as projection";
+document.getElementById("prompt").textContent=P.prompt||"Place your bet before you drag.";
+const W=620,H=340,CX=310,CY=170,S=60; /* 1 unit = 60px */
+let a={x:P.ax!=null?P.ax:1.6,y:P.ay!=null?P.ay:1.0};
+let b={x:P.bx!=null?P.bx:2.2,y:P.by!=null?P.by:-0.3};
+let revealed=false,drag=null;
+const svg=document.getElementById("viz");const NS="http://www.w3.org/2000/svg";
+const sx=v=>CX+v*S, sy=v=>CY-v*S;
+const dot=(u,v)=>u.x*v.x+u.y*v.y;
+const mag=u=>Math.hypot(u.x,u.y);
+
+function arrow(vec,cls,label){
+  const g=document.createElementNS(NS,"g");
+  const l=document.createElementNS(NS,"line");
+  l.setAttribute("x1",CX);l.setAttribute("y1",CY);
+  l.setAttribute("x2",sx(vec.x));l.setAttribute("y2",sy(vec.y));
+  l.setAttribute("class",cls);l.setAttribute("stroke-width","2.5");
+  g.appendChild(l);
+  const h=document.createElementNS(NS,"circle");
+  h.setAttribute("cx",sx(vec.x));h.setAttribute("cy",sy(vec.y));h.setAttribute("r",8);
+  h.setAttribute("fill","transparent");h.setAttribute("stroke","currentColor");h.setAttribute("stroke-width","0");
+  h.setAttribute("class","handle");h.dataset.vec=label;
+  g.appendChild(h);
+  const dotm=document.createElementNS(NS,"circle");
+  dotm.setAttribute("cx",sx(vec.x));dotm.setAttribute("cy",sy(vec.y));dotm.setAttribute("r",4);
+  dotm.setAttribute("fill",cls==="vecA"?"#4a7ebb":"#4a9b5e");g.appendChild(dotm);
+  const t=document.createElementNS(NS,"text");
+  t.setAttribute("x",sx(vec.x)+8);t.setAttribute("y",sy(vec.y)-6);
+  t.setAttribute("fill",cls==="vecA"?"#4a7ebb":"#4a9b5e");t.setAttribute("font-size","13");
+  t.textContent=label;g.appendChild(t);
+  return g;
+}
+function render(){
+  svg.innerHTML="";
+  const axl=document.createElementNS(NS,"line");
+  axl.setAttribute("x1",0);axl.setAttribute("x2",W);axl.setAttribute("y1",CY);axl.setAttribute("y2",CY);
+  axl.setAttribute("stroke","#1e293b");svg.appendChild(axl);
+  const ayl=document.createElementNS(NS,"line");
+  ayl.setAttribute("x1",CX);ayl.setAttribute("x2",CX);ayl.setAttribute("y1",0);ayl.setAttribute("y2",H);
+  ayl.setAttribute("stroke","#1e293b");svg.appendChild(ayl);
+  if(revealed){
+    const bm=mag(b)||1e-9;
+    const k=dot(a,b)/(bm*bm);
+    const px=b.x*k,py=b.y*k;
+    const pl=document.createElementNS(NS,"line");
+    pl.setAttribute("x1",CX);pl.setAttribute("y1",CY);
+    pl.setAttribute("x2",sx(px));pl.setAttribute("y2",sy(py));
+    pl.setAttribute("class","proj");pl.setAttribute("id","projseg");pl.setAttribute("stroke-width","5");
+    pl.setAttribute("stroke-linecap","round");
+    pl.addEventListener("mouseenter",()=>hl(["mag","angle"],true));
+    pl.addEventListener("mouseleave",()=>hl(["mag","angle"],false));
+    svg.appendChild(pl);
+    const dl=document.createElementNS(NS,"line");
+    dl.setAttribute("x1",sx(a.x));dl.setAttribute("y1",sy(a.y));
+    dl.setAttribute("x2",sx(px));dl.setAttribute("y2",sy(py));
+    dl.setAttribute("stroke","#94a3b8");dl.setAttribute("stroke-dasharray","3 3");svg.appendChild(dl);
+  }
+  const ga=arrow(a,"vecA","a"),gb=arrow(b,"vecB","b");
+  ga.setAttribute("id","vecA");gb.setAttribute("id","vecB");
+  ga.addEventListener("mouseenter",()=>hl(["a","sum"],true));
+  ga.addEventListener("mouseleave",()=>hl(["a","sum"],false));
+  gb.addEventListener("mouseenter",()=>hl(["b","sum"],true));
+  gb.addEventListener("mouseleave",()=>hl(["b","sum"],false));
+  svg.appendChild(ga);svg.appendChild(gb);
+  const d=dot(a,b);
+  const th=Math.acos(Math.min(1,Math.max(-1,d/((mag(a)*mag(b))||1e-9))))*180/Math.PI;
+  document.getElementById("dot").textContent=revealed?d.toFixed(2):"?";
+  document.getElementById("theta").textContent=revealed?th.toFixed(0)+"°":"?";
+  document.getElementById("proj").textContent=revealed?Math.abs(d/(mag(b)||1e-9)).toFixed(2):"?";
+}
+function hl(ts,on){document.querySelectorAll("[data-t]").forEach(el=>{if(ts.includes(el.dataset.t))el.classList.toggle("hl",on);});}
+const eqTargets={a:"vecA",b:"vecB",mag:"projseg",angle:"projseg",sum:null};
+document.querySelectorAll("[data-t]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{
+    const id=eqTargets[el.dataset.t];if(!id)return;
+    const t=document.getElementById(id);if(!t)return;
+    if(t.tagName==="g")t.querySelectorAll("line").forEach(x=>x.classList.add("hl"));
+    else t.classList.add("hl");
+  });
+  el.addEventListener("mouseleave",()=>{svg.querySelectorAll(".hl").forEach(x=>x.classList.remove("hl"));});
+});
+svg.addEventListener("pointerdown",e=>{
+  const t=e.target;
+  if(t.classList&&t.classList.contains("handle")){drag=t.dataset.vec;svg.setPointerCapture(e.pointerId);}
+});
+svg.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const box=svg.getBoundingClientRect();
+  const x=((e.clientX-box.left)*W/box.width-CX)/S;
+  const y=(CY-(e.clientY-box.top)*H/box.height)/S;
+  if(drag==="a")a={x,y};else b={x,y};
+  render();
+});
+svg.addEventListener("pointerup",()=>{drag=null;});
+const bets=document.getElementById("bets");
+const options=P.betOptions||["θ > 90° makes a·b negative","a·b is always positive"];
+const correct=P.betCorrect!=null?P.betCorrect:0;
+options.forEach((opt,i)=>{
+  const btn=document.createElement("button");btn.textContent=opt;
+  btn.addEventListener("click",()=>{
+    revealed=true;document.getElementById("overlay").style.display="none";render();
+    const v=document.getElementById("verdict");
+    v.innerHTML=i===correct
+      ?`<span class="win">You bet “${opt}” — correct.</span> ${P.betReveal||"Drag a past 90° and watch the shadow flip direction."}`
+      :`<span class="lose">You bet “${opt}” — actually: “${options[correct]}”.</span> ${P.betReveal||"Drag a past 90° from b and watch the sign."}`;
+  });
+  bets.appendChild(btn);
+});
+render();
+</script>
+</body>
+</html>

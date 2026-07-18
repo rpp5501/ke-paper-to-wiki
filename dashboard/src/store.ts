@@ -49,6 +49,9 @@ export interface AppState {
   markStepComplete: (nodeId: string) => void;
   expandAllMath: boolean;
   toggleExpandAllMath: () => void;
+  vizFocus: string | null;
+  setVizFocus: (nodeId: string | null) => void;
+  openVisualization: (nodeId: string) => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -122,4 +125,11 @@ export const useApp = create<AppState>((set) => ({
   expandAllMath: false,
   toggleExpandAllMath: () =>
     set((state) => ({ expandAllMath: !state.expandAllMath })),
+  vizFocus: null,
+  setVizFocus: (vizFocus) => set({ vizFocus }),
+  openVisualization: (nodeId) => set({
+    mode: "explore",
+    selected: nodeId,
+    vizFocus: nodeId,
+  }),
 }));

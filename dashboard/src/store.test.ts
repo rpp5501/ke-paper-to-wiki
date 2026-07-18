@@ -18,6 +18,7 @@ beforeEach(() => {
     navigationRequestId: 0,
     pendingNavigation: null,
     mode: "learn",
+    vizFocus: null,
     completedSteps: new Set(),
   } as never);
 });
@@ -146,6 +147,16 @@ describe("useApp", () => {
 });
 
 describe("mode & learn progress", () => {
+  it("opens a gallery visual from Guided mode", () => {
+    useApp.getState().openVisualization("scaled-dot-product-attention");
+
+    expect(useApp.getState()).toMatchObject({
+      mode: "explore",
+      selected: "scaled-dot-product-attention",
+      vizFocus: "scaled-dot-product-attention",
+    });
+  });
+
   it("defaults to learn mode with no completed steps", () => {
     expect(useApp.getState().mode).toBe("learn");
     expect(useApp.getState().completedSteps.size).toBe(0);

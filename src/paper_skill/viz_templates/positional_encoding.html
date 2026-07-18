@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Positional encoding, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:17px;}
+  .eq [data-t]{padding:1px 3px;border-radius:3px;transition:background 140ms;}
+  .eq [data-t].hl,.eq [data-t]:hover{background:rgba(74,126,187,.35);outline:1px solid var(--accent);}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .controls.hl{color:var(--accent);}
+  input[type=range]{accent-color:var(--accent);}
+  svg text{font-family:system-ui,sans-serif;}
+  .wave{fill:none;stroke-width:1.5;transition:opacity 140ms;}
+  .wave.hl{stroke-width:3;}
+  .dimlab{font-size:10px;cursor:pointer;}
+  .strip rect{stroke:var(--border);stroke-width:.5;}
+  .strip.hl rect{stroke:var(--warn);}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .verdict{font-size:13px;margin-top:8px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:440px;margin:0;}
+  #overlay button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;transition:background 140ms;}
+  #overlay button:hover{background:var(--accent);}
+  #overlay button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{{PARAMS_JSON}}</script>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <mrow data-t="pe"><mi>PE</mi></mrow>
+        <mo stretchy="false">(</mo><mrow data-t="pos"><mi>pos</mi></mrow><mo>,</mo>
+        <mrow data-t="dim"><mn>2</mn><mi>i</mi></mrow><mo stretchy="false">)</mo><mo>=</mo>
+        <mi>sin</mi><mo stretchy="false">(</mo>
+        <mfrac>
+          <mrow data-t="pos"><mi>pos</mi></mrow>
+          <msup><mn>10000</mn><mrow data-t="freq"><mn>2</mn><mi>i</mi><mo>/</mo><msub><mi>d</mi><mtext>model</mtext></msub></mrow></msup>
+        </mfrac>
+        <mo stretchy="false">)</mo>
+      </mrow>
+    </math>
+  </div>
+  <div class="controls" id="posRow">
+    <label>pos <input type="range" id="pos" min="0" max="31" step="1" value="5"> <b id="posval"></b></label>
+    <span class="hint">scrub the position · click a wave label · hover the equation</span>
+  </div>
+  <svg id="viz" width="100%" viewBox="0 0 620 300" role="img" aria-label="positional encoding waves"></svg>
+  <div class="hint">bottom strip: the full encoding vector at this position — low dims spin fast, high dims spin slow.</div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay"><p id="prompt"></p><div id="bets"></div></div>
+</div>
+<script>
+"use strict";
+const P=JSON.parse(document.getElementById("params").textContent);
+const d=P.dModel||16, maxPos=P.maxPos||32, showDims=P.showDims||[0,2,4,8];
+document.getElementById("title").textContent=P.title||"Sinusoidal positional encoding";
+document.getElementById("prompt").textContent=P.prompt||"Place your bet before you scrub.";
+document.getElementById("pos").max=maxPos-1;
+const COLORS=["#4a7ebb","#4a9b5e","#eab308","#b3595e","#8a6fb3","#5ea9b3"];
+function pe(pos,i){const f=Math.pow(10000,(i-(i%2))/d);return i%2===0?Math.sin(pos/f):Math.cos(pos/f);}
+
+const svg=document.getElementById("viz");const NS="http://www.w3.org/2000/svg";
+const X0=60,X1=600,Y0=20,H=42,STRIP_Y=250;
+const px=p=>X0+(X1-X0)*p/(maxPos-1);
+let revealed=false,hlDim=null;
+
+function render(){
+  const pos=+document.getElementById("pos").value;
+  document.getElementById("posval").textContent=pos;
+  svg.innerHTML="";
+  showDims.forEach((dim,k)=>{
+    const y=Y0+k*H+H/2;
+    const ax=document.createElementNS(NS,"line");
+    ax.setAttribute("x1",X0);ax.setAttribute("x2",X1);ax.setAttribute("y1",y);ax.setAttribute("y2",y);
+    ax.setAttribute("stroke","#1e293b");svg.appendChild(ax);
+    let dpath="";
+    for(let p=0;p<maxPos;p++){dpath+=(p?"L":"M")+px(p)+","+(y-pe(p,dim)*H*0.42);}
+    const path=document.createElementNS(NS,"path");
+    path.setAttribute("d",dpath);path.setAttribute("class","wave"+(hlDim===dim||revealed&&dim===showDims[0]&&hlDim===null?"":""));
+    path.setAttribute("stroke",COLORS[k%COLORS.length]);
+    if(hlDim===dim)path.classList.add("hl");
+    path.dataset.dim=dim;
+    path.addEventListener("mouseenter",()=>hl(["freq","dim"],true));
+    path.addEventListener("mouseleave",()=>hl(["freq","dim"],false));
+    svg.appendChild(path);
+    const lab=document.createElementNS(NS,"text");
+    lab.setAttribute("x",6);lab.setAttribute("y",y+3);lab.setAttribute("fill",COLORS[k%COLORS.length]);
+    lab.setAttribute("class","dimlab");lab.textContent="i="+dim;
+    lab.addEventListener("click",()=>{hlDim=hlDim===dim?null:dim;render();});
+    svg.appendChild(lab);
+    const dot=document.createElementNS(NS,"circle");
+    dot.setAttribute("cx",px(pos));dot.setAttribute("cy",y-pe(pos,dim)*H*0.42);
+    dot.setAttribute("r",3.5);dot.setAttribute("fill",COLORS[k%COLORS.length]);svg.appendChild(dot);
+  });
+  const mark=document.createElementNS(NS,"line");
+  mark.setAttribute("x1",px(pos));mark.setAttribute("x2",px(pos));
+  mark.setAttribute("y1",Y0-6);mark.setAttribute("y2",STRIP_Y-14);
+  mark.setAttribute("stroke","#94a3b8");mark.setAttribute("stroke-dasharray","3 3");svg.appendChild(mark);
+  const g=document.createElementNS(NS,"g");g.setAttribute("class","strip");g.setAttribute("id","strip");
+  const cw=(X1-X0)/d;
+  for(let i=0;i<d;i++){
+    const v=pe(pos,i);
+    const r=document.createElementNS(NS,"rect");
+    r.setAttribute("x",X0+i*cw);r.setAttribute("y",STRIP_Y);r.setAttribute("width",cw-1);r.setAttribute("height",18);
+    r.setAttribute("fill",v>=0?`rgba(74,126,187,${Math.abs(v)})`:`rgba(179,89,94,${Math.abs(v)})`);
+    const t=document.createElementNS(NS,"title");t.textContent=`PE(${pos},${i}) = ${v.toFixed(3)}`;r.appendChild(t);
+    g.appendChild(r);
+  }
+  g.addEventListener("mouseenter",()=>hl(["pe"],true));
+  g.addEventListener("mouseleave",()=>hl(["pe"],false));
+  svg.appendChild(g);
+  const sl=document.createElementNS(NS,"text");
+  sl.setAttribute("x",6);sl.setAttribute("y",STRIP_Y+13);sl.setAttribute("fill","#94a3b8");
+  sl.setAttribute("class","dimlab");sl.textContent="PE(pos)";svg.appendChild(sl);
+}
+function hl(ts,on){document.querySelectorAll("[data-t]").forEach(el=>{if(ts.includes(el.dataset.t))el.classList.toggle("hl",on);});}
+const eqMap={pos:"posRow",freq:null,dim:null,pe:"strip"};
+document.querySelectorAll("[data-t]").forEach(el=>{
+  el.addEventListener("mouseenter",()=>{const id=eqMap[el.dataset.t];if(id){const t=document.getElementById(id);if(t)t.classList.add("hl");}});
+  el.addEventListener("mouseleave",()=>{document.querySelectorAll(".controls.hl,.strip.hl").forEach(x=>x.classList.remove("hl"));});
+});
+const bets=document.getElementById("bets");
+const options=P.betOptions||["low dims (i=0) spin fastest","high dims spin fastest"];
+const correct=P.betCorrect!=null?P.betCorrect:0;
+options.forEach((opt,i)=>{
+  const b=document.createElement("button");b.textContent=opt;
+  b.addEventListener("click",()=>{
+    revealed=true;document.getElementById("overlay").style.display="none";render();
+    const v=document.getElementById("verdict");
+    v.innerHTML=i===correct
+      ?`<span class="win">You bet “${opt}” — correct.</span> ${P.betReveal||"Scrub pos and watch the top wave race the bottom one."}`
+      :`<span class="lose">You bet “${opt}” — actually: “${options[correct]}”.</span> ${P.betReveal||"Scrub pos and compare the top and bottom waves."}`;
+  });
+  bets.appendChild(b);
+});
+document.getElementById("pos").addEventListener("input",render);
+render();
+</script>
+</body>
+</html>

@@ -1681,3 +1681,67 @@ input:focus-visible,
 .drawer-code > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-small); }
 .drawer-code[open] > summary { color: var(--text); }
 .drawer-content > .drawer-meta { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
+
+/* R13 visualize — Visualize drawer tier */
+.viz-tier > summary { cursor: pointer; }
+.viz-tier .viz-frame {
+  width: 100%;
+  height: 480px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+.viz-tier .viz-caption { color: var(--muted); font-size: var(--fs-small); margin: 6px 0 0; }
+.viz-tier .viz-stale {
+  color: var(--warn);
+  font-size: var(--fs-small);
+  border: 1px solid var(--warn);
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 0 0 8px;
+}
+
+/* R13 visualize — Visuals gallery in the top bar */
+.viz-gallery { position: relative; }
+.viz-gallery-toggle {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: var(--fs-small);
+  cursor: pointer;
+  transition: border-color 140ms;
+}
+.viz-gallery-toggle:hover { border-color: var(--accent); }
+.viz-gallery-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.viz-gallery-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 280px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.viz-gallery-panel li + li { margin-top: 4px; }
+.viz-gallery-panel button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background 140ms;
+}
+.viz-gallery-panel button:hover { background: var(--bg); }
+.viz-gallery-panel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.viz-gallery-title { display: block; font-size: var(--fs-small); }
+.viz-gallery-caption { display: block; color: var(--muted); font-size: var(--fs-small); }

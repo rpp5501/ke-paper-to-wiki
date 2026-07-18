@@ -2,6 +2,7 @@ import katex from "katex";
 import {
   Children,
   cloneElement,
+  Fragment,
   isValidElement,
   useEffect,
   useId,
@@ -24,11 +25,13 @@ import {
   type RichTextToken,
 } from "../lib/mathHtml";
 import { navigationDisabledReason } from "../lib/navigation";
+import { getViz } from "../lib/viz";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
 import { useNodeNavigation } from "./useNodeNavigation";
+import VizTier from "./VizTier";
 
 type DrawerNode = KENode & { page?: string; anchor?: string };
 type Note = { synthesis?: string; status?: string; date?: string };
@@ -385,6 +388,7 @@ export function DrawerPresentation({
   const hasDeeperTiers = DEEPER_TIERS.some((tier) => tiers[tier]);
   const fallbackMarkdown = note?.synthesis?.trim();
   const hasCode = hasCodeFor(selected);
+  const viz = getViz(selected);
 
   return (
     <div className="drawer-content">
@@ -411,14 +415,26 @@ export function DrawerPresentation({
 
       {pageMarkdown && hasDeeperTiers && (
         <section aria-label="Explanation tiers" className="tier">
+          {!tiers.intuition && viz && <VizTier entry={viz} nodeId={selected} />}
           {DEEPER_TIERS.filter((tier) => tiers[tier]).map((tier) => (
-            <details key={tier} open={tier === "intuition"}>
-              <summary>{TIER_LABEL[tier]}</summary>
-              <div className="tier-body">
-                <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
-              </div>
-            </details>
+            <Fragment key={tier}>
+              <details open={tier === "intuition"}>
+                <summary>{TIER_LABEL[tier]}</summary>
+                <div className="tier-body">
+                  <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
+                </div>
+              </details>
+              {tier === "intuition" && viz && (
+                <VizTier entry={viz} nodeId={selected} />
+              )}
+            </Fragment>
           ))}
+        </section>
+      )}
+
+      {viz && !(pageMarkdown && hasDeeperTiers) && (
+        <section aria-label="Explanation tiers" className="tier">
+          <VizTier entry={viz} nodeId={selected} />
         </section>
       )}
 

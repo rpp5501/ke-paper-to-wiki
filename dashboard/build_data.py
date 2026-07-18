@@ -276,8 +276,48 @@ def _excerpts(plan_graph, hotspots, repo_dir):
     return excerpts
 
 
+def _load_viz(viz_dir, pages_dir):
+    """R13: viz/manifest.json + per-node HTML → {nodeId: entry+srcdoc+stale}.
+
+    Staleness = manifest page_sha256 no longer matches the current page file.
+    A missing page file is stale too (evidence gone). Never raises on a bad
+    entry — it is skipped with a warning, the build must not break on viz.
+    """
+    import hashlib
+    viz_dir = Path(viz_dir)
+    manifest_path = viz_dir / "manifest.json"
+    if not manifest_path.exists():
+        print(f"viz: no manifest.json in {viz_dir}, skipping")
+        return {}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    out = {}
+    for node_id, entry in manifest.items():
+        html_path = viz_dir / entry.get("src", "")
+        if not entry.get("src") or not html_path.exists():
+            print(f"viz: {node_id}: missing src, skipped")
+            continue
+        stale = True
+        page = entry.get("page")
+        if pages_dir and page and (Path(pages_dir) / page).exists():
+            digest = hashlib.sha256(
+                (Path(pages_dir) / page).read_bytes()).hexdigest()
+            stale = digest != entry.get("page_sha256")
+        if stale:
+            print(f"viz: {node_id}: page evidence stale or missing")
+        out[node_id] = {
+            "kind": entry.get("kind", "template"),
+            "templateId": entry.get("template_id"),
+            "title": entry.get("title", ""),
+            "caption": entry.get("caption", ""),
+            "prompt": entry.get("prompt", ""),
+            "srcdoc": html_path.read_text(encoding="utf-8"),
+            "stale": stale,
+        }
+    return out
+
+
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
-                 hotspots=None, repo_dir=None):
+                 hotspots=None, repo_dir=None, viz_dir=None):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir)
     notes, glossary, trace = _load_notes(
@@ -306,6 +346,8 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
               "dependentSide": _DEPENDENT_SIDE}
     if repo_dir:
         bundle["mtimes"] = _source_dates(plan_graph, repo_dir)
+    if viz_dir:  # R13: opt-in only — absent flag leaves the bundle untouched
+        bundle["viz"] = _load_viz(viz_dir, pages_dir)
     return bundle
 
 
@@ -323,6 +365,8 @@ def main(argv=None):
     p.add_argument("--wiki-dir")
     p.add_argument("--hotspots")
     p.add_argument("--repo-dir")
+    p.add_argument("--viz-dir", help="R13 viz pack dir (viz/manifest.json); "
+                                     "omit for a viz-free build")
     p.add_argument("--out", default="src/data.gen.ts")
     a = p.parse_args(argv)
     load = lambda x: json.loads(Path(x).read_text(encoding="utf-8")) if x else None
@@ -330,7 +374,7 @@ def main(argv=None):
                           pages_dir=a.pages_dir, wiki_dir=a.wiki_dir,
                           hotspots=(load(a.hotspots) or {}).get("hotspots")
                           if a.hotspots else None,
-                          repo_dir=a.repo_dir)
+                          repo_dir=a.repo_dir, viz_dir=a.viz_dir)
     Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
     print(f"{a.out}: {len(bundle['nodes'])} nodes, {len(bundle['tour'])} tour steps")
     return 0

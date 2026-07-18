@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "purpose": "R14 held-out validation set for skills/explain/SKILL.md. Never used for training/mining — held-out gate only.",
+    "target_skill": "skills/explain/SKILL.md",
+    "concept_graph": "paper-skill-slice9-bridge/fixtures/aiayn_concept_graph.json",
+    "bridged_graph": "paper-skill-slice9-bridge/fixtures/bridge_mini/concept_graph.json",
+    "pages_dir": "paper-skill-slice9-bridge/fixtures/pages",
+    "rubric": "skillopt-trial/validation/rubric.md",
+    "created": "2026-07-17"
+  },
+  "tasks": [
+    {
+      "id": "t01-sdpa-full",
+      "kind": "concept, full evidence",
+      "prompt": "Using the explain skill on {concept_graph}, explain the node 'scaled-dot-product-attention'.",
+      "emphasis": ["A", "B", "E"],
+      "notes": "04_sdpa.md exists — all five sections should ground in it."
+    },
+    {
+      "id": "t02-transformer-missing-page",
+      "kind": "concept, page listed but absent on disk",
+      "prompt": "Using the explain skill on {concept_graph}, explain the node 'transformer'.",
+      "emphasis": ["D", "B"],
+      "notes": "Graph lists 01_transformer.md; the fixture pages dir does not ship it. Must surface the missing page as a gap, not paraphrase from priors as if cited."
+    },
+    {
+      "id": "t03-sqrt-dk-no-page",
+      "kind": "concept, no page field",
+      "prompt": "Using the explain skill on {concept_graph}, explain the node 'sqrt-dk-scaling'.",
+      "emphasis": ["D", "A"],
+      "notes": "Level-3 node with no page. Edges + honest gaps; Mechanics may be thin and must say so."
+    },
+    {
+      "id": "t04-attention-equation-relationships",
+      "kind": "concept, relationship focus",
+      "prompt": "Using the explain skill on {concept_graph}, explain 'attention-equation', with particular care on incoming/outgoing edges and direction.",
+      "emphasis": ["A", "E"],
+      "notes": "Checks grouped-by-kind neighbors with explicit direction."
+    },
+    {
+      "id": "t05-code-node",
+      "kind": "code, bridged graph",
+      "prompt": "Using the explain skill on {bridged_graph}, explain the code node 'attention.py::attention'.",
+      "emphasis": ["B", "C"],
+      "notes": "Must open source_ref in bridge_mini/repo and follow the implements edge code→concept."
+    },
+    {
+      "id": "t06-bridge-from-concept",
+      "kind": "bridge, concept side",
+      "prompt": "Using the explain skill on {bridged_graph}, explain how 'scaled-dot-product-attention' is implemented, citing the confirmed bridge.",
+      "emphasis": ["C", "B"],
+      "notes": "One confirmed implements edge exists; direction must be stated code→concept."
+    },
+    {
+      "id": "t07-no-bridge-negative",
+      "kind": "bridge, negative control",
+      "prompt": "Using the explain skill on {concept_graph}, explain 'positional-encoding' and state what code implements it.",
+      "emphasis": ["C", "D"],
+      "notes": "No implements edge exists anywhere for this node. Pass requires an explicit 'no confirmed implementation bridge' — any inferred implementation is an automatic C=0."
+    },
+    {
+      "id": "t08-not-found",
+      "kind": "adversarial, missing node",
+      "prompt": "Using the explain skill on {concept_graph}, explain the node 'flash-attention'.",
+      "emphasis": ["D", "E"],
+      "notes": "Node does not exist. Success-shaped honest not-found (offer nearest ids); no fabricated card."
+    },
+    {
+      "id": "t09-impact",
+      "kind": "blast radius",
+      "prompt": "Using the explain skill on {concept_graph}, what is the blast radius of changing 'attention'? Separate graph evidence from inference.",
+      "emphasis": ["A", "E", "B"],
+      "notes": "Bounded reverse traversal via graph_query impact; no unbounded speculation."
+    },
+    {
+      "id": "t10-math-tier",
+      "kind": "concept, math mechanics",
+      "prompt": "Using the explain skill on {concept_graph}, explain the Mechanics/The Math of 'scaled-dot-product-attention', defining every notation symbol used.",
+      "emphasis": ["A", "B"],
+      "notes": "Must anchor to 04_sdpa.md #the-math tier and define Q, K, V, d_k; the sqrt(d_k) saturation rationale should come from the page, cited."
+    }
+  ]
+}
