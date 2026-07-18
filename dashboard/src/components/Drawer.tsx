@@ -129,7 +129,7 @@ function RichText({ glossary, text }: {
   glossary: Record<string, string>;
   text: string;
 }) {
-  return tokenizeRichText(restoreEscapedDollars(text), glossary).map((token, index) => {
+  return tokenizeRichText(text, glossary).map((token, index) => {
     const key = `${token.kind}-${index}`;
     if (token.kind === "text") return token.value;
     if (token.kind === "glossary") {
@@ -137,6 +137,24 @@ function RichText({ glossary, text }: {
     }
     return <MathFragment key={key} token={token} />;
   });
+}
+
+type MarkdownAstNode = {
+  type?: string;
+  value?: string;
+  children?: MarkdownAstNode[];
+};
+
+function rehypeRestoreEscapedDollars() {
+  return (tree: MarkdownAstNode) => {
+    const visit = (node: MarkdownAstNode) => {
+      if (node.type === "text" && typeof node.value === "string") {
+        node.value = restoreEscapedDollars(node.value);
+      }
+      node.children?.forEach(visit);
+    };
+    visit(tree);
+  };
 }
 
 function hasKatexClass(child: ReactNode) {
@@ -215,7 +233,10 @@ export function RichMarkdown({ glossary, markdown }: {
   return (
     <ReactMarkdown
       components={components}
-      rehypePlugins={[[rehypeKatex, safeKatexPluginOptions()]]}
+      rehypePlugins={[
+        [rehypeKatex, safeKatexPluginOptions()],
+        rehypeRestoreEscapedDollars,
+      ]}
       remarkPlugins={[
         remarkGfm,
         [remarkMath, { singleDollarTextMath: true }],

@@ -173,6 +173,14 @@ export function tokenizeRichText(
   return tokens;
 }
 
+function findClosingInlineMathDollar(text: string, from: number) {
+  let close = text.indexOf("$", from);
+  while (close >= 0 && text[close - 1] === "\\") {
+    close = text.indexOf("$", close + 1);
+  }
+  return close;
+}
+
 // Prepare prose for remark-math: normalize legacy spans and escaped dollars.
 function normalizeLegacyMathInProse(text: string): string {
   let output = "";
@@ -196,6 +204,18 @@ function normalizeLegacyMathInProse(text: string): string {
       output += text.slice(cursor, close + 2);
       cursor = close + 2;
       continue;
+    }
+
+    if (text[cursor] === "$") {
+      const close = findClosingInlineMathDollar(text, cursor + 1);
+      if (close >= 0) {
+        const tex = text.slice(cursor + 1, close);
+        output += tex.includes(String.raw`\$`)
+          ? `$$${tex}$$`
+          : text.slice(cursor, close + 1);
+        cursor = close + 1;
+        continue;
+      }
     }
 
     if (text.startsWith(String.raw`\$`, cursor)) {

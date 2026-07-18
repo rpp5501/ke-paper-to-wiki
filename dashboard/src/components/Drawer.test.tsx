@@ -84,6 +84,26 @@ describe("RichMarkdown", () => {
     expect(markup).not.toContain("$x$");
   });
 
+  it("restores escaped prose dollars in headings", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={String.raw`# Cost \$5`} />,
+    );
+
+    expect(markup).toContain("<h1>Cost $5</h1>");
+    expect(markup).not.toContain("\uE000");
+  });
+
+  it("keeps escaped-dollar TeX inside standard inline math", () => {
+    const markdown = String.raw`$2\$x$`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup.match(/class="katex"/g)).toHaveLength(1);
+    expect(markup).not.toContain("\uE000");
+    expect(markup).not.toContain(markdown);
+  });
+
   it.each([
     "$2x$",
     "$2 + 2$",
