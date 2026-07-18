@@ -22,6 +22,7 @@ import { pageMarkdownFor } from "../lib/learnPath";
 import {
   safeKatexOptions,
   safeKatexPluginOptions,
+  restoreEscapedDollars,
   splitTiers,
   preserveMathForMarkdown,
   tokenizeRichText,
@@ -128,7 +129,7 @@ function RichText({ glossary, text }: {
   glossary: Record<string, string>;
   text: string;
 }) {
-  return tokenizeRichText(text, glossary).map((token, index) => {
+  return tokenizeRichText(restoreEscapedDollars(text), glossary).map((token, index) => {
     const key = `${token.kind}-${index}`;
     if (token.kind === "text") return token.value;
     if (token.kind === "glossary") {

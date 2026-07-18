@@ -35,6 +35,8 @@ const SAFE_KATEX_OPTIONS = Object.freeze({
   trust: false,
 });
 
+const ESCAPED_DOLLAR_PLACEHOLDER = "\uE000";
+
 export function safeKatexOptions(displayMode: boolean) {
   return { ...SAFE_KATEX_OPTIONS, displayMode };
 }
@@ -46,6 +48,10 @@ export function safeKatexPluginOptions() {
     throwOnError: false,
     trust: SAFE_KATEX_OPTIONS.trust,
   };
+}
+
+export function restoreEscapedDollars(text: string) {
+  return text.replaceAll(ESCAPED_DOLLAR_PLACEHOLDER, "$");
 }
 
 const isWordCharacter = (character: string | undefined) => (
@@ -167,21 +173,7 @@ export function tokenizeRichText(
   return tokens;
 }
 
-// Prepare prose for remark-math: normalize legacy spans and protect currency.
-function findNextUnescapedDollar(text: string, from: number) {
-  let next = text.indexOf("$", from);
-  while (next >= 0 && text[next - 1] === "\\") {
-    next = text.indexOf("$", next + 1);
-  }
-  return next;
-}
-
-function isNumericMathCandidate(value: string) {
-  return /^\d+(?:\.\d+)?$/.test(value)
-    || /^\d+[A-Za-z]$/.test(value)
-    || /^\d+(?:\.\d+)?\s*[+\-*/=]\s*\d+(?:\.\d+)?$/.test(value);
-}
-
+// Prepare prose for remark-math: normalize legacy spans and escaped dollars.
 function normalizeLegacyMathInProse(text: string): string {
   let output = "";
   let cursor = 0;
@@ -206,20 +198,10 @@ function normalizeLegacyMathInProse(text: string): string {
       continue;
     }
 
-    if (
-      text[cursor] === "$"
-      && /\d/.test(text[cursor + 1] ?? "")
-      && text[cursor - 1] !== "\\"
-    ) {
-      const nextDollar = findNextUnescapedDollar(text, cursor + 1);
-      const candidate = nextDollar < 0
-        ? ""
-        : text.slice(cursor + 1, nextDollar);
-      if (!isNumericMathCandidate(candidate)) {
-        output += String.raw`\$`;
-        cursor += 1;
-        continue;
-      }
+    if (text.startsWith(String.raw`\$`, cursor)) {
+      output += ESCAPED_DOLLAR_PLACEHOLDER;
+      cursor += 2;
+      continue;
     }
 
     if (text.startsWith(String.raw`\(`, cursor)) {

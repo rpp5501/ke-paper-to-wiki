@@ -74,19 +74,24 @@ describe("RichMarkdown", () => {
     expect(markup).toContain("<code class=\"language-tex\">$D$");
   });
 
-  it("preserves ordinary unescaped currency as prose", () => {
+  it("requires literal currency to be escaped while later math renders", () => {
     const markup = renderToStaticMarkup(
-      <RichMarkdown glossary={{}} markdown="Costs $5 and $10 today" />,
+      <RichMarkdown glossary={{}} markdown={"Costs \\$5; let $x$ vary"} />,
     );
 
-    expect(markup).toContain("Costs $5 and $10 today");
-    expect(markup).not.toContain('class="katex"');
+    expect(markup).toContain("Costs $5; let ");
+    expect(markup.match(/class="katex"/g)).toHaveLength(1);
+    expect(markup).not.toContain("$x$");
   });
 
   it.each([
     "$2x$",
     "$2 + 2$",
     "$0.5$",
+    "$2x^2$",
+    String.raw`$2\pi$`,
+    "$2(x+1)$",
+    String.raw`$2\cdot x$`,
   ])("renders numeric-leading standard math case %#", (markdown) => {
     const markup = renderToStaticMarkup(
       <RichMarkdown glossary={{}} markdown={markdown} />,
@@ -94,25 +99,6 @@ describe("RichMarkdown", () => {
 
     expect(markup).toContain('class="katex"');
     expect(markup).not.toContain(markdown);
-  });
-
-  it.each([
-    {
-      markdown: "Costs $5; let $x$ vary",
-      prose: "Costs $5; let ",
-    },
-    {
-      markdown: "Costs $5 and $10; let $x$ vary",
-      prose: "Costs $5 and $10; let ",
-    },
-  ])("preserves mixed currency and math case %#", ({ markdown, prose }) => {
-    const markup = renderToStaticMarkup(
-      <RichMarkdown glossary={{}} markdown={markdown} />,
-    );
-
-    expect(markup).toContain(prose);
-    expect(markup.match(/class="katex"/g)).toHaveLength(1);
-    expect(markup).not.toContain("$x$");
   });
 
   it("keeps glossary decoration outside KaTeX output", () => {
