@@ -4,6 +4,7 @@ import {
   preserveMathForMarkdown,
   renderMathToString,
   safeKatexOptions,
+  safeKatexPluginOptions,
   splitTiers,
   tokenizeRichText,
 } from "./mathHtml";
@@ -13,19 +14,21 @@ const ATTACK_SET = String.raw`$$
 $$`;
 
 describe("preserveMathForMarkdown", () => {
-  it("protects TeX punctuation escapes in multiline display math", () => {
-    const preserved = preserveMathForMarkdown(ATTACK_SET);
-
-    expect(preserved).toContain("&#92;;=&#92;;");
-    expect(preserved).toContain("&#92;,");
-    expect(preserved).toContain("&#92;big");
-    expect(preserved).toContain("&#92;text{attack}");
-    expect(preserved).toContain("&#95;{&#92;text{attack}}");
+  it("normalizes complete legacy inline math for remark-math", () => {
+    expect(
+      preserveMathForMarkdown(String.raw`Scale by \(\sqrt{d_k}\).`),
+    ).toBe(String.raw`Scale by $\sqrt{d_k}$.`);
   });
 
-  it("does not alter fenced or inline code", () => {
-    const code = "`\\(x\\)`\n```tex\n$$\\;$$\n```";
-    expect(preserveMathForMarkdown(code)).toBe(code);
+  it("leaves display math, code, and incomplete legacy spans unchanged", () => {
+    const markdown = "$$\\sqrt{d_k}$$\n\n"
+      + "\\(unfinished\n\n"
+      + "`\\(inline_code\\)`\n\n"
+      + "```tex\n"
+      + "\\(fenced_code\\)\n"
+      + "```";
+
+    expect(preserveMathForMarkdown(markdown)).toBe(markdown);
   });
 });
 
@@ -134,6 +137,12 @@ describe("renderMathToString", () => {
       output: "html",
       strict: "error",
       throwOnError: true,
+      trust: false,
+    });
+    expect(safeKatexPluginOptions()).toMatchObject({
+      output: "html",
+      strict: "error",
+      throwOnError: false,
       trust: false,
     });
   });

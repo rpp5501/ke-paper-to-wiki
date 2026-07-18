@@ -39,6 +39,15 @@ export function safeKatexOptions(displayMode: boolean) {
   return { ...SAFE_KATEX_OPTIONS, displayMode };
 }
 
+export function safeKatexPluginOptions() {
+  return {
+    output: SAFE_KATEX_OPTIONS.output,
+    strict: SAFE_KATEX_OPTIONS.strict,
+    throwOnError: false,
+    trust: SAFE_KATEX_OPTIONS.trust,
+  };
+}
+
 const isWordCharacter = (character: string | undefined) => (
   character !== undefined && /[\p{L}\p{N}_-]/u.test(character)
 );
@@ -158,10 +167,8 @@ export function tokenizeRichText(
   return tokens;
 }
 
-// CommonMark treats the backslashes in \(…\) as escapes. Character references
-// Markdown-significant characters are encoded only inside complete math spans,
-// then decoded back into text nodes. Fenced and inline code remain literal.
-function protectMathInProse(text: string): string {
+// Normalize complete single-line legacy spans; fenced and inline code stay literal.
+function normalizeLegacyMathInProse(text: string): string {
   let output = "";
   let cursor = 0;
 
@@ -177,19 +184,14 @@ function protectMathInProse(text: string): string {
       continue;
     }
 
-    const display = text.startsWith("$$", cursor);
-    const inline = text.startsWith(String.raw`\(`, cursor);
-    if (display || inline) {
-      const closeDelimiter = display ? "$$" : String.raw`\)`;
-      const close = text.indexOf(closeDelimiter, cursor + 2);
-      if (close < 0) return output + text.slice(cursor);
-      const end = close + closeDelimiter.length;
-      output += Array.from(text.slice(cursor, end), (character) => (
-        "\\_*[]<>|&".includes(character)
-          ? `&#${character.charCodeAt(0)};`
-          : character
-      )).join("");
-      cursor = end;
+    if (text.startsWith(String.raw`\(`, cursor)) {
+      const close = text.indexOf(String.raw`\)`, cursor + 2);
+      const newline = text.indexOf("\n", cursor + 2);
+      if (close < 0 || (newline >= 0 && newline < close)) {
+        return output + text.slice(cursor);
+      }
+      output += `$${text.slice(cursor + 2, close)}$`;
+      cursor = close + 2;
       continue;
     }
 
@@ -225,7 +227,7 @@ export function preserveMathForMarkdown(markdown: string): string {
     }
 
     if (marker) {
-      output += protectMathInProse(prose);
+      output += normalizeLegacyMathInProse(prose);
       prose = "";
       output += line;
       fence = { character: marker[1][0], length: marker[1].length };
@@ -235,7 +237,7 @@ export function preserveMathForMarkdown(markdown: string): string {
     prose += line;
   }
 
-  return output + protectMathInProse(prose);
+  return output + normalizeLegacyMathInProse(prose);
 }
 
 function parseMathSource(source: string) {

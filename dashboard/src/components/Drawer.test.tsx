@@ -24,12 +24,76 @@ const ATTACK_SET = String.raw`$$
 $$`;
 
 describe("RichMarkdown", () => {
-  it("preserves inline math delimiters through CommonMark parsing", () => {
+  it("renders standard single-dollar inline math in the reported sentence", () => {
+    const markdown = String.raw`The detection input is the model itself: $g_c(\cdot)$ is queried over the input domain $\mathcal{X}$, while the clean sample set $D$ appears only in the mitigation problem [§sec_1].`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup.match(/class="katex"/g)).toHaveLength(3);
+    expect(markup).not.toContain("$g_c");
+    expect(markup).not.toContain("$\\mathcal{X}$");
+    expect(markup).toContain("§sec_1");
+  });
+
+  it("keeps legacy inline math rendering through the standard pipeline", () => {
     const markup = renderToStaticMarkup(
       <RichMarkdown glossary={{}} markdown={String.raw`Scale by \(\sqrt{d_k}\).`} />,
     );
 
-    expect(markup).toContain(String.raw`\(\sqrt{d_k}\)`);
+    expect(markup).toContain('class="katex"');
+    expect(markup).not.toContain(String.raw`\(\sqrt{d_k}\)`);
+  });
+
+  it("renders math in lists and GFM tables", () => {
+    const markdown = String.raw`- score $g_c(x)$
+
+| domain |
+| --- |
+| $\mathcal{X}$ |`;
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup).toContain("<li>");
+    expect(markup).toContain("<table>");
+    expect(markup.match(/class="katex"/g)).toHaveLength(2);
+  });
+
+  it("preserves code and escaped currency as prose", () => {
+    const markdown = "Cost is \\$5; keep `$g_c(x)$` literal.\n\n"
+      + "```tex\n"
+      + "$D$\n"
+      + "```";
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={markdown} />,
+    );
+
+    expect(markup).toContain("Cost is $5");
+    expect(markup).toContain("<code>$g_c(x)$</code>");
+    expect(markup).toContain("<code class=\"language-tex\">$D$");
+  });
+
+  it("keeps glossary decoration outside KaTeX output", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown
+        glossary={{ model: "A learned function." }}
+        markdown={String.raw`model $\operatorname{model}(x)$`}
+      />,
+    );
+
+    expect(markup.match(/class="tooltip"/g)).toHaveLength(1);
+    expect(markup).toContain('class="katex"');
+  });
+
+  it("leaves malformed TeX visible without throwing", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown glossary={{}} markdown={String.raw`Before $\notACommand{$ after.`} />,
+    );
+
+    expect(markup).toContain("Before");
+    expect(markup).toContain("after");
+    expect(markup).toContain("katex-error");
   });
 
   it("renders the reported display equation without CommonMark corruption", () => {
@@ -38,7 +102,8 @@ describe("RichMarkdown", () => {
     );
 
     expect(markup).toContain("katex-display");
-    expect(markup).toContain(String.raw`\mathbb{D}_{\text{attack}}`);
+    expect(markup).toContain("mathbb");
+    expect(markup).toContain("attack");
     expect(markup).not.toContain(";=;");
   });
 });
@@ -76,7 +141,7 @@ describe("Drawer", () => {
     expect(markup).toContain("Scaled Dot-Product Attention");
     expect(markup).toContain("The Math");
     expect(markup).toContain("eq_1");
-    expect(markup).toContain(String.raw`\sqrt{d_k}`);
+    expect(markup).toContain("sqrt");
     expect(markup).toContain("Query vectors used to request relevant information.");
     expect(markup).toContain(
       "concept · sec:3.2.1 · unlocks 2 concept(s) directly, 2 more downstream",

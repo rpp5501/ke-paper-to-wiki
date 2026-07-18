@@ -11,7 +11,9 @@ import {
   type ReactNode,
 } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 import { KE_DATA } from "../data.gen";
 import { parseContent } from "../lib/contentBlocks";
@@ -19,6 +21,7 @@ import { dependencyRings } from "../lib/deps";
 import { pageMarkdownFor } from "../lib/learnPath";
 import {
   safeKatexOptions,
+  safeKatexPluginOptions,
   splitTiers,
   preserveMathForMarkdown,
   tokenizeRichText,
@@ -135,6 +138,15 @@ function RichText({ glossary, text }: {
   });
 }
 
+function hasKatexClass(child: ReactNode) {
+  if (!isValidElement<{ className?: unknown }>(child)) return false;
+  const className = child.props.className;
+  return typeof className === "string"
+    && className.split(/\s+/).some((name) => (
+      name === "katex" || name === "katex-display" || name === "katex-error"
+    ));
+}
+
 function decorateChildren(
   children: ReactNode,
   glossary: Record<string, string>,
@@ -147,6 +159,7 @@ function decorateChildren(
       isValidElement<{ children?: ReactNode }>(child)
       && child.props.children !== undefined
       && child.type !== "code"
+      && !hasKatexClass(child)
     ) {
       return cloneElement(
         child,
@@ -199,7 +212,14 @@ export function RichMarkdown({ glossary, markdown }: {
   }), [glossary]);
 
   return (
-    <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
+    <ReactMarkdown
+      components={components}
+      rehypePlugins={[[rehypeKatex, safeKatexPluginOptions()]]}
+      remarkPlugins={[
+        remarkGfm,
+        [remarkMath, { singleDollarTextMath: true }],
+      ]}
+    >
       {preserveMathForMarkdown(markdown)}
     </ReactMarkdown>
   );
