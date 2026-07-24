@@ -1881,3 +1881,42 @@ input:focus-visible,
   border-left: 2px solid var(--accent);
   padding-left: 8px;
 }
+
+/* ── R16.A2 Mastery surfacing ───────────────────── */
+/* Evidence of understanding, never a score: no points, no XP, no ranking.
+   Colours come from tokens only, so this block stays inside the locked
+   learn-mode palette. */
+.topbar-mastery {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  white-space: nowrap;
+  padding: 0 8px;
+}
+.badge-mastered {
+  color: var(--term-2);
+  border-color: var(--term-2);
+}
+/* An inset ring, not border-color: the 4px left border is the node-kind
+   stripe (.node-concept / .node-code) and must survive. outline is taken by
+   hover and focus, so box-shadow is the free channel here. */
+.node-card.is-seen { box-shadow: inset 0 0 0 1px var(--ink-muted); }
+.node-card.is-quizzed { box-shadow: inset 0 0 0 2px var(--term-2); }
+.node-card.is-mastered {
+  box-shadow: inset 0 0 0 2px var(--term-2);
+  background: var(--accent-soft);
+}
+/* The rail marker grows a ring as evidence accumulates: a third for seen,
+   two thirds once quizzed, closed when mastered. */
+.rail-marker { position: relative; }
+.rail-marker[data-mastery]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(var(--term-2) var(--mastery-arc), transparent 0);
+  mask: radial-gradient(closest-side, transparent 78%, black 80%);
+  -webkit-mask: radial-gradient(closest-side, transparent 78%, black 80%);
+}
+.rail-marker[data-mastery="seen"] { --mastery-arc: 33%; }
+.rail-marker[data-mastery="quizzed"] { --mastery-arc: 67%; }
+.rail-marker[data-mastery="mastered"] { --mastery-arc: 100%; }

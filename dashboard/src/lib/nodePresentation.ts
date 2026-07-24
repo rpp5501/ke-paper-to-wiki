@@ -1,9 +1,19 @@
+import type { MasteryLevel } from "./mastery";
+
 type NodeAccessibleNameInput = {
   label: string;
   level?: number;
   bridge?: boolean;
   hotspotRank?: number;
+  mastery?: MasteryLevel;
 };
+
+// R16.A2 — mastery is evidence, not a score, so it reads as a plain state.
+// "unseen" is the default for most of the graph; announcing it on every node
+// would be noise, so it stays silent.
+export function masteryNote(level: MasteryLevel | undefined): string | null {
+  return !level || level === "unseen" ? null : level;
+}
 
 export function levelBadgeLabel(level: number | undefined): string | null {
   if (level === undefined) return null;
@@ -17,11 +27,14 @@ export function nodeAccessibleName({
   level,
   bridge,
   hotspotRank,
+  mastery,
 }: NodeAccessibleNameInput): string {
   const details: string[] = [];
   const badgeLabel = levelBadgeLabel(level);
   if (badgeLabel) details.push(badgeLabel);
   if (bridge) details.push("bridge");
   if (hotspotRank !== undefined) details.push(`hotspot rank ${hotspotRank}`);
+  const note = masteryNote(mastery);
+  if (note) details.push(note);
   return details.length > 0 ? `${label}, ${details.join(", ")}` : label;
 }

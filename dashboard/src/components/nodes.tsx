@@ -9,6 +9,7 @@ import {
 
 import { KE_DATA } from "../data.gen";
 import { nodeCardSize } from "../lib/nodeDimensions";
+import { recordFor } from "../lib/mastery";
 import { levelBadgeLabel, nodeAccessibleName } from "../lib/nodePresentation";
 import { useApp } from "../store";
 
@@ -67,6 +68,7 @@ function Card({
   positionAbsoluteY: number;
 }) {
   const setSelected = useApp((state) => state.setSelected);
+  const mastery = useApp((state) => recordFor(state.mastery, id).level);
   const flow = useReactFlow();
   const bridge = centrality[id] >= p90 && centralityValues.length > 1;
   const hot = hotspotRank.get(id);
@@ -80,9 +82,10 @@ function Card({
         level: data.level,
         bridge,
         hotspotRank: hot,
+        mastery,
       })}
       aria-pressed={selected}
-      className={`node-card ${className}`}
+      className={`node-card ${className}${mastery === "unseen" ? "" : ` is-${mastery}`}`}
       data-node-id={id}
       onClick={() => setSelected(id)}
       onFocus={() => focusNode(
@@ -101,6 +104,9 @@ function Card({
         {levelBadge && <span className="badge">{levelBadge}</span>}
         {bridge && <span className="badge badge-bridge">bridge</span>}
         {hot && <span className="badge badge-hot">hotspot #{hot}</span>}
+        {mastery === "mastered" && (
+          <span className="badge badge-mastered">mastered</span>
+        )}
       </span>
       <Handle type="source" position={Position.Bottom} />
     </button>

@@ -1,5 +1,7 @@
 import { useApp } from "../store";
 import type { Chapter } from "../lib/article";
+import { masteryNote } from "../lib/nodePresentation";
+import { recordFor, type MasteryLedger } from "../lib/mastery";
 import { switchToExplore } from "./LearnPanel";
 
 export function ProgressRailPresentation({
@@ -8,6 +10,7 @@ export function ProgressRailPresentation({
   hasClosing,
   hasNotation,
   learnIdx,
+  mastery,
   onExplore,
   onJump,
 }: {
@@ -16,6 +19,7 @@ export function ProgressRailPresentation({
   hasClosing: boolean;
   hasNotation: boolean;
   learnIdx: number | null;
+  mastery: MasteryLedger;
   onExplore: () => void;
   onJump: (anchor: string) => void;
 }) {
@@ -30,6 +34,8 @@ export function ProgressRailPresentation({
         {chapters.map((chapter, index) => {
           const isCurrent = learnIdx === index;
           const isDone = completedSteps.has(chapter.nodeId);
+          const level = recordFor(mastery, chapter.nodeId).level;
+          const note = masteryNote(level);
           return (
             <li key={chapter.nodeId}>
               <button
@@ -38,10 +44,15 @@ export function ProgressRailPresentation({
                 onClick={() => onJump(chapter.nodeId)}
                 type="button"
               >
-                <span aria-hidden="true" className="rail-marker">
+                <span
+                  aria-hidden="true"
+                  className="rail-marker"
+                  data-mastery={note ?? undefined}
+                >
                   {isDone && !isCurrent ? "✓" : index + 1}
                 </span>
                 <span className="rail-title">{chapter.title}</span>
+                {note && <span className="sr-only">{note}</span>}
               </button>
             </li>
           );
@@ -85,6 +96,7 @@ export default function ProgressRail({
 }) {
   const learnIdx = useApp((state) => state.learnIdx);
   const completedSteps = useApp((state) => state.completedSteps);
+  const mastery = useApp((state) => state.mastery);
 
   return (
     <ProgressRailPresentation
@@ -93,6 +105,7 @@ export default function ProgressRail({
       hasClosing={hasClosing}
       hasNotation={hasNotation}
       learnIdx={learnIdx}
+      mastery={mastery}
       onExplore={switchToExplore}
       onJump={onJump}
     />

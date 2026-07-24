@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type Ref } from "react";
 
 import { KE_DATA } from "../data.gen";
+import { masteredCount } from "../lib/mastery";
 import {
   moveIndex,
   navigationDisabledReason,
@@ -54,8 +55,10 @@ export type TopBarPresentationProps = {
   onToggleExpandAllMath: () => void;
   hiddenKinds: Set<string>;
   layoutPhase: LayoutPhase;
+  masteredCount: number;
   mode: Mode;
   noNodes: boolean;
+  nodeCount: number;
   onToggleDrawer: () => void;
   onToggleSidebar: () => void;
   onSetBlastOn: (blastOn: boolean) => void;
@@ -75,8 +78,10 @@ export function TopBarPresentation({
   onToggleExpandAllMath,
   hiddenKinds,
   layoutPhase,
+  masteredCount,
   mode,
   noNodes,
+  nodeCount,
   onToggleDrawer,
   onToggleSidebar,
   onSetBlastOn,
@@ -217,6 +222,14 @@ export function TopBarPresentation({
         </CompactPill>
       )}
 
+      {/* R16.A2 — evidence of understanding, deliberately not a score: a
+          plain count, no points, no XP, no leaderboard. */}
+      {masteredCount > 0 && (
+        <span className="topbar-mastery" role="status">
+          {masteredCount}/{nodeCount} mastered
+        </span>
+      )}
+
       <SearchBox
         disabledReason={navigationDisabledReason(
           noNodes ? "empty" : layoutPhase,
@@ -254,6 +267,7 @@ export default function TopBar({
     selected,
     drawerOpen,
     setDrawerOpen,
+    mastery,
   } = useApp();
   const noNodes = KE_NODES.length === 0;
 
@@ -267,8 +281,10 @@ export default function TopBar({
         onToggleExpandAllMath={toggleExpandAllMath}
         hiddenKinds={hiddenKinds}
         layoutPhase={layoutPhase}
+        masteredCount={masteredCount(mastery)}
         mode={mode}
         noNodes={noNodes}
+        nodeCount={KE_NODES.length}
         onToggleDrawer={() => setDrawerOpen(!drawerOpen)}
         onToggleSidebar={onToggleSidebar}
         onSetBlastOn={setBlastOn}
