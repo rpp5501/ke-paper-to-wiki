@@ -1,5 +1,13 @@
 import { create } from "zustand";
 
+import {
+  markSeen,
+  readLedger,
+  recordAnswer,
+  writeLedger,
+  type MasteryLedger,
+} from "./lib/mastery";
+
 export type View = "concepts" | "clusters" | "code" | "bridged";
 export type Mode = "learn" | "explore";
 export type LayoutPhase = "loading" | "ready" | "empty" | "error";
@@ -56,15 +64,31 @@ export interface AppState {
   openVisualization: (nodeId: string) => void;
   layoutMode: "layered" | "radial";
   setLayoutMode: (layoutMode: "layered" | "radial") => void;
+  mastery: MasteryLedger;
+  recordMastery: (nodeId: string, correct: boolean) => void;
+}
+
+// Opening a node is the weakest mastery evidence there is. Both paths that
+// select a node route through here so "seen" cannot drift out of sync.
+function seenLedger(
+  mastery: MasteryLedger,
+  nodeId: string | null,
+): MasteryLedger {
+  if (nodeId === null) return mastery;
+
+  const next = markSeen(mastery, nodeId);
+  if (next !== mastery) writeLedger(next);
+  return next;
 }
 
 export const useApp = create<AppState>((set) => ({
   selected: null,
-  setSelected: (selected) => set({
+  setSelected: (selected) => set((state) => ({
     selected,
     drawerOpen: selected !== null,
     vizFocus: null,
-  }),
+    mastery: seenLedger(state.mastery, selected),
+  })),
   drawerOpen: false,
   setDrawerOpen: (drawerOpen) => set((state) => ({
     drawerOpen: drawerOpen && state.selected !== null,
@@ -139,12 +163,20 @@ export const useApp = create<AppState>((set) => ({
     set((state) => ({ expandAllMath: !state.expandAllMath })),
   vizFocus: null,
   setVizFocus: (vizFocus) => set({ vizFocus }),
-  openVisualization: (nodeId) => set({
+  openVisualization: (nodeId) => set((state) => ({
     mode: "explore",
     selected: nodeId,
     drawerOpen: true,
     vizFocus: nodeId,
-  }),
+    mastery: seenLedger(state.mastery, nodeId),
+  })),
   layoutMode: "layered",
   setLayoutMode: (layoutMode) => set({ layoutMode }),
+  mastery: readLedger(),
+  recordMastery: (nodeId, correct) =>
+    set((state) => {
+      const mastery = recordAnswer(state.mastery, nodeId, correct);
+      writeLedger(mastery);
+      return { mastery };
+    }),
 }));

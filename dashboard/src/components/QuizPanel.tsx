@@ -70,6 +70,7 @@ export default function QuizPanel() {
   const [open, setOpen] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const markStepComplete = useApp((state) => state.markStepComplete);
+  const recordMastery = useApp((state) => state.recordMastery);
   const goToNode = useNodeNavigation();
   const items = getQuiz();
 
@@ -83,6 +84,7 @@ export default function QuizPanel() {
   const onAnswer = (item: QuizItem, index: number) => {
     const next = { ...answers, [item.id]: index };
     setAnswers(next);
+    recordMastery(item.nodeId, index === item.correct);
     const nodeItems = items.filter((i) => i.nodeId === item.nodeId);
     if (nodeItems.every((i) => next[i.id] === i.correct)) {
       markStepComplete(item.nodeId);

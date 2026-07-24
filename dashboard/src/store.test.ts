@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { recordFor } from "./lib/mastery";
 import { useApp } from "./store";
 
 beforeEach(() => {
@@ -21,6 +22,7 @@ beforeEach(() => {
     drawerOpen: false,
     vizFocus: null,
     completedSteps: new Set(),
+    mastery: {},
   } as never);
 });
 
@@ -228,5 +230,64 @@ describe("mode & learn progress", () => {
     const after = useApp.getState().completedSteps;
     expect(after).toEqual(new Set(["transformer"]));
     expect(before.size).toBe(0); // immutability, matches hiddenKinds pattern
+  });
+});
+
+describe("mastery ledger", () => {
+  it("starts every node unseen", () => {
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("unseen");
+  });
+
+  it("marks a node seen when it is selected", () => {
+    useApp.getState().setSelected("sdpa");
+
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("seen");
+  });
+
+  it("marks a node seen when the gallery opens its visual", () => {
+    useApp.getState().openVisualization("sdpa");
+
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("seen");
+  });
+
+  it("does not invent a record when the selection is cleared", () => {
+    useApp.getState().setSelected(null);
+
+    expect(useApp.getState().mastery).toEqual({});
+  });
+
+  it("raises seen to quizzed when a viz bet resolves", () => {
+    useApp.getState().setSelected("sdpa");
+    useApp.getState().recordMastery("sdpa", true);
+
+    const record = recordFor(useApp.getState().mastery, "sdpa");
+    expect(record.level).toBe("quizzed");
+    expect(record.streak).toBe(1);
+    expect(record.lastAnswered).not.toBeNull();
+  });
+
+  it("reaches mastered on a second correct answer from either source", () => {
+    useApp.getState().recordMastery("sdpa", true);
+    useApp.getState().recordMastery("sdpa", true);
+
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("mastered");
+  });
+
+  it("keeps the level but drops the streak on a wrong answer", () => {
+    useApp.getState().recordMastery("sdpa", true);
+    useApp.getState().recordMastery("sdpa", true);
+    useApp.getState().recordMastery("sdpa", false);
+
+    const record = recordFor(useApp.getState().mastery, "sdpa");
+    expect(record.level).toBe("mastered");
+    expect(record.streak).toBe(0);
+  });
+
+  it("leaves an answered node untouched when it is merely reselected", () => {
+    useApp.getState().recordMastery("sdpa", true);
+    const before = useApp.getState().mastery;
+    useApp.getState().setSelected("sdpa");
+
+    expect(useApp.getState().mastery).toBe(before);
   });
 });

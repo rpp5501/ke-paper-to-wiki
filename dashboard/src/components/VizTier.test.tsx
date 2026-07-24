@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { VizEntry } from "../lib/viz";
-import { VizTierPresentation } from "./VizTier";
+import { VizTierPresentation, betOutcome } from "./VizTier";
 
 const entry: VizEntry = {
   kind: "template",
@@ -40,5 +40,26 @@ describe("VizTierPresentation", () => {
       <VizTierPresentation entry={{ ...entry, stale: true }} focused={false} />,
     );
     expect(html).toContain("older version of the page");
+  });
+});
+
+describe("betOutcome", () => {
+  it("reads the outcome of a well-formed bet message", () => {
+    expect(betOutcome({ type: "ke-bet-resolved", correct: true })).toBe(true);
+    expect(betOutcome({ type: "ke-bet-resolved", correct: false })).toBe(false);
+  });
+
+  it("ignores anything that is not a bet message", () => {
+    expect(betOutcome(null)).toBeNull();
+    expect(betOutcome("ke-bet-resolved")).toBeNull();
+    expect(betOutcome({ type: "other", correct: true })).toBeNull();
+    expect(betOutcome({ correct: true })).toBeNull();
+  });
+
+  it("rejects a non-boolean outcome instead of coercing it", () => {
+    // Generated template code is untrusted; "yes" must not become true.
+    expect(betOutcome({ type: "ke-bet-resolved", correct: "yes" })).toBeNull();
+    expect(betOutcome({ type: "ke-bet-resolved", correct: 1 })).toBeNull();
+    expect(betOutcome({ type: "ke-bet-resolved" })).toBeNull();
   });
 });
