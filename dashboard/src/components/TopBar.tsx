@@ -14,6 +14,7 @@ import CompactPill from "./CompactPill";
 import ContinuePanel from "./ContinuePanel";
 import MapToggle from "./MapToggle";
 import QuizPanel from "./QuizPanel";
+import ReviewPanel from "./ReviewPanel";
 import { useNodeNavigation } from "./useNodeNavigation";
 import VizGallery from "./VizGallery";
 
@@ -298,6 +299,7 @@ export default function TopBar({
       <MapToggle />
       <VizGallery />
       <QuizPanel />
+      <ReviewPanel />
       <ContinuePanel />
     </>
   );

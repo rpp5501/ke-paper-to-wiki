@@ -23,6 +23,7 @@ beforeEach(() => {
     vizFocus: null,
     completedSteps: new Set(),
     mastery: {},
+    quizOpen: false,
   } as never);
 });
 
@@ -281,6 +282,16 @@ describe("mastery ledger", () => {
     const record = recordFor(useApp.getState().mastery, "sdpa");
     expect(record.level).toBe("mastered");
     expect(record.streak).toBe(0);
+  });
+
+  it("shares quiz-open state so the review queue can hand off into it", () => {
+    expect(useApp.getState().quizOpen).toBe(false);
+
+    useApp.getState().setQuizOpen(true);
+    expect(useApp.getState().quizOpen).toBe(true);
+
+    useApp.getState().setQuizOpen(false);
+    expect(useApp.getState().quizOpen).toBe(false);
   });
 
   it("leaves an answered node untouched when it is merely reselected", () => {

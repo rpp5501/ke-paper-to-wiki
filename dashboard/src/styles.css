@@ -1807,8 +1807,9 @@ input:focus-visible,
 .continue-source { color: var(--muted); font-size: var(--fs-small); }
 
 /* R15.2 — Quiz panel in the top bar */
-.quiz-panel { position: relative; }
-.quiz-toggle {
+.quiz-panel, .review-panel { position: relative; }
+.quiz-toggle,
+.review-toggle {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -1818,9 +1819,12 @@ input:focus-visible,
   cursor: pointer;
   transition: border-color 140ms;
 }
-.quiz-toggle:hover { border-color: var(--accent); }
-.quiz-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.quiz-pop {
+.quiz-toggle:hover,
+.review-toggle:hover { border-color: var(--accent); }
+.quiz-toggle:focus-visible,
+.review-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.quiz-pop,
+.review-pop {
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
@@ -1833,12 +1837,20 @@ input:focus-visible,
   border: 1px solid var(--border);
   border-radius: 8px;
 }
-.quiz-score { color: var(--muted); font-size: var(--fs-small); margin: 0 0 8px; }
-.quiz-list { list-style: none; margin: 0; padding: 0; }
+.quiz-score,
+.review-hint { color: var(--muted); font-size: var(--fs-small); margin: 0 0 8px; }
+.quiz-list,
+.review-list { list-style: none; margin: 0; padding: 0; }
 .quiz-item + .quiz-item { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
 .quiz-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .quiz-prompt { font-size: var(--fs-small); font-weight: 600; }
-.quiz-node {
+/* R16.A3 — the review pop lists node names only, so it needs far less room
+   than the quiz it shares its shell with. */
+.review-pop { width: 260px; }
+.review-list li + li { margin-top: 4px; }
+.review-node { display: block; width: 100%; text-align: left; }
+.quiz-node,
+.review-node {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--border);

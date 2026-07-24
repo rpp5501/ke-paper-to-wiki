@@ -7,6 +7,7 @@ import {
   readLedger,
   recordAnswer,
   recordFor,
+  reviewQueue,
   writeLedger,
   type MasteryLedger,
 } from "./mastery";
@@ -121,6 +122,57 @@ describe("ledger persistence", () => {
 
   it("survives malformed JSON", () => {
     expect(readLedger(memoryStorage({ [MASTERY_STORAGE_KEY]: "{oops" }))).toEqual({});
+  });
+});
+
+describe("reviewQueue", () => {
+  const NOW = new Date("2026-07-24T12:00:00.000Z");
+  const daysAgo = (n: number) =>
+    new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000).toISOString();
+
+  function entry(streak: number, lastAnswered: string | null) {
+    return { level: "quizzed" as const, streak, lastAnswered };
+  }
+
+  it("queues a node whose streak just broke", () => {
+    const ledger: MasteryLedger = { sdpa: entry(0, daysAgo(0)) };
+
+    expect(reviewQueue(ledger, NOW)).toEqual(["sdpa"]);
+  });
+
+  it("queues correct-but-stale evidence past the window", () => {
+    const ledger: MasteryLedger = {
+      fresh: entry(3, daysAgo(13)),
+      stale: entry(3, daysAgo(15)),
+    };
+
+    expect(reviewQueue(ledger, NOW)).toEqual(["stale"]);
+  });
+
+  it("leaves never-answered nodes out entirely", () => {
+    // They have streak 0 too — queueing them would mean the whole graph.
+    const ledger: MasteryLedger = {
+      untouched: { level: "seen", streak: 0, lastAnswered: null },
+      answered: entry(0, daysAgo(1)),
+    };
+
+    expect(reviewQueue(ledger, NOW)).toEqual(["answered"]);
+  });
+
+  it("returns an empty queue when everything is fresh", () => {
+    expect(reviewQueue({ sdpa: entry(2, daysAgo(1)) }, NOW)).toEqual([]);
+    expect(reviewQueue({}, NOW)).toEqual([]);
+  });
+
+  it("ignores an unparseable timestamp rather than queueing on NaN", () => {
+    expect(reviewQueue({ sdpa: entry(2, "not-a-date") }, NOW)).toEqual([]);
+  });
+
+  it("honours a caller-supplied window", () => {
+    const ledger: MasteryLedger = { sdpa: entry(3, daysAgo(5)) };
+
+    expect(reviewQueue(ledger, NOW, 14)).toEqual([]);
+    expect(reviewQueue(ledger, NOW, 3)).toEqual(["sdpa"]);
   });
 });
 

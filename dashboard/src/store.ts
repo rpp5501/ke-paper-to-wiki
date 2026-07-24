@@ -66,6 +66,9 @@ export interface AppState {
   setLayoutMode: (layoutMode: "layered" | "radial") => void;
   mastery: MasteryLedger;
   recordMastery: (nodeId: string, correct: boolean) => void;
+  // Shared so the review queue can send a learner straight into the quiz.
+  quizOpen: boolean;
+  setQuizOpen: (open: boolean) => void;
 }
 
 // Opening a node is the weakest mastery evidence there is. Both paths that
@@ -173,6 +176,8 @@ export const useApp = create<AppState>((set) => ({
   layoutMode: "layered",
   setLayoutMode: (layoutMode) => set({ layoutMode }),
   mastery: readLedger(),
+  quizOpen: false,
+  setQuizOpen: (quizOpen) => set({ quizOpen }),
   recordMastery: (nodeId, correct) =>
     set((state) => {
       const mastery = recordAnswer(state.mastery, nodeId, correct);

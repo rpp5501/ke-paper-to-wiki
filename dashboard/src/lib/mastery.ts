@@ -77,6 +77,33 @@ export function masteredCount(ledger: MasteryLedger): number {
   return Object.values(ledger).filter((r) => r.level === "mastered").length;
 }
 
+/** Days after which correct-but-old evidence is worth revisiting. */
+export const REVIEW_AFTER_DAYS = 14;
+
+// R16.A3 — nodes whose evidence just broke (streak reset) or has gone stale.
+// Only answered nodes qualify: an untouched node has streak 0 too, and
+// queueing the whole graph for "review" would be meaningless. Plain date
+// math, no scheduler and no notifications — Anki export stays the heavy-SRS
+// path.
+export function reviewQueue(
+  ledger: MasteryLedger,
+  now: Date = new Date(),
+  staleDays: number = REVIEW_AFTER_DAYS,
+): string[] {
+  const cutoff = now.getTime() - staleDays * 24 * 60 * 60 * 1000;
+
+  return Object.entries(ledger)
+    .filter(([, record]) => {
+      if (record.lastAnswered === null) return false;
+      if (record.streak === 0) return true;
+
+      const answeredAt = Date.parse(record.lastAnswered);
+      return Number.isFinite(answeredAt) && answeredAt < cutoff;
+    })
+    .map(([nodeId]) => nodeId)
+    .sort();
+}
+
 export function readLedger(
   storage: StorageLike | null | undefined = browserStorage(),
 ): MasteryLedger {

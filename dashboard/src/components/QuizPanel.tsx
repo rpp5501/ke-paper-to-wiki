@@ -67,7 +67,9 @@ export function QuizItemView({
 }
 
 export default function QuizPanel() {
-  const [open, setOpen] = useState(false);
+  // Open state lives in the store so the review queue can open the quiz.
+  const open = useApp((state) => state.quizOpen);
+  const setOpen = useApp((state) => state.setQuizOpen);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const markStepComplete = useApp((state) => state.markStepComplete);
   const recordMastery = useApp((state) => state.recordMastery);
@@ -97,7 +99,7 @@ export default function QuizPanel() {
         aria-expanded={open}
         aria-haspopup="true"
         className="quiz-toggle"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(!open)}
         type="button"
       >
         Quiz ({items.length})
