@@ -1,0 +1,1 @@
+You are the injected gpt-5.6-luna page-writing stage. Write the five-tier markdown page for SID Scalability. Use only the supplied paper text and anchor Mechanics/The Math claims to [§sec_1].

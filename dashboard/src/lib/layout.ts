@@ -69,22 +69,35 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   });
 }
 
+export type LayoutAlgorithm = "layered" | "radial";
+
+// R15.10 mind-map view: radial arranges the part-of hierarchy around the
+// root like a mind map; layered stays the default reading-order layout.
+const LAYOUT_OPTIONS: Record<LayoutAlgorithm, Record<string, string>> = {
+  layered: {
+    "elk.algorithm": "layered",
+    "elk.direction": "DOWN",
+    "elk.spacing.nodeNode": "40",
+  },
+  radial: {
+    "elk.algorithm": "radial",
+    "elk.spacing.nodeNode": "60",
+  },
+};
+
 export function layoutGraph(
   nodes: KENode[],
   edges: KEEdge[],
+  algorithm: LayoutAlgorithm = "layered",
 ): Promise<Map<string, { x: number; y: number }>> {
-  const key = layoutKey(nodes, edges);
+  const key = `${algorithm}|${layoutKey(nodes, edges)}`;
   const cached = layoutCache.get(key);
   if (cached) return cached;
 
   const request = getElk()
     .then((elk) => withTimeout(elk.layout({
       id: "root",
-      layoutOptions: {
-        "elk.algorithm": "layered",
-        "elk.direction": "DOWN",
-        "elk.spacing.nodeNode": "40",
-      },
+      layoutOptions: LAYOUT_OPTIONS[algorithm],
       children: nodes.map((node) => ({ id: node.id, ...nodeCardSize(node.label) })),
       edges: edges.map((edge, index) => ({
         id: `e${index}`,

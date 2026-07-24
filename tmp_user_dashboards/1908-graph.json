@@ -1,0 +1,439 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "arXiv:1908.10498",
+    "title": ""
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "Introduction",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "As deep neural network (DNN) classifiers are increasingly used in many applications, including security-sensitive ones, they are becoming valuable targets for adversaries who intend to break them. Over the past decade, adversarial learning "
+    },
+    {
+      "id": "sec_1_1",
+      "label": "Backdoor DP Attacks",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Recently, a new form of DP attack a backdoor attack was proposed, usually against DNN image classifiers . Under such attacks, a relatively small number of legitimate examples from one or more source classes, but containing the same embedded"
+    },
+    {
+      "id": "sec_1_2",
+      "label": "Three Defense Scenarios",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "While backdoor attacks on DNN classifiers appeared only fairly recently, several defenses have been proposed aiming to detect and mitigate them . We identify three defense scenarios. The first is before/during-training, where the defender h"
+    },
+    {
+      "id": "sec_1_3",
+      "label": "Proposed Anomaly Detection Framework",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "In this paper, we propose a purely unsupervised anomaly detection (AD) approach thwarting backdoor attacks post-training. Note that there is sufficient interest in post-training backdoor detection that it is the subject of a recent IARPA BA"
+    },
+    {
+      "id": "sec_1_4",
+      "label": "Summary of Our Contributions",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "1) We develop one of the first methods (and an approach superior to and , as shown in Section and the supplementary material, respectively) for detecting backdoor attacks on DNNs post-training, i.e. without the benefit of the poisoned train"
+    },
+    {
+      "id": "sec_2",
+      "label": "Threat Model",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_2_1",
+      "label": "Notation",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Denote the DNN classifier to be examined for backdoor attacks as , where is the input (image) space and is the set of class labels. The classifier uses a winner take all rule. For example, for the commonly used softmax activation function i"
+    },
+    {
+      "id": "sec_2_2",
+      "label": "Background on Backdoor Attacks",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "A backdoor attack is launched with a (set of) source class(es) ( for multiple source classes), a target class with ( for multiple source classes), and a backdoor pattern , all prescribed by the attacker. Like most related works, we assume a"
+    },
+    {
+      "id": "sec_2_3",
+      "label": "Attacker's Goals, Knowledge, and Assumptions",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The goal of backdoor DP attackers is to induce the classifier to learn to misclassify samples that ground-truth come from the source class (or any class ) to the target class whenever the attacker's chosen backdoor pattern is embedded to an"
+    },
+    {
+      "id": "sec_2_4",
+      "label": "Defender's Goals, Knowledge and Assumptions",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "In this paper, we play the role of a defender who aims to detect backdoors in trained networks with low false positives and to infer the true source class(es) and target class. An additional goal is to estimate the backdoor pattern, which c"
+    },
+    {
+      "id": "sec_3",
+      "label": "Detection Methodology",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_3_1",
+      "label": "Proposed Detector: Reverse-Engineering the Attack",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_3_1_1",
+      "label": "Key Idea",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "As noted earlier, the premise behind the proposed AD framework is that for a classifier that has been backdoor data poisoned with source class and target class , the required perturbation size for a common perturbation to induce misclassifi"
+    },
+    {
+      "id": "sec_3_1_2",
+      "label": "Perturbation Optimization",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Unfortunately, () does not have a closed-form solution and cannot be solved using gradient-based methods because of the non-differentiable indicator function. Hence, instead we choose the perturbation to minimize a surrogate objective funct"
+    },
+    {
+      "id": "sec_3_1_3",
+      "label": "Detection Inference",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "The statistics for the detection inference are , where , i.e. the reciprocal of the size of the optimized perturbations (one for each class pair). can e.g. be the L1 norm or L2 norm. We take the reciprocal because otherwise anomalies (corre"
+    },
+    {
+      "id": "sec_3_2",
+      "label": "Surrogate Objective Function Variants",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "As noted above, measures a non-zero gradient contribution even from samples already successfully misclassified. This can be remedied by instead minimizing an objective function similar to that associated with the Perceptron algorithm : wher"
+    },
+    {
+      "id": "sec_3_3",
+      "label": "Correction for Class Confusion",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The premise behind our detection inference is that the perturbation size/energy required to induce -level group misclassification for is less than for other (unattacked) class pairs. However, if the initial misclassification fraction for is"
+    },
+    {
+      "id": "sec_4",
+      "label": "Related Work",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "Few existing works seek to thwart backdoor attacks post-training. Fine-pruning (FP) was proposed in , where the defender prunes neurons in the penultimate layer in increasing order of their average activations over the clean data set, doing"
+    },
+    {
+      "id": "sec_5",
+      "label": "Experiments",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_5_1",
+      "label": "Backdoor Patterns",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We first focus on two types of backdoor patterns based on additive image perturbation. Since pixel values are usually normalized (e.g. from for colored images) to before feeding to DNN classifiers, the valid perturbation range per pixel (wi"
+    },
+    {
+      "id": "sec_5_2",
+      "label": "Ensemble Experiments",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "In this experiment, we evaluate performance of the proposed defense and some of its variants (i.e. surrogate objective functions and confusion-corrected detection inference described in Section ) based on multiple realizations of classifier"
+    },
+    {
+      "id": "sec_5_2_1",
+      "label": "Devising Backdoor Attacks",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Consistent with our description in Section , we evaluated perturbations (i.e. the backdoor pattern) with different L2 norms, and picked the least human-perceptible one (as small L2 norm as possible) under the constraints of high attack succ"
+    },
+    {
+      "id": "sec_5_2_2",
+      "label": "Detection Performance Evaluation",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "We first evaluate the performance of the proposed AD framework and compare with that of the NC approach, using the four groups of classifiers. The clean data set used for detection (for both AD and NC) for each classifier contains 1000 imag"
+    },
+    {
+      "id": "sec_5_2_3",
+      "label": "Generalized AD approach",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Our AD approach can be easily generalized, without knowledge of the attacker's mechanism, to detect imperceptible backdoors with various perturbative mechanisms. Note that most DNNs can be decomposed as two consecutive sub-models , such tha"
+    },
+    {
+      "id": "sec_5_3",
+      "label": "Other Design Choices",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_5_3_1",
+      "label": "Choice of",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Unlike NC, the proposed detection approach is not very sensitive to the choice of . As an example, we evaluate the detection accuracy of the AD-J-P variant on the 25 classifiers in the BD-P-S group, with a range of choices of from 0.4 to 0."
+    },
+    {
+      "id": "sec_5_3_2",
+      "label": "Size of Clean Data Set",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "1.0 Detection accuracy of AD-J-P on BD-P-S for a range of sizes of the clean data set. Here we test the impact on detection accuracy of the size of the clean data set available to the defender. Again, we apply AD-J-P detection (with ) to th"
+    },
+    {
+      "id": "sec_5_3_3",
+      "label": "Fitting Null Distribution Using All Statistics",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "As described in Section , during the detection inference process, we fit a conditional null density using the smallest statistics. One may also consider a naive approach that fits an unconditional null using all detection statistics. In Tab"
+    },
+    {
+      "id": "sec_5_3_4",
+      "label": "Size/Energy of the Ground Truth Backdoor Pattern",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Here we create 25 classifier realizations using the same setting as for the BD-G-S group, except that the L2 norm of the backdoor pattern is set to 1.2 much larger than required to launch a successful backdoor attack (and visualizable by ca"
+    },
+    {
+      "id": "sec_5_4",
+      "label": "Computational Complexity",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The computation in this work is performed on an Amazon EC2 g3s.xlarge virtual machines powered by a NVIDIA Tesla M60 GPU. When applying AD-J-P to the BD-P-S, the average running time across the 25 classifier realizations is 698s. In compari"
+    },
+    {
+      "id": "sec_6",
+      "label": "Conclusions and Future Work",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this work, we developed a purely unsupervised AD defense that detects imperceptible backdoor attacks in DNN classifiers post-training. We tested multiple variants of our AD framework and compared them with other existing post-training de"
+    }
+  ],
+  "edges": [
+    {
+      "src": "sec_1",
+      "dst": "sec_1_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_1_1",
+      "dst": "sec_1_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_1_2",
+      "dst": "sec_1_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_1_3",
+      "dst": "sec_1_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_1_4",
+      "dst": "sec_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2",
+      "dst": "sec_2_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2_1",
+      "dst": "sec_2_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2_2",
+      "dst": "sec_2_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2_3",
+      "dst": "sec_2_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2_4",
+      "dst": "sec_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3",
+      "dst": "sec_3_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1",
+      "dst": "sec_3_1_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1_1",
+      "dst": "sec_3_1_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1_2",
+      "dst": "sec_3_1_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1_3",
+      "dst": "sec_3_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_2",
+      "dst": "sec_3_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_3",
+      "dst": "sec_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4",
+      "dst": "sec_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5",
+      "dst": "sec_5_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_1",
+      "dst": "sec_5_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2",
+      "dst": "sec_5_2_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2_1",
+      "dst": "sec_5_2_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2_2",
+      "dst": "sec_5_2_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2_3",
+      "dst": "sec_5_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3",
+      "dst": "sec_5_3_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_1",
+      "dst": "sec_5_3_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_2",
+      "dst": "sec_5_3_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_3",
+      "dst": "sec_5_3_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_4",
+      "dst": "sec_5_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_4",
+      "dst": "sec_6",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    }
+  ]
+}

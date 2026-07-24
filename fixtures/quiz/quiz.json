@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "note": "R15.2 quiz contract: items[].{id,nodeId,prompt,options[{text,explain}],correct,sourceRef}. Authored from page content only — never invent values the page doesn't support.",
+    "source": "arXiv:1706.03762",
+    "generated": "2026-07-18"
+  },
+  "items": [
+    {
+      "id": "sdpa-why-sqrt-dk",
+      "nodeId": "scaled-dot-product-attention",
+      "prompt": "Why divide QKᵀ by √dₖ before the softmax?",
+      "options": [
+        {"text": "To normalize the output vectors to unit length",
+         "explain": "No — the output is a weighted sum of V rows; its length isn't normalized by the scaling."},
+        {"text": "To keep large dot products from saturating the softmax",
+         "explain": "Yes — as dₖ grows, dot products grow in variance; unscaled, softmax pins near one-hot and gradients vanish. The viz's √dₖ toggle shows exactly this."},
+        {"text": "To reduce the computational cost of the matmul",
+         "explain": "No — the division is elementwise and adds (tiny) cost; it changes numerics, not complexity."},
+        {"text": "To make the attention weights sum to 1",
+         "explain": "No — softmax alone guarantees weights sum to 1, with or without scaling."}
+      ],
+      "correct": 1,
+      "sourceRef": "#the-math"
+    },
+    {
+      "id": "sdpa-softmax-role",
+      "nodeId": "scaled-dot-product-attention",
+      "prompt": "In Attention(Q,K,V), what does the softmax produce?",
+      "options": [
+        {"text": "Relevance weights over the keys that sum to 1",
+         "explain": "Yes — each query row becomes a distribution over keys; those weights then mix the V rows."},
+        {"text": "New value vectors to replace V",
+         "explain": "No — V is untouched; softmax output only decides how much of each V row to blend."},
+        {"text": "A probability distribution over the vocabulary",
+         "explain": "No — vocabulary distributions come from the final output layer, not attention."}
+      ],
+      "correct": 0,
+      "sourceRef": "#mechanics"
+    },
+    {
+      "id": "sdpa-dk-variance",
+      "nodeId": "scaled-dot-product-attention",
+      "prompt": "With no scaling, what happens to query·key dot products as dₖ grows?",
+      "options": [
+        {"text": "Their variance grows with dₖ, pushing softmax toward saturation",
+         "explain": "Yes — a sum of dₖ independent products grows in variance ~dₖ; that's the failure the √dₖ factor undoes. Try dₖ=64 with scaling off in the viz."},
+        {"text": "They stay in the same range regardless of dₖ",
+         "explain": "No — each extra dimension adds another term to the sum; the spread grows."},
+        {"text": "They shrink toward zero",
+         "explain": "No — the opposite: more terms means larger typical magnitude."}
+      ],
+      "correct": 0,
+      "sourceRef": "#the-math"
+    },
+    {
+      "id": "attention-relevance-dial",
+      "nodeId": "attention",
+      "prompt": "Softmax as a \"relevance dial\" means keys similar to the query receive…",
+      "options": [
+        {"text": "More of the available attention",
+         "explain": "Yes — higher query–key similarity → higher score → larger share of the (fixed) attention budget."},
+        {"text": "An equal share of attention",
+         "explain": "No — equal shares only happen when all scores tie (or temperature → ∞)."},
+        {"text": "Attention proportional to their position in the sequence",
+         "explain": "No — position enters through positional encodings, not through the softmax itself."}
+      ],
+      "correct": 0,
+      "sourceRef": "#intuition"
+    }
+  ]
+}

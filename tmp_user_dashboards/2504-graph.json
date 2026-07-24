@@ -1,0 +1,467 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "arXiv:2504.04033",
+    "title": ""
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "Introduction",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "Advancements in machine learning (ML) techniques have revolutionized the way data is analyzed and utilized, enabling the solution of complex problems and the development of a wide range of applications in many domains including privacy-sens"
+    },
+    {
+      "id": "sec_2",
+      "label": "Preliminaries",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ". Let denote the non-sensitive portion of a record , and let represent the target model. The objective of the attribute inference attack is to predict , the sensitive attribute value of . Certain variations of the attack necessitate additio"
+    },
+    {
+      "id": "sec_3",
+      "label": "Attack Threat Model",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "We assume the following adversary capabilities: 111 Access to the black-box target model, i.e., the adversary can query the model with and obtain the output label and the corresponding confidence scores. 111 Full knowledge of the non-sensit"
+    },
+    {
+      "id": "sec_4",
+      "label": "Uncovering High-Risk Groups",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_4_1",
+      "label": "Key Factor Contributing to Vulnerability",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ". To identify groups with a high risk of privacy leakage, it is essential to understand the factors contributing to the differing vulnerability levels among records from high-risk groups and those from low-risk groups. The core factor contr"
+    },
+    {
+      "id": "sec_4_2",
+      "label": "Comparing Correlation between Groups",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "A high degree of correlation in the dataset indicates that certain values of the sensitive attribute, or certain ranges of values if the sensitive attribute is non-discrete, are more frequently associated with a specific class label compare"
+    },
+    {
+      "id": "sec_5",
+      "label": "Attack Methodology",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this section, we outline the details of the two newly proposed classes of attacks: disparity inference attack and targeted attribute inference attack. In the disparity inference attack, the adversary uses angular difference to rank group"
+    },
+    {
+      "id": "sec_5_1",
+      "label": "Computing Angular Difference",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The process of computing angular difference involves generating confidence scores from records by querying the target model while altering the sensitive attribute values. We call this collection of confidence scores the , which is formally "
+    },
+    {
+      "id": "sec_5_2",
+      "label": "Disparity Inference Attack",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ". Let be a target model trained on dataset , which can be divided into non-overlapping subsets . The success rate of an attack on target model using dataset is denoted by , with indicating the non-sensitive part of the data accessible to th"
+    },
+    {
+      "id": "sec_5_3",
+      "label": "Targeted Attribute Inference Attack",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ". Let be a target model trained on dataset . The attack success rate of an attack on target model using dataset is denoted by where denotes the non-sensitive portion of the data available to the adversary. The objective of the adversary is "
+    },
+    {
+      "id": "sec_5_3_1",
+      "label": "Single Attribute-based Targeted Attack",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Randomly sample from with the condition: where is the query budget to limit the number of queries made to the model. Use Algorithm to query and generate confidence matrix on . For each non-sensitive attribute , split into subsets such that "
+    },
+    {
+      "id": "sec_5_3_2",
+      "label": "Nested Attribute-based Targeted Attack",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "Set the depth or the number of nested attributes to . Follow steps 1 to 3 exactly as specified in the single attribute-based targeted attack (section ) to find the range of angular differences for each attribute. Select the attributes that "
+    },
+    {
+      "id": "sec_6",
+      "label": "Experiments",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this section, we explain our experimental arrangement, datasets, machine learning models, and performance metrics. We then examine the performance of our proposed attacks."
+    },
+    {
+      "id": "sec_6_1",
+      "label": "Experimental Setup",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We use the following three datasets in our experiments: Census19, Texas-100X, and Adult. More details of the datasets are presented in Appendix. Both Census19 and Texas-100X datasets contain around a million records each, making them ideal "
+    },
+    {
+      "id": "sec_6_2",
+      "label": "Ideal vs. Practical Imputation Attacks",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "An ideal imputation attack is characterized by the adversary having an auxiliary dataset that precisely matches the distribution of the target data. This includes having similar distribution properties, such as correlation and marginal prio"
+    },
+    {
+      "id": "sec_6_3",
+      "label": "Disparity Inference Attack Performance",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ". We select the column, denoting marital status, as the sensitive attribute for the Census-19 dataset, and for the Texas-100X dataset, we pick as the sensitive attribute to be inferred. For the Census-19 dataset, we employ the attribute to "
+    },
+    {
+      "id": "sec_6_4",
+      "label": "Targeted Attribute Inference Attack",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "8cCensus19 1 0.75 0.5 0.375 0.25 0.1 0.05 CSMIA 62.56 64.73 67.43 69.02 70.42 72.54 73.27 LOMIA 61.24 63.71 67.56 69.45 70.82 72.92 73.78 ImpI 65.38 65.65 66.10 65.91 65.71 67.30 66.85 ImpP 62.99 63.30 63.57 62.96 64.12 64.17 64.25 6cTexas-"
+    },
+    {
+      "id": "sec_7",
+      "label": "Potential Mitigation Strategies",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this section, we examine potential strategies to mitigate disparate vulnerabilities that an adversary could exploit to launch various types of attacks, as demonstrated in the previous section. Existing literature provides techniques to d"
+    },
+    {
+      "id": "sec_7_1",
+      "label": "Disparity-Aware Mutual Information Regularization (DAMIR)",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The mutual information regularization method incorporates a secondary loss minimization objective during training to reduce the mutual information between sensitive attribute and output. A hyperparameter adjusts the weight of the secondary "
+    },
+    {
+      "id": "sec_7_2",
+      "label": "Balanced Correlation Defense (BCorr)",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "This defense strategy focuses on addressing disparities by ensuring similar correlation levels across all relevant groups in the dataset, thereby eliminating group-specific differences contributing to the disparity. The main rationale for t"
+    },
+    {
+      "id": "sec_8",
+      "label": "Related Works",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ". Fredrikson et al. initially introduced model inversion attacks for linear regression models in and extended these attacks to non-linear ML models in. This subsequent work defined two major types of model inversion attacks: attribute infer"
+    },
+    {
+      "id": "sec_9",
+      "label": "Conclusion",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this paper, we present a series of novel attacks that expose significant privacy leakage in ML models trained on tabular data, a risk that has often been underestimated and overlooked. Our comprehensive evaluation reveals that adversarie"
+    },
+    {
+      "id": "sec_10",
+      "label": "Overview of Notations",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "0.97! The original training dataset Target model trained on Confidence score output by Attack Algorithm Sensitive attribute value of a record Vector of non-sensitive attribute values of a record Set of possible values of the sensitive attri"
+    },
+    {
+      "id": "sec_11",
+      "label": "Methodology",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_11_1",
+      "label": "Correctness Proof of Sampling Technique",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Let, and denote the sensitive attribute and output respectively and denote the total number of records. Then, according to definition, Now, essentially means the sum of output values of records. Since, the output can either take or and take"
+    },
+    {
+      "id": "sec_11_2",
+      "label": "Balanced Correlation Defense Process",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Given non-sensitive grouping attribute such that some groups are more vulnerable than others, the first step is to rank groups defined by in terms of their correlation, , where denotes records from group . Suppose, is the index of the group"
+    },
+    {
+      "id": "sec_12",
+      "label": "Details of Experiment Setup",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_12_1",
+      "label": "Datasets",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": ". Originating from the 2019 US Census Bureau Database, the Census19 dataset includes over 1.6 million records and 12 variables capturing a wide range of personal and demographic details of US residents. The goal of this dataset is to classi"
+    },
+    {
+      "id": "sec_12_2",
+      "label": "Model Architecture and Training Hyperparameters",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The default neural network used consists of three hidden layers having 32, 16, and 8 neurons respectively with ReLU activation function. For 4-layer MLP, another layer with 64 neuron was added adjacent to input layer and for 2-layer MLP, th"
+    },
+    {
+      "id": "sec_13",
+      "label": "Additional Experiment Results",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_13_1",
+      "label": "Model Utility vs. Vulnerability at Group Level",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Figure plots the correlation between the sensitive attribute and the output of the 51 states on the X-axis and the angular difference on the Y-axis. This is from the same scenario as section. The results reveal that there is no correlation "
+    },
+    {
+      "id": "sec_13_2",
+      "label": "Correlation vs. Angular Difference",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Correlation vs. angular difference of 51 states from Census19 Dataset Figure plots the correlation between the sensitive attribute and the output of the 51 states on the X-axis and the angular difference on the Y-axis. This is from the same"
+    },
+    {
+      "id": "sec_13_3",
+      "label": "Angular Difference Visualization Across States",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "In Figure, we plot the confidence matrix found during the computation of angular difference for the states with indexes 0, 25, and 50 respectively. We chose these three states particularly as they denote the state with the lowest (0), media"
+    }
+  ],
+  "edges": [
+    {
+      "src": "sec_1",
+      "dst": "sec_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2",
+      "dst": "sec_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3",
+      "dst": "sec_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4",
+      "dst": "sec_4_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4_1",
+      "dst": "sec_4_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4_2",
+      "dst": "sec_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5",
+      "dst": "sec_5_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_1",
+      "dst": "sec_5_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2",
+      "dst": "sec_5_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3",
+      "dst": "sec_5_3_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_1",
+      "dst": "sec_5_3_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3_2",
+      "dst": "sec_6",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6",
+      "dst": "sec_6_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_1",
+      "dst": "sec_6_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_2",
+      "dst": "sec_6_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_3",
+      "dst": "sec_6_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_4",
+      "dst": "sec_7",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_7",
+      "dst": "sec_7_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_7_1",
+      "dst": "sec_7_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_7_2",
+      "dst": "sec_8",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_8",
+      "dst": "sec_9",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_9",
+      "dst": "sec_10",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_10",
+      "dst": "sec_11",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_11",
+      "dst": "sec_11_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_11_1",
+      "dst": "sec_11_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_11_2",
+      "dst": "sec_12",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_12",
+      "dst": "sec_12_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_12_1",
+      "dst": "sec_12_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_12_2",
+      "dst": "sec_13",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_13",
+      "dst": "sec_13_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_13_1",
+      "dst": "sec_13_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_13_2",
+      "dst": "sec_13_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    }
+  ]
+}

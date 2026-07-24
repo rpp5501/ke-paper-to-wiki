@@ -30,6 +30,7 @@ import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
+import SourcePanel from "./SourcePanel";
 import { useNodeNavigation } from "./useNodeNavigation";
 import VizTier from "./VizTier";
 
@@ -439,6 +440,8 @@ export function DrawerPresentation({
           <VizTier entry={viz} nodeId={selected} />
         </section>
       )}
+
+      <SourcePanel sourceRef={node.source_ref} />
 
       {!tiers.tldr && !hasDeeperTiers && (
         fallbackMarkdown ? (

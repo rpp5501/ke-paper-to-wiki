@@ -54,6 +54,8 @@ export interface AppState {
   vizFocus: string | null;
   setVizFocus: (nodeId: string | null) => void;
   openVisualization: (nodeId: string) => void;
+  layoutMode: "layered" | "radial";
+  setLayoutMode: (layoutMode: "layered" | "radial") => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -143,4 +145,6 @@ export const useApp = create<AppState>((set) => ({
     drawerOpen: true,
     vizFocus: nodeId,
   }),
+  layoutMode: "layered",
+  setLayoutMode: (layoutMode) => set({ layoutMode }),
 }));

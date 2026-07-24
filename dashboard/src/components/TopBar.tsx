@@ -10,6 +10,9 @@ import {
 import { useApp, type LayoutPhase, type Mode } from "../store";
 import type { KENode } from "../types";
 import CompactPill from "./CompactPill";
+import ContinuePanel from "./ContinuePanel";
+import MapToggle from "./MapToggle";
+import QuizPanel from "./QuizPanel";
 import { useNodeNavigation } from "./useNodeNavigation";
 import VizGallery from "./VizGallery";
 
@@ -276,7 +279,10 @@ export default function TopBar({
         sidebarTriggerRef={sidebarTriggerRef}
         view={view}
       />
+      <MapToggle />
       <VizGallery />
+      <QuizPanel />
+      <ContinuePanel />
     </>
   );
 }

@@ -1,0 +1,29 @@
+note: confirm per idea; N3 novelty runs only on confirmed/top-k
+ideas:
+- title: Profile the quadratic attention cost on long sequences
+  rationale: 'Self-attention is O(n^2) in sequence length, which the paper flags
+    as the practical ceiling. Reproduce the cost curve on toy inputs before
+    reading any efficient-attention follow-up.'
+  kind: paper-limitation
+  anchors:
+    nodes: [scaled-dot-product-attention, attention]
+    sources: ['§sec:3.2']
+  confirmed: true
+- title: Swap sinusoidal for learned positional encodings and compare
+  rationale: 'The paper reports nearly identical results for learned embeddings
+    but ships sinusoids for extrapolation. Test that extrapolation claim on
+    sequences longer than any seen in training.'
+  kind: unresolved-note
+  anchors:
+    nodes: [positional-encoding]
+    sources: ['§sec:3.5']
+  confirmed: false
+- title: Implement multi-head attention from the SDPA primitive
+  rationale: 'The fixture has a confirmed implementation bridge only for
+    single-head SDPA. Building the multi-head wrapper is the smallest next
+    coding step that exercises the whole concept graph.'
+  kind: no-implements-concept
+  anchors:
+    nodes: [multi-head-attention, scaled-dot-product-attention]
+    sources: ['§sec:3.2.2']
+  confirmed: false

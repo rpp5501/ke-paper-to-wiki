@@ -1,0 +1,29 @@
+{
+ "model": "gpt-5.6-luna",
+ "concept_count": 20,
+ "status": "ok",
+ "done": [
+  "universal-post-training-backdoor-detection",
+  "backdoor-threat-model",
+  "post-training-defender-constraints",
+  "logit-output-landscape",
+  "pattern-agnostic-signature",
+  "maximum-margin-objective",
+  "unsupervised-anomaly-inference",
+  "activation-bound-mitigation",
+  "classical-poisoning-mechanism",
+  "trigger-embedding-families",
+  "attacker-capability-ladder",
+  "clean-data-free-estimation",
+  "boosting-and-suppression",
+  "projected-gradient-estimation",
+  "null-margin-distribution",
+  "order-statistic-pvalue",
+  "adaptive-attack-minimax",
+  "per-neuron-upper-bounds",
+  "accuracy-preserving-lagrangian",
+  "empirical-scope-and-limitations"
+ ],
+ "failed": [],
+ "skipped": []
+}

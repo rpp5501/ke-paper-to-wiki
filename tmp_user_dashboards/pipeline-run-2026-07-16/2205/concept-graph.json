@@ -1,0 +1,390 @@
+{
+ "toc": [
+  {
+   "id": "universal-backdoor-detection",
+   "label": "Universal Backdoor Detection (UnivBD)",
+   "level": 0,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "backdoor-attack",
+   "label": "Backdoor Attack",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "backdoor-trigger",
+   "label": "Backdoor Trigger",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "target-class",
+   "label": "Target Class",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "post-training-defense",
+   "label": "Post-Training Defense Scenario",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "logit-landscape",
+   "label": "Logit Landscape",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "maximum-margin-statistic",
+   "label": "Maximum Margin (MM) Statistic",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "detection-via-atypical-margin",
+   "label": "Detection via an Atypical Margin",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "gradient-ascent-estimation",
+   "label": "Estimating the Margin by Gradient Ascent",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "order-statistic-p-value",
+   "label": "Order-Statistic p-value",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "null-distribution-estimation",
+   "label": "Null Distribution of Margins",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "backdoor-mitigation",
+   "label": "Backdoor Mitigation",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "bounded-logit-clipping",
+   "label": "Bounded-Logit Neuron Clipping",
+   "level": 3,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "lagrangian-mitigation",
+   "label": "Lagrangian for Mitigation",
+   "level": 3,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "detection-performance",
+   "label": "Detection Performance",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  }
+ ],
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2205.06900",
+  "generated": "2026-07-17",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "universal-backdoor-detection",
+   "kind": "concept",
+   "level": 0,
+   "source_ref": "sec_3_1",
+   "label": "Universal Backdoor Detection (UnivBD)"
+  },
+  {
+   "id": "backdoor-attack",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_2_1",
+   "label": "Backdoor Attack"
+  },
+  {
+   "id": "backdoor-trigger",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_2_1",
+   "label": "Backdoor Trigger"
+  },
+  {
+   "id": "target-class",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_2_1",
+   "label": "Target Class"
+  },
+  {
+   "id": "post-training-defense",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_3",
+   "label": "Post-Training Defense Scenario"
+  },
+  {
+   "id": "logit-landscape",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_3_1",
+   "label": "Logit Landscape"
+  },
+  {
+   "id": "maximum-margin-statistic",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_3_1",
+   "label": "Maximum Margin (MM) Statistic"
+  },
+  {
+   "id": "detection-via-atypical-margin",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "label": "Detection via an Atypical Margin"
+  },
+  {
+   "id": "gradient-ascent-estimation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "label": "Estimating the Margin by Gradient Ascent"
+  },
+  {
+   "id": "order-statistic-p-value",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "label": "Order-Statistic p-value"
+  },
+  {
+   "id": "null-distribution-estimation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "label": "Null Distribution of Margins"
+  },
+  {
+   "id": "backdoor-mitigation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "label": "Backdoor Mitigation"
+  },
+  {
+   "id": "bounded-logit-clipping",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_3_3",
+   "label": "Bounded-Logit Neuron Clipping"
+  },
+  {
+   "id": "lagrangian-mitigation",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_3_3",
+   "label": "Lagrangian for Mitigation"
+  },
+  {
+   "id": "detection-performance",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_1_2",
+   "label": "Detection Performance"
+  }
+ ],
+ "edges": [
+  {
+   "src": "backdoor-attack",
+   "dst": "universal-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "post-training-defense",
+   "dst": "universal-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "logit-landscape",
+   "dst": "universal-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "backdoor-trigger",
+   "dst": "backdoor-attack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "target-class",
+   "dst": "backdoor-attack",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "logit-landscape",
+   "dst": "maximum-margin-statistic",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "universal-backdoor-detection",
+   "dst": "maximum-margin-statistic",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-via-atypical-margin",
+   "dst": "universal-backdoor-detection",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-via-atypical-margin",
+   "dst": "maximum-margin-statistic",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "gradient-ascent-estimation",
+   "dst": "maximum-margin-statistic",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "maximum-margin-statistic",
+   "dst": "null-distribution-estimation",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "order-statistic-p-value",
+   "dst": "detection-via-atypical-margin",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "null-distribution-estimation",
+   "dst": "order-statistic-p-value",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "backdoor-mitigation",
+   "dst": "universal-backdoor-detection",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "bounded-logit-clipping",
+   "dst": "backdoor-mitigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "lagrangian-mitigation",
+   "dst": "bounded-logit-clipping",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-performance",
+   "dst": "detection-via-atypical-margin",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

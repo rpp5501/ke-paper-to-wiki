@@ -1,0 +1,225 @@
+{
+ "approved": true,
+ "concepts": [
+  {
+   "id": "structural-intervention-distance",
+   "label": "Structural Intervention Distance (SID)",
+   "level": 0,
+   "include": true,
+   "definition": "A graph-based pre-distance that counts ordered intervention questions whose causal distributions are falsely predicted by an estimated graph relative to a true graph.",
+   "sub_questions": [
+    "What role does Structural Intervention Distance (SID) play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "causal-dag",
+   "label": "Causal DAG",
+   "level": 1,
+   "include": true,
+   "definition": "A directed acyclic graph whose arrows encode the causal structure used to derive intervention distributions.",
+   "sub_questions": [
+    "What role does Causal DAG play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "markov-factorization",
+   "label": "Markov Factorization",
+   "level": 2,
+   "include": true,
+   "definition": "The factorization of a distribution into one conditional factor per node given its parents in a DAG.",
+   "sub_questions": [
+    "What role does Markov Factorization play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "intervention-distribution",
+   "label": "Intervention Distribution",
+   "level": 1,
+   "include": true,
+   "definition": "The distribution of an outcome after a variable is forced to a value with the do-operator.",
+   "sub_questions": [
+    "What role does Intervention Distribution play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "parent-adjustment",
+   "label": "Parent Adjustment",
+   "level": 2,
+   "include": true,
+   "definition": "The adjustment formula that averages an outcome conditional on the intervention over the intervened node's parents.",
+   "sub_questions": [
+    "What role does Parent Adjustment play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "valid-adjustment-set",
+   "label": "Valid Adjustment Set",
+   "level": 2,
+   "include": true,
+   "definition": "A set that blocks the relevant non-directed paths without conditioning on descendants of nodes on a directed causal path.",
+   "sub_questions": [
+    "What role does Valid Adjustment Set play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "structural-hamming-distance",
+   "label": "Structural Hamming Distance (SHD)",
+   "level": 1,
+   "include": true,
+   "definition": "A baseline graph score counting pairs of vertices whose edge type differs between two graphs.",
+   "sub_questions": [
+    "What role does Structural Hamming Distance (SHD) play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "ordered-intervention-pairs",
+   "label": "Ordered Intervention Pairs",
+   "level": 2,
+   "include": true,
+   "definition": "The ordered pairs (i,j), with i not equal to j, that index the causal questions counted by SID.",
+   "sub_questions": [
+    "What role does Ordered Intervention Pairs play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-dag-definition",
+   "label": "SID for DAG Estimates",
+   "level": 2,
+   "include": true,
+   "definition": "The definition of SID when the true graph and the estimated graph are both DAGs.",
+   "sub_questions": [
+    "What role does SID for DAG Estimates play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "graphical-sid-formulation",
+   "label": "Graphical SID Formulation",
+   "level": 1,
+   "include": true,
+   "definition": "A graphical characterization that evaluates parent sets and adjustment validity without computing densities.",
+   "sub_questions": [
+    "What role does Graphical SID Formulation play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-vs-shd",
+   "label": "SID versus SHD",
+   "level": 2,
+   "include": true,
+   "definition": "The paper's comparison showing that edge disagreement and causal-effect disagreement can rank graph estimates differently.",
+   "sub_questions": [
+    "What role does SID versus SHD play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "cpdag",
+   "label": "Completed Partially Directed Acyclic Graph (CPDAG)",
+   "level": 1,
+   "include": true,
+   "definition": "A graph representing a Markov equivalence class of DAGs with compelled directed edges and reversible undirected edges.",
+   "sub_questions": [
+    "What role does Completed Partially Directed Acyclic Graph (CPDAG) play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "cpdag-sid-bounds",
+   "label": "SID Bounds for CPDAGs",
+   "level": 2,
+   "include": true,
+   "definition": "Lower and upper bounds that summarize SID behavior when an estimate is a CPDAG rather than one DAG.",
+   "sub_questions": [
+    "What role does SID Bounds for CPDAGs play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-properties",
+   "label": "Properties of SID",
+   "level": 1,
+   "include": true,
+   "definition": "The non-negativity, zero-identity, asymmetry, and non-triangle-inequality behavior that makes SID a pre-distance.",
+   "sub_questions": [
+    "What role does Properties of SID play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "symmetrized-sid",
+   "label": "Symmetrized SID",
+   "level": 2,
+   "include": true,
+   "definition": "A symmetric comparison obtained by considering SID in both graph directions when neither graph is designated as the estimate.",
+   "sub_questions": [
+    "What role does Symmetrized SID play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-algorithm",
+   "label": "SID Algorithm",
+   "level": 1,
+   "include": true,
+   "definition": "The efficient procedure that counts invalid causal predictions using adjacency, path, and reachability matrices.",
+   "sub_questions": [
+    "What role does SID Algorithm play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "path-matrix",
+   "label": "Directed Path Matrix",
+   "level": 2,
+   "include": true,
+   "definition": "A matrix whose entry records whether one node is reachable from another by a directed path.",
+   "sub_questions": [
+    "What role does Directed Path Matrix play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "reachability-matrix",
+   "label": "Non-directed Reachability",
+   "level": 2,
+   "include": true,
+   "definition": "The algorithmic representation of nodes reachable along non-directed paths that can remain open under an adjustment set.",
+   "sub_questions": [
+    "What role does Non-directed Reachability play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-scalability",
+   "label": "SID Scalability",
+   "level": 2,
+   "include": true,
+   "definition": "The runtime behavior of the SID computation as graph size and sparsity change.",
+   "sub_questions": [
+    "What role does SID Scalability play in SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "linear-gaussian-effects",
+   "label": "Linear-Gaussian Effect Check",
+   "level": 3,
+   "include": true,
+   "definition": "The appendix's analytic setting for checking causal effects from known structural coefficients and noise variances.",
+   "sub_questions": [
+    "What role does Linear-Gaussian Effect Check play in SID?"
+   ],
+   "research": false
+  }
+ ]
+}

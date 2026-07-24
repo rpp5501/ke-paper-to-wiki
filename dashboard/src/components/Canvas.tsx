@@ -66,6 +66,7 @@ export default function Canvas() {
     mode,
     learnIdx,
     completedSteps,
+    layoutMode,
   } = useApp();
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
@@ -90,7 +91,7 @@ export default function Canvas() {
     let cancelled = false;
     setLayout({ phase: "loading" });
     setLayoutPhase("loading");
-    void layoutGraph(KE_NODES, KE_EDGES)
+    void layoutGraph(KE_NODES, KE_EDGES, layoutMode)
       .then((positions) => {
         if (!cancelled) {
           setLayout({ phase: "ready", positions });
@@ -107,7 +108,7 @@ export default function Canvas() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, setLayoutPhase]);
+  }, [attempt, layoutMode, setLayoutPhase]);
 
   const rings = useMemo(
     () => (blastOn && selected ? dependencyRings(selected, KE_EDGES) : new Map()),

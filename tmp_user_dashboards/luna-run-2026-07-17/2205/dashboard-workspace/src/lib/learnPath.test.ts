@@ -1,0 +1,80 @@
+import { describe, expect, it } from "vitest";
+import { buildLearnSteps, focusNodeIds, learnFocus, pageMarkdownFor } from "./learnPath";
+
+const NODES = [
+  { id: "a", kind: "concept", label: "Alpha", page: "01_a.md" },
+  { id: "b", kind: "concept", label: "Beta" },
+];
+const PAGES = {
+  a: "## TL;DR {#tldr}\nAlpha is the core idea. It has $x^2$ math.\n\n## The Math {#the-math}\n$$x$$",
+};
+const TOUR = [
+  { order: 2, title: "Beta", description: "fallback blurb", nodeIds: ["b"] },
+  { order: 1, title: "Alpha", description: "generic", nodeIds: ["a"] },
+];
+
+describe("buildLearnSteps", () => {
+  it("orders by tour order and uses the tour description verbatim as blurb", () => {
+    const steps = buildLearnSteps(TOUR, NODES);
+    expect(steps.map((s) => s.nodeId)).toEqual(["a", "b"]);
+    expect(steps[0].blurb).toBe("generic");
+    expect(steps[1].blurb).toBe("fallback blurb");
+  });
+
+  it("skips steps whose node is missing", () => {
+    const steps = buildLearnSteps(
+      [{ order: 1, title: "Ghost", description: "", nodeIds: ["ghost"] }],
+      NODES,
+    );
+    expect(steps).toEqual([]);
+  });
+});
+
+describe("pageMarkdownFor", () => {
+  it("resolves by id, then by numbered-filename stem", () => {
+    expect(pageMarkdownFor(NODES[0], PAGES)).toContain("Alpha is the core idea");
+    expect(
+      pageMarkdownFor({ id: "zzz", kind: "concept", label: "Z", page: "07_a.md" }, PAGES),
+    ).toContain("Alpha is the core idea");
+  });
+});
+
+describe("focusNodeIds", () => {
+  const EDGES = [
+    { src: "a", dst: "b", kind: "prerequisite" },
+    { src: "c", dst: "a", kind: "builds-on" },
+    { src: "d", dst: "e", kind: "prerequisite" },
+  ];
+  it("returns the step node, its 1-hop neighbors, and completed steps", () => {
+    expect(focusNodeIds("a", EDGES, new Set(["e"]))).toEqual(new Set(["a", "b", "c", "e"]));
+  });
+  it("works with no edges", () => {
+    expect(focusNodeIds("a", [], new Set())).toEqual(new Set(["a"]));
+  });
+});
+
+describe("learnFocus", () => {
+  const STEPS = [
+    { nodeId: "a", title: "A", blurb: "" },
+    { nodeId: "d", title: "D", blurb: "" },
+  ];
+  const EDGES = [
+    { src: "a", dst: "b", kind: "prerequisite" },
+    { src: "c", dst: "a", kind: "builds-on" },
+    { src: "d", dst: "e", kind: "prerequisite" },
+  ];
+  it("returns null in explore mode and for empty steps", () => {
+    expect(learnFocus("explore", 0, STEPS, EDGES, new Set())).toBeNull();
+    expect(learnFocus("learn", 0, [], EDGES, new Set())).toBeNull();
+  });
+  it("focuses the current step's neighborhood plus completed steps", () => {
+    expect(learnFocus("learn", 1, STEPS, EDGES, new Set(["a"])))
+      .toEqual(new Set(["d", "e", "a"]));
+  });
+  it("clamps a null or out-of-range index to a valid step", () => {
+    expect(learnFocus("learn", null, STEPS, EDGES, new Set()))
+      .toEqual(new Set(["a", "b", "c"]));
+    expect(learnFocus("learn", 99, STEPS, EDGES, new Set()))
+      .toEqual(new Set(["d", "e"]));
+  });
+});
