@@ -30,6 +30,7 @@ import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
+import CollapseToggle from "./CollapseToggle";
 import SourcePanel from "./SourcePanel";
 import { useNodeNavigation } from "./useNodeNavigation";
 import VizTier from "./VizTier";
@@ -442,6 +443,8 @@ export function DrawerPresentation({
       )}
 
       <SourcePanel sourceRef={node.source_ref} />
+
+      <CollapseToggle edges={EDGES} label={node.label} nodeId={selected} />
 
       {!tiers.tldr && !hasDeeperTiers && (
         fallbackMarkdown ? (

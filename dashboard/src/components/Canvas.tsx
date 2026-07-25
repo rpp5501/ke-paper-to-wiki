@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
+import { collapseGraph, collapsedCount } from "../lib/collapse";
 import { dependencyRings } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
@@ -67,7 +68,14 @@ export default function Canvas() {
     learnIdx,
     completedSteps,
     layoutMode,
+    collapsed,
   } = useApp();
+  // R16.B1 — folding a branch changes the layout input, not just what is
+  // painted, so ELK re-runs and the cache keys off the smaller graph.
+  const visible = useMemo(
+    () => collapseGraph(KE_NODES, KE_EDGES, collapsed),
+    [collapsed],
+  );
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
     KE_NODES.length === 0 ? { phase: "empty" } : { phase: "loading" },
@@ -91,7 +99,7 @@ export default function Canvas() {
     let cancelled = false;
     setLayout({ phase: "loading" });
     setLayoutPhase("loading");
-    void layoutGraph(KE_NODES, KE_EDGES, layoutMode)
+    void layoutGraph(visible.nodes, visible.edges, layoutMode)
       .then((positions) => {
         if (!cancelled) {
           setLayout({ phase: "ready", positions });
@@ -108,7 +116,7 @@ export default function Canvas() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, layoutMode, setLayoutPhase]);
+  }, [attempt, layoutMode, setLayoutPhase, visible]);
 
   const rings = useMemo(
     () => (blastOn && selected ? dependencyRings(selected, KE_EDGES) : new Map()),
@@ -162,7 +170,7 @@ export default function Canvas() {
   const nodes = useMemo<Node[]>(() => {
     if (layout.phase !== "ready") return [];
 
-    const memberNodes = KE_NODES
+    const memberNodes = visible.nodes
       .filter((node) => viewNodeIds.has(node.id))
       .filter((node) => !lod.hiddenNodes.has(node.id))
       .filter((node) => !focus || focus.has(node.id))
@@ -180,7 +188,15 @@ export default function Canvas() {
           type: CODE_KINDS.has(node.kind) ? "code" : "concept",
           position,
           ...size,
-          data: { label: node.label, level: node.level },
+          // Counted against the full edge set — the descendants are already
+          // gone from `visible.edges`.
+          data: {
+            label: node.label,
+            level: node.level,
+            hidden: collapsed.has(node.id)
+              ? collapsedCount(node.id, KE_EDGES)
+              : undefined,
+          },
           selected: node.id === selected,
           focusable: false,
           draggable: false,
@@ -230,6 +246,7 @@ export default function Canvas() {
     return [...syntheticClusters, ...memberNodes];
   }, [
     blastOn,
+    collapsed,
     equationHits,
     flow,
     focus,
@@ -241,12 +258,13 @@ export default function Canvas() {
     view,
     viewClusters,
     viewNodeIds,
+    visible,
   ]);
 
   const shownIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const edges = useMemo(
-    () => makeFlowEdges(KE_EDGES, hiddenKinds, shownIds),
-    [hiddenKinds, shownIds],
+    () => makeFlowEdges(visible.edges, hiddenKinds, shownIds),
+    [hiddenKinds, shownIds, visible],
   );
 
   useEffect(() => {

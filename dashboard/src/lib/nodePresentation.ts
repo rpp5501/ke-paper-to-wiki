@@ -6,6 +6,7 @@ type NodeAccessibleNameInput = {
   bridge?: boolean;
   hotspotRank?: number;
   mastery?: MasteryLevel;
+  hidden?: number;
 };
 
 // R16.A2 — mastery is evidence, not a score, so it reads as a plain state.
@@ -28,6 +29,7 @@ export function nodeAccessibleName({
   bridge,
   hotspotRank,
   mastery,
+  hidden,
 }: NodeAccessibleNameInput): string {
   const details: string[] = [];
   const badgeLabel = levelBadgeLabel(level);
@@ -36,5 +38,8 @@ export function nodeAccessibleName({
   if (hotspotRank !== undefined) details.push(`hotspot rank ${hotspotRank}`);
   const note = masteryNote(mastery);
   if (note) details.push(note);
+  if (hidden !== undefined && hidden > 0) {
+    details.push(`collapsed, ${hidden} hidden`);
+  }
   return details.length > 0 ? `${label}, ${details.join(", ")}` : label;
 }

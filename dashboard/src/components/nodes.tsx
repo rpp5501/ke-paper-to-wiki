@@ -16,6 +16,8 @@ import { useApp } from "../store";
 type CardData = {
   label: string;
   level?: number;
+  /** Descendants folded into this node, when its branch is collapsed. */
+  hidden?: number;
 };
 
 type ClusterData = {
@@ -83,6 +85,7 @@ function Card({
         bridge,
         hotspotRank: hot,
         mastery,
+        hidden: data.hidden,
       })}
       aria-pressed={selected}
       className={`node-card ${className}${mastery === "unseen" ? "" : ` is-${mastery}`}`}
@@ -106,6 +109,9 @@ function Card({
         {hot && <span className="badge badge-hot">hotspot #{hot}</span>}
         {mastery === "mastered" && (
           <span className="badge badge-mastered">mastered</span>
+        )}
+        {data.hidden !== undefined && data.hidden > 0 && (
+          <span className="badge badge-collapsed">+{data.hidden}</span>
         )}
       </span>
       <Handle type="source" position={Position.Bottom} />

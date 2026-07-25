@@ -69,6 +69,8 @@ export interface AppState {
   // Shared so the review queue can send a learner straight into the quiz.
   quizOpen: boolean;
   setQuizOpen: (open: boolean) => void;
+  collapsed: Set<string>;
+  toggleCollapsed: (nodeId: string) => void;
 }
 
 // Opening a node is the weakest mastery evidence there is. Both paths that
@@ -178,6 +180,13 @@ export const useApp = create<AppState>((set) => ({
   mastery: readLedger(),
   quizOpen: false,
   setQuizOpen: (quizOpen) => set({ quizOpen }),
+  collapsed: new Set(),
+  toggleCollapsed: (nodeId) =>
+    set((state) => {
+      const collapsed = new Set(state.collapsed);
+      if (!collapsed.delete(nodeId)) collapsed.add(nodeId);
+      return { collapsed };
+    }),
   recordMastery: (nodeId, correct) =>
     set((state) => {
       const mastery = recordAnswer(state.mastery, nodeId, correct);

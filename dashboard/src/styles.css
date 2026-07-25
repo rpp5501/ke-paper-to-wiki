@@ -1908,6 +1908,11 @@ input:focus-visible,
   color: var(--term-2);
   border-color: var(--term-2);
 }
+/* R16.B1 — folded branch: how many nodes this one swallowed. */
+.badge-collapsed {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 /* An inset ring, not border-color: the 4px left border is the node-kind
    stripe (.node-concept / .node-code) and must survive. outline is taken by
    hover and focus, so box-shadow is the free channel here. */
@@ -1932,3 +1937,15 @@ input:focus-visible,
 .rail-marker[data-mastery="seen"] { --mastery-arc: 33%; }
 .rail-marker[data-mastery="quizzed"] { --mastery-arc: 67%; }
 .rail-marker[data-mastery="mastered"] { --mastery-arc: 100%; }
+.collapse-toggle {
+  margin: 10px 0 0;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+.collapse-toggle:hover { border-color: var(--accent); }
+.collapse-toggle[aria-pressed="true"] { border-style: solid; }
