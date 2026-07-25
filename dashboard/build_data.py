@@ -277,7 +277,24 @@ def _excerpts(plan_graph, hotspots, repo_dir):
     return excerpts
 
 
-def _load_quiz(path, known_node_ids):
+def _provenance_ref(raw, known_sections, label):
+    """R16.C2 — keep a source_ref only when it resolves to an emitted section.
+
+    A chip that goes nowhere is worse than no chip, so an unresolvable ref is
+    warned about and dropped while its item or visual survives. With no
+    sections map (no --pack) there is nothing to check against, so refs pass
+    through untouched rather than every item warning.
+    """
+    ref = raw or ""
+    if not ref or not known_sections:
+        return ref
+    if section_key(ref) in known_sections:
+        return ref
+    print(f"{label}: source_ref '{ref}' matches no section, chip dropped")
+    return ""
+
+
+def _load_quiz(path, known_node_ids, known_sections=None):
     """R15.2: quiz.json → validated items. Contract per item:
     {id, nodeId, prompt, options: [{text, explain}]x>=2, correct: idx,
     sourceRef?}. Items with unknown nodes or contract violations are dropped
@@ -311,7 +328,12 @@ def _load_quiz(path, known_node_ids):
             "options": [{"text": o["text"], "explain": o["explain"]}
                         for o in options],
             "correct": item["correct"],
+            # `sourceRef` is R15.2's in-page anchor (e.g. '#the-math') and is
+            # unvalidated. R16.C2's paper-span ref is a separate input field,
+            # `source_ref`, surfaced as `sectionRef`.
             "sourceRef": item.get("sourceRef", ""),
+            "sectionRef": _provenance_ref(
+                item.get("source_ref", ""), known_sections, f"quiz: '{label}'"),
         })
     return out
 
@@ -355,7 +377,7 @@ def _load_next_steps(path, known_node_ids):
     return out
 
 
-def _load_viz(viz_dir, pages_dir):
+def _load_viz(viz_dir, pages_dir, known_sections=None):
     """R13: viz/manifest.json + per-node HTML → {nodeId: entry+srcdoc+stale}.
 
     Staleness = manifest page_sha256 no longer matches the current page file.
@@ -391,6 +413,8 @@ def _load_viz(viz_dir, pages_dir):
             "prompt": entry.get("prompt", ""),
             "srcdoc": html_path.read_text(encoding="utf-8"),
             "stale": stale,
+            "sectionRef": _provenance_ref(
+                entry.get("source_ref", ""), known_sections, f"viz: {node_id}"),
         }
     return out
 
@@ -426,20 +450,23 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
               "dependentSide": _DEPENDENT_SIDE}
     if repo_dir:
         bundle["mtimes"] = _source_dates(plan_graph, repo_dir)
+    # R16.C2 — sections are resolved before quiz and viz, which validate their
+    # source_ref against these keys.
+    sections = {
+        section_key(s["id"]): {"title": s.get("title", ""),
+                               "text": s.get("text", "")}
+        for s in (pack or {}).get("sections", []) if section_key(s["id"])
+    }
     if viz_dir:  # R13: opt-in only — absent flag leaves the bundle untouched
-        bundle["viz"] = _load_viz(viz_dir, pages_dir)
+        bundle["viz"] = _load_viz(viz_dir, pages_dir, sections)
     if next_steps:  # R15.1: same opt-in discipline
         bundle["nextSteps"] = _load_next_steps(
             next_steps, {n["id"] for n in plan_graph["nodes"]})
     if quiz:  # R15.2: same opt-in discipline
         bundle["quiz"] = _load_quiz(
-            quiz, {n["id"] for n in plan_graph["nodes"]})
+            quiz, {n["id"] for n in plan_graph["nodes"]}, sections)
     if pack:  # R15.11: same opt-in discipline
-        bundle["sections"] = {
-            section_key(s["id"]): {"title": s.get("title", ""),
-                                    "text": s.get("text", "")}
-            for s in pack.get("sections", []) if section_key(s["id"])
-        }
+        bundle["sections"] = sections
     return bundle
 
 
@@ -476,15 +503,18 @@ def main(argv=None):
                     "--viz-dir / --next-steps / --quiz")
         bundle = parse_data_ts(Path(a.out).read_text(encoding="utf-8"))
         known = {n["id"] for n in bundle["nodes"]}
+        # R16.C2 — patch mode validates refs against the sections already in
+        # the bundle, so a partial rebuild applies the same provenance rule.
+        sections = bundle.get("sections") or {}
         changed = []
         if a.viz_dir:
-            bundle["viz"] = _load_viz(a.viz_dir, a.pages_dir)
+            bundle["viz"] = _load_viz(a.viz_dir, a.pages_dir, sections)
             changed.append("viz")
         if a.next_steps:
             bundle["nextSteps"] = _load_next_steps(a.next_steps, known)
             changed.append("nextSteps")
         if a.quiz:
-            bundle["quiz"] = _load_quiz(a.quiz, known)
+            bundle["quiz"] = _load_quiz(a.quiz, known, sections)
             changed.append("quiz")
         Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
         print(f"{a.out}: updated sections: {', '.join(changed)}")

@@ -10,6 +10,8 @@ export type VizEntry = {
   prompt: string;
   srcdoc: string;
   stale: boolean;
+  /** R16.C2 — the paper span this visual was built from, when it cites one. */
+  sectionRef?: string;
 };
 
 export function vizMapFrom(data: unknown): Record<string, VizEntry> {

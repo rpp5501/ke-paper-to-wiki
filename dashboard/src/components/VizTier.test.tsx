@@ -1,5 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../lib/source", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/source")>()),
+  getSections: () => ({ "3.2": { title: "SDPA", text: "the passage" } }),
+}));
 
 import type { VizEntry } from "../lib/viz";
 import { VizTierPresentation, betOutcome } from "./VizTier";
@@ -40,6 +45,27 @@ describe("VizTierPresentation", () => {
       <VizTierPresentation entry={{ ...entry, stale: true }} focused={false} />,
     );
     expect(html).toContain("older version of the page");
+  });
+});
+
+describe("VizTierPresentation provenance chip", () => {
+  it("shows the chip in the header when the visual cites a section", () => {
+    const html = renderToStaticMarkup(
+      <VizTierPresentation
+        entry={{ ...entry, sectionRef: "sec:3.2" }}
+        focused={false}
+      />,
+    );
+
+    expect(html).toContain("§3.2");
+  });
+
+  it("shows no chip when the visual cites nothing", () => {
+    const html = renderToStaticMarkup(
+      <VizTierPresentation entry={entry} focused={false} />,
+    );
+
+    expect(html).not.toContain("source-chip");
   });
 });
 

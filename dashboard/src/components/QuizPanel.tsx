@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { getQuiz, type QuizItem } from "../lib/quiz";
 import { useApp } from "../store";
+import SourceChip from "./SourceChip";
 import { useNodeNavigation } from "./useNodeNavigation";
 
 export type QuizItemViewProps = {
@@ -33,6 +34,14 @@ export function QuizItemView({
         >
           {item.nodeId}
         </button>
+        {/* R16.C2 — provenance after the commit, never before: the section
+            heading would give the answer away. */}
+        {answered && (
+          <SourceChip
+            onOpen={() => onGoToNode(item.nodeId)}
+            sourceRef={item.sectionRef}
+          />
+        )}
       </div>
       <ul className="quiz-options">
         {item.options.map((option, index) => {

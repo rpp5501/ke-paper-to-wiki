@@ -10,6 +10,13 @@ vi.mock("../lib/quiz", () => ({
   getQuiz: () => items,
 }));
 
+// R16.C2 — a build with one resolvable section, so provenance chips have
+// something to resolve against.
+vi.mock("../lib/source", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/source")>()),
+  getSections: () => ({ "3.2": { title: "SDPA", text: "the passage" } }),
+}));
+
 const item: QuizItem = {
   id: "q1",
   nodeId: "scaled-dot-product-attention",
@@ -37,6 +44,36 @@ describe("QuizPanel", () => {
     expect(html).toContain("Quiz (1)");
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain("Why divide"); // items only when open
+  });
+});
+
+describe("QuizItemView provenance chip", () => {
+  const sourced: QuizItem = { ...item, sectionRef: "sec:3.2" };
+  const noop = () => undefined;
+
+  it("shows the chip once the learner has answered", () => {
+    const html = renderToStaticMarkup(
+      <QuizItemView answer={0} item={sourced} onAnswer={noop} onGoToNode={noop} />,
+    );
+
+    expect(html).toContain("§3.2");
+  });
+
+  it("withholds the chip until an answer is committed", () => {
+    // Commit-then-reveal: seeing the source before answering gives it away.
+    const html = renderToStaticMarkup(
+      <QuizItemView answer={null} item={sourced} onAnswer={noop} onGoToNode={noop} />,
+    );
+
+    expect(html).not.toContain("§3.2");
+  });
+
+  it("shows no chip for an item whose ref does not resolve", () => {
+    const html = renderToStaticMarkup(
+      <QuizItemView answer={0} item={item} onAnswer={noop} onGoToNode={noop} />,
+    );
+
+    expect(html).not.toContain("source-chip");
   });
 });
 

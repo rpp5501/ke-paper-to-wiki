@@ -1949,3 +1949,16 @@ input:focus-visible,
 }
 .collapse-toggle:hover { border-color: var(--accent); }
 .collapse-toggle[aria-pressed="true"] { border-style: solid; }
+/* R16.C2 — provenance chip: which paper span a claim came from. */
+.source-chip {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  padding: 1px 8px;
+  color: var(--accent);
+  font-size: var(--fs-small);
+  white-space: nowrap;
+}
+button.source-chip { cursor: pointer; }
+button.source-chip:hover { border-color: var(--accent); }

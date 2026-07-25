@@ -10,7 +10,10 @@ export type QuizItem = {
   prompt: string;
   options: QuizOption[];
   correct: number;
+  /** R15.2 in-page anchor, e.g. '#the-math'. */
   sourceRef: string;
+  /** R16.C2 paper-span ref, validated at build time against KE_DATA.sections. */
+  sectionRef?: string;
 };
 
 export function quizFrom(data: unknown): QuizItem[] {

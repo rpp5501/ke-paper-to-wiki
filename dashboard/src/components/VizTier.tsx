@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useApp } from "../store";
 import type { VizEntry } from "../lib/viz";
+import SourceChip from "./SourceChip";
 
 // R16.A1 — validate a bet payload from generated template code. Returns the
 // outcome, or null for anything that is not a well-formed bet message.
@@ -77,6 +78,9 @@ export function VizTierPresentation({
     >
       <summary>Visualize</summary>
       <div className="tier-body">
+        {/* R16.C2 — static, not a button: this node's source panel is already
+            in the same drawer. */}
+        <SourceChip sourceRef={entry.sectionRef} />
         {entry.stale && (
           <p className="viz-stale" role="status">
             This visual was built from an older version of the page — values
