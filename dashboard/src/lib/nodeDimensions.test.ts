@@ -7,6 +7,14 @@ describe("nodeCardSize", () => {
     expect(nodeCardSize("Attention")).toEqual({ width: 220, height: 72 });
   });
 
+  it("grows both dimensions with the mind-map fan-out scale", () => {
+    expect(nodeCardSize("Attention", 1.25)).toEqual({ width: 275, height: 90 });
+  });
+
+  it("is byte-identical at scale 1, so layered mode is untouched", () => {
+    expect(nodeCardSize("Attention", 1)).toEqual(nodeCardSize("Attention"));
+  });
+
   it("allocates more height for a complete long concept label", () => {
     expect(nodeCardSize(
       "Disparity turns a weak attribute inference attack into a targeted threat",

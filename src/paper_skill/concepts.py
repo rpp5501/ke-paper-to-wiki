@@ -109,6 +109,77 @@ def require_ok(result: dict) -> dict:
     return result
 
 
+# R16 §5.1c — zero-token graph-quality metrics, the deterministic half of
+# kg-gen's MINE benchmark idea. Advisory, not a tripwire: is_toc_graph raises
+# because a TOC graph is the *wrong* graph, whereas a graph with orphans is
+# merely a thin one and stopping the build on it would be the wrong trade.
+ORPHAN_RATIO_LIMIT = 0.2
+PART_OF_COVERAGE_FLOOR = 0.5
+
+
+def normalize_slug(value: str) -> str:
+    """Canonical kebab form, so 'Self Attention' and 'self_attention' collide.
+
+    Pure string normalization by design — the embedding clustering and entity
+    linking rungs of the usual dedup ladder stay declined (keyless pin).
+    """
+    lowered = re.sub(r"[^a-z0-9]+", "-", str(value).lower())
+    return lowered.strip("-")
+
+
+def graph_quality(graph: dict) -> dict:
+    """Deterministic health metrics for a concept graph. Never raises."""
+    nodes = graph.get("nodes", []) or []
+    edges = graph.get("edges", []) or []
+    ids = [str(n.get("id", "")) for n in nodes]
+    total = len(ids)
+
+    touched: set[str] = set()
+    in_tree: set[str] = set()
+    for edge in edges:
+        src, dst = str(edge.get("src", "")), str(edge.get("dst", ""))
+        touched.update((src, dst))
+        if edge.get("kind") == "part-of":
+            in_tree.update((src, dst))
+
+    groups: dict[str, list[str]] = {}
+    for node_id in ids:
+        groups.setdefault(normalize_slug(node_id), []).append(node_id)
+
+    return {
+        "node_count": total,
+        "edge_count": len(edges),
+        "orphan_ratio": (
+            sum(1 for i in ids if i not in touched) / total if total else 0.0),
+        "part_of_coverage": (
+            sum(1 for i in ids if i in in_tree) / total if total else 0.0),
+        "duplicate_slugs": {
+            slug: sorted(members)
+            for slug, members in groups.items() if len(members) > 1
+        },
+    }
+
+
+def graph_quality_findings(graph: dict) -> list[str]:
+    """Human-readable warnings from :func:`graph_quality`; empty = healthy."""
+    m = graph_quality(graph)
+    findings: list[str] = []
+
+    if m["orphan_ratio"] > ORPHAN_RATIO_LIMIT:
+        findings.append(
+            f"orphan ratio {m['orphan_ratio']:.0%} exceeds "
+            f"{ORPHAN_RATIO_LIMIT:.0%}: nodes with no edges at all")
+    for slug, members in sorted(m["duplicate_slugs"].items()):
+        findings.append(
+            f"duplicate slug candidates for '{slug}': {', '.join(members)}")
+    if m["node_count"] and m["part_of_coverage"] < PART_OF_COVERAGE_FLOOR:
+        findings.append(
+            f"part-of coverage {m['part_of_coverage']:.0%} below "
+            f"{PART_OF_COVERAGE_FLOOR:.0%}: most nodes sit outside the "
+            "hierarchy, so the mind map will be flat")
+    return findings
+
+
 def is_toc_graph(graph: dict) -> bool:
     """Heuristic: does this graph look like raw section headings, not concepts?
 

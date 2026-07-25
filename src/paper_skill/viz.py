@@ -22,6 +22,18 @@ REQUIRED_MANIFEST_FIELDS = (
     "generated",
 )
 
+# R13.1 placement: where the explorable sits on the page. Proposed by the
+# skill and confirmed by the owner — never inferred at build time.
+ANCHOR_TIERS = ("after-intuition", "in-the-math")
+DEFAULT_ANCHOR_TIER = ANCHOR_TIERS[0]
+
+# R13.1 critique loop, paperbanana's discipline: a hard cap, not "until
+# satisfied". Reviews propose params-only edits and cite GUIDELINES.md.
+MAX_REVIEWS = 2
+GUIDELINES_NAME = "GUIDELINES.md"
+REVIEW_CHECKLIST = ("faithfulness", "conciseness", "readability")
+REVIEW_EDITABLE = ("params", "prompt", "caption")
+
 # Network-capable constructs are forbidden; xmlns namespace URIs are fine.
 _FORBIDDEN = [
     (re.compile(r"<link\b", re.I), "<link> tag"),
@@ -82,8 +94,12 @@ def write_viz(
     prompt: str,
     page_path: Path,
     generated: str | None = None,
+    anchor_tier: str = DEFAULT_ANCHOR_TIER,
 ) -> dict:
     """Instantiate a template for one node; write HTML + merge manifest entry."""
+    if anchor_tier not in ANCHOR_TIERS:
+        raise ValueError(
+            f"anchor_tier {anchor_tier!r} not one of {ANCHOR_TIERS}")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     html = instantiate_template(template_id, params)
@@ -99,6 +115,8 @@ def write_viz(
         "page": Path(page_path).name,
         "page_sha256": page_sha256(page_path),
         "generated": generated or date.today().isoformat(),
+        "anchor_tier": anchor_tier,
+        "params": params,
     }
     manifest = load_manifest(out_dir)
     manifest[node_id] = entry
@@ -106,6 +124,53 @@ def write_viz(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     return entry
+
+
+def review_packet(out_dir: Path, node_id: str, pages_dir: Path) -> dict:
+    """R13.1 — assemble everything a critique pass may look at, and charge it
+    against the iteration cap.
+
+    Deliberately bounded: the packet carries the page, the current params and
+    the written guidelines, and nothing else. The visual's HTML is absent
+    because a review may only propose params-only edits — handing the critic
+    the markup invites it to rewrite the template.
+
+    Raises once the cap is spent; the loop stops rather than converging
+    forever.
+    """
+    out_dir = Path(out_dir)
+    manifest = load_manifest(out_dir)
+    if node_id not in manifest:
+        raise KeyError(f"{node_id}: no viz entry to review")
+
+    entry = manifest[node_id]
+    count = int(entry.get("review_count", 0)) + 1
+    if count > MAX_REVIEWS:
+        raise ValueError(
+            f"{node_id}: review cap of {MAX_REVIEWS} reached; "
+            "accept it, or take it back to propose-and-confirm")
+
+    entry["review_count"] = count
+    (out_dir / MANIFEST_NAME).write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8")
+
+    guidelines_path = TEMPLATES_DIR / GUIDELINES_NAME
+    return {
+        "node_id": node_id,
+        "review_count": count,
+        "max_reviews": MAX_REVIEWS,
+        "page_text": (Path(pages_dir) / entry["page"]).read_text(
+            encoding="utf-8"),
+        "params": entry.get("params", {}),
+        "prompt": entry.get("prompt", ""),
+        "caption": entry.get("caption", ""),
+        "anchor_tier": entry.get("anchor_tier", DEFAULT_ANCHOR_TIER),
+        "guidelines": guidelines_path.read_text(encoding="utf-8"),
+        "guidelines_path": str(guidelines_path),
+        "checklist": REVIEW_CHECKLIST,
+        "editable": REVIEW_EDITABLE,
+    }
 
 
 def gate_viz_dir(out_dir: Path) -> list[str]:
@@ -126,6 +191,10 @@ def gate_viz_dir(out_dir: Path) -> list[str]:
                 findings.append(f"{node_id}: manifest missing field '{field}'")
         if entry.get("kind") == "template" and not entry.get("template_id"):
             findings.append(f"{node_id}: template entry missing 'template_id'")
+        tier = entry.get("anchor_tier", DEFAULT_ANCHOR_TIER)
+        if tier not in ANCHOR_TIERS:
+            findings.append(
+                f"{node_id}: anchor_tier '{tier}' not one of {ANCHOR_TIERS}")
         src = entry.get("src")
         if not src:
             continue
@@ -219,6 +288,7 @@ def build_pack(params_by_node: dict, pages_dir: Path, out_dir: Path) -> list[str
             caption=spec.get("caption", ""),
             prompt=spec.get("prompt", ""),
             page_path=Path(pages_dir) / spec["page"],
+            anchor_tier=spec.get("anchor_tier", DEFAULT_ANCHOR_TIER),
         )
     return gate_viz_dir(Path(out_dir))
 
@@ -240,7 +310,32 @@ def main(argv=None) -> int:
     pb.add_argument("--pages-dir", required=True)
     pb.add_argument("--out", default="viz")
 
+    pr = sub.add_parser("review", help="one bounded critique pass over an "
+                                       "existing visual (params-only)")
+    pr.add_argument("node")
+    pr.add_argument("--viz-dir", default="viz")
+    pr.add_argument("--pages-dir", required=True)
+
     a = p.parse_args(argv)
+    if a.cmd == "review":
+        try:
+            packet = review_packet(Path(a.viz_dir), a.node, Path(a.pages_dir))
+        except (KeyError, ValueError, FileNotFoundError) as e:
+            print(str(e).strip("'"))
+            return 1
+        print(f"viz review — {packet['node_id']}, pass "
+              f"{packet['review_count']} of {packet['max_reviews']}")
+        print(f"editable: {', '.join(packet['editable'])} "
+              "(never the template HTML, never the page)")
+        print(f"guidelines: {packet['guidelines_path']}")
+        print(f"current params: {json.dumps(packet['params'], sort_keys=True)}")
+        print(f"prompt: {packet['prompt']}")
+        print("checklist — judge each, cite the guideline you apply:")
+        for heading in packet["checklist"]:
+            print(f"  - {heading}")
+        print("propose params-only edits, or say it is good and STOP.")
+        return 0
+
     if a.cmd == "propose":
         graph = json.loads(Path(a.graph).read_text(encoding="utf-8"))
         candidates = propose(graph, Path(a.pages_dir), k=a.k)

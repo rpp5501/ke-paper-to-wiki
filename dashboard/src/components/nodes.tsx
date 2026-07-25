@@ -9,12 +9,15 @@ import {
 
 import { KE_DATA } from "../data.gen";
 import { nodeCardSize } from "../lib/nodeDimensions";
+import { recordFor } from "../lib/mastery";
 import { levelBadgeLabel, nodeAccessibleName } from "../lib/nodePresentation";
 import { useApp } from "../store";
 
 type CardData = {
   label: string;
   level?: number;
+  /** Descendants folded into this node, when its branch is collapsed. */
+  hidden?: number;
 };
 
 type ClusterData = {
@@ -67,6 +70,8 @@ function Card({
   positionAbsoluteY: number;
 }) {
   const setSelected = useApp((state) => state.setSelected);
+  const setHoverNode = useApp((state) => state.setHoverNode);
+  const mastery = useApp((state) => recordFor(state.mastery, id).level);
   const flow = useReactFlow();
   const bridge = centrality[id] >= p90 && centralityValues.length > 1;
   const hot = hotspotRank.get(id);
@@ -80,18 +85,28 @@ function Card({
         level: data.level,
         bridge,
         hotspotRank: hot,
+        mastery,
+        hidden: data.hidden,
       })}
       aria-pressed={selected}
-      className={`node-card ${className}`}
+      className={`node-card ${className}${mastery === "unseen" ? "" : ` is-${mastery}`}`}
       data-node-id={id}
       onClick={() => setSelected(id)}
-      onFocus={() => focusNode(
-        flow,
-        positionAbsoluteX,
-        positionAbsoluteY,
-        size.width,
-        size.height,
-      )}
+      // R16.B3 — the halo follows focus as well as the pointer, so keyboard
+      // users get the same neighbourhood cue.
+      onBlur={() => setHoverNode(null)}
+      onFocus={() => {
+        setHoverNode(id);
+        focusNode(
+          flow,
+          positionAbsoluteX,
+          positionAbsoluteY,
+          size.width,
+          size.height,
+        );
+      }}
+      onMouseEnter={() => setHoverNode(id)}
+      onMouseLeave={() => setHoverNode(null)}
       title={data.label}
       type="button"
     >
@@ -101,6 +116,12 @@ function Card({
         {levelBadge && <span className="badge">{levelBadge}</span>}
         {bridge && <span className="badge badge-bridge">bridge</span>}
         {hot && <span className="badge badge-hot">hotspot #{hot}</span>}
+        {mastery === "mastered" && (
+          <span className="badge badge-mastered">mastered</span>
+        )}
+        {data.hidden !== undefined && data.hidden > 0 && (
+          <span className="badge badge-collapsed">+{data.hidden}</span>
+        )}
       </span>
       <Handle type="source" position={Position.Bottom} />
     </button>

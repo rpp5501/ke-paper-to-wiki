@@ -1,0 +1,341 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "arXiv:1706.03762",
+    "title": ""
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "Introduction",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular, have been firmly established as state of the art approaches in sequence modeling and transduction problems such as language modeling and ma"
+    },
+    {
+      "id": "sec_2",
+      "label": "Background",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The goal of reducing sequential computation also forms the foundation of the Extended Neural GPU , ByteNet and ConvS2S , all of which use convolutional neural networks as basic building block, computing hidden representations in parallel fo"
+    },
+    {
+      "id": "sec_3",
+      "label": "Model Architecture",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The Transformer - model architecture. Most competitive neural sequence transduction models have an encoder-decoder structure . Here, the encoder maps an input sequence of symbol representations to a sequence of continuous representations . "
+    },
+    {
+      "id": "sec_3_1",
+      "label": "Encoder and Decoder Stacks",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Encoder:The encoder is composed of a stack of identical layers. Each layer has two sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-wise fully connected feed-forward network. We employ a r"
+    },
+    {
+      "id": "sec_3_2",
+      "label": "Attention",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "An attention function can be described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum of the values, where the weight assigne"
+    },
+    {
+      "id": "sec_3_2_1",
+      "label": "Scaled Dot-Product Attention",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "We call our particular attention \"Scaled Dot-Product Attention\" (Figure). The input consists of queries and keys of dimension , and values of dimension . We compute the dot products of the query with all keys, divide each by , and apply a s"
+    },
+    {
+      "id": "sec_3_2_2",
+      "label": "Multi-Head Attention",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "[t]0.5 Scaled Dot-Product Attention [t]0.5 Multi-Head Attention (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel. Instead of performing a single attention function wi"
+    },
+    {
+      "id": "sec_3_2_3",
+      "label": "Applications of Attention in our Model",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "The Transformer uses multi-head attention in three different ways: In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer, and the memory keys and values come from the output of the encoder. This allows ever"
+    },
+    {
+      "id": "sec_3_3",
+      "label": "Position-wise Feed-Forward Networks",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations wi"
+    },
+    {
+      "id": "sec_3_4",
+      "label": "Embeddings and Softmax",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension . We also use the usual learned linear transformation and softmax function to convert the decod"
+    },
+    {
+      "id": "sec_3_5",
+      "label": "Positional Encoding",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Since our model contains no recurrence and no convolution, in order for the model to make use of the order of the sequence, we must inject some information about the relative or absolute position of the tokens in the sequence. To this end, "
+    },
+    {
+      "id": "sec_4",
+      "label": "Why Self-Attention",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this section we compare various aspects of self-attention layers to the recurrent and convolutional layers commonly used for mapping one variable-length sequence of symbol representations to another sequence of equal length , with , such"
+    },
+    {
+      "id": "sec_5",
+      "label": "Training",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "This section describes the training regime for our models."
+    },
+    {
+      "id": "sec_5_1",
+      "label": "Training Data and Batching",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs. Sentences were encoded using byte-pair encoding , which has a shared source-target vocabulary of about 37000 tokens. For English-Fren"
+    },
+    {
+      "id": "sec_5_2",
+      "label": "Hardware and Schedule",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We trained our models on one machine with 8 NVIDIA P100 GPUs. For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds. We trained the base models for a total of 100,000 steps o"
+    },
+    {
+      "id": "sec_5_3",
+      "label": "Optimizer",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We used the Adam optimizer with , and . We varied the learning rate over the course of training, according to the formula: This corresponds to increasing the learning rate linearly for the first training steps, and decreasing it thereafter "
+    },
+    {
+      "id": "sec_5_4",
+      "label": "Regularization",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We employ three types of regularization during training: Residual Dropout We apply dropout to the output of each sub-layer, before it is added to the sub-layer input and normalized. In addition, we apply dropout to the sums of the embedding"
+    },
+    {
+      "id": "sec_6",
+      "label": "Results",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "id": "sec_6_1",
+      "label": "Machine Translation",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The Transformer achieves better BLEU scores than previous state-of-the-art models on the English-to-German and English-to-French newstest2014 tests at a fraction of the training cost. 2*Model 2cBLEU 2cTraining Cost (FLOPs) 2-3 5-6 EN-DE EN-"
+    },
+    {
+      "id": "sec_6_2",
+      "label": "Model Variations",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Variations on the Transformer architecture. Unlisted values are identical to those of the base model. All metrics are on the English-to-German translation development set, newstest2013. Listed perplexities are per-wordpiece, according to ou"
+    },
+    {
+      "id": "sec_6_3",
+      "label": "English Constituency Parsing",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "The Transformer generalizes well to English constituency parsing (Results are on Section 23 of WSJ) Parser Training WSJ 23 F1 Vinyals Kaiser el al. (2014) WSJ only, discriminative 88.3 Petrov et al. (2006) WSJ only, discriminative 90.4 Zhu "
+    },
+    {
+      "id": "sec_7",
+      "label": "Conclusion",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In this work, we presented the Transformer, the first sequence transduction model based entirely on attention, replacing the recurrent layers most commonly used in encoder-decoder architectures with multi-headed self-attention. For translat"
+    },
+    {
+      "id": "sec_8",
+      "label": "Attention Visualizations",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "An example of the attention mechanism following long-distance dependencies in the encoder self-attention in layer 5 of 6. Many of the attention heads attend to a distant dependency of the verb `making', completing the phrase `making...more "
+    },
+    {
+      "id": "sec_9",
+      "label": "Two Feed-Forward Layers = Attention over Parameters",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In addition to attention layers, our model contains position-wise feed-forward networks (Section ), which consist of two linear transformations with a ReLU activation in between. In fact, these networks too can be seen as a form of attentio"
+    }
+  ],
+  "edges": [
+    {
+      "src": "sec_1",
+      "dst": "sec_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2",
+      "dst": "sec_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3",
+      "dst": "sec_3_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1",
+      "dst": "sec_3_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_2",
+      "dst": "sec_3_2_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_2_1",
+      "dst": "sec_3_2_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_2_2",
+      "dst": "sec_3_2_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_2_3",
+      "dst": "sec_3_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_3",
+      "dst": "sec_3_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_4",
+      "dst": "sec_3_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_5",
+      "dst": "sec_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4",
+      "dst": "sec_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5",
+      "dst": "sec_5_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_1",
+      "dst": "sec_5_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_2",
+      "dst": "sec_5_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_3",
+      "dst": "sec_5_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5_4",
+      "dst": "sec_6",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6",
+      "dst": "sec_6_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_1",
+      "dst": "sec_6_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_2",
+      "dst": "sec_6_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6_3",
+      "dst": "sec_7",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_7",
+      "dst": "sec_8",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_8",
+      "dst": "sec_9",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    }
+  ]
+}

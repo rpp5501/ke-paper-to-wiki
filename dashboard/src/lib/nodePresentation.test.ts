@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { levelBadgeLabel, nodeAccessibleName } from "./nodePresentation";
+import { levelBadgeLabel, masteryNote, nodeAccessibleName } from "./nodePresentation";
 
 describe("levelBadgeLabel", () => {
   it.each([
@@ -27,5 +27,30 @@ describe("nodeAccessibleName", () => {
 
   it("uses the node label alone when no badges are visible", () => {
     expect(nodeAccessibleName({ label: "Attention" })).toBe("Attention");
+  });
+
+  it("announces mastery once it is earned", () => {
+    expect(nodeAccessibleName({ label: "Attention", mastery: "mastered" }))
+      .toBe("Attention, mastered");
+  });
+
+  it("stays quiet about the unseen default", () => {
+    expect(nodeAccessibleName({ label: "Attention", mastery: "unseen" }))
+      .toBe("Attention");
+  });
+});
+
+describe("masteryNote", () => {
+  it.each([
+    ["unseen", null],
+    ["seen", "seen"],
+    ["quizzed", "quizzed"],
+    ["mastered", "mastered"],
+  ] as const)("%s → %s", (level, expected) => {
+    expect(masteryNote(level)).toBe(expected);
+  });
+
+  it("treats a missing level as nothing to announce", () => {
+    expect(masteryNote(undefined)).toBeNull();
   });
 });

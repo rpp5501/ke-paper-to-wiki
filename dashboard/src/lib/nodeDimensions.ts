@@ -27,12 +27,22 @@ export function estimatedLabelLines(label: string): number {
   return lines;
 }
 
-export function nodeCardSize(label: string): { width: number; height: number } {
-  return {
-    width: NODE_CARD_WIDTH,
-    height: Math.max(
-      NODE_MIN_HEIGHT,
-      CARD_CHROME_HEIGHT + estimatedLabelLines(label) * LABEL_LINE_HEIGHT,
-    ),
-  };
+// `scale` is the R16.B2 mind-map fan-out weighting. It must be applied
+// identically here and in the layout request, or ELK will pack the graph for
+// one size and the DOM will paint another.
+export function nodeCardSize(
+  label: string,
+  scale = 1,
+): { width: number; height: number } {
+  const height = Math.max(
+    NODE_MIN_HEIGHT,
+    CARD_CHROME_HEIGHT + estimatedLabelLines(label) * LABEL_LINE_HEIGHT,
+  );
+
+  return scale === 1
+    ? { width: NODE_CARD_WIDTH, height }
+    : {
+      width: Math.round(NODE_CARD_WIDTH * scale),
+      height: Math.round(height * scale),
+    };
 }

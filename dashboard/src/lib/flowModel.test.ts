@@ -30,4 +30,26 @@ describe("makeFlowEdges", () => {
 
     expect(edges).toEqual([]);
   });
+
+  it("curves edges for the mind map", () => {
+    const [edge] = makeFlowEdges(
+      [{ src: "a", dst: "b", kind: "part-of" }],
+      new Set(),
+      new Set(["a", "b"]),
+      true,
+    );
+
+    expect(edge.type).toBe("simplebezier");
+  });
+
+  it("leaves layered-mode edges untouched", () => {
+    const [edge] = makeFlowEdges(
+      [{ src: "a", dst: "b", kind: "part-of" }],
+      new Set(),
+      new Set(["a", "b"]),
+    );
+
+    // No `type` key at all, so React Flow keeps its default routing.
+    expect(edge).not.toHaveProperty("type");
+  });
 });

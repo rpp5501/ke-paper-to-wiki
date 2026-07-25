@@ -1,8 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../lib/source", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/source")>()),
+  getSections: () => ({ "3.2": { title: "SDPA", text: "the passage" } }),
+}));
 
 import type { VizEntry } from "../lib/viz";
-import { VizTierPresentation } from "./VizTier";
+import { VizTierPresentation, betOutcome } from "./VizTier";
 
 const entry: VizEntry = {
   kind: "template",
@@ -40,5 +45,47 @@ describe("VizTierPresentation", () => {
       <VizTierPresentation entry={{ ...entry, stale: true }} focused={false} />,
     );
     expect(html).toContain("older version of the page");
+  });
+});
+
+describe("VizTierPresentation provenance chip", () => {
+  it("shows the chip in the header when the visual cites a section", () => {
+    const html = renderToStaticMarkup(
+      <VizTierPresentation
+        entry={{ ...entry, sectionRef: "sec:3.2" }}
+        focused={false}
+      />,
+    );
+
+    expect(html).toContain("§3.2");
+  });
+
+  it("shows no chip when the visual cites nothing", () => {
+    const html = renderToStaticMarkup(
+      <VizTierPresentation entry={entry} focused={false} />,
+    );
+
+    expect(html).not.toContain("source-chip");
+  });
+});
+
+describe("betOutcome", () => {
+  it("reads the outcome of a well-formed bet message", () => {
+    expect(betOutcome({ type: "ke-bet-resolved", correct: true })).toBe(true);
+    expect(betOutcome({ type: "ke-bet-resolved", correct: false })).toBe(false);
+  });
+
+  it("ignores anything that is not a bet message", () => {
+    expect(betOutcome(null)).toBeNull();
+    expect(betOutcome("ke-bet-resolved")).toBeNull();
+    expect(betOutcome({ type: "other", correct: true })).toBeNull();
+    expect(betOutcome({ correct: true })).toBeNull();
+  });
+
+  it("rejects a non-boolean outcome instead of coercing it", () => {
+    // Generated template code is untrusted; "yes" must not become true.
+    expect(betOutcome({ type: "ke-bet-resolved", correct: "yes" })).toBeNull();
+    expect(betOutcome({ type: "ke-bet-resolved", correct: 1 })).toBeNull();
+    expect(betOutcome({ type: "ke-bet-resolved" })).toBeNull();
   });
 });

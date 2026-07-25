@@ -1,0 +1,124 @@
+{
+ "model": "gpt-5.6-luna",
+ "source_pdf": "C:\\Users\\Rp\\Downloads\\1306.1043v2.pdf",
+ "pack_route": "local-pdf",
+ "concept_stage": {
+  "injected": true,
+  "response_file": "llm-concept-response.json",
+  "status": "validated",
+  "nodes": 20,
+  "edges": 31
+ },
+ "page_stage": {
+  "injected": true,
+  "status": "validated",
+  "pages": 20,
+  "results": [
+   {
+    "id": "structural-intervention-distance",
+    "file": "pages/01_structural-intervention-distance.md",
+    "status": "ok"
+   },
+   {
+    "id": "causal-dag",
+    "file": "pages/02_causal-dag.md",
+    "status": "ok"
+   },
+   {
+    "id": "markov-factorization",
+    "file": "pages/03_markov-factorization.md",
+    "status": "ok"
+   },
+   {
+    "id": "intervention-distribution",
+    "file": "pages/04_intervention-distribution.md",
+    "status": "ok"
+   },
+   {
+    "id": "parent-adjustment",
+    "file": "pages/05_parent-adjustment.md",
+    "status": "ok"
+   },
+   {
+    "id": "valid-adjustment-set",
+    "file": "pages/06_valid-adjustment-set.md",
+    "status": "ok"
+   },
+   {
+    "id": "structural-hamming-distance",
+    "file": "pages/07_structural-hamming-distance.md",
+    "status": "ok"
+   },
+   {
+    "id": "ordered-intervention-pairs",
+    "file": "pages/08_ordered-intervention-pairs.md",
+    "status": "ok"
+   },
+   {
+    "id": "sid-dag-definition",
+    "file": "pages/09_sid-dag-definition.md",
+    "status": "ok"
+   },
+   {
+    "id": "graphical-sid-formulation",
+    "file": "pages/10_graphical-sid-formulation.md",
+    "status": "ok"
+   },
+   {
+    "id": "sid-vs-shd",
+    "file": "pages/11_sid-vs-shd.md",
+    "status": "ok"
+   },
+   {
+    "id": "cpdag",
+    "file": "pages/12_cpdag.md",
+    "status": "ok"
+   },
+   {
+    "id": "cpdag-sid-bounds",
+    "file": "pages/13_cpdag-sid-bounds.md",
+    "status": "ok"
+   },
+   {
+    "id": "sid-properties",
+    "file": "pages/14_sid-properties.md",
+    "status": "ok"
+   },
+   {
+    "id": "symmetrized-sid",
+    "file": "pages/15_symmetrized-sid.md",
+    "status": "ok"
+   },
+   {
+    "id": "sid-algorithm",
+    "file": "pages/16_sid-algorithm.md",
+    "status": "ok"
+   },
+   {
+    "id": "path-matrix",
+    "file": "pages/17_path-matrix.md",
+    "status": "ok"
+   },
+   {
+    "id": "reachability-matrix",
+    "file": "pages/18_reachability-matrix.md",
+    "status": "ok"
+   },
+   {
+    "id": "sid-scalability",
+    "file": "pages/19_sid-scalability.md",
+    "status": "ok"
+   },
+   {
+    "id": "linear-gaussian-effects",
+    "file": "pages/20_linear-gaussian-effects.md",
+    "status": "ok"
+   }
+  ]
+ },
+ "p3_research": {
+  "attempted": false,
+  "status": "not-run",
+  "reason": "all concepts are directly supported by the supplied PDF; optional research_mcp dependencies were not required"
+ }
+}

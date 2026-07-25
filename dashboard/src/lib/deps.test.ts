@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { dependencyRings, dependentsOf, normalizeDependencies } from "./deps";
+
+import {
+  dependencyRings,
+  dependentsOf,
+  neighborhood,
+  normalizeDependencies,
+} from "./deps";
 
 const EDGES = [
   { src: "sdpa", dst: "attention", kind: "part-of" },
@@ -21,6 +27,23 @@ describe("normalizeDependencies", () => {
       { dependent: "mha", dependency: "sdpa" },
       { dependent: "transformer", dependency: "attention" },
     ]);
+  });
+});
+
+describe("neighborhood", () => {
+  it("includes the node itself plus every 1-hop neighbour", () => {
+    // Direction-agnostic: sdpa points at attention, mha points at sdpa.
+    expect(neighborhood("sdpa", EDGES)).toEqual(
+      new Set(["sdpa", "attention", "mha"]),
+    );
+  });
+
+  it("does not reach two hops away", () => {
+    expect(neighborhood("sdpa", EDGES).has("transformer")).toBe(false);
+  });
+
+  it("returns just the node when it has no edges", () => {
+    expect(neighborhood("orphan", EDGES)).toEqual(new Set(["orphan"]));
   });
 });
 

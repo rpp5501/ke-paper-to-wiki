@@ -11,8 +11,10 @@ function makeProps(mode: Mode) {
     onToggleExpandAllMath: () => undefined,
     hiddenKinds: new Set<string>(),
     layoutPhase: "ready" as const,
+    masteredCount: 0,
     mode,
     noNodes: false,
+    nodeCount: 12,
     drawerAvailable: false,
     drawerOpen: false,
     onToggleDrawer: () => undefined,
@@ -67,6 +69,27 @@ describe("TopBarPresentation", () => {
     const group = markup.split('aria-label="Dashboard mode"')[1].split("</div>")[0];
 
     expect(group).toContain('aria-checked="true"');
+  });
+
+  it("reports mastery as a plain count, with no score or ranking language", () => {
+    const markup = renderToStaticMarkup(
+      <TopBarPresentation {...makeProps("learn")} masteredCount={3} />,
+    );
+
+    const pill = markup.match(/<span class="topbar-mastery"[^>]*>([^<]*)<\/span>/)?.[1];
+
+    expect(pill).toBe("3/12 mastered");
+    // Guardrail: mastery is evidence, not a game. Scoped to the pill itself —
+    // "xp" is a substring of "expand all math" elsewhere in the toolbar.
+    for (const banned of ["point", "xp", "score", "rank", "streak", "level"]) {
+      expect(pill?.toLowerCase()).not.toContain(banned);
+    }
+  });
+
+  it("stays silent until there is mastery to report", () => {
+    const markup = renderToStaticMarkup(<TopBarPresentation {...makeProps("learn")} />);
+
+    expect(markup).not.toContain("mastered");
   });
 
   it("describes both open panels as one-click close actions", () => {

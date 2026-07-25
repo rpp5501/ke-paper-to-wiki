@@ -132,16 +132,17 @@ def _tour(plan_graph, hotspots, pages):
     return steps
 
 
+def section_key(value):
+    """Join pack ids such as sec_3_2_1 to graph refs such as sec:3.2.1."""
+    value = str(value or "").strip().lower().replace("§", "")
+    value = re.sub(r"^sec(?:tion)?[:._-]*", "", value)
+    parts = re.findall(r"\d+|[a-z]+", value)
+    return ".".join(parts)
+
+
 def _eq_index(plan_graph, pack):
     if not pack:
         return {}
-
-    def section_key(value):
-        """Join pack ids such as sec_3_2_1 to graph refs such as sec:3.2.1."""
-        value = str(value or "").strip().lower().replace("§", "")
-        value = re.sub(r"^sec(?:tion)?[:._-]*", "", value)
-        parts = re.findall(r"\d+|[a-z]+", value)
-        return ".".join(parts)
 
     sec_of_eq = {
         e["id"]: section_key(e.get("section"))
@@ -276,7 +277,107 @@ def _excerpts(plan_graph, hotspots, repo_dir):
     return excerpts
 
 
-def _load_viz(viz_dir, pages_dir):
+def _provenance_ref(raw, known_sections, label):
+    """R16.C2 — keep a source_ref only when it resolves to an emitted section.
+
+    A chip that goes nowhere is worse than no chip, so an unresolvable ref is
+    warned about and dropped while its item or visual survives. With no
+    sections map (no --pack) there is nothing to check against, so refs pass
+    through untouched rather than every item warning.
+    """
+    ref = raw or ""
+    if not ref or not known_sections:
+        return ref
+    if section_key(ref) in known_sections:
+        return ref
+    print(f"{label}: source_ref '{ref}' matches no section, chip dropped")
+    return ""
+
+
+def _load_quiz(path, known_node_ids, known_sections=None):
+    """R15.2: quiz.json → validated items. Contract per item:
+    {id, nodeId, prompt, options: [{text, explain}]x>=2, correct: idx,
+    sourceRef?}. Items with unknown nodes or contract violations are dropped
+    with a warning — the build never breaks on quiz content."""
+    doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    out = []
+    for item in (doc or {}).get("items", []):
+        label = item.get("id") or item.get("prompt", "?")[:40]
+        options = item.get("options", [])
+        problems = []
+        if item.get("nodeId") not in known_node_ids:
+            problems.append(f"unknown nodeId '{item.get('nodeId')}'")
+        if not item.get("id"):
+            problems.append("missing id")
+        if not item.get("prompt"):
+            problems.append("missing prompt")
+        if len(options) < 2:
+            problems.append("needs >=2 options")
+        if any(not o.get("text") or not o.get("explain") for o in options):
+            problems.append("every option needs text+explain")
+        if not isinstance(item.get("correct"), int) \
+                or not 0 <= item.get("correct", -1) < len(options):
+            problems.append("correct index out of range")
+        if problems:
+            print(f"quiz: '{label}' dropped: {'; '.join(problems)}")
+            continue
+        out.append({
+            "id": item["id"],
+            "nodeId": item["nodeId"],
+            "prompt": item["prompt"],
+            "options": [{"text": o["text"], "explain": o["explain"]}
+                        for o in options],
+            "correct": item["correct"],
+            # `sourceRef` is R15.2's in-page anchor (e.g. '#the-math') and is
+            # unvalidated. R16.C2's paper-span ref is a separate input field,
+            # `source_ref`, surfaced as `sectionRef`.
+            "sourceRef": item.get("sourceRef", ""),
+            "sectionRef": _provenance_ref(
+                item.get("source_ref", ""), known_sections, f"quiz: '{label}'"),
+        })
+    return out
+
+
+def parse_data_ts(text):
+    """Inverse of to_data_ts — recover the bundle from src/data.gen.ts."""
+    start = text.index("KE_DATA = ") + len("KE_DATA = ")
+    return json.loads(text[start:text.rindex(";")])
+
+
+def _load_next_steps(path, known_node_ids):
+    """R15.1: next_steps ideas.yaml/json → [{title, rationale, kind, nodes,
+    sources, confirmed}]. Confirmed ideas sort first. Anchor node ids not in
+    the graph are dropped with a warning (provenance discipline) — an idea
+    whose every anchor is unknown is skipped entirely."""
+    import yaml
+    raw = Path(path).read_text(encoding="utf-8")
+    doc = yaml.safe_load(raw) if str(path).endswith((".yaml", ".yml")) \
+        else json.loads(raw)
+    out = []
+    for idea in (doc or {}).get("ideas", []):
+        anchors = idea.get("anchors", {})
+        nodes = [n for n in anchors.get("nodes", []) if n in known_node_ids]
+        dropped = set(anchors.get("nodes", [])) - set(nodes)
+        if dropped:
+            print(f"next-steps: '{idea.get('title', '?')}': "
+                  f"unknown anchor nodes dropped: {sorted(dropped)}")
+        if not nodes:
+            print(f"next-steps: '{idea.get('title', '?')}' skipped "
+                  f"(no known anchor nodes)")
+            continue
+        out.append({
+            "title": idea.get("title", ""),
+            "rationale": idea.get("rationale", ""),
+            "kind": idea.get("kind", ""),
+            "nodes": nodes,
+            "sources": anchors.get("sources", []),
+            "confirmed": bool(idea.get("confirmed")),
+        })
+    out.sort(key=lambda i: (not i["confirmed"], i["title"]))
+    return out
+
+
+def _load_viz(viz_dir, pages_dir, known_sections=None):
     """R13: viz/manifest.json + per-node HTML → {nodeId: entry+srcdoc+stale}.
 
     Staleness = manifest page_sha256 no longer matches the current page file.
@@ -313,12 +414,17 @@ def _load_viz(viz_dir, pages_dir):
             "prompt": entry.get("prompt", ""),
             "srcdoc": html_path.read_text(encoding="utf-8"),
             "stale": stale,
+            # R13.1 placement, chosen by the visualize skill.
+            "anchorTier": entry.get("anchor_tier", "after-intuition"),
+            "sectionRef": _provenance_ref(
+                entry.get("source_ref", ""), known_sections, f"viz: {node_id}"),
         }
     return out
 
 
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
-                 hotspots=None, repo_dir=None, viz_dir=None):
+                 hotspots=None, repo_dir=None, viz_dir=None,
+                 next_steps=None, quiz=None):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir)
     notes, glossary, trace = _load_notes(
@@ -347,8 +453,23 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
               "dependentSide": _DEPENDENT_SIDE}
     if repo_dir:
         bundle["mtimes"] = _source_dates(plan_graph, repo_dir)
+    # R16.C2 — sections are resolved before quiz and viz, which validate their
+    # source_ref against these keys.
+    sections = {
+        section_key(s["id"]): {"title": s.get("title", ""),
+                               "text": s.get("text", "")}
+        for s in (pack or {}).get("sections", []) if section_key(s["id"])
+    }
     if viz_dir:  # R13: opt-in only — absent flag leaves the bundle untouched
-        bundle["viz"] = _load_viz(viz_dir, pages_dir)
+        bundle["viz"] = _load_viz(viz_dir, pages_dir, sections)
+    if next_steps:  # R15.1: same opt-in discipline
+        bundle["nextSteps"] = _load_next_steps(
+            next_steps, {n["id"] for n in plan_graph["nodes"]})
+    if quiz:  # R15.2: same opt-in discipline
+        bundle["quiz"] = _load_quiz(
+            quiz, {n["id"] for n in plan_graph["nodes"]}, sections)
+    if pack:  # R15.11: same opt-in discipline
+        bundle["sections"] = sections
     return bundle
 
 
@@ -360,7 +481,7 @@ def to_data_ts(bundle) -> str:
 
 def main(argv=None):
     p = argparse.ArgumentParser(prog="build_data")
-    p.add_argument("--graph", required=True)
+    p.add_argument("--graph")
     p.add_argument("--pack")
     p.add_argument("--pages-dir")
     p.add_argument("--wiki-dir")
@@ -368,14 +489,49 @@ def main(argv=None):
     p.add_argument("--repo-dir")
     p.add_argument("--viz-dir", help="R13 viz pack dir (viz/manifest.json); "
                                      "omit for a viz-free build")
+    p.add_argument("--next-steps", help="R15.1 next_steps ideas.yaml/json; "
+                                        "omit to leave the bundle untouched")
+    p.add_argument("--quiz", help="R15.2 quiz.json; "
+                                  "omit to leave the bundle untouched")
+    p.add_argument("--update", action="store_true",
+                   help="patch opt-in sections (--viz-dir/--next-steps/--quiz)"
+                        " into the existing --out without a full rebuild")
     p.add_argument("--out", default="src/data.gen.ts")
     a = p.parse_args(argv)
     load = lambda x: json.loads(Path(x).read_text(encoding="utf-8")) if x else None
+
+    if a.update:
+        if not any([a.viz_dir, a.next_steps, a.quiz]):
+            p.error("--update needs at least one of "
+                    "--viz-dir / --next-steps / --quiz")
+        bundle = parse_data_ts(Path(a.out).read_text(encoding="utf-8"))
+        known = {n["id"] for n in bundle["nodes"]}
+        # R16.C2 — patch mode validates refs against the sections already in
+        # the bundle, so a partial rebuild applies the same provenance rule.
+        sections = bundle.get("sections") or {}
+        changed = []
+        if a.viz_dir:
+            bundle["viz"] = _load_viz(a.viz_dir, a.pages_dir, sections)
+            changed.append("viz")
+        if a.next_steps:
+            bundle["nextSteps"] = _load_next_steps(a.next_steps, known)
+            changed.append("nextSteps")
+        if a.quiz:
+            bundle["quiz"] = _load_quiz(a.quiz, known, sections)
+            changed.append("quiz")
+        Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
+        print(f"{a.out}: updated sections: {', '.join(changed)}")
+        return 0
+
+    if not a.graph:
+        p.error("--graph is required (or use --update to patch an "
+                "existing build)")
     bundle = build_bundle(load(a.graph), pack=load(a.pack),
                           pages_dir=a.pages_dir, wiki_dir=a.wiki_dir,
                           hotspots=(load(a.hotspots) or {}).get("hotspots")
                           if a.hotspots else None,
-                          repo_dir=a.repo_dir, viz_dir=a.viz_dir)
+                          repo_dir=a.repo_dir, viz_dir=a.viz_dir,
+                          next_steps=a.next_steps, quiz=a.quiz)
     Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
     print(f"{a.out}: {len(bundle['nodes'])} nodes, {len(bundle['tour'])} tour steps")
     return 0

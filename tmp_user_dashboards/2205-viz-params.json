@@ -1,0 +1,20 @@
+{
+  "projected-gradient-estimation": {
+    "template_id": "gradient-descent-2d",
+    "page": "18_projected-gradient-estimation.md",
+    "title": "Projected gradient search over the logit landscape",
+    "caption": "Move the starting point and adjust the step size to inspect convergence and unstable search paths.",
+    "prompt": "Which step size reaches a stable optimum without overshooting?",
+    "params": {
+      "title": "Projected-gradient search",
+      "a": 1.0,
+      "b": 2.4,
+      "mx": 0.2,
+      "my": -0.3,
+      "ripple": 0.3,
+      "startX": 1.6,
+      "startY": 1.5,
+      "prompt": "Which step size reaches a stable optimum without overshooting?"
+    }
+  }
+}

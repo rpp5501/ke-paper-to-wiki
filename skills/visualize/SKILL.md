@@ -36,6 +36,7 @@ pattern catalog: `plans/2026-07-17-viz-exemplar-research.md`.
      "caption": "Scrub d_k; watch QK^T -> softmax reweight the values.",
      "prompt": "Before you scrub: which token do you bet 'it' attends to most?",
      "page": "04_sdpa.md",
+     "anchor_tier": "after-intuition",
      "params": {"tokens": ["the","animal","crossed","it"], "queryIndex": 3,
                  "biasTarget": 1, "seed": 42}}}
    ```
@@ -43,10 +44,25 @@ pattern catalog: `plans/2026-07-17-viz-exemplar-research.md`.
    `prompt` is the place-your-bets question (required). Take tokens, labels,
    logits, and equation values from the page's own example — toy-sized honest
    data, 3–5 items, the paper's notation.
+
+   `anchor_tier` is where the visual sits (R13.1). `after-intuition` is the
+   default — build intuition before the formalism. Use `in-the-math` only
+   when the visual is unreadable without the notation already on the page,
+   e.g. a term-by-term decomposition. **Propose the placement and let the
+   owner confirm it**; never infer it silently.
 3. **Build + gate** (deterministic):
    `python -m paper_skill.viz build --params viz_params.json --pages-dir <pages> --out viz`
    Exit 1 = gate findings; fix params, never hand-edit generated HTML.
-4. **Surface**: rebuild the dashboard with `build_data.py ... --viz-dir viz`.
+4. **Review (optional, ≤2 passes)** — R13.1's bounded critique loop:
+   `python -m paper_skill.viz review <node> --viz-dir viz --pages-dir <pages>`
+   It prints the page, the current params, and a faithfulness / conciseness /
+   readability checklist, and points at `viz_templates/GUIDELINES.md`. Judge
+   each heading **citing the guideline you apply**, then propose *params-only*
+   edits (params, prompt, caption) and re-run `build`. Never edit generated
+   HTML, never edit the page. The third call refuses by design — accept the
+   visual or take it back to propose-and-confirm. Runs only inside an explicit
+   visualize invocation, never in a batch.
+5. **Surface**: rebuild the dashboard with `build_data.py ... --viz-dir viz`.
    Without the flag the build is untouched — that is the contract.
 
 ## Design rules (pinned, from exemplar research)

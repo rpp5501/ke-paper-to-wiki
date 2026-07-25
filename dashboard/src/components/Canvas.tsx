@@ -11,7 +11,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
-import { dependencyRings } from "../lib/deps";
+import { collapseGraph, collapsedCount, fanOutScales } from "../lib/collapse";
+import { dependencyRings, neighborhood } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
 import { nodeCardSize } from "../lib/nodeDimensions";
@@ -66,7 +67,22 @@ export default function Canvas() {
     mode,
     learnIdx,
     completedSteps,
+    layoutMode,
+    collapsed,
+    hoverNode,
   } = useApp();
+  // R16.B1 — folding a branch changes the layout input, not just what is
+  // painted, so ELK re-runs and the cache keys off the smaller graph.
+  const visible = useMemo(
+    () => collapseGraph(KE_NODES, KE_EDGES, collapsed),
+    [collapsed],
+  );
+  // R16.B2 — fan-out sizing is a mind-map affordance only; the layered
+  // reading view keeps uniform cards.
+  const scales = useMemo(
+    () => (layoutMode === "radial" ? fanOutScales(visible.edges) : undefined),
+    [layoutMode, visible],
+  );
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
     KE_NODES.length === 0 ? { phase: "empty" } : { phase: "loading" },
@@ -90,7 +106,7 @@ export default function Canvas() {
     let cancelled = false;
     setLayout({ phase: "loading" });
     setLayoutPhase("loading");
-    void layoutGraph(KE_NODES, KE_EDGES)
+    void layoutGraph(visible.nodes, visible.edges, layoutMode, scales)
       .then((positions) => {
         if (!cancelled) {
           setLayout({ phase: "ready", positions });
@@ -107,7 +123,7 @@ export default function Canvas() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, setLayoutPhase]);
+  }, [attempt, layoutMode, scales, setLayoutPhase, visible]);
 
   const rings = useMemo(
     () => (blastOn && selected ? dependencyRings(selected, KE_EDGES) : new Map()),
@@ -146,6 +162,12 @@ export default function Canvas() {
     () => learnFocus(mode, learnIdx, LEARN_STEPS, KE_EDGES, completedSteps),
     [completedSteps, mode, learnIdx],
   );
+  // R16.B3 — hovering a node halos it and its 1-hop neighbours; everything
+  // else dims. Suppressed while Learn mode already drives a focused subgraph.
+  const halo = useMemo(
+    () => (hoverNode && !focus ? neighborhood(hoverNode, visible.edges) : null),
+    [focus, hoverNode, visible],
+  );
   const lod = useMemo(() => (
     focus
       ? { showClusters: false, hiddenNodes: new Set<string>() }
@@ -161,7 +183,7 @@ export default function Canvas() {
   const nodes = useMemo<Node[]>(() => {
     if (layout.phase !== "ready") return [];
 
-    const memberNodes = KE_NODES
+    const memberNodes = visible.nodes
       .filter((node) => viewNodeIds.has(node.id))
       .filter((node) => !lod.hiddenNodes.has(node.id))
       .filter((node) => !focus || focus.has(node.id))
@@ -173,19 +195,38 @@ export default function Canvas() {
         const ringColor = ghostStyle && ghostStyle.ring >= 0
           ? RING_COLOR[ghostStyle.ring]
           : undefined;
-        const size = nodeCardSize(node.label);
+        const size = nodeCardSize(node.label, scales?.get(node.id) ?? 1);
         return [{
           id: node.id,
           type: CODE_KINDS.has(node.kind) ? "code" : "concept",
           position,
           ...size,
-          data: { label: node.label, level: node.level },
+          // React Flow only keeps a node's measured handle bounds when the
+          // node it is handed carries `measured` — top-level width/height does
+          // not count. We rebuild these objects every render and never round-
+          // trip through onNodesChange, so without this the bounds are wiped
+          // on the first re-render and every edge silently stops rendering.
+          measured: size,
+          // Counted against the full edge set — the descendants are already
+          // gone from `visible.edges`.
+          data: {
+            label: node.label,
+            level: node.level,
+            hidden: collapsed.has(node.id)
+              ? collapsedCount(node.id, KE_EDGES)
+              : undefined,
+          },
           selected: node.id === selected,
           focusable: false,
           draggable: false,
           connectable: false,
           style: {
-            opacity: ghostStyle?.opacity ?? 1,
+            // Whichever cue is active dims harder wins, so the halo never
+            // brightens a node the blast radius has already ghosted.
+            opacity: Math.min(
+              ghostStyle?.opacity ?? 1,
+              halo && !halo.has(node.id) ? 0.25 : 1,
+            ),
             outline: equationHits.has(node.id)
               ? "3px solid #7aa2f7"
               : ringColor
@@ -207,6 +248,7 @@ export default function Canvas() {
         type: "cluster",
         position: cluster.position,
         ...size,
+        measured: size,
         data: {
           label: cluster.label,
           count: cluster.count,
@@ -229,23 +271,32 @@ export default function Canvas() {
     return [...syntheticClusters, ...memberNodes];
   }, [
     blastOn,
+    collapsed,
     equationHits,
     flow,
     focus,
     ghost,
+    halo,
     layout,
     lod,
+    scales,
     selected,
     setView,
     view,
     viewClusters,
     viewNodeIds,
+    visible,
   ]);
 
   const shownIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const edges = useMemo(
-    () => makeFlowEdges(KE_EDGES, hiddenKinds, shownIds),
-    [hiddenKinds, shownIds],
+    () => makeFlowEdges(
+      visible.edges,
+      hiddenKinds,
+      shownIds,
+      layoutMode === "radial",
+    ),
+    [hiddenKinds, layoutMode, shownIds, visible],
   );
 
   useEffect(() => {

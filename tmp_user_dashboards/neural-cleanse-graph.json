@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "file:C:\\Users\\Rp\\OneDrive\\Desktop\\Fall 2025\\Neural_Cleanse_Identifying_and_Mitigating_Backdoor_Attacks_in_Neural_Networks.pdf",
+    "title": "Neural_Cleanse_Identifying_and_Mitigating_Backdoor_Attacks_in_Neural_Networks"
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "full-text",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks Bolun Wang\u2217\u2020, Yuanshun Yao\u2020, Shawn Shan\u2020, Huiying Li\u2020, Bimal Viswanath\u2021, Haitao Zheng\u2020, Ben Y. Zhao\u2020 \u2217UC Santa Barbara, \u2020University of Chicago, \u2021Virginia Tech \u2217b"
+    }
+  ],
+  "edges": []
+}

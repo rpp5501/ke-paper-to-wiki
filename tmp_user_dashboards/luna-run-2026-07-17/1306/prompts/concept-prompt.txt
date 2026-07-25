@@ -1,0 +1,4 @@
+You are the injected gpt-5.6-luna concept-extraction stage.
+Paper: 1306.1043v2
+Sections (canonical PDF route): sec_1: full-text — SID for Evaluating Causal Graphs Structural Intervention Distance (SID) for Evaluating Causal Graphs Jonas Peters peters
+Emit a validated 15–25 node learner concept graph with one thesis root, prerequisites, builds-on, and part-of edges.

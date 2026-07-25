@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  renderMathToString,
+  safeKatexOptions,
+  splitTiers,
+  tokenizeRichText,
+} from "./mathHtml";
+
+describe("splitTiers", () => {
+  it("extracts all five headed explanation tiers", () => {
+    const tiers = splitTiers(`
+# Scaled dot-product attention
+
+## TL;DR {#tldr}
+short answer
+
+## Intuition {#intuition}
+mental model
+
+## Mechanics {#mechanics}
+step by step
+
+## The Math {#the-math}
+$$\\sqrt{d_k}$$
+
+## Go Deeper {#go-deeper}
+further reading
+`);
+
+    expect(Object.keys(tiers)).toEqual([
+      "tldr",
+      "intuition",
+      "mechanics",
+      "the-math",
+      "go-deeper",
+    ]);
+    expect(tiers.tldr).toBe("short answer");
+    expect(tiers["the-math"]).toBe(String.raw`$$\sqrt{d_k}$$`);
+  });
+});
+
+describe("tokenizeRichText", () => {
+  it("emits display and inline math tokens without losing delimiters", () => {
+    const tokens = tokenizeRichText(
+      String.raw`Scale by $$\sqrt{d_k}$$, then apply \(\operatorname{softmax}(x)\).`,
+      {},
+    );
+
+    expect(tokens.filter((token) => token.kind === "math")).toEqual([
+      {
+        kind: "math",
+        source: String.raw`$$\sqrt{d_k}$$`,
+        tex: String.raw`\sqrt{d_k}`,
+        display: true,
+      },
+      {
+        kind: "math",
+        source: String.raw`\(\operatorname{softmax}(x)\)`,
+        tex: String.raw`\operatorname{softmax}(x)`,
+        display: false,
+      },
+    ]);
+  });
+
+  it("matches the longest glossary term at real word boundaries", () => {
+    const tokens = tokenizeRichText(
+      "softmax soft software resoftmax",
+      {
+        soft: "a normalized score",
+        softmax: "a normalized exponential distribution",
+      },
+    );
+
+    expect(
+      tokens
+        .filter((token) => token.kind === "glossary")
+        .map((token) => token.value),
+    ).toEqual(["softmax", "soft"]);
+  });
+
+  it("does not match a glossary term across a hyphenated word boundary", () => {
+    const tokens = tokenizeRichText("soft soft-max", {
+      soft: "a normalized score",
+    });
+
+    expect(tokens.filter((token) => token.kind === "glossary")).toHaveLength(1);
+  });
+
+  it("keeps glossary definitions as inert token data", () => {
+    const definition = '\"><img src=x onerror="alert(1)">';
+    const token = tokenizeRichText("Q", { Q: definition }).find(
+      (candidate) => candidate.kind === "glossary",
+    );
+
+    expect(token).toMatchObject({ kind: "glossary", value: "Q", definition });
+    expect(token).not.toHaveProperty("html");
+  });
+});
+
+describe("renderMathToString", () => {
+  it("shares one locked-down KaTeX option source with DOM rendering", () => {
+    expect(safeKatexOptions(true)).toMatchObject({
+      displayMode: true,
+      output: "html",
+      strict: "error",
+      throwOnError: true,
+      trust: false,
+    });
+  });
+
+  it("renders square-root notation with local KaTeX", () => {
+    const html = renderMathToString(String.raw`$$\sqrt{d_k}$$`);
+
+    expect(html).toContain("katex");
+    expect(html).toContain("sqrt");
+    expect(html).not.toContain(String.raw`$$\sqrt{d_k}$$`);
+  });
+
+  it("returns the original delimited source when KaTeX rejects the TeX", () => {
+    const invalid = String.raw`\(\definitelyNotARealKatexCommand{\)`;
+
+    expect(renderMathToString(invalid)).toBe(invalid);
+  });
+});

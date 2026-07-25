@@ -55,6 +55,7 @@ describe("ProgressRailPresentation", () => {
       <ProgressRailPresentation
         chapters={chapters}
         completedSteps={new Set(["alpha"])}
+        mastery={{}}
         hasClosing={false}
         hasNotation
         learnIdx={1}

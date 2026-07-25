@@ -1,0 +1,503 @@
+{
+ "toc": [
+  {
+   "id": "universal-post-training-backdoor-detection",
+   "label": "Universal Post-Training Backdoor Detection (MM-BD)",
+   "level": 0,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "backdoor-threat-model",
+   "label": "Backdoor Threat Model",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "post-training-defender-constraints",
+   "label": "Post-Training Defender Constraints",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "logit-output-landscape",
+   "label": "Pre-Softmax Logit Landscape",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "pattern-agnostic-signature",
+   "label": "Pattern-Agnostic Attack Signature",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "maximum-margin-objective",
+   "label": "Maximum-Margin Objective",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "unsupervised-anomaly-inference",
+   "label": "Unsupervised Anomaly Inference",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "activation-bound-mitigation",
+   "label": "Maximum-Margin Backdoor Mitigation (MM-BM)",
+   "level": 1,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "classical-poisoning-mechanism",
+   "label": "Classical Poisoning Mechanism",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "trigger-embedding-families",
+   "label": "Trigger-Embedding Families",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "attacker-capability-ladder",
+   "label": "Basic, Advanced, and Adaptive Attackers",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "clean-data-free-estimation",
+   "label": "Clean-Data-Free Estimation",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "boosting-and-suppression",
+   "label": "Target-Logit Boosting and Non-Target Suppression",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "projected-gradient-estimation",
+   "label": "Projected Gradient Estimation",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "null-margin-distribution",
+   "label": "Null Distribution of Class Margins",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "order-statistic-pvalue",
+   "label": "Order-Statistic p-Value",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "adaptive-attack-minimax",
+   "label": "Adaptive Min-Max Attack",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "per-neuron-upper-bounds",
+   "label": "Per-Neuron Activation Upper Bounds",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "accuracy-preserving-lagrangian",
+   "label": "Accuracy-Preserving Lagrangian",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  },
+  {
+   "id": "empirical-scope-and-limitations",
+   "label": "Empirical Scope and Failure Modes",
+   "level": 2,
+   "include": true,
+   "definition": null,
+   "sub_questions": null,
+   "research": null
+  }
+ ],
+ "meta": {
+  "kind": "concept",
+  "source": "file:C:\\Users\\Rp\\OneDrive\\Desktop\\Fall 2025\\EE456\\2205.06900v2 (2).pdf",
+  "generated": "2026-07-17",
+  "version": 1,
+  "model": "gpt-5.6-luna"
+ },
+ "nodes": [
+  {
+   "id": "universal-post-training-backdoor-detection",
+   "kind": "concept",
+   "level": 0,
+   "source_ref": "sec_1",
+   "label": "Universal Post-Training Backdoor Detection (MM-BD)"
+  },
+  {
+   "id": "backdoor-threat-model",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Backdoor Threat Model"
+  },
+  {
+   "id": "post-training-defender-constraints",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Post-Training Defender Constraints"
+  },
+  {
+   "id": "logit-output-landscape",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Pre-Softmax Logit Landscape"
+  },
+  {
+   "id": "pattern-agnostic-signature",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Pattern-Agnostic Attack Signature"
+  },
+  {
+   "id": "maximum-margin-objective",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Maximum-Margin Objective"
+  },
+  {
+   "id": "unsupervised-anomaly-inference",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Unsupervised Anomaly Inference"
+  },
+  {
+   "id": "activation-bound-mitigation",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_1",
+   "label": "Maximum-Margin Backdoor Mitigation (MM-BM)"
+  },
+  {
+   "id": "classical-poisoning-mechanism",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Classical Poisoning Mechanism"
+  },
+  {
+   "id": "trigger-embedding-families",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Trigger-Embedding Families"
+  },
+  {
+   "id": "attacker-capability-ladder",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Basic, Advanced, and Adaptive Attackers"
+  },
+  {
+   "id": "clean-data-free-estimation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Clean-Data-Free Estimation"
+  },
+  {
+   "id": "boosting-and-suppression",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Target-Logit Boosting and Non-Target Suppression"
+  },
+  {
+   "id": "projected-gradient-estimation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Projected Gradient Estimation"
+  },
+  {
+   "id": "null-margin-distribution",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Null Distribution of Class Margins"
+  },
+  {
+   "id": "order-statistic-pvalue",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Order-Statistic p-Value"
+  },
+  {
+   "id": "adaptive-attack-minimax",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Adaptive Min-Max Attack"
+  },
+  {
+   "id": "per-neuron-upper-bounds",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Per-Neuron Activation Upper Bounds"
+  },
+  {
+   "id": "accuracy-preserving-lagrangian",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Accuracy-Preserving Lagrangian"
+  },
+  {
+   "id": "empirical-scope-and-limitations",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_1",
+   "label": "Empirical Scope and Failure Modes"
+  }
+ ],
+ "edges": [
+  {
+   "src": "backdoor-threat-model",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "post-training-defender-constraints",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "logit-output-landscape",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "maximum-margin-objective",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "unsupervised-anomaly-inference",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "activation-bound-mitigation",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.9
+  },
+  {
+   "src": "classical-poisoning-mechanism",
+   "dst": "backdoor-threat-model",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "trigger-embedding-families",
+   "dst": "backdoor-threat-model",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "attacker-capability-ladder",
+   "dst": "backdoor-threat-model",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "pattern-agnostic-signature",
+   "dst": "logit-output-landscape",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "boosting-and-suppression",
+   "dst": "pattern-agnostic-signature",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.9
+  },
+  {
+   "src": "clean-data-free-estimation",
+   "dst": "maximum-margin-objective",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "projected-gradient-estimation",
+   "dst": "maximum-margin-objective",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "null-margin-distribution",
+   "dst": "unsupervised-anomaly-inference",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "order-statistic-pvalue",
+   "dst": "unsupervised-anomaly-inference",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "maximum-margin-objective",
+   "dst": "unsupervised-anomaly-inference",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "adaptive-attack-minimax",
+   "dst": "attacker-capability-ladder",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.9
+  },
+  {
+   "src": "per-neuron-upper-bounds",
+   "dst": "activation-bound-mitigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "accuracy-preserving-lagrangian",
+   "dst": "activation-bound-mitigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.95
+  },
+  {
+   "src": "empirical-scope-and-limitations",
+   "dst": "universal-post-training-backdoor-detection",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.9
+  },
+  {
+   "src": "empirical-scope-and-limitations",
+   "dst": "unsupervised-anomaly-inference",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "paper",
+   "confidence_score": 0.85
+  }
+ ]
+}

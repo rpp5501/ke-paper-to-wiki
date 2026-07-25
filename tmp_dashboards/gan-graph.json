@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "arXiv:1406.2661",
+    "title": ""
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "Introduction",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The promise of deep learning is to discover rich, hierarchical models that represent probability distributions over the kinds of data encountered in artificial intelligence applications, such as natural images, audio waveforms containing sp"
+    },
+    {
+      "id": "sec_2",
+      "label": "Related work",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "An alternative to directed graphical models with latent variables are undirected graphical models with latent variables, such as restricted Boltzmann machines (RBMs), deep Boltzmann machines (DBMs) and their numerous variants. The interacti"
+    },
+    {
+      "id": "sec_3",
+      "label": "Adversarial nets",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The adversarial modeling framework is most straightforward to apply when the models are both multilayer perceptrons. To learn the generator's distribution over data , we define a prior on input noise variables , then represent a mapping to "
+    },
+    {
+      "id": "sec_4",
+      "label": "Theoretical Results",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The generator implicitly defines a probability distribution as the distribution of the samples obtained when . Therefore, we would like Algorithm to converge to a good estimator of , if given enough capacity and training time. The results o"
+    },
+    {
+      "id": "sec_4_1",
+      "label": "Global Optimality of",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "We first consider the optimal discriminator for any given generator . For fixed, the optimal discriminator is The training criterion for the discriminator D, given any generator , is to maximize the quantity For any , the function achieves "
+    },
+    {
+      "id": "sec_4_2",
+      "label": "Convergence of Algorithm",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "If and have enough capacity, and at each step of Algorithm, the discriminator is allowed to reach its optimum given , and is updated so as to improve the criterion then converges to Consider as a function of as done in the above criterion. "
+    },
+    {
+      "id": "sec_5",
+      "label": "Experiments",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "We trained adversarial nets an a range of datasets including MNIST, the Toronto Face Database (TFD), and CIFAR-10. The generator nets used a mixture of rectifier linear activations and sigmoid activations, while the discriminator net used m"
+    },
+    {
+      "id": "sec_6",
+      "label": "Advantages and disadvantages",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "This new framework comes with advantages and disadvantages relative to previous modeling frameworks. The disadvantages are primarily that there is no explicit representation of , and that must be synchronized well with during training (in p"
+    },
+    {
+      "id": "sec_7",
+      "label": "Conclusions and future work",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "This framework admits many straightforward extensions: A conditional generative model can be obtained by adding as input to both and . Learned approximate inference can be performed by training an auxiliary network to predict given . This i"
+    },
+    {
+      "id": "sec_7_0_1",
+      "label": "Acknowledgments",
+      "kind": "concept",
+      "level": 3,
+      "status": "active",
+      "summary": "We would like to acknowledge Patrice Marcotte, Olivier Delalleau, Kyunghyun Cho, Guillaume Alain and Jason Yosinski for helpful discussions. Yann Dauphin shared his Parzen window evaluation code with us. We would like to thank the developer"
+    }
+  ],
+  "edges": [
+    {
+      "src": "sec_1",
+      "dst": "sec_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2",
+      "dst": "sec_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3",
+      "dst": "sec_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4",
+      "dst": "sec_4_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4_1",
+      "dst": "sec_4_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4_2",
+      "dst": "sec_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5",
+      "dst": "sec_6",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_6",
+      "dst": "sec_7",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_7",
+      "dst": "sec_7_0_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    }
+  ]
+}

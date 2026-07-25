@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "kind": "concept",
+    "source": "arXiv:1505.04597",
+    "title": ""
+  },
+  "nodes": [
+    {
+      "id": "sec_1",
+      "label": "Introduction",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "In the last two years, deep convolutional networks have outperformed the state of the art in many visual recognition tasks, e.g. . While convolutional networks have already existed for a long time , their success was limited due to the size"
+    },
+    {
+      "id": "sec_2",
+      "label": "Network Architecture",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The network architecture is illustrated in . It consists of a contracting path (left side) and an expansive path (right side). The contracting path follows the typical architecture of a convolutional network. It consists of the repeated app"
+    },
+    {
+      "id": "sec_3",
+      "label": "Training",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The input images and their corresponding segmentation maps are used to train the network with the stochastic gradient descent implementation of Caffe . Due to the unpadded convolutions, the output image is smaller than the input by a consta"
+    },
+    {
+      "id": "sec_3_1",
+      "label": "Data Augmentation",
+      "kind": "concept",
+      "level": 2,
+      "status": "active",
+      "summary": "Data augmentation is essential to teach the network the desired invariance and robustness properties, when only few training samples are available. In case of microscopical images we primarily need shift and rotation invariance as well as r"
+    },
+    {
+      "id": "sec_4",
+      "label": "Experiments",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "We demonstrate the application of the u-net to three different segmentation tasks. The first task is the segmentation of neuronal structures in electron microscopic recordings. An example of the data set and our obtained segmentation is dis"
+    },
+    {
+      "id": "sec_5",
+      "label": "Conclusion",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "The u-net architecture achieves very good performance on very different biomedical segmentation applications. Thanks to data augmentation with elastic deformations, it only needs very few annotated images and has a very reasonable training "
+    },
+    {
+      "id": "sec_6",
+      "label": "Acknowlegements",
+      "kind": "concept",
+      "level": 1,
+      "status": "active",
+      "summary": "This study was supported by the Excellence Initiative of the German Federal and State governments (EXC 294) and by the BMBF (Fkz 0316185B). splncs03"
+    }
+  ],
+  "edges": [
+    {
+      "src": "sec_1",
+      "dst": "sec_2",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_2",
+      "dst": "sec_3",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3",
+      "dst": "sec_3_1",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_3_1",
+      "dst": "sec_4",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_4",
+      "dst": "sec_5",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    },
+    {
+      "src": "sec_5",
+      "dst": "sec_6",
+      "kind": "prerequisite",
+      "confidence": "1.0"
+    }
+  ]
+}

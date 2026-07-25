@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent, type KeyboardEvent, type Ref } from "react";
 
 import { KE_DATA } from "../data.gen";
+import { masteredCount } from "../lib/mastery";
 import {
   moveIndex,
   navigationDisabledReason,
@@ -10,6 +11,10 @@ import {
 import { useApp, type LayoutPhase, type Mode } from "../store";
 import type { KENode } from "../types";
 import CompactPill from "./CompactPill";
+import ContinuePanel from "./ContinuePanel";
+import MapToggle from "./MapToggle";
+import QuizPanel from "./QuizPanel";
+import ReviewPanel from "./ReviewPanel";
 import { useNodeNavigation } from "./useNodeNavigation";
 import VizGallery from "./VizGallery";
 
@@ -51,8 +56,10 @@ export type TopBarPresentationProps = {
   onToggleExpandAllMath: () => void;
   hiddenKinds: Set<string>;
   layoutPhase: LayoutPhase;
+  masteredCount: number;
   mode: Mode;
   noNodes: boolean;
+  nodeCount: number;
   onToggleDrawer: () => void;
   onToggleSidebar: () => void;
   onSetBlastOn: (blastOn: boolean) => void;
@@ -72,8 +79,10 @@ export function TopBarPresentation({
   onToggleExpandAllMath,
   hiddenKinds,
   layoutPhase,
+  masteredCount,
   mode,
   noNodes,
+  nodeCount,
   onToggleDrawer,
   onToggleSidebar,
   onSetBlastOn,
@@ -214,6 +223,14 @@ export function TopBarPresentation({
         </CompactPill>
       )}
 
+      {/* R16.A2 — evidence of understanding, deliberately not a score: a
+          plain count, no points, no XP, no leaderboard. */}
+      {masteredCount > 0 && (
+        <span className="topbar-mastery" role="status">
+          {masteredCount}/{nodeCount} mastered
+        </span>
+      )}
+
       <SearchBox
         disabledReason={navigationDisabledReason(
           noNodes ? "empty" : layoutPhase,
@@ -251,6 +268,7 @@ export default function TopBar({
     selected,
     drawerOpen,
     setDrawerOpen,
+    mastery,
   } = useApp();
   const noNodes = KE_NODES.length === 0;
 
@@ -264,8 +282,10 @@ export default function TopBar({
         onToggleExpandAllMath={toggleExpandAllMath}
         hiddenKinds={hiddenKinds}
         layoutPhase={layoutPhase}
+        masteredCount={masteredCount(mastery)}
         mode={mode}
         noNodes={noNodes}
+        nodeCount={KE_NODES.length}
         onToggleDrawer={() => setDrawerOpen(!drawerOpen)}
         onToggleSidebar={onToggleSidebar}
         onSetBlastOn={setBlastOn}
@@ -276,7 +296,11 @@ export default function TopBar({
         sidebarTriggerRef={sidebarTriggerRef}
         view={view}
       />
+      <MapToggle />
       <VizGallery />
+      <QuizPanel />
+      <ReviewPanel />
+      <ContinuePanel />
     </>
   );
 }

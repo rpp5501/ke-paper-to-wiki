@@ -1,0 +1,16 @@
+{
+  "confidence-score-gap": {
+    "template_id": "softmax-temperature",
+    "page": "21_confidence-score-gap.md",
+    "title": "Confidence scores under candidate sensitive values",
+    "caption": "Adjust candidate scores and temperature to see when one sensitive-value hypothesis becomes distinguishable.",
+    "prompt": "Which candidate value will dominate before you reveal the normalized scores?",
+    "params": {
+      "title": "Confidence-score gap explorer",
+      "labels": ["candidate A", "candidate B", "candidate C"],
+      "logits": [2.4, 1.5, 0.6],
+      "betTemperature": 0.5,
+      "prompt": "Which candidate value will dominate before you reveal the normalized scores?"
+    }
+  }
+}

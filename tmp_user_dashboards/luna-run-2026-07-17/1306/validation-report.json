@@ -1,0 +1,26 @@
+{
+ "anti_toc_guard": {
+  "status": "pass",
+  "sec_like_nodes": 0,
+  "edge_kinds": [
+   "part-of",
+   "prerequisite",
+   "builds-on"
+  ]
+ },
+ "page_tiers": {
+  "status": "pass",
+  "pages": 20,
+  "problems": []
+ },
+ "page_coverage": {
+  "status": "pass",
+  "graph_nodes": 20
+ },
+ "concept_validation": {
+  "status": "pass",
+  "nodes": 20,
+  "edges": 31,
+  "one_root": true
+ }
+}
