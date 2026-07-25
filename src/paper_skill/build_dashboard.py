@@ -12,7 +12,9 @@ lazily so graph-only builds work without them.
 import json
 from pathlib import Path
 
-from .concepts import extract_concepts, is_toc_graph, require_ok
+from .concepts import (
+    extract_concepts, graph_quality_findings, is_toc_graph, require_ok,
+)
 from .llm_spawn import claude_spawn
 from .paper2pack import build_pack
 
@@ -31,7 +33,13 @@ def build_graph(target: str, spawn=claude_spawn, *, cache_dir=None) -> dict:
         raise RuntimeError(
             f"extraction returned a table-of-contents-shaped graph for {target!r}"
         )
-    return {"pack": pack, "graph": graph, "toc": result["toc"]}
+    # R16 §5.1c — advisory quality metrics. Printed, never fatal: a thin graph
+    # is still a real graph, unlike a TOC-shaped one.
+    quality = graph_quality_findings(graph)
+    for finding in quality:
+        print(f"graph quality: {finding}")
+    return {"pack": pack, "graph": graph, "toc": result["toc"],
+            "quality": quality}
 
 
 def write_graph(target: str, out_dir: str, spawn=claude_spawn) -> Path:

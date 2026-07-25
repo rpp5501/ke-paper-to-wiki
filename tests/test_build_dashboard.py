@@ -34,6 +34,26 @@ def test_build_graph_returns_validated_graph(monkeypatch):
     assert built["graph"]["nodes"][0]["id"] == "transformer"
 
 
+def test_build_graph_reports_graph_quality(monkeypatch, capsys):
+    """R16 §5.1c — the metrics reach the operator instead of dying in a lib."""
+    monkeypatch.setattr("paper_skill.build_dashboard.build_pack", lambda *a, **k: PACK)
+
+    built = build_graph("arXiv:1706.03762", spawn=lambda p: GOOD)
+
+    # A single-node graph has no part-of hierarchy at all.
+    assert any("part-of" in f for f in built["quality"])
+    assert "part-of" in capsys.readouterr().out
+
+
+def test_graph_quality_never_blocks_the_build(monkeypatch):
+    """Advisory only: a thin graph still builds, unlike a TOC-shaped one."""
+    monkeypatch.setattr("paper_skill.build_dashboard.build_pack", lambda *a, **k: PACK)
+
+    built = build_graph("arXiv:1706.03762", spawn=lambda p: GOOD)
+
+    assert built["graph"]["nodes"][0]["id"] == "transformer"
+
+
 def test_build_graph_surfaces_pack_failure(monkeypatch):
     monkeypatch.setattr("paper_skill.build_dashboard.build_pack",
                         lambda *a, **k: {"status": "fetch_failed", "hint": "x"})
