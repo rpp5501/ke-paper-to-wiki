@@ -25,7 +25,7 @@ import {
   type RichTextToken,
 } from "../lib/mathHtml";
 import { navigationDisabledReason } from "../lib/navigation";
-import { getViz } from "../lib/viz";
+import { getViz, vizAnchorTier } from "../lib/viz";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
@@ -428,7 +428,10 @@ export function DrawerPresentation({
                   <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
                 </div>
               </details>
-              {tier === "intuition" && viz && (
+              {/* R13.1 — placement comes from the manifest, not a hardcoded
+                  tier: some visuals only make sense once the notation is on
+                  the page. */}
+              {viz && tier === vizAnchorTier(viz) && (
                 <VizTier entry={viz} nodeId={selected} />
               )}
             </Fragment>

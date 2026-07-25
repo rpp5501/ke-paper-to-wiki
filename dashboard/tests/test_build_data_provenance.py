@@ -104,6 +104,24 @@ def test_viz_drops_an_unresolvable_ref_but_keeps_the_visual(tmp_path, capsys):
     assert "9.9" in capsys.readouterr().out
 
 
+def test_viz_carries_its_anchor_tier(tmp_path):
+    """R13.1 — placement chosen by the skill must reach the dashboard."""
+    viz = tmp_path / "viz"
+    viz.mkdir()
+    (viz / "a.html").write_text("<html>v</html>", encoding="utf-8")
+    (viz / "manifest.json").write_text(json.dumps({"attention": {
+        "src": "a.html", "title": "T", "caption": "c", "prompt": "p",
+        "anchor_tier": "in-the-math"}}), encoding="utf-8")
+
+    bundle = build_bundle(FIXTURE, viz_dir=str(viz))
+    assert bundle["viz"]["attention"]["anchorTier"] == "in-the-math"
+
+
+def test_viz_anchor_tier_defaults_to_after_intuition(tmp_path):
+    bundle = build_bundle(FIXTURE, pack=PACK, viz_dir=_viz_dir(tmp_path, None))
+    assert bundle["viz"]["attention"]["anchorTier"] == "after-intuition"
+
+
 def test_viz_without_a_ref_is_unaffected(tmp_path):
     bundle = build_bundle(FIXTURE, pack=PACK, viz_dir=_viz_dir(tmp_path, None))
     assert bundle["viz"]["attention"]["sectionRef"] == ""

@@ -413,6 +413,8 @@ def _load_viz(viz_dir, pages_dir, known_sections=None):
             "prompt": entry.get("prompt", ""),
             "srcdoc": html_path.read_text(encoding="utf-8"),
             "stale": stale,
+            # R13.1 placement, chosen by the visualize skill.
+            "anchorTier": entry.get("anchor_tier", "after-intuition"),
             "sectionRef": _provenance_ref(
                 entry.get("source_ref", ""), known_sections, f"viz: {node_id}"),
         }
