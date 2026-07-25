@@ -201,6 +201,12 @@ export default function Canvas() {
           type: CODE_KINDS.has(node.kind) ? "code" : "concept",
           position,
           ...size,
+          // React Flow only keeps a node's measured handle bounds when the
+          // node it is handed carries `measured` — top-level width/height does
+          // not count. We rebuild these objects every render and never round-
+          // trip through onNodesChange, so without this the bounds are wiped
+          // on the first re-render and every edge silently stops rendering.
+          measured: size,
           // Counted against the full edge set — the descendants are already
           // gone from `visible.edges`.
           data: {
@@ -242,6 +248,7 @@ export default function Canvas() {
         type: "cluster",
         position: cluster.position,
         ...size,
+        measured: size,
         data: {
           label: cluster.label,
           count: cluster.count,
