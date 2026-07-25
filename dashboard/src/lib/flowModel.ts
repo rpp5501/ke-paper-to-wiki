@@ -12,10 +12,13 @@ function edgeStyle(kind: string) {
   return { stroke: "#475569" };
 }
 
+// R16.B2 — the mind-map view curves its edges; the layered reading view keeps
+// the default orthogonal-ish routing untouched.
 export function makeFlowEdges(
   edges: KEEdge[],
   hiddenKinds: Set<string>,
   shownIds: Set<string>,
+  curved = false,
 ): Edge[] {
   return edges
     .filter((edge) => (
@@ -30,6 +33,7 @@ export function makeFlowEdges(
       selectable: false,
       focusable: false,
       ariaLabel: `${edge.src} ${edge.kind} ${edge.dst}`,
+      ...(curved ? { type: "simplebezier" } : {}),
       style: edgeStyle(edge.kind),
     }));
 }

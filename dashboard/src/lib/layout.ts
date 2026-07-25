@@ -40,10 +40,16 @@ export function resetLayoutGraph(): void {
   resetLayoutState();
 }
 
-function layoutKey(nodes: KENode[], edges: KEEdge[]): string {
+// Sizes go into the key, so the R16.B2 fan-out scaling re-layouts rather than
+// reusing a cache entry laid out for different node dimensions.
+function layoutKey(
+  nodes: KENode[],
+  edges: KEEdge[],
+  scales?: Map<string, number>,
+): string {
   return JSON.stringify({
     nodes: nodes.map((node) => {
-      const size = nodeCardSize(node.label);
+      const size = nodeCardSize(node.label, scales?.get(node.id) ?? 1);
       return [node.id, size.width, size.height];
     }),
     edges: edges.map((edge) => [edge.src, edge.dst]),
@@ -89,8 +95,9 @@ export function layoutGraph(
   nodes: KENode[],
   edges: KEEdge[],
   algorithm: LayoutAlgorithm = "layered",
+  scales?: Map<string, number>,
 ): Promise<Map<string, { x: number; y: number }>> {
-  const key = `${algorithm}|${layoutKey(nodes, edges)}`;
+  const key = `${algorithm}|${layoutKey(nodes, edges, scales)}`;
   const cached = layoutCache.get(key);
   if (cached) return cached;
 
@@ -98,7 +105,10 @@ export function layoutGraph(
     .then((elk) => withTimeout(elk.layout({
       id: "root",
       layoutOptions: LAYOUT_OPTIONS[algorithm],
-      children: nodes.map((node) => ({ id: node.id, ...nodeCardSize(node.label) })),
+      children: nodes.map((node) => ({
+        id: node.id,
+        ...nodeCardSize(node.label, scales?.get(node.id) ?? 1),
+      })),
       edges: edges.map((edge, index) => ({
         id: `e${index}`,
         sources: [edge.src],

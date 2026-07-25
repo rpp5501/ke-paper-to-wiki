@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  FAN_OUT_MAX,
   collapseGraph,
   collapsedCount,
+  fanOutScales,
   hasChildren,
   hiddenByCollapse,
   partOfChildren,
@@ -84,6 +86,28 @@ describe("collapsedCount / hasChildren", () => {
   it("knows which nodes can fold at all", () => {
     expect(hasChildren("attention", edges)).toBe(true);
     expect(hasChildren("eq", edges)).toBe(false);
+  });
+});
+
+describe("fanOutScales", () => {
+  it("scales a node with the size of its part-of fan-out", () => {
+    const scales = fanOutScales(edges);
+
+    // transformer has 2 children, attention has 2, sdpa has 1.
+    expect(scales.get("transformer")).toBeCloseTo(1.24);
+    expect(scales.get("sdpa")).toBeCloseTo(1.12);
+  });
+
+  it("leaves childless nodes unscaled", () => {
+    expect(fanOutScales(edges).get("eq")).toBeUndefined();
+  });
+
+  it("caps a very wide branch", () => {
+    const wide = Array.from({ length: 20 }, (_, i) => (
+      { src: `c${i}`, dst: "hub", kind: "part-of" }
+    )) as KEEdge[];
+
+    expect(fanOutScales(wide).get("hub")).toBe(FAN_OUT_MAX);
   });
 });
 

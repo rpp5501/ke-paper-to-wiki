@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
-import { collapseGraph, collapsedCount } from "../lib/collapse";
+import { collapseGraph, collapsedCount, fanOutScales } from "../lib/collapse";
 import { dependencyRings, neighborhood } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
@@ -77,6 +77,12 @@ export default function Canvas() {
     () => collapseGraph(KE_NODES, KE_EDGES, collapsed),
     [collapsed],
   );
+  // R16.B2 — fan-out sizing is a mind-map affordance only; the layered
+  // reading view keeps uniform cards.
+  const scales = useMemo(
+    () => (layoutMode === "radial" ? fanOutScales(visible.edges) : undefined),
+    [layoutMode, visible],
+  );
   const [attempt, setAttempt] = useState(0);
   const [layout, setLayout] = useState<LayoutState>(
     KE_NODES.length === 0 ? { phase: "empty" } : { phase: "loading" },
@@ -100,7 +106,7 @@ export default function Canvas() {
     let cancelled = false;
     setLayout({ phase: "loading" });
     setLayoutPhase("loading");
-    void layoutGraph(visible.nodes, visible.edges, layoutMode)
+    void layoutGraph(visible.nodes, visible.edges, layoutMode, scales)
       .then((positions) => {
         if (!cancelled) {
           setLayout({ phase: "ready", positions });
@@ -117,7 +123,7 @@ export default function Canvas() {
     return () => {
       cancelled = true;
     };
-  }, [attempt, layoutMode, setLayoutPhase, visible]);
+  }, [attempt, layoutMode, scales, setLayoutPhase, visible]);
 
   const rings = useMemo(
     () => (blastOn && selected ? dependencyRings(selected, KE_EDGES) : new Map()),
@@ -189,7 +195,7 @@ export default function Canvas() {
         const ringColor = ghostStyle && ghostStyle.ring >= 0
           ? RING_COLOR[ghostStyle.ring]
           : undefined;
-        const size = nodeCardSize(node.label);
+        const size = nodeCardSize(node.label, scales?.get(node.id) ?? 1);
         return [{
           id: node.id,
           type: CODE_KINDS.has(node.kind) ? "code" : "concept",
@@ -266,6 +272,7 @@ export default function Canvas() {
     halo,
     layout,
     lod,
+    scales,
     selected,
     setView,
     view,
@@ -276,8 +283,13 @@ export default function Canvas() {
 
   const shownIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const edges = useMemo(
-    () => makeFlowEdges(visible.edges, hiddenKinds, shownIds),
-    [hiddenKinds, shownIds, visible],
+    () => makeFlowEdges(
+      visible.edges,
+      hiddenKinds,
+      shownIds,
+      layoutMode === "radial",
+    ),
+    [hiddenKinds, layoutMode, shownIds, visible],
   );
 
   useEffect(() => {

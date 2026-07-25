@@ -47,6 +47,24 @@ export function hasChildren(nodeId: string, edges: KEEdge[]): boolean {
   return (partOfChildren(edges).get(nodeId)?.length ?? 0) > 0;
 }
 
+// R16.B2 — in the mind map a node's size reads its part-of fan-out, so the
+// hubs of the hierarchy are visibly the hubs. Capped so a wide branch cannot
+// swamp the canvas. Nodes with no children are absent (scale 1).
+export const FAN_OUT_STEP = 0.12;
+export const FAN_OUT_MAX = 1.4;
+
+export function fanOutScales(edges: KEEdge[]): Map<string, number> {
+  const scales = new Map<string, number>();
+
+  for (const [parent, children] of partOfChildren(edges)) {
+    scales.set(
+      parent,
+      Math.min(FAN_OUT_MAX, 1 + children.length * FAN_OUT_STEP),
+    );
+  }
+  return scales;
+}
+
 export type VisibleGraph = { nodes: KENode[]; edges: KEEdge[] };
 
 // Edges are dropped only when they touch a hidden node, so non-tree edges
