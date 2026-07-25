@@ -71,6 +71,8 @@ export interface AppState {
   setQuizOpen: (open: boolean) => void;
   collapsed: Set<string>;
   toggleCollapsed: (nodeId: string) => void;
+  hoverNode: string | null;
+  setHoverNode: (nodeId: string | null) => void;
 }
 
 // Opening a node is the weakest mastery evidence there is. Both paths that
@@ -180,6 +182,8 @@ export const useApp = create<AppState>((set) => ({
   mastery: readLedger(),
   quizOpen: false,
   setQuizOpen: (quizOpen) => set({ quizOpen }),
+  hoverNode: null,
+  setHoverNode: (hoverNode) => set({ hoverNode }),
   collapsed: new Set(),
   toggleCollapsed: (nodeId) =>
     set((state) => {

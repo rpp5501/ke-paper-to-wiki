@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { KE_DATA } from "../data.gen";
 import { ghostStyles } from "../lib/blastRadius";
 import { collapseGraph, collapsedCount } from "../lib/collapse";
-import { dependencyRings } from "../lib/deps";
+import { dependencyRings, neighborhood } from "../lib/deps";
 import { makeFlowEdges } from "../lib/flowModel";
 import { layoutGraph, resetLayoutGraph } from "../lib/layout";
 import { nodeCardSize } from "../lib/nodeDimensions";
@@ -69,6 +69,7 @@ export default function Canvas() {
     completedSteps,
     layoutMode,
     collapsed,
+    hoverNode,
   } = useApp();
   // R16.B1 — folding a branch changes the layout input, not just what is
   // painted, so ELK re-runs and the cache keys off the smaller graph.
@@ -155,6 +156,12 @@ export default function Canvas() {
     () => learnFocus(mode, learnIdx, LEARN_STEPS, KE_EDGES, completedSteps),
     [completedSteps, mode, learnIdx],
   );
+  // R16.B3 — hovering a node halos it and its 1-hop neighbours; everything
+  // else dims. Suppressed while Learn mode already drives a focused subgraph.
+  const halo = useMemo(
+    () => (hoverNode && !focus ? neighborhood(hoverNode, visible.edges) : null),
+    [focus, hoverNode, visible],
+  );
   const lod = useMemo(() => (
     focus
       ? { showClusters: false, hiddenNodes: new Set<string>() }
@@ -202,7 +209,12 @@ export default function Canvas() {
           draggable: false,
           connectable: false,
           style: {
-            opacity: ghostStyle?.opacity ?? 1,
+            // Whichever cue is active dims harder wins, so the halo never
+            // brightens a node the blast radius has already ghosted.
+            opacity: Math.min(
+              ghostStyle?.opacity ?? 1,
+              halo && !halo.has(node.id) ? 0.25 : 1,
+            ),
             outline: equationHits.has(node.id)
               ? "3px solid #7aa2f7"
               : ringColor
@@ -251,6 +263,7 @@ export default function Canvas() {
     flow,
     focus,
     ghost,
+    halo,
     layout,
     lod,
     selected,

@@ -37,6 +37,19 @@ export function dependentsOf(id: string, edges: KEEdge[]): string[] {
   return dependentsFrom(id, normalizeDependencies(edges));
 }
 
+// R16.B3 — a node plus everything one edge away, ignoring direction and kind.
+// Used for the hover halo, where "related to what I'm pointing at" is the
+// question, not "what depends on what".
+export function neighborhood(id: string, edges: KEEdge[]): Set<string> {
+  const halo = new Set([id]);
+
+  for (const edge of edges) {
+    if (edge.src === id) halo.add(edge.dst);
+    if (edge.dst === id) halo.add(edge.src);
+  }
+  return halo;
+}
+
 export function dependencyRings(
   id: string,
   edges: KEEdge[],
