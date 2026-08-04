@@ -2,3 +2,9 @@ __pycache__/
 .venv/
 .superpowers/
 .worktrees/
+
+# Generated dashboards and graph caches — regenerated on every build.
+# Tracking these is how 270MB and 1600+ files were swept in by `git add -A`.
+tmp_dashboards/
+tmp_user_dashboards/
+graphify-out/
