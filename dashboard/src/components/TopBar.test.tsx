@@ -106,4 +106,27 @@ describe("TopBarPresentation", () => {
     expect(markup).toContain('aria-label="Close right panel"');
     expect(markup).toContain('aria-expanded="true"');
   });
+
+  // The right panel opens on the right, so its toggle belongs in the top-right
+  // corner rather than buried mid-bar next to the left one. Order in the markup
+  // is what the flex row lays out, so asserting order is asserting position.
+  it("puts the right-panel toggle last, in the corner", () => {
+    const markup = renderToStaticMarkup(
+      <TopBarPresentation {...makeProps("explore")} drawerAvailable />,
+    );
+
+    expect(markup.indexOf("Open right panel"))
+      .toBeGreaterThan(markup.indexOf("Find a concept"));
+    expect(markup.indexOf("Open right panel"))
+      .toBeGreaterThan(markup.indexOf("impact radius"));
+  });
+
+  it("keeps the left-panel toggle with the other view controls", () => {
+    const markup = renderToStaticMarkup(
+      <TopBarPresentation {...makeProps("explore")} drawerAvailable />,
+    );
+
+    expect(markup.indexOf("Open left panel"))
+      .toBeLessThan(markup.indexOf('aria-label="Graph view"'));
+  });
 });

@@ -144,21 +144,6 @@ export function TopBarPresentation({
             >
               <PanelSideIcon side="left" />
             </CompactPill>
-            <CompactPill
-              active={drawerOpen}
-              aria-controls="drawer"
-              aria-expanded={drawerOpen}
-              aria-label={drawerOpen ? "Close right panel" : "Open right panel"}
-              aria-pressed={drawerOpen}
-              className="panel-toggle"
-              disabled={!drawerAvailable}
-              onClick={onToggleDrawer}
-              title={drawerAvailable
-                ? drawerOpen ? "Close right panel" : "Open right panel"
-                : "Select a node to open the right panel"}
-            >
-              <PanelSideIcon side="right" />
-            </CompactPill>
           </div>
 
           <div aria-label="Graph view" className="topbar-group" role="radiogroup">
@@ -238,6 +223,33 @@ export function TopBarPresentation({
         )}
         view={view}
       />
+
+      {/* The right panel opens on the right, so its toggle lives in the
+          top-right corner rather than mid-bar beside the left one. Rendered
+          last and pushed over by .panel-controls-end. */}
+      {mode === "explore" && (
+        <div
+          aria-label="Right panel"
+          className="topbar-group panel-controls panel-controls-end"
+          role="group"
+        >
+          <CompactPill
+            active={drawerOpen}
+            aria-controls="drawer"
+            aria-expanded={drawerOpen}
+            aria-label={drawerOpen ? "Close right panel" : "Open right panel"}
+            aria-pressed={drawerOpen}
+            className="panel-toggle"
+            disabled={!drawerAvailable}
+            onClick={onToggleDrawer}
+            title={drawerAvailable
+              ? drawerOpen ? "Close right panel" : "Open right panel"
+              : "Select a node to open the right panel"}
+          >
+            <PanelSideIcon side="right" />
+          </CompactPill>
+        </div>
+      )}
     </>
   );
 }

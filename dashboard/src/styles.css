@@ -174,6 +174,14 @@ input:focus-visible,
   gap: 2px;
 }
 
+/* Pin the right-panel toggle to the top-right corner. `auto` on the start
+   margin claims the free space on its flex line; the topbar wraps, so this
+   only reaches the corner while the bar is one line, which is the case it is
+   for at every width the corner is meaningful. */
+.panel-controls-end {
+  margin-left: auto;
+}
+
 .panel-toggle .pill {
   padding: 5px 9px;
 }
