@@ -1,5 +1,7 @@
 """P2: pack -> §5.1 concept graph + toc rows. LLM via injectable spawn."""
-import datetime, json, re
+import datetime, re
+
+from .llm_spawn import parse_json_reply
 
 CONCEPT_PROMPT = """You are extracting a concept graph from a research paper.
 Paper: {title}
@@ -28,13 +30,7 @@ def _digest(pack: dict) -> str:
 
 
 def _parse(raw: str) -> dict | None:
-    m = re.search(r"\{.*\}", raw, re.S)
-    if not m:
-        return None
-    try:
-        return json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
+    return parse_json_reply(raw)  # one shared reader; see llm_spawn
 
 
 def _problems(doc: dict, pack: dict) -> list[str]:

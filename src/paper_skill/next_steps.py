@@ -7,6 +7,8 @@ from pathlib import Path
 import yaml
 
 
+
+
 _LIMIT_TITLES = re.compile(r"limitation|future|discussion|conclusion", re.I)
 _TODO = re.compile(r"#\s*(TODO|FIXME|HACK)[:\s](.*)")
 
@@ -110,8 +112,14 @@ def synthesize_ideas(gaps: list[dict], spawn, top: int = 8) -> dict:
         gaps_json=_json.dumps(gaps, ensure_ascii=False, indent=1))
     problems: list[str] = []
     for attempt in range(2):
+        # The retry has to name the actual defect. "JSON only" alone did not
+        # stop the worker re-wrapping its object in a ```json fence, so both
+        # attempts failed identically and the stage reported "not parseable"
+        # about output that was one strip() from valid.
         attempt_prompt = prompt if attempt == 0 else (
-            prompt + f"\nPrevious output invalid: {problems}. JSON only.")
+            prompt + f"\nPrevious output invalid: {problems}. Emit ONLY the "
+                     "raw JSON object: no markdown code fence, no ``` line, "
+                     "no preamble. The first character must be {.")
         try:
             raw = spawn(attempt_prompt)
         except Exception as exc:
@@ -120,6 +128,9 @@ def synthesize_ideas(gaps: list[dict], spawn, top: int = 8) -> dict:
                 "problems": [f"synthesis worker error: {type(exc).__name__}"],
                 "ideas": [],
             }
+        # Strict by design (slice-10 spec: "parsed from strict JSON, one
+        # retry"). concepts is deliberately lenient; this stage enforces the
+        # contract instead, and leans on the retry to correct it.
         try:
             document = _json.loads(raw.strip())
             ideas = document["ideas"]

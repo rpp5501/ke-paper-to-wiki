@@ -90,3 +90,23 @@ def test_missing_cli_still_names_the_escape_hatch(monkeypatch):
         claude_spawn("hi")
 
     assert "inject" in str(e.value).lower()
+
+
+# Every stage that demands "ONLY JSON" gets a ```json fence some fraction of
+# the time. next_steps used a strict json.loads and rejected replies that
+# concepts (which greps for the object) accepted -- same task, two answers.
+@pytest.mark.parametrize("raw", [
+    '{"ideas": []}',
+    '```json\n{"ideas": []}\n```',
+    'Here you go:\n\n{"ideas": []}\n',
+    '```\n{"ideas": []}\n```\n',
+])
+def test_json_survives_fences_and_preamble(raw):
+    from paper_skill.llm_spawn import parse_json_reply
+    assert parse_json_reply(raw) == {"ideas": []}
+
+
+@pytest.mark.parametrize("raw", ["", "sorry, prose not json", "[1, 2, 3]", None])
+def test_non_object_replies_are_none_not_exceptions(raw):
+    from paper_skill.llm_spawn import parse_json_reply
+    assert parse_json_reply(raw) is None

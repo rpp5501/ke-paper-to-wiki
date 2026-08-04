@@ -7,12 +7,34 @@ orchestration swallowed and quietly fell back to a table-of-contents graph --
 producing an empty-looking dashboard with no visible cause. This module makes
 that failure loud and names the escape hatch: inject your own ``spawn``.
 """
+import json
+import re
 import shutil
 import subprocess
+
+_JSON_BLOCK = re.compile(r"\{.*\}", re.S)
 
 
 class LLMUnavailable(RuntimeError):
     """Raised when no model backend is reachable for a required LLM stage."""
+
+
+def parse_json_reply(raw: str) -> dict | None:
+    """Pull the JSON object out of a model reply, or None.
+
+    Every stage that asks for "ONLY JSON" gets a markdown ```json fence or a
+    line of preamble some fraction of the time. One tolerant reader lives here
+    so stages cannot disagree about it -- next_steps used a strict json.loads
+    and reported "not parseable JSON" on replies concepts would have accepted.
+    """
+    match = _JSON_BLOCK.search(raw or "")
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
