@@ -39,6 +39,45 @@ def test_dead_link_caught():
     assert any("dead link" in p for p in probs)
 
 
+# PAGE_PROMPT requires equations be reproduced VERBATIM from the pack, and real
+# paper LaTeX contains blank lines inside align/array blocks. Splitting
+# paragraphs on blank lines therefore tore a $$...$$ block in half and reported
+# the anchor-less first half as an unanchored claim. Seen on arXiv:1306.1043.
+BLANK_LINE_IN_MATH = """# C
+## TL;DR {#tldr}
+Fine.
+## Intuition {#intuition}
+Fine.
+## Mechanics {#mechanics}
+Divided by sqrt(d_k) [eq_1].
+## The Math {#the-math}
+The definition is stated as [eq_1]:
+
+$$
+\\begin{array}{rcl}
+\\mathrm{SID} &\\rightarrow& \\mathbb{N}
+
+(\\G,\\HH) &\\mapsto& \\#\\{(i,j)\\}
+\\end{array}
+$$ [eq_1]
+
+## Go Deeper {#go-deeper}
+- [d2l](https://d2l.ai/x)
+"""
+
+
+def test_blank_line_inside_display_math_is_not_an_unanchored_claim():
+    probs = lint_page(BLANK_LINE_IN_MATH, PACK, check_links=lambda url: True)
+    assert probs == []
+
+
+def test_a_genuinely_unanchored_equation_is_still_caught():
+    """Folding display math must not become a blanket exemption for it."""
+    bad = BLANK_LINE_IN_MATH.replace("$$ [eq_1]", "$$")
+    probs = lint_page(bad, PACK, check_links=lambda url: True)
+    assert any("unanchored" in p for p in probs)
+
+
 WITH_MERMAID = CLEAN.replace(
     "- [d2l](https://d2l.ai/x)",
     "- [d2l](https://d2l.ai/x)\n```mermaid\ngraph TD; A-->B;\n```",

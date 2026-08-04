@@ -6,6 +6,21 @@ import requests
 _TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
 _ANCHOR = re.compile(r"\[(§(sec_[\w]+)|(eq_\d+)|S\d+)\]")
 _LINK = re.compile(r"\((https?://[^)]+)\)")
+_DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
+
+
+def _fold_display_math(body: str) -> str:
+    """Make each $$...$$ block a single paragraph for the blank-line split.
+
+    p4_write requires equations be reproduced VERBATIM from the pack, and real
+    paper LaTeX puts blank lines inside align/array blocks. Splitting on blank
+    lines therefore tore one equation into two "paragraphs" and reported the
+    half without the trailing [eq_N] anchor as an unanchored claim. Collapsing
+    blank lines *inside* the delimiters keeps the block whole with its anchor;
+    a block that genuinely has no anchor is still caught.
+    """
+    return _DISPLAY_MATH.sub(
+        lambda m: re.sub(r"\n\s*\n", "\n", m.group(0)), body)
 
 
 def _head_ok(url: str) -> bool:
@@ -46,7 +61,7 @@ def lint_page(page_md: str, pack: dict, check_links=None,
     for tier in ("{#mechanics}", "{#the-math}"):
         if tier not in page_md:
             continue
-        body = page_md.split(tier, 1)[1].split("## ", 1)[0]
+        body = _fold_display_math(page_md.split(tier, 1)[1].split("## ", 1)[0])
         for para in (p.strip() for p in body.split("\n\n") if p.strip()):
             if len(para.split()) >= 4 and not _ANCHOR.search(para):
                 probs.append(f"unanchored claim in {tier}: {para[:60]}…")
