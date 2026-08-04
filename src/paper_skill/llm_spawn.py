@@ -28,7 +28,21 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
             "CLI, or inject a working `spawn(prompt)->str` into "
             "extract_concepts / write_pages (e.g. via a subagent)."
         )
-    return subprocess.run(
+    # encoding is explicit: text=True alone decodes with the *locale* encoding
+    # (cp1252 on Windows), which turned every [§sec_N] anchor the page writer
+    # emits into [Â§sec_N] and broke P5 lint. errors="replace" keeps one odd
+    # byte from killing a 24-page run.
+    proc = subprocess.run(
         ["claude", "-p", prompt, "--max-turns", str(max_turns)],
-        capture_output=True, text=True, timeout=timeout,
-    ).stdout
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=timeout,
+    )
+    if proc.returncode != 0:
+        # Same contract as a missing CLI: "the model never ran" must not reach
+        # callers as "the model returned nothing".
+        raise LLMUnavailable(
+            f"`claude -p` exited {proc.returncode}, so this LLM stage did not "
+            f"run. Do NOT treat this as an empty result. CLI said: "
+            f"{(proc.stderr or proc.stdout or '').strip()[:500]}"
+        )
+    return proc.stdout
