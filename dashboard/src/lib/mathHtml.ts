@@ -1,6 +1,8 @@
 import katex from "katex";
 import "katex/dist/katex.min.css";
 
+import { katexMacros } from "./macros";
+
 export type RichTextToken =
   | { kind: "text"; value: string }
   | { kind: "glossary"; value: string; definition: string }
@@ -39,7 +41,10 @@ const ESCAPED_DOLLAR_PLACEHOLDER = "\uE000";
 const MATH_ESCAPED_DOLLAR_PLACEHOLDER = "\uE001";
 
 export function safeKatexOptions(displayMode: boolean) {
-  return { ...SAFE_KATEX_OPTIONS, displayMode };
+  // The paper's own \newcommand table. Equations are copied verbatim from the
+  // source, so without this KaTeX throws on the first private control sequence
+  // and the reader is shown raw LaTeX instead of maths.
+  return { ...SAFE_KATEX_OPTIONS, displayMode, macros: { ...katexMacros() } };
 }
 
 export function safeKatexPluginOptions() {
@@ -48,6 +53,7 @@ export function safeKatexPluginOptions() {
     strict: SAFE_KATEX_OPTIONS.strict,
     throwOnError: false,
     trust: SAFE_KATEX_OPTIONS.trust,
+    macros: { ...katexMacros() },
   };
 }
 

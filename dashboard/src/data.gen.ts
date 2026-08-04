@@ -341,5 +341,6 @@ export const KE_DATA = {
    "title": "Scaled Dot-Product Attention",
    "text": "Scaled attention"
   }
- }
+ },
+ "macros": {}
 };

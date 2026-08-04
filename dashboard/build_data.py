@@ -470,6 +470,10 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
             quiz, {n["id"] for n in plan_graph["nodes"]}, sections)
     if pack:  # R15.11: same opt-in discipline
         bundle["sections"] = sections
+        # The paper's own \newcommand table. Equations are copied verbatim from
+        # the source, so their notation is the paper's, not KaTeX's defaults.
+        # An older pack predates the field and yields {} rather than KeyError.
+        bundle["macros"] = pack.get("macros") or {}
     return bundle
 
 

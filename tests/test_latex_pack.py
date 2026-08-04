@@ -66,3 +66,53 @@ def test_title_survives_line_breaks_and_nested_macros():
 
 def test_missing_title_stays_empty_rather_than_guessing():
     assert latex_to_pack(TEX, resolve_input=lambda n: "")["meta"]["title"] == ""
+
+
+# Papers define their own notation in the preamble. latex_pack copies equations
+# VERBATIM (equation_fidelity: "exact"), so dropping the macro table means the
+# copied LaTeX references commands nothing downstream can resolve -- KaTeX
+# throws and the reader sees a literal "\doo" instead of "do". All 11 equations
+# of arXiv:1306.1043 were affected.
+MACRO_TEX = r"""
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\B}[1]{\mathbf{#1}}
+\newcommand\lone{\ell_1}
+\renewcommand{\vec}[1]{\mathbf{#1}}
+\providecommand{\prob}{{\mathbb P}}
+\DeclareMathOperator*{\SID}{SID}
+\DeclareMathOperator{\doo}{do}
+\section{Body}
+Text.
+"""
+
+
+def test_macros_are_extracted_for_katex():
+    macros = latex_to_pack(MACRO_TEX)["macros"]
+    assert macros[r"\G"] == r"\mathcal{G}"
+    assert macros[r"\lone"] == r"\ell_1"
+
+
+def test_macro_arguments_are_preserved():
+    """KaTeX uses the same #1 placeholder syntax, so the body passes through."""
+    assert latex_to_pack(MACRO_TEX)["macros"][r"\B"] == r"\mathbf{#1}"
+
+
+def test_renewcommand_and_providecommand_count_too():
+    macros = latex_to_pack(MACRO_TEX)["macros"]
+    assert macros[r"\vec"] == r"\mathbf{#1}"
+    assert macros[r"\prob"] == r"{\mathbb P}"
+
+
+def test_declaremathoperator_becomes_operatorname():
+    macros = latex_to_pack(MACRO_TEX)["macros"]
+    assert macros[r"\doo"] == r"\operatorname{do}"
+    assert macros[r"\SID"] == r"\operatorname*{SID}"   # starred form takes limits
+
+
+def test_nested_braces_in_a_body_are_read_whole():
+    tex = r"\newcommand{\law}[1]{\mathcal{L}({#1})}" + "\n" + MACRO_TEX
+    assert latex_to_pack(tex)["macros"][r"\law"] == r"\mathcal{L}({#1})"
+
+
+def test_a_paper_with_no_macros_gets_an_empty_table():
+    assert latex_to_pack(TEX, resolve_input=lambda n: "")["macros"] == {}

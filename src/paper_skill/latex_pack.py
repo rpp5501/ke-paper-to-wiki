@@ -52,6 +52,54 @@ def _find_title(nodelist) -> str:
     return ""
 
 
+_MACRO_DEF = re.compile(
+    r"\\(newcommand|renewcommand|providecommand|DeclareMathOperator)(\*?)\s*"
+    r"(?:\{\\([A-Za-z@]+)\}|\\([A-Za-z@]+))\s*(?:\[\d+\])?\s*(?:\[[^\]]*\])?\s*\{")
+
+
+def _read_group(tex: str, open_brace: int) -> tuple[str, int]:
+    """Return the balanced-brace body starting at ``open_brace`` and its end.
+
+    Macro bodies nest ({\\mathcal{#1}}), so brace counting is required -- a
+    non-greedy regex stops at the first } and truncates the definition.
+    """
+    depth, i = 0, open_brace
+    while i < len(tex):
+        if tex[i] == "\\":
+            i += 2
+            continue
+        if tex[i] == "{":
+            depth += 1
+        elif tex[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return tex[open_brace + 1:i], i + 1
+        i += 1
+    return "", len(tex)
+
+
+def extract_macros(tex: str) -> dict:
+    """Preamble macro definitions as a KaTeX ``macros`` table.
+
+    Equations are copied VERBATIM from the source (equation_fidelity "exact"),
+    so a paper's own notation travels with them. Without the definitions KaTeX
+    throws on the first unknown command and the reader is shown raw LaTeX --
+    \\doo instead of "do". KaTeX uses the same #1 placeholders as LaTeX, so
+    bodies pass through untouched; only \\DeclareMathOperator needs rewriting,
+    since KaTeX has no such primitive.
+    """
+    macros: dict[str, str] = {}
+    for m in _MACRO_DEF.finditer(tex):
+        kind, star, name = m.group(1), m.group(2), m.group(3) or m.group(4)
+        body, _ = _read_group(tex, m.end() - 1)
+        if not name:
+            continue
+        if kind == "DeclareMathOperator":
+            body = f"\\operatorname{star}{{{body}}}"
+        macros["\\" + name] = body
+    return macros
+
+
 def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                   title: str = "") -> dict:
     tex = _strip_comments(_flatten_inputs(main_tex, resolve_input))
@@ -97,4 +145,5 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                      "generated": datetime.date.today().isoformat()},
             "extraction": {"path": "latex", "equation_fidelity": "exact"},
             "sections": sections, "equations": equations,
+            "macros": extract_macros(tex),
             "references": [], "figures": []}
