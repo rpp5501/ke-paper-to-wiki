@@ -1,5 +1,5 @@
 from pathlib import Path
-from paper_skill.p4_write import write_pages, PAGE_PROMPT
+from paper_skill.p4_write import annotate_graph, write_pages, PAGE_PROMPT
 
 # fixtures repeated verbatim (tasks may execute out of order — no cross-test imports)
 PACK = {"meta": {"source": "arXiv:1706.03762", "title": "AIAYN", "generated": "x"},
@@ -66,6 +66,45 @@ def test_spawn_exception_fails_immediately_no_retry(tmp_path):
     assert r["failed"] == ["sdpa"]
     assert "sdpa" not in r["done"]
     assert len(calls) == 1
+
+
+# The graph node's `page` field is the only record of which file belongs to
+# which concept. write_pages is the one stage that knows the mapping, and
+# viz.propose hard-requires the field (no page -> zero candidates, silently).
+def test_result_reports_the_written_filename(tmp_path):
+    r = write_pages(PACK, GRAPH, ROWS, spawn=lambda p: GOOD_PAGE,
+                    home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path)
+
+    written = next((tmp_path / "pages").glob("*_sdpa.md")).name
+    assert r["pages"] == {"sdpa": written}
+
+
+def test_failed_page_is_not_reported_as_written(tmp_path):
+    r = write_pages(PACK, GRAPH, ROWS, spawn=lambda p: "# SDPA\njust prose",
+                    home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path)
+
+    assert r["pages"] == {}
+
+
+def test_annotate_graph_records_pages_on_their_nodes():
+    out = annotate_graph(GRAPH, {"sdpa": "07_sdpa.md"})
+
+    assert next(n for n in out["nodes"] if n["id"] == "sdpa")["page"] == "07_sdpa.md"
+
+
+def test_annotate_graph_leaves_unwritten_nodes_alone():
+    """A node with no page must not claim a file that isn't on disk."""
+    out = annotate_graph(GRAPH, {"sdpa": "07_sdpa.md"})
+
+    assert "page" not in next(n for n in out["nodes"] if n["id"] == "attention")
+
+
+def test_annotate_graph_does_not_mutate_its_input():
+    """write_pages takes the graph as input; rewriting a caller's dict in place
+    is exactly the side effect that leaks between callers."""
+    annotate_graph(GRAPH, {"sdpa": "07_sdpa.md"})
+
+    assert all("page" not in n for n in GRAPH["nodes"])
 
 
 def test_prompt_requires_verbatim_equations_and_paragraph_anchors():

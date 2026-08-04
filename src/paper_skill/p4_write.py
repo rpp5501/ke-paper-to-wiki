@@ -62,6 +62,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
     done_dir = Path(workdir or ".") / "p4_done"
     done_dir.mkdir(parents=True, exist_ok=True)
     done, failed, skipped = [], [], []
+    written: dict[str, str] = {}
     for row in toc_rows:
         cid = row["id"]
         if (done_dir / cid).exists():
@@ -87,7 +88,25 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
             failed.append(cid)
             continue
         nn = order.get(cid, 99)
-        (out / f"{nn:02d}_{cid}.md").write_text(page, encoding="utf-8")
+        filename = f"{nn:02d}_{cid}.md"
+        (out / filename).write_text(page, encoding="utf-8")
+        written[cid] = filename
         (done_dir / cid).write_text("done", encoding="utf-8")
         done.append(cid)
-    return {"status": "ok", "done": done, "failed": failed, "skipped": skipped}
+    return {"status": "ok", "done": done, "failed": failed, "skipped": skipped,
+            "pages": written}
+
+
+def annotate_graph(graph: dict, pages: dict) -> dict:
+    """Copy ``graph`` with each written page recorded on its node.
+
+    p4_write is the only stage that knows which file belongs to which concept,
+    and downstream consumers ask the graph rather than the directory --
+    viz.propose requires ``node["page"]`` outright, and without it reports zero
+    candidates while blaming the pages. Returned as a copy rather than mutated
+    in place: write_pages takes the graph as *input*, and silently rewriting a
+    caller's dict is the kind of side effect that leaks across callers.
+    """
+    return {**graph, "nodes": [{**n, **({"page": pages[n["id"]]}
+                                        if n.get("id") in pages else {})}
+                               for n in graph.get("nodes", [])]}
