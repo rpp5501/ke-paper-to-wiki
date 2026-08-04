@@ -1,0 +1,681 @@
+{
+ "toc": [
+  {
+   "id": "structural-intervention-distance",
+   "label": "Structural Intervention Distance (SID)",
+   "level": 0,
+   "include": true,
+   "definition": "A new graph-based (pre-)metric that compares two DAGs based on whether they imply the same interventional distributions, rather than on edge overlap.",
+   "sub_questions": [
+    "How does SID differ conceptually from edge-counting metrics like SHD?",
+    "What graphical criterion characterizes when SID assigns a pair of nodes a mismatch?",
+    "In what sense is SID a pre-metric rather than a true metric?",
+    "How does SID extend to CPDAGs and other graph types?"
+   ],
+   "research": false
+  },
+  {
+   "id": "graph-comparison-problem",
+   "label": "Comparing Estimated and True Causal Graphs",
+   "level": 1,
+   "include": true,
+   "definition": "Given a true causal DAG and an estimate, we want to measure the closeness of the causal statements they imply.",
+   "sub_questions": [
+    "Why is edge-based comparison insufficient for assessing causal accuracy?",
+    "What downstream causal statements should a good distance measure preserve?"
+   ],
+   "research": false
+  },
+  {
+   "id": "structural-hamming-distance",
+   "label": "Structural Hamming Distance (SHD)",
+   "level": 1,
+   "include": true,
+   "definition": "A distance between two PDAGs that counts how many edges must be added, removed, or reoriented to transform one into the other.",
+   "sub_questions": [
+    "What edge-level operations does SHD count?",
+    "Why can two SHD-close DAGs disagree strongly on implied causal effects?"
+   ],
+   "research": false
+  },
+  {
+   "id": "intervention-distributions",
+   "label": "Intervention Distributions",
+   "level": 1,
+   "include": true,
+   "definition": "A distribution is Markov with respect to a DAG iff it factorizes according to the graph, which in turn determines its interventional distributions.",
+   "sub_questions": [
+    "What is the relationship between Markov factorization and interventional distributions?",
+    "How are interventional distributions computed from a DAG via the truncated factorization?"
+   ],
+   "research": false
+  },
+  {
+   "id": "motivation-and-definition",
+   "label": "Motivation and Definition of SID",
+   "level": 1,
+   "include": true,
+   "definition": "SID is defined by checking, for each ordered pair of nodes, whether the true and estimated DAG imply the same interventional distribution of one node under intervention on the other.",
+   "sub_questions": [
+    "Why is SID defined pairwise over ordered node pairs?",
+    "What counts as a 'correct' intervention-effect prediction under this definition?"
+   ],
+   "research": false
+  },
+  {
+   "id": "equivalent-formulation",
+   "label": "Equivalent Graphical Formulation",
+   "level": 2,
+   "include": true,
+   "definition": "A graphical criterion equivalent to the interventional definition of SID that avoids explicitly evaluating intervention distributions.",
+   "sub_questions": [
+    "What graphical condition on parent sets and paths replaces direct computation of intervention distributions?",
+    "Why does this reformulation make SID tractable to compute?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-properties",
+   "label": "Metric Properties of SID",
+   "level": 2,
+   "include": true,
+   "definition": "Investigation of metric-like properties of SID, including bounds expressed in terms of the number of nodes in the graph.",
+   "sub_questions": [
+    "Does SID satisfy metric axioms such as symmetry and the triangle inequality?",
+    "What are the known upper and lower bounds on SID relative to the number of nodes?",
+    "How does SID relate to SHD under specific graph conditions?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-dag-cpdag",
+   "label": "SID between a DAG and a CPDAG",
+   "level": 2,
+   "include": true,
+   "definition": "An extension of SID for comparing a true DAG to an estimated CPDAG, since some causal inference methods only output CPDAGs.",
+   "sub_questions": [
+    "How is SID aggregated across all DAGs represented by a CPDAG?",
+    "What causal inference methods produce CPDAG estimates that motivate this extension?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-cpdag-dag-cpdag",
+   "label": "SID between a CPDAG and a DAG or CPDAG",
+   "level": 2,
+   "include": true,
+   "definition": "An extension for settings where the true graph itself is only identifiable up to a CPDAG, e.g. linear Gaussian SEMs with equal error variances.",
+   "sub_questions": [
+    "Why can the true DAG be unidentifiable even when the causal structure is known?",
+    "How does SID adapt when both the true and estimated graphs are CPDAGs?"
+   ],
+   "research": false
+  },
+  {
+   "id": "penalizing-additional-edges",
+   "label": "Penalizing Additional Edges",
+   "level": 3,
+   "include": true,
+   "definition": "A modification of SID that penalizes estimated DAGs with strictly more edges than the true DAG, which otherwise can receive an SID of zero.",
+   "sub_questions": [
+    "Why can an overly dense estimated DAG achieve a perfect SID score?",
+    "What penalty term is added to discourage superfluous edges?"
+   ],
+   "research": false
+  },
+  {
+   "id": "symmetrization",
+   "label": "Symmetrization of SID",
+   "level": 3,
+   "include": true,
+   "definition": "A symmetric version of SID for comparing two DAGs where neither can be seen as ground truth for the other.",
+   "sub_questions": [
+    "How is a symmetric distance constructed from the inherently asymmetric SID?",
+    "In what comparison scenarios is symmetrization needed?"
+   ],
+   "research": false
+  },
+  {
+   "id": "alternative-adjustment-sets",
+   "label": "Alternative Adjustment Sets",
+   "level": 3,
+   "include": true,
+   "definition": "Discussion of adjustment sets other than the parent set, which is used in this work because it is easy to compute and depends only on local neighbourhood.",
+   "sub_questions": [
+    "What tradeoffs exist between parent-set adjustment and other valid adjustment sets?",
+    "Why does parent-set adjustment depend only on local neighbourhood information?"
+   ],
+   "research": false
+  },
+  {
+   "id": "hidden-variables-extension",
+   "label": "Hidden Variables (Future Work)",
+   "level": 3,
+   "include": true,
+   "definition": "Future work on the case where some variables are unobserved, so not all intervention distributions are identifiable from the true DAG.",
+   "sub_questions": [
+    "How should SID be redefined when latent confounders make some interventions unidentifiable?",
+    "What graphical model should replace the DAG in this setting?"
+   ],
+   "research": true
+  },
+  {
+   "id": "multiple-interventions-extension",
+   "label": "Multiple Interventions (Future Work)",
+   "level": 3,
+   "include": true,
+   "definition": "Future work extending SID beyond single-node interventions to compare predictions under simultaneous interventions on multiple variables.",
+   "sub_questions": [
+    "How does comparing multi-node intervention distributions change the graphical criterion?",
+    "Does the computational tractability of SID survive this generalization?"
+   ],
+   "research": true
+  },
+  {
+   "id": "sid-vs-shd-simulation",
+   "label": "SID versus SHD Simulation",
+   "level": 2,
+   "include": true,
+   "definition": "A simulation study sampling pairs of random DAGs and computing both SID and SHD between them to compare their behavior.",
+   "sub_questions": [
+    "How do SID and SHD diverge across different random graph models?",
+    "What does the empirical relationship reveal about the informativeness of each metric?"
+   ],
+   "research": false
+  },
+  {
+   "id": "comparing-causal-inference-methods",
+   "label": "Comparing Causal Inference Methods",
+   "level": 2,
+   "include": true,
+   "definition": "Simulations comparing causal inference methods by evaluating their output graphs against sparse random ground-truth DAGs using SID.",
+   "sub_questions": [
+    "Do method rankings differ when evaluated by SID versus SHD?",
+    "Which methods perform well under intervention-based evaluation but poorly under edge-based evaluation?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-scalability",
+   "label": "Scalability of the SID",
+   "level": 2,
+   "include": true,
+   "definition": "An empirical report of processor time needed to compute SID between two random graphs as the number of nodes grows.",
+   "sub_questions": [
+    "How does SID computation time scale with the number of nodes?",
+    "Is the empirical runtime consistent with the algorithm's theoretical complexity?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-implementation",
+   "label": "Implementation of SID",
+   "level": 1,
+   "include": true,
+   "definition": "A sketch of the implementation of the Structural Intervention Distance, with full algorithmic details presented separately.",
+   "sub_questions": [
+    "What are the main computational steps in implementing SID?",
+    "How are the graphical criteria from the equivalent formulation translated into code?"
+   ],
+   "research": false
+  },
+  {
+   "id": "dag-terminology",
+   "label": "DAG Terminology",
+   "level": 1,
+   "include": true,
+   "definition": "A summary of well-known graph-theoretic facts and terminology about directed acyclic graphs used throughout the paper.",
+   "sub_questions": [
+    "What DAG concepts (parents, ancestors, d-separation) are prerequisites for defining SID?",
+    "How do these definitions extend to PDAGs and CPDAGs?"
+   ],
+   "research": false
+  },
+  {
+   "id": "proof-main-proposition",
+   "label": "Proof: Equivalence of Definitions",
+   "level": 3,
+   "include": true,
+   "definition": "Proof establishing the equivalence between the interventional definition of SID and its graphical formulation.",
+   "sub_questions": [
+    "What is the key lemma linking intervention distributions to the graphical criterion?",
+    "Where does the proof rely on the Markov property versus faithfulness?"
+   ],
+   "research": false
+  },
+  {
+   "id": "proof-sidsuper",
+   "label": "Proof: SID for Superset Estimates",
+   "level": 3,
+   "include": true,
+   "definition": "Proof that when the estimated DAG's edges and parent structure meet certain superset conditions, the SID is zero.",
+   "sub_questions": [
+    "Under what edge-superset conditions does the proof guarantee SID equals zero?",
+    "How does this proof connect to the additional-edges penalty discussion?"
+   ],
+   "research": false
+  },
+  {
+   "id": "proof-sidshd",
+   "label": "Proof: SID and SHD Relationship",
+   "level": 3,
+   "include": true,
+   "definition": "Proof of the relationship between SHD and SID, including that a zero SHD implies identical parent sets for every node.",
+   "sub_questions": [
+    "What does zero SHD imply about parent sets, and how does that bound SID?",
+    "Are there cases where small SHD does not imply small SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "linear-gaussian-sem-effects",
+   "label": "Causal Effects in Linear Gaussian SEMs",
+   "level": 2,
+   "include": true,
+   "definition": "Derivation of the covariance matrix and causal effects for a linear Gaussian structural equation model with known parameters.",
+   "sub_questions": [
+    "How is the covariance matrix of a linear Gaussian SEM computed from its structural coefficients?",
+    "How are these closed-form effects used in simulations to compute SID?"
+   ],
+   "research": false
+  },
+  {
+   "id": "sid-algorithms",
+   "label": "SID Algorithms",
+   "level": 1,
+   "include": true,
+   "definition": "Pseudo code of two algorithms for computing the SID given two adjacency matrices.",
+   "sub_questions": [
+    "What are the inputs and outputs of the two presented algorithms?",
+    "What is the computational complexity of each algorithm step?"
+   ],
+   "research": false
+  }
+ ],
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:1306.1043",
+  "generated": "2026-08-04",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "structural-intervention-distance",
+   "kind": "concept",
+   "label": "Structural Intervention Distance (SID)",
+   "level": 0,
+   "source_ref": "sec_2",
+   "page": "05_structural-intervention-distance.md"
+  },
+  {
+   "id": "graph-comparison-problem",
+   "kind": "concept",
+   "label": "Comparing Estimated and True Causal Graphs",
+   "level": 1,
+   "source_ref": "sec_1",
+   "page": "01_graph-comparison-problem.md"
+  },
+  {
+   "id": "structural-hamming-distance",
+   "kind": "concept",
+   "label": "Structural Hamming Distance (SHD)",
+   "level": 1,
+   "source_ref": "sec_1_1",
+   "page": "07_structural-hamming-distance.md"
+  },
+  {
+   "id": "intervention-distributions",
+   "kind": "concept",
+   "label": "Intervention Distributions",
+   "level": 1,
+   "source_ref": "sec_1_2",
+   "page": "04_intervention-distributions.md"
+  },
+  {
+   "id": "motivation-and-definition",
+   "kind": "concept",
+   "label": "Motivation and Definition of SID",
+   "level": 1,
+   "source_ref": "sec_2_1",
+   "page": "06_motivation-and-definition.md"
+  },
+  {
+   "id": "equivalent-formulation",
+   "kind": "concept",
+   "label": "Equivalent Graphical Formulation",
+   "level": 2,
+   "source_ref": "sec_2_2",
+   "page": "10_equivalent-formulation.md"
+  },
+  {
+   "id": "sid-properties",
+   "kind": "concept",
+   "label": "Metric Properties of SID",
+   "level": 2,
+   "source_ref": "sec_2_3",
+   "page": "11_sid-properties.md"
+  },
+  {
+   "id": "sid-dag-cpdag",
+   "kind": "concept",
+   "label": "SID between a DAG and a CPDAG",
+   "level": 2,
+   "source_ref": "sec_2_4_1",
+   "page": "12_sid-dag-cpdag.md"
+  },
+  {
+   "id": "sid-cpdag-dag-cpdag",
+   "kind": "concept",
+   "label": "SID between a CPDAG and a DAG or CPDAG",
+   "level": 2,
+   "source_ref": "sec_2_4_2",
+   "page": "13_sid-cpdag-dag-cpdag.md"
+  },
+  {
+   "id": "penalizing-additional-edges",
+   "kind": "concept",
+   "label": "Penalizing Additional Edges",
+   "level": 3,
+   "source_ref": "sec_2_4_3",
+   "page": "20_penalizing-additional-edges.md"
+  },
+  {
+   "id": "symmetrization",
+   "kind": "concept",
+   "label": "Symmetrization of SID",
+   "level": 3,
+   "source_ref": "sec_2_4_4",
+   "page": "24_symmetrization.md"
+  },
+  {
+   "id": "alternative-adjustment-sets",
+   "kind": "concept",
+   "label": "Alternative Adjustment Sets",
+   "level": 3,
+   "source_ref": "sec_2_4_5",
+   "page": "17_alternative-adjustment-sets.md"
+  },
+  {
+   "id": "hidden-variables-extension",
+   "kind": "concept",
+   "label": "Hidden Variables (Future Work)",
+   "level": 3,
+   "source_ref": "sec_2_4_6",
+   "page": "18_hidden-variables-extension.md"
+  },
+  {
+   "id": "multiple-interventions-extension",
+   "kind": "concept",
+   "label": "Multiple Interventions (Future Work)",
+   "level": 3,
+   "source_ref": "sec_2_4_7",
+   "page": "19_multiple-interventions-extension.md"
+  },
+  {
+   "id": "sid-vs-shd-simulation",
+   "kind": "concept",
+   "label": "SID versus SHD Simulation",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "page": "14_sid-vs-shd-simulation.md"
+  },
+  {
+   "id": "comparing-causal-inference-methods",
+   "kind": "concept",
+   "label": "Comparing Causal Inference Methods",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "page": "15_comparing-causal-inference-methods.md"
+  },
+  {
+   "id": "sid-scalability",
+   "kind": "concept",
+   "label": "Scalability of the SID",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "16_sid-scalability.md"
+  },
+  {
+   "id": "sid-implementation",
+   "kind": "concept",
+   "label": "Implementation of SID",
+   "level": 1,
+   "source_ref": "sec_4",
+   "page": "03_sid-implementation.md"
+  },
+  {
+   "id": "dag-terminology",
+   "kind": "concept",
+   "label": "DAG Terminology",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "02_dag-terminology.md"
+  },
+  {
+   "id": "proof-main-proposition",
+   "kind": "equation",
+   "label": "Proof: Equivalence of Definitions",
+   "level": 3,
+   "source_ref": "sec_8",
+   "page": "21_proof-main-proposition.md"
+  },
+  {
+   "id": "proof-sidsuper",
+   "kind": "equation",
+   "label": "Proof: SID for Superset Estimates",
+   "level": 3,
+   "source_ref": "sec_9",
+   "page": "23_proof-sidsuper.md"
+  },
+  {
+   "id": "proof-sidshd",
+   "kind": "equation",
+   "label": "Proof: SID and SHD Relationship",
+   "level": 3,
+   "source_ref": "sec_10",
+   "page": "22_proof-sidshd.md"
+  },
+  {
+   "id": "linear-gaussian-sem-effects",
+   "kind": "equation",
+   "label": "Causal Effects in Linear Gaussian SEMs",
+   "level": 2,
+   "source_ref": "sec_11",
+   "page": "08_linear-gaussian-sem-effects.md"
+  },
+  {
+   "id": "sid-algorithms",
+   "kind": "figure",
+   "label": "SID Algorithms",
+   "level": 1,
+   "source_ref": "sec_12",
+   "page": "09_sid-algorithms.md"
+  }
+ ],
+ "edges": [
+  {
+   "src": "graph-comparison-problem",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "structural-hamming-distance",
+   "dst": "structural-intervention-distance",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "intervention-distributions",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "dag-terminology",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "motivation-and-definition",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "equivalent-formulation",
+   "dst": "motivation-and-definition",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-properties",
+   "dst": "equivalent-formulation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-dag-cpdag",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-cpdag-dag-cpdag",
+   "dst": "sid-dag-cpdag",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "penalizing-additional-edges",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetrization",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "alternative-adjustment-sets",
+   "dst": "motivation-and-definition",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hidden-variables-extension",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "multiple-interventions-extension",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-vs-shd-simulation",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "comparing-causal-inference-methods",
+   "dst": "sid-vs-shd-simulation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-scalability",
+   "dst": "sid-implementation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-implementation",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-algorithms",
+   "dst": "sid-implementation",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "linear-gaussian-sem-effects",
+   "dst": "sid-algorithms",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-main-proposition",
+   "dst": "equivalent-formulation",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-sidsuper",
+   "dst": "sid-properties",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-sidshd",
+   "dst": "sid-properties",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

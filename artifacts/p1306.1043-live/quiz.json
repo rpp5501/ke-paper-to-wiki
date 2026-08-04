@@ -1,0 +1,165 @@
+{
+ "meta": {
+  "note": "R15.2 quiz contract: items[].{id,nodeId,prompt,options[{text,explain}],correct,sourceRef?,source_ref?}. sourceRef is the in-page anchor; source_ref is the paper section, validated and surfaced as sectionRef. Authored from page content only — never invent values the page doesn't support.",
+  "source": "arXiv:1306.1043",
+  "generated": "2026-08-04"
+ },
+ "items": [
+  {
+   "id": "sid-vs-shd-what-is-counted",
+   "nodeId": "structural-intervention-distance",
+   "prompt": "SHD and SID both score an estimated DAG against the true one. What does SID count that SHD does not?",
+   "options": [
+    {
+     "text": "Ordered node pairs whose intervention distribution the estimate gets wrong",
+     "explain": "Yes — SID counts the pairs for which the estimated graph fails to give a correct interventional prediction, which is why it can disagree sharply with edge counting."
+    },
+    {
+     "text": "Edges present in one graph but absent in the other",
+     "explain": "No — that is SHD. It counts edge-level disagreement and says nothing about causal inference capacity."
+    },
+    {
+     "text": "The number of v-structures the two graphs disagree on",
+     "explain": "No — the paper does not define SID in terms of v-structure disagreement."
+    },
+    {
+     "text": "The total variation distance between the two observational distributions",
+     "explain": "No — SID is a purely graphical criterion; it never estimates or compares distributions numerically."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_1",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "sid-is-not-a-metric",
+   "nodeId": "sid-properties",
+   "prompt": "Why is SID called a *pre-*distance rather than a metric?",
+   "options": [
+    {
+     "text": "It fails symmetry — swapping the true and estimated graph can change the value",
+     "explain": "Correct. The paper's own example is a non-empty graph versus the empty DAG: the empty DAG makes every set a valid adjustment set, so one direction is trivially 'correct' and the other is not."
+    },
+    {
+     "text": "It can take negative values",
+     "explain": "No — SID counts pairs, so it satisfies non-negativity."
+    },
+    {
+     "text": "It is undefined when the two graphs are identical",
+     "explain": "No — the paper characterizes exactly when SID equals zero; identical graphs are a well-defined case."
+    },
+    {
+     "text": "It violates the triangle inequality for CPDAGs only",
+     "explain": "No — the asymmetry is the stated reason, and it applies to DAGs, not just CPDAGs."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_3",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "equivalent-formulation-why",
+   "nodeId": "equivalent-formulation",
+   "prompt": "What problem does the equivalent graphical formulation of SID solve?",
+   "options": [
+    {
+     "text": "The causal definition is hard to compute, so SID is restated as a valid-adjustment-set check",
+     "explain": "Right — the reformulation turns a statement about interventional distributions into a structural question that can be checked by walking paths in the graph."
+    },
+    {
+     "text": "It removes SID's dependence on the true graph",
+     "explain": "No — the reformulation still asks whether a set is a valid adjustment set *relative to the true DAG*."
+    },
+    {
+     "text": "It makes SID symmetric",
+     "explain": "No — symmetry is addressed separately, by the symmetrization extension."
+    },
+    {
+     "text": "It extends SID from DAGs to CPDAGs",
+     "explain": "No — the CPDAG extensions are a different section; this reformulation is about computability."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_2",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "adjustment-set-default-choice",
+   "nodeId": "alternative-adjustment-sets",
+   "prompt": "SID uses the parent set as the adjustment set by default. According to the paper, why that choice?",
+   "options": [
+    {
+     "text": "It is easy to compute and depends only on the neighbourhood of the intervened nodes",
+     "explain": "Correct — and the authors are explicit that this is a design choice, not a necessity: any other adjustment-set method could be substituted."
+    },
+    {
+     "text": "It is the only set that is provably valid for every DAG",
+     "explain": "No — minimal adjustment sets are named as a valid alternative, so the parent set is not unique in validity."
+    },
+    {
+     "text": "It always yields the smallest possible adjustment set",
+     "explain": "No — minimal adjustment sets are described as the *smaller* alternative; the parent set is not minimal."
+    },
+    {
+     "text": "It makes the resulting distance symmetric",
+     "explain": "No — the choice of adjustment set is unrelated to SID's asymmetry."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_4_5",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "symmetrization-motivating-case",
+   "nodeId": "symmetrization",
+   "prompt": "What situation motivates a symmetrized SID?",
+   "options": [
+    {
+     "text": "Two DAGs where neither can be regarded as an estimate of the other",
+     "explain": "Yes — with no ground-truth graph, the directional definition has no principled orientation, so the two directions are combined."
+    },
+    {
+     "text": "Comparing a DAG against a CPDAG",
+     "explain": "No — that case is handled by the DAG-versus-CPDAG extension, which produces a lower and upper bound instead."
+    },
+    {
+     "text": "When the true graph contains hidden variables",
+     "explain": "No — hidden variables are explicitly listed as future work, not the motivation for symmetrization."
+    },
+    {
+     "text": "When SID and SHD disagree about which estimate is better",
+     "explain": "No — the paper motivates symmetrization by the absence of a ground-truth graph, not by disagreement with SHD."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_4_4",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "shd-graph-class",
+   "nodeId": "structural-hamming-distance",
+   "prompt": "Over what class of graphs is SHD defined in this paper?",
+   "options": [
+    {
+     "text": "Partially directed acyclic graphs (PDAGs), of which DAGs are a special case",
+     "explain": "Correct — that is why one definition covers DAG-vs-DAG, PDAG-vs-PDAG, and DAG-vs-PDAG comparisons alike."
+    },
+    {
+     "text": "Directed acyclic graphs only",
+     "explain": "No — restricting to DAGs would not cover the PDAG comparisons the paper makes."
+    },
+    {
+     "text": "Arbitrary directed graphs, including cyclic ones",
+     "explain": "No — acyclicity is part of the definition."
+    },
+    {
+     "text": "Undirected graphs only",
+     "explain": "No — SHD compares edge *types*, which requires orientation information."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_1_1",
+   "sourceRef": "#mechanics"
+  }
+ ]
+}

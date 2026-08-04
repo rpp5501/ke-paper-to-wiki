@@ -1,0 +1,36 @@
+[
+ {
+  "kind": "paper-limitation",
+  "text": "If some of the variables are unobserved, not all of the intervention distributions are identifiable from the true DAG. We provide a road map on how this case can be included in the framework of the SID. As it was done for CPDAGs (Section) we can exclude the non-identifiable pairs from the structural",
+  "anchors": {
+   "nodes": [
+    "hidden-variables-extension"
+   ],
+   "sources": [
+    "§sec_2_4_6"
+   ]
+  }
+ },
+ {
+  "kind": "paper-limitation",
+  "text": "The structural intervention distance compares the two graph's predictions of intervention distributions. Until now, we have only considered interventions on single nodes. Instead, one may also consider multiple interventions. A slightly modified version of Lemma still holds, but the (union of the) p",
+  "anchors": {
+   "nodes": [
+    "multiple-interventions-extension"
+   ],
+   "sources": [
+    "§sec_2_4_7"
+   ]
+  }
+ },
+ {
+  "kind": "paper-limitation",
+  "text": "We have proposed a new (pre-) distance, the Structural Intervention Distance (SID), between directed acyclic graphs and completed partially directed acyclic graphs. Since the SID is a one-dimensional measure of distances between high-dimensional objects it does not capture all aspects of the differe",
+  "anchors": {
+   "nodes": [],
+   "sources": [
+    "§sec_5"
+   ]
+  }
+ }
+]
