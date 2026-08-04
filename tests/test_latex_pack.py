@@ -31,3 +31,38 @@ def test_equation_latex_is_verbatim_and_anchored():
 def test_extraction_block_says_exact():
     pack = latex_to_pack(TEX, resolve_input=lambda n: "")
     assert pack["extraction"] == {"path": "latex", "equation_fidelity": "exact"}
+
+
+# The title is not cosmetic: it is interpolated into CONCEPT_PROMPT as
+# "Paper: {title}", so a blank one silently degrades every rung-1 extraction.
+TITLED = r"""
+\title{Structural Intervention Distance for Evaluating Causal Graphs}
+\author{Someone}
+\begin{document}
+\maketitle
+\section{Introduction}
+Body.
+\end{document}
+"""
+
+
+def test_title_is_parsed_from_the_tex():
+    assert latex_to_pack(TITLED)["meta"]["title"] == (
+        "Structural Intervention Distance for Evaluating Causal Graphs")
+
+
+def test_explicit_title_wins_over_the_tex():
+    """A caller that already knows the title (e.g. the PDF-sibling upgrade
+    path) must not have it overwritten by the source."""
+    pack = latex_to_pack(TITLED, title="Known From OpenAlex")
+    assert pack["meta"]["title"] == "Known From OpenAlex"
+
+
+def test_title_survives_line_breaks_and_nested_macros():
+    tex = r"\title{SID for Evaluating\\ \emph{Causal} Graphs}" + "\n" + TEX
+    assert latex_to_pack(tex, resolve_input=lambda n: "")["meta"]["title"] == (
+        "SID for Evaluating Causal Graphs")
+
+
+def test_missing_title_stays_empty_rather_than_guessing():
+    assert latex_to_pack(TEX, resolve_input=lambda n: "")["meta"]["title"] == ""

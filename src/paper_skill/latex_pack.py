@@ -26,6 +26,29 @@ def _group_text(node) -> str:
         return "".join(_group_text(n) for n in node.nodelist)
     if isinstance(node, LatexCharsNode):
         return node.chars
+    if isinstance(node, LatexMacroNode):
+        # Recurse into the argument so \emph{Causal} contributes "Causal"
+        # instead of vanishing. Bare macros (\\, \thanks) have no args and
+        # collapse to "", which _clean then folds into surrounding space.
+        return " ".join(_group_text(a) for a in (node.nodeargd.argnlist
+                                                 if node.nodeargd else []) if a)
+    return ""
+
+
+def _clean(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _find_title(nodelist) -> str:
+    """First \\title{...} anywhere in the document, including inside groups."""
+    for n in nodelist or []:
+        if isinstance(n, LatexMacroNode) and n.macroname == "title":
+            if n.nodeargd and n.nodeargd.argnlist:
+                return _clean(_group_text(n.nodeargd.argnlist[-1]))
+        if isinstance(n, (LatexEnvironmentNode, LatexGroupNode)):
+            found = _find_title(n.nodelist)
+            if found:
+                return found
     return ""
 
 
@@ -54,7 +77,7 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                 cur_id = "sec_" + "_".join(str(c) for c in counters[:lvl])
                 stitle = ""
                 if n.nodeargd and n.nodeargd.argnlist:
-                    stitle = _group_text(n.nodeargd.argnlist[-1]).strip()
+                    stitle = _clean(_group_text(n.nodeargd.argnlist[-1]))
                 sections.append({"id": cur_id, "title": stitle,
                                  "level": lvl, "text": ""})
             elif isinstance(n, LatexEnvironmentNode) and n.environmentname in _EQ_ENVS:
@@ -70,7 +93,7 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
 
     walk(nodes)
     flush()
-    return {"meta": {"source": source, "title": title,
+    return {"meta": {"source": source, "title": title or _find_title(nodes),
                      "generated": datetime.date.today().isoformat()},
             "extraction": {"path": "latex", "equation_fidelity": "exact"},
             "sections": sections, "equations": equations,
