@@ -78,6 +78,27 @@ def _read_group(tex: str, open_brace: int) -> tuple[str, int]:
     return "", len(tex)
 
 
+def _optional_arg_macros(tex: str) -> set:
+    """Names declared like ``\\newcommand{\\pa}[2][]{...}`` — optional first arg."""
+    return {m.group(1) or m.group(2) for m in re.finditer(
+        r"\\(?:new|renew|provide)command\s*(?:\{\\([A-Za-z@]+)\}|\\([A-Za-z@]+))"
+        r"\s*\[\d+\]\s*\[", tex)}
+
+
+def normalize_optional_args(latex: str, names: set) -> str:
+    """Rewrite ``\\pa[\\G]X`` as ``\\pa{\\G}X`` for optional-arg macros.
+
+    KaTeX has no optional-argument macros -- feeding it the declaration throws
+    -- so the call sites are converted to the brace form its #1/#2 substitution
+    already understands. Scoped to macros actually declared that way, because a
+    bracket after any other command is ordinary content such as an interval.
+    """
+    for name in names:
+        latex = re.sub(r"\\" + re.escape(name) + r"\[([^\[\]]*)\]",
+                       lambda m: "\\" + name + "{" + m.group(1) + "}", latex)
+    return latex
+
+
 def extract_macros(tex: str) -> dict:
     """Preamble macro definitions as a KaTeX ``macros`` table.
 
@@ -103,6 +124,7 @@ def extract_macros(tex: str) -> dict:
 def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                   title: str = "") -> dict:
     tex = _strip_comments(_flatten_inputs(main_tex, resolve_input))
+    optional_args = _optional_arg_macros(tex)
     nodes, _, _ = LatexWalker(tex).get_latex_nodes()
     sections, equations = [], []
     counters = [0, 0, 0]
@@ -132,7 +154,8 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                 latex = tex[n.nodelist[0].pos:n.nodelist[-1].pos
                             + n.nodelist[-1].len] if n.nodelist else ""
                 equations.append({"id": f"eq_{len(equations) + 1}",
-                                  "latex": latex.strip(),
+                                  "latex": normalize_optional_args(
+                                      latex.strip(), optional_args),
                                   "section": cur_id or "sec_0"})
             elif isinstance(n, LatexCharsNode):
                 buf.append(n.chars)

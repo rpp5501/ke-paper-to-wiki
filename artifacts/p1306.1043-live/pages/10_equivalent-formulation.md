@@ -26,8 +26,8 @@ Using this criterion, SID itself is rewritten entirely in graph-theoretic terms:
 $$
 \SID(\G,\HH) = \# \left\{\,(i,j), i \neq j\,|\,
 \begin{array}{cl}
-j \in \DE[\G]{i} & \text{if } j \in \PA[\HH]{i}\\
-\PA[\HH]{i} \text{ does not satisfy } (*) \text{ for } (\G,i,j) & \text{if } j \not \in \PA[\HH]{i}
+j \in \DE{\G}{i} & \text{if } j \in \PA{\HH}{i}\\
+\PA{\HH}{i} \text{ does not satisfy } (*) \text{ for } (\G,i,j) & \text{if } j \not \in \PA{\HH}{i}
 \end{array}
 \right\}
 $$ [eq_7]

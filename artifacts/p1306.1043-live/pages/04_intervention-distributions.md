@@ -19,7 +19,7 @@ $$p_{\G}(y \given \doo(X = \hat x)) = p(y) \,.$$ [eq_2]
 
 When X does have parents that mediate its effect, the intervention distribution is instead computed by adjusting for the parents of X: summing the conditional distribution of Y given the intervened value and X's parents, weighted by the distribution of those parents [eq_3].
 
-$$p_{\G}(y \given \doo(X = \hat x)) = \sum_{\pa[]{X}} p(y \given \hat x, \pa[]{X}) \, p(\pa[]{X}) \,.$$ [eq_3]
+$$p_{\G}(y \given \doo(X = \hat x)) = \sum_{\pa{}{X}} p(y \given \hat x, \pa{}{X}) \, p(\pa{}{X}) \,.$$ [eq_3]
 
 This parent-adjustment formula shows that the parents of X always form a valid adjustment set for computing the intervention distribution on Y, though the local context notes other, sometimes smaller, valid adjustment sets can also exist for a given graph [§sec_1_2].
 

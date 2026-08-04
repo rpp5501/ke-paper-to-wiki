@@ -116,3 +116,37 @@ def test_nested_braces_in_a_body_are_read_whole():
 
 def test_a_paper_with_no_macros_gets_an_empty_table():
     assert latex_to_pack(TEX, resolve_input=lambda n: "")["macros"] == {}
+
+
+# KaTeX has no optional-argument macros at all: \newcommand{\q}[2][] throws
+# outright. This paper's core notation is optional-arg -- \pa[\G]X reads
+# "parents of X in graph G" -- over 51 call sites and 6 macros. Left alone,
+# KaTeX takes "[" as the first argument and renders "pa][X".
+OPT_TEX = "\n".join([
+    r"\newcommand{\C}[1]{\mathcal{#1}}",
+    r"\newcommand{\B}[1]{\mathbf{#1}}",
+    r"\newcommand{\G}{\C{G}}",
+    r"\newcommand{\pa}[2][]{{\B{pa}}^{#1}_{#2}}",
+    r"\section{S}",
+    r"\begin{equation}",
+    r"p(\pa[]X) + q(\pa[\G]Y)",
+    r"\end{equation}",
+])
+
+
+def test_optional_arg_call_sites_become_brace_calls():
+    eq = latex_to_pack(OPT_TEX)["equations"][0]["latex"]
+    assert r"\pa{}X" in eq
+    assert r"\pa{\G}Y" in eq
+    assert "[]" not in eq
+
+
+def test_optional_arg_macro_is_still_exported_for_katex():
+    assert latex_to_pack(OPT_TEX)["macros"][r"\pa"] == r"{\B{pa}}^{#1}_{#2}"
+
+
+def test_brackets_after_an_ordinary_macro_are_left_alone():
+    """Only macros DECLARED with an optional arg get rewritten — a bracket
+    after any other macro is real content, e.g. an interval."""
+    tex = OPT_TEX.replace(r"p(\pa[]X)", r"p(\G[0,1])")
+    assert r"\G[0,1]" in latex_to_pack(tex)["equations"][0]["latex"]
