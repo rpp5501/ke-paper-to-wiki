@@ -7,6 +7,13 @@ _TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper
 _ANCHOR = re.compile(r"\[(§(sec_[\w]+)|(eq_\d+)|S\d+)\]")
 _LINK = re.compile(r"\((https?://[^)]+)\)")
 _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
+_FENCED_BLOCK = re.compile(
+    r"^```(?:annotated-eq|derivation|algorithm|figure)\n.*?\n```$", re.S | re.M)
+
+# The only formatting check. "Should have been a table" is a judgement a linter
+# cannot make; "this is a 101-word wall" is arithmetic. Deliberately no quota on
+# lists or tables -- forcing structure produces tables comparing one thing.
+MAX_PARAGRAPH_WORDS = 90
 
 # p4_write forbids a tier whose content is that it has no content. A prompt
 # rule is a hope; this is the check. Deliberately narrow -- each pattern needs
@@ -22,8 +29,8 @@ _NO_CONTENT = (
 )
 
 
-def _fold_display_math(body: str) -> str:
-    """Make each $$...$$ block a single paragraph for the blank-line split.
+def _fold_multiline(body: str) -> str:
+    """Make each $$...$$ block and fenced content block one paragraph.
 
     p4_write requires equations be reproduced VERBATIM from the pack, and real
     paper LaTeX puts blank lines inside align/array blocks. Splitting on blank
@@ -31,9 +38,12 @@ def _fold_display_math(body: str) -> str:
     half without the trailing [eq_N] anchor as an unanchored claim. Collapsing
     blank lines *inside* the delimiters keeps the block whole with its anchor;
     a block that genuinely has no anchor is still caught.
+
+    Fenced YAML content blocks carry blank lines for exactly the same reason
+    and tear the same way.
     """
-    return _DISPLAY_MATH.sub(
-        lambda m: re.sub(r"\n\s*\n", "\n", m.group(0)), body)
+    collapse = lambda m: re.sub(r"\n\s*\n", "\n", m.group(0))
+    return _FENCED_BLOCK.sub(collapse, _DISPLAY_MATH.sub(collapse, body))
 
 
 def _head_ok(url: str) -> bool:
@@ -74,7 +84,7 @@ def lint_page(page_md: str, pack: dict, check_links=None,
     for tier in ("{#mechanics}", "{#the-math}"):
         if tier not in page_md:
             continue
-        body = _fold_display_math(page_md.split(tier, 1)[1].split("## ", 1)[0])
+        body = _fold_multiline(page_md.split(tier, 1)[1].split("## ", 1)[0])
         for para in (p.strip() for p in body.split("\n\n") if p.strip()):
             if len(para.split()) >= 4 and not _ANCHOR.search(para):
                 probs.append(f"unanchored claim in {tier}: {para[:60]}…")
@@ -84,6 +94,15 @@ def lint_page(page_md: str, pack: dict, check_links=None,
                     "the reader real material (worked example, complexity or "
                     "termination argument, invariant, boundary case), not a "
                     "report that it has none")
+            # Maths is not prose: a folded array body or algorithm block
+            # word-counts high without being a wall of text.
+            if "$$" in para or para.startswith("```"):
+                continue
+            if len(para.split()) > MAX_PARAGRAPH_WORDS:
+                probs.append(
+                    f"long paragraph in {tier} ({len(para.split())} words): "
+                    f"{para[:60]}… — break it up, or use the bullets/table/"
+                    "bold lead-in the content genuinely calls for")
     for m in _LINK.finditer(page_md):
         if not check_links(m.group(1)):
             probs.append(f"dead link: {m.group(1)}")

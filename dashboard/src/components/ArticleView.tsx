@@ -12,6 +12,7 @@ import { RichMarkdown } from "./Drawer";
 import { LEARN_STEPS, switchToExplore } from "./LearnPanel";
 import PanelResizer from "./PanelResizer";
 import ProgressRail from "./ProgressRail";
+import SelectionLookup from "./SelectionLookup";
 
 const NODES = KE_DATA.nodes as KENode[];
 const PAGES = KE_DATA.pages as Record<string, string>;
@@ -19,6 +20,10 @@ const GLOSSARY = KE_DATA.glossary as Record<string, Record<string, string>>;
 const SOURCE = (KE_DATA.meta as { source?: string }).source ?? "this paper";
 
 export const CHAPTERS = buildChapters(LEARN_STEPS, NODES, PAGES);
+// The article scrolls through every chapter at once, so a selection can land on
+// a term belonging to any of them. Per-node maps already carry the paper-wide
+// terms merged in, so flattening them is the whole article's vocabulary.
+const ALL_TERMS = Object.assign({}, ...Object.values(GLOSSARY)) as Record<string, string>;
 const NOTATION = PAGES["_notation"];
 const CLOSING = PAGES["_closing"];
 
@@ -129,6 +134,7 @@ export default function ArticleView({
 
   return (
     <div className="article-shell">
+      <SelectionLookup glossary={ALL_TERMS} onOpenConcept={jumpTo} />
       <ProgressRail
         chapters={CHAPTERS}
         hasClosing={Boolean(CLOSING)}

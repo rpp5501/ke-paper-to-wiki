@@ -6,6 +6,12 @@ from .p4_context import assemble_context
 
 TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
 
+# The dashboard's contentBlocks parser is pinned to this same file by
+# contentBlocks.promptFixture.test.ts, so the syntax the writer is shown and the
+# syntax the reader's renderer accepts cannot drift apart.
+BLOCK_SYNTAX = (Path(__file__).resolve().parents[2] / "dashboard" / "src"
+                / "lib" / "contentBlocksExample.md").read_text(encoding="utf-8")
+
 PAGE_PROMPT = """Write the wiki page for ONE concept. Output ONLY markdown.
 
 Structure exactly:
@@ -36,11 +42,33 @@ with concrete values, a complexity or termination argument, a loop invariant,
 a boundary case, or a derivation of the rule the prose states in words. Say
 less, but say something true and load-bearing.
 
-Format for scanning, not for prose volume: use a short bulleted list where the
-content is genuinely a list, a small table where two or more things are being
-compared on the same axes, a bolded lead-in clause where a paragraph turns on
-one term. Do not force these — a paragraph that is genuinely a paragraph stays
-one. Anchors still terminate every claim, including list items and table rows.
+Format for scanning, not for prose volume. Reach for a device when its shape
+is actually present:
+- a TABLE when two or more named things are compared on shared axes — two
+  metrics, two graph classes, two algorithms and their costs;
+- BULLETS when the paper itself enumerates — the conditions of a criterion,
+  the cases of a proof, the steps of a procedure that is not pseudocode;
+- a BOLD lead-in clause when a paragraph turns on one term;
+- a ```mermaid graph when a relationship is structural and small (a graph, a
+  dependency, a state change), never for decoration.
+Do not force these — a tier that is genuinely one argument stays one paragraph.
+Keep paragraphs under 90 words. Anchors still terminate every claim, including
+list items, table rows, and each explanation inside the blocks below.
+
+CONTENT BLOCKS: where the LOCAL context supports it, emit one of these fenced
+YAML blocks instead of describing the same thing in prose. They render as
+interactive walkthroughs; prose about an algorithm does not.
+- ```algorithm — pseudocode, one `intent` per line saying why that line is
+  there. Use it whenever the concept HAS an algorithm or procedure.
+- ```derivation — an equation reached in steps, each with its `why`.
+- ```annotated-eq — one equation whose terms carry distinct roles (role: 1-5).
+EARNED, NOT FORCED: emit a block only where the LOCAL context really contains
+that shape. A concept with no algorithm gets no algorithm block; a concept that
+is pure prose stays prose. Decorative blocks destroy the signal that a block
+means "there is real structure here".
+
+Exact syntax to follow:
+{blocks}
 Equations (hard): in The Math, reproduce each relevant equation from the LOCAL
 CONTEXT [eq_N] entries VERBATIM as a display block wrapped in $$ ... $$ — keep it
 as LaTeX, never convert to Unicode symbols — and put its [eq_N] anchor right after
@@ -94,7 +122,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
         page, problems = "", ["spawn failed"]
         for attempt in range(2):
             try:
-                page = spawn(PAGE_PROMPT.format(**ctx))
+                page = spawn(PAGE_PROMPT.format(blocks=BLOCK_SYNTAX, **ctx))
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break
