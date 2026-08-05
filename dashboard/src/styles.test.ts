@@ -114,3 +114,32 @@ describe("learn mode styling", () => {
     expect(learnCss).not.toContain("transition: all");
   });
 });
+
+// The topbar is a sibling of .shell, not a child of main, so the two share the
+// viewport as a column. When .shell also claimed a full 100dvh the pair
+// overflowed the root by the height of the bar. body sets overflow:hidden, so
+// nothing scrolled visibly -- but focus moving to anything clipped at the
+// bottom let the browser scroll the root programmatically, and the topbar left
+// the screen with no scrollbar to bring it back. Reported as "the top panel
+// stops showing after exploring for a while".
+describe("the topbar and the shell share one viewport column", () => {
+  it("makes the root a flex column", () => {
+    expect(styles).toMatch(/#root\s*\{[^}]*display:\s*flex/s);
+    expect(styles).toMatch(/#root\s*\{[^}]*flex-direction:\s*column/s);
+  });
+
+  it("lets the shell take the remaining height instead of a whole viewport", () => {
+    const shell = styles.match(/\n\.shell\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(shell).toMatch(/flex:\s*1/);
+    expect(shell).not.toMatch(/height:\s*100[dv]?vh|height:\s*100dvh/);
+  });
+
+  it("keeps the shell able to shrink so its children scroll", () => {
+    expect(styles).toMatch(/\n\.shell\s*\{[^}]*min-height:\s*0/s);
+  });
+
+  it("pins each panel toggle to its own corner", () => {
+    expect(styles).toMatch(/\.panel-controls-start\s*\{[^}]*margin-right:\s*auto/s);
+    expect(styles).toMatch(/\.panel-controls-end\s*\{[^}]*margin-left:\s*auto/s);
+  });
+});

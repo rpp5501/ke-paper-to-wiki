@@ -51,6 +51,17 @@ body,
   height: 100%;
 }
 
+/* The topbar is a sibling of .shell, so the two share the viewport as a
+   column. Without this they stacked in normal flow -- topbar plus a full
+   100dvh shell -- overflowing the root by the height of the bar. body sets
+   overflow:hidden so nothing scrolled visibly, but focus moving to anything
+   clipped at the bottom let the browser scroll the root programmatically, and
+   the topbar left the screen with no scrollbar to bring it back. */
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -75,8 +86,8 @@ input:focus-visible,
 .shell {
   display: flex;
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 0;
+  flex: 1;
 }
 
 .panel-resizer {
