@@ -156,6 +156,75 @@ def test_pdf_stays_rung4_when_no_sibling(tmp_path):
     assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent"}
 
 
+# Measured on the real arXiv:1306.1043 PDF: the upgrade to rung 1 never fired,
+# because _pdf_title takes the first non-blank line and on an arXiv PDF that is
+# the margin stamp -- so the OpenAlex title search ran on the string
+# "1306.1043v2" and found nothing. The stamp it mistook for a title contains
+# the id outright, which identifies the paper exactly where a search guesses.
+# Cost of the miss: 1 section, 0 equations, equation_fidelity "absent", against
+# 28 sections and 11 equations from the tarball.
+def _stamped_pdf(tmp_path, stamp, name="paper.pdf"):
+    import fitz
+    path = tmp_path / name
+    doc = fitz.open()
+    page = doc.new_page()
+    page.insert_text((30, 60), stamp)
+    page.insert_text((72, 200), "Body text of the paper.")
+    doc.save(str(path))
+    doc.close()
+    return path
+
+
+def test_an_arxiv_pdf_upgrades_by_its_own_stamp(tmp_path):
+    pdf = _stamped_pdf(tmp_path, "arXiv:1306.1043v2 [stat.ME] 5 Jun 2015")
+    asked = []
+
+    def get(url, timeout, headers):
+        asked.append(url)
+        return Resp(_tarball())
+
+    pack = build_pack(str(pdf), get=get)
+    assert any("1306.1043" in u for u in asked), "never went to arXiv"
+    assert pack["extraction"]["path"] == "latex"
+
+
+def test_a_plain_pdf_still_uses_the_pdf_rung(tmp_path):
+    pdf = _stamped_pdf(tmp_path, "A Paper With No Stamp")
+
+    def get(url, timeout, headers):
+        return Resp(b'{"results": []}')
+
+    assert build_pack(str(pdf), get=get)["extraction"]["path"] == "pdf"
+
+
+def test_a_failed_upgrade_falls_back_to_the_pdf_rung(tmp_path):
+    """A stamped id that arXiv cannot serve must not lose the reader the PDF
+    they already have on disk."""
+    pdf = _stamped_pdf(tmp_path, "arXiv:9999.99999v1 [cs.LG] 1 Jan 2030")
+
+    def get(url, timeout, headers):
+        raise RuntimeError("unreachable")
+
+    assert build_pack(str(pdf), get=get)["extraction"]["path"] == "pdf"
+
+
+def test_the_stamp_is_read_from_the_first_page_only(tmp_path):
+    """A bibliography cites a dozen other arXiv ids; picking one of those up
+    would silently build the wrong paper."""
+    import fitz
+    path = tmp_path / "refs.pdf"
+    doc = fitz.open()
+    doc.new_page().insert_text((72, 100), "Title With No Stamp")
+    doc.new_page().insert_text((72, 100), "[7] Someone. arXiv:1234.56789.")
+    doc.save(str(path))
+    doc.close()
+
+    def get(url, timeout, headers):
+        return Resp(b'{"results": []}')
+
+    assert build_pack(str(path), get=get)["extraction"]["path"] == "pdf"
+
+
 def test_pdf_no_apis_skips_upgrade(tmp_path, monkeypatch):
     monkeypatch.setenv("RESEARCH_MCP_NO_APIS", "1")
     import fitz

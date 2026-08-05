@@ -84,6 +84,30 @@ def _pack_from_pdf(path: str, source: str) -> dict:
             "equations": [], "references": [], "figures": []}
 
 
+_ARXIV_STAMP = re.compile(r"arXiv[:\s]\s*(\d{4}\.\d{4,5})", re.I)
+
+
+def _pdf_arxiv_id(path: str) -> str | None:
+    """The arXiv id from the PDF's own margin stamp, or None.
+
+    Every arXiv PDF carries it, and it names the paper exactly where a title
+    search only guesses. First page only, deliberately: the bibliography of a
+    paper cites a dozen other arXiv ids, and picking one of those up would
+    silently build a different paper than the one on disk.
+    """
+    import fitz
+    try:
+        doc = fitz.open(path)
+    except Exception:
+        return None
+    try:
+        first = doc[0].get_text() if doc.page_count else ""
+    finally:
+        doc.close()
+    match = _ARXIV_STAMP.search(first)
+    return match.group(1) if match else None
+
+
 def _pdf_title(path: str) -> str:
     import fitz
     doc = fitz.open(path)
@@ -127,11 +151,20 @@ def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
                              source=f"file:{target}")
     if kind == "pdf":
         if not _no_apis():
-            from .upgrade import find_arxiv_sibling
-            title = _pdf_title(target)
-            ax = find_arxiv_sibling(title, get=get)
+            # The paper's own stamp first: it names the id outright, where a
+            # title search only guesses -- and on an arXiv PDF the stamp IS
+            # what _pdf_title returns, so the search was being run on
+            # "1306.1043v2" and finding nothing.
+            ax = _pdf_arxiv_id(target)
+            if not ax:
+                from .upgrade import find_arxiv_sibling
+                ax = find_arxiv_sibling(_pdf_title(target), get=get)
             if ax:
-                return build_pack(ax, get=get, cache_dir=cache_dir)
+                upgraded = build_pack(f"arXiv:{ax}", get=get, cache_dir=cache_dir)
+                # An id that arXiv cannot serve must not cost the reader the
+                # PDF they already have on disk.
+                if "sections" in upgraded:
+                    return upgraded
         return _pack_from_pdf(target, source=f"file:{target}")
     if kind == "arxiv":
         if _no_apis():
