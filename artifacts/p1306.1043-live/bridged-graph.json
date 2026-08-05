@@ -12,7 +12,7 @@
    "label": "Structural Intervention Distance (SID)",
    "level": 0,
    "source_ref": "sec_2",
-   "page": "05_structural-intervention-distance.md"
+   "page": "11_structural-intervention-distance.md"
   },
   {
    "id": "graph-comparison-problem",
@@ -20,7 +20,7 @@
    "label": "Comparing Estimated and True Causal Graphs",
    "level": 1,
    "source_ref": "sec_1",
-   "page": "01_graph-comparison-problem.md"
+   "page": "07_graph-comparison-problem.md"
   },
   {
    "id": "structural-hamming-distance",
@@ -28,7 +28,7 @@
    "label": "Structural Hamming Distance (SHD)",
    "level": 1,
    "source_ref": "sec_1_1",
-   "page": "07_structural-hamming-distance.md"
+   "page": "13_structural-hamming-distance.md"
   },
   {
    "id": "intervention-distributions",
@@ -36,7 +36,7 @@
    "label": "Intervention Distributions",
    "level": 1,
    "source_ref": "sec_1_2",
-   "page": "04_intervention-distributions.md"
+   "page": "10_intervention-distributions.md"
   },
   {
    "id": "motivation-and-definition",
@@ -44,7 +44,7 @@
    "label": "Motivation and Definition of SID",
    "level": 1,
    "source_ref": "sec_2_1",
-   "page": "06_motivation-and-definition.md"
+   "page": "12_motivation-and-definition.md"
   },
   {
    "id": "equivalent-formulation",
@@ -52,7 +52,7 @@
    "label": "Equivalent Graphical Formulation",
    "level": 2,
    "source_ref": "sec_2_2",
-   "page": "10_equivalent-formulation.md"
+   "page": "16_equivalent-formulation.md"
   },
   {
    "id": "sid-properties",
@@ -60,7 +60,7 @@
    "label": "Metric Properties of SID",
    "level": 2,
    "source_ref": "sec_2_3",
-   "page": "11_sid-properties.md"
+   "page": "17_sid-properties.md"
   },
   {
    "id": "sid-dag-cpdag",
@@ -68,7 +68,7 @@
    "label": "SID between a DAG and a CPDAG",
    "level": 2,
    "source_ref": "sec_2_4_1",
-   "page": "12_sid-dag-cpdag.md"
+   "page": "18_sid-dag-cpdag.md"
   },
   {
    "id": "sid-cpdag-dag-cpdag",
@@ -76,7 +76,7 @@
    "label": "SID between a CPDAG and a DAG or CPDAG",
    "level": 2,
    "source_ref": "sec_2_4_2",
-   "page": "13_sid-cpdag-dag-cpdag.md"
+   "page": "19_sid-cpdag-dag-cpdag.md"
   },
   {
    "id": "penalizing-additional-edges",
@@ -84,7 +84,7 @@
    "label": "Penalizing Additional Edges",
    "level": 3,
    "source_ref": "sec_2_4_3",
-   "page": "20_penalizing-additional-edges.md"
+   "page": "26_penalizing-additional-edges.md"
   },
   {
    "id": "symmetrization",
@@ -92,7 +92,7 @@
    "label": "Symmetrization of SID",
    "level": 3,
    "source_ref": "sec_2_4_4",
-   "page": "24_symmetrization.md"
+   "page": "30_symmetrization.md"
   },
   {
    "id": "alternative-adjustment-sets",
@@ -100,7 +100,7 @@
    "label": "Alternative Adjustment Sets",
    "level": 3,
    "source_ref": "sec_2_4_5",
-   "page": "17_alternative-adjustment-sets.md"
+   "page": "23_alternative-adjustment-sets.md"
   },
   {
    "id": "hidden-variables-extension",
@@ -108,7 +108,7 @@
    "label": "Hidden Variables (Future Work)",
    "level": 3,
    "source_ref": "sec_2_4_6",
-   "page": "18_hidden-variables-extension.md"
+   "page": "24_hidden-variables-extension.md"
   },
   {
    "id": "multiple-interventions-extension",
@@ -116,7 +116,7 @@
    "label": "Multiple Interventions (Future Work)",
    "level": 3,
    "source_ref": "sec_2_4_7",
-   "page": "19_multiple-interventions-extension.md"
+   "page": "25_multiple-interventions-extension.md"
   },
   {
    "id": "sid-vs-shd-simulation",
@@ -124,7 +124,7 @@
    "label": "SID versus SHD Simulation",
    "level": 2,
    "source_ref": "sec_3_1",
-   "page": "14_sid-vs-shd-simulation.md"
+   "page": "20_sid-vs-shd-simulation.md"
   },
   {
    "id": "comparing-causal-inference-methods",
@@ -132,7 +132,7 @@
    "label": "Comparing Causal Inference Methods",
    "level": 2,
    "source_ref": "sec_3_2",
-   "page": "15_comparing-causal-inference-methods.md"
+   "page": "21_comparing-causal-inference-methods.md"
   },
   {
    "id": "sid-scalability",
@@ -140,7 +140,7 @@
    "label": "Scalability of the SID",
    "level": 2,
    "source_ref": "sec_3_3",
-   "page": "16_sid-scalability.md"
+   "page": "22_sid-scalability.md"
   },
   {
    "id": "sid-implementation",
@@ -148,7 +148,7 @@
    "label": "Implementation of SID",
    "level": 1,
    "source_ref": "sec_4",
-   "page": "03_sid-implementation.md"
+   "page": "09_sid-implementation.md"
   },
   {
    "id": "dag-terminology",
@@ -156,7 +156,7 @@
    "label": "DAG Terminology",
    "level": 1,
    "source_ref": "sec_7",
-   "page": "02_dag-terminology.md"
+   "page": "08_dag-terminology.md"
   },
   {
    "id": "proof-main-proposition",
@@ -164,7 +164,7 @@
    "label": "Proof: Equivalence of Definitions",
    "level": 3,
    "source_ref": "sec_8",
-   "page": "21_proof-main-proposition.md"
+   "page": "27_proof-main-proposition.md"
   },
   {
    "id": "proof-sidsuper",
@@ -172,7 +172,7 @@
    "label": "Proof: SID for Superset Estimates",
    "level": 3,
    "source_ref": "sec_9",
-   "page": "23_proof-sidsuper.md"
+   "page": "29_proof-sidsuper.md"
   },
   {
    "id": "proof-sidshd",
@@ -180,7 +180,7 @@
    "label": "Proof: SID and SHD Relationship",
    "level": 3,
    "source_ref": "sec_10",
-   "page": "22_proof-sidshd.md"
+   "page": "28_proof-sidshd.md"
   },
   {
    "id": "linear-gaussian-sem-effects",
@@ -196,7 +196,7 @@
    "label": "SID Algorithms",
    "level": 1,
    "source_ref": "sec_12",
-   "page": "09_sid-algorithms.md"
+   "page": "15_sid-algorithms.md"
   },
   {
    "id": "sid",
