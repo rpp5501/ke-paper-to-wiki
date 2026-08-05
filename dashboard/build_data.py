@@ -249,19 +249,36 @@ def _source_dates(plan_graph, repo_dir):
     return dates
 
 
+# How many source excerpts a bundle will carry. Spent on the top hotspots of a
+# whole-repo graph, or on every code node when there are few enough to fit.
+EXCERPT_BUDGET = 20
+
+
 def _excerpts(plan_graph, hotspots, repo_dir):
     if not repo_dir or plan_graph["meta"].get("kind") not in {
             "code", "bridged"}:
         return {}
 
     keep = {
-        hotspot["id"] for hotspot in hotspots[:20]
+        hotspot["id"] for hotspot in hotspots[:EXCERPT_BUDGET]
         if isinstance(hotspot, dict) and hotspot.get("id")
     }
     keep.update(
         edge["src"] for edge in plan_graph["edges"]
         if edge.get("kind") == "implements" and edge.get("src")
     )
+    # A code node has no page and no research note, so without its source the
+    # drawer says "no page or note for this node yet" and shows nothing at all
+    # -- which is what an unbridged function looked like. When the code side is
+    # small enough to fit the same budget the hotspot cap already spends, every
+    # node carries its excerpt; a whole-repo graph stays bounded by the cap.
+    # Bridged only: a whole-repo code graph stays hotspot-scoped however small,
+    # because there "which functions matter" is the question the graph answers.
+    code_nodes = [node["id"] for node in plan_graph["nodes"]
+                  if node.get("kind") not in {"concept", None}]
+    if (plan_graph["meta"].get("kind") == "bridged"
+            and len(code_nodes) <= EXCERPT_BUDGET):
+        keep.update(code_nodes)
     try:
         repo = Path(repo_dir).resolve()
     except (OSError, RuntimeError):

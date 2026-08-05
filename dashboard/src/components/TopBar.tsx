@@ -109,6 +109,30 @@ export function TopBarPresentation({
 
   return (
     <>
+      {/* Leading corner. The left panel opens on the left, so its toggle sits
+          at the far left of the bar, mirroring the right one. */}
+      {mode === "explore" && (
+        <div
+          aria-label="Panels"
+          className="topbar-group panel-controls panel-controls-start"
+          role="group"
+        >
+          <CompactPill
+            active={sidebarOpen}
+            aria-controls="left-panel"
+            aria-expanded={sidebarOpen}
+            aria-label={sidebarOpen ? "Close left panel" : "Open left panel"}
+            aria-pressed={sidebarOpen}
+            className="panel-toggle"
+            onClick={onToggleSidebar}
+            ref={sidebarTriggerRef}
+            title={sidebarOpen ? "Close left panel" : "Open left panel"}
+          >
+            <PanelSideIcon side="left" />
+          </CompactPill>
+        </div>
+      )}
+
       <div aria-label="Dashboard mode" className="topbar-group mode-switch" role="radiogroup">
         {MODES.map(([value, label], index) => (
           <CompactPill
@@ -130,22 +154,6 @@ export function TopBarPresentation({
 
       {mode === "explore" && (
         <>
-          <div aria-label="Panels" className="topbar-group panel-controls" role="group">
-            <CompactPill
-              active={sidebarOpen}
-              aria-controls="left-panel"
-              aria-expanded={sidebarOpen}
-              aria-label={sidebarOpen ? "Close left panel" : "Open left panel"}
-              aria-pressed={sidebarOpen}
-              className="panel-toggle"
-              onClick={onToggleSidebar}
-              ref={sidebarTriggerRef}
-              title={sidebarOpen ? "Close left panel" : "Open left panel"}
-            >
-              <PanelSideIcon side="left" />
-            </CompactPill>
-          </div>
-
           <div aria-label="Graph view" className="topbar-group" role="radiogroup">
             {VIEWS.map((candidate, index) => (
               <CompactPill

@@ -174,10 +174,15 @@ input:focus-visible,
   gap: 2px;
 }
 
-/* Pin the right-panel toggle to the top-right corner. `auto` on the start
-   margin claims the free space on its flex line; the topbar wraps, so this
-   only reaches the corner while the bar is one line, which is the case it is
-   for at every width the corner is meaningful. */
+/* Pin each panel toggle to its own corner of the bar. `auto` margins claim the
+   free space on the flex line, so the toggles sit hard against the edges and
+   everything between them stays centred. The topbar spans the whole window
+   (it is a sibling of .shell, not a child of main), so these are the window's
+   corners rather than main's. */
+.panel-controls-start {
+  margin-right: auto;
+}
+
 .panel-controls-end {
   margin-left: auto;
 }

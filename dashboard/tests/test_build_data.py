@@ -668,3 +668,43 @@ def test_a_graph_of_only_code_still_gets_a_tour(tmp_path):
     empty = tmp_path / "none2"
     empty.mkdir()
     assert len(build_bundle(code_only, pages_dir=empty)["tour"]) > 0
+
+
+# A code node has no page and no research note, so with no excerpt the drawer
+# shows "no page or note for this node yet" and nothing else. Reported for
+# _reachable_on_non_directed_path(): excerpts covered only hotspots and
+# bridge-confirmed nodes, so 3 of the 6 pgmpy functions were blank panels.
+def test_every_code_node_in_a_bridged_graph_carries_its_source(tmp_path):
+    src = tmp_path / "mod.py"
+    src.write_text("def a():\n    return 1\n\n\ndef b():\n    return 2\n",
+                   encoding="utf-8")
+    graph = {
+        "meta": {"kind": "bridged"},
+        "nodes": [
+            {"id": "c", "kind": "concept", "label": "Concept", "level": 0},
+            {"id": "fn_a", "kind": "function", "label": "a()",
+             "source_ref": "mod.py:L1"},
+            {"id": "fn_b", "kind": "function", "label": "b()",
+             "source_ref": "mod.py:L5"},
+        ],
+        # only fn_a is bridged; fn_b is the one that used to come back blank
+        "edges": [{"src": "fn_a", "dst": "c", "kind": "implements"}],
+    }
+
+    excerpts = build_bundle(graph, repo_dir=tmp_path)["excerpts"]
+
+    assert "fn_a" in excerpts
+    assert "fn_b" in excerpts, "an unbridged code node still needs its source"
+    assert "def b()" in excerpts["fn_b"]
+
+
+def test_concept_nodes_do_not_get_excerpts(tmp_path):
+    """They have pages; an excerpt would be duplicate weight in the bundle."""
+    graph = {
+        "meta": {"kind": "bridged"},
+        "nodes": [{"id": "c", "kind": "concept", "label": "C",
+                   "source_ref": "mod.py:L1"}],
+        "edges": [],
+    }
+    (tmp_path / "mod.py").write_text("x = 1\n", encoding="utf-8")
+    assert build_bundle(graph, repo_dir=tmp_path)["excerpts"] == {}

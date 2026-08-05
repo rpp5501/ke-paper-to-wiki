@@ -378,6 +378,21 @@ export default function App() {
           {drawerOpen ? drawerStatus.message : ""}
         </span>
       </p>
+      {/* Outside .shell on purpose. Inside, it lived in <main> beside the left
+          panel and so contracted every time that panel opened; the panel
+          toggles it carries are about the whole window, not about main. */}
+      <header
+        aria-hidden={drawerModalOpen || sidebarModalOpen ? true : undefined}
+        className="topbar"
+        id="topbar"
+        inert={drawerModalOpen || sidebarModalOpen ? true : undefined}
+      >
+        <TopBar
+          onToggleSidebar={() => setSidebarOpen((open) => !open)}
+          sidebarOpen={sidebarOpen}
+          sidebarTriggerRef={sidebarTriggerRef}
+        />
+      </header>
       <div className="shell" style={shellStyle}>
         <button
           aria-hidden="true"
@@ -418,18 +433,6 @@ export default function App() {
           className="main"
           inert={sidebarModalOpen ? true : undefined}
         >
-          <header
-            aria-hidden={drawerModalOpen ? true : undefined}
-            className="topbar"
-            id="topbar"
-            inert={drawerModalOpen ? true : undefined}
-          >
-            <TopBar
-              onToggleSidebar={() => setSidebarOpen((open) => !open)}
-              sidebarOpen={sidebarOpen}
-              sidebarTriggerRef={sidebarTriggerRef}
-            />
-          </header>
           {mode === "learn" ? (
             <ArticleView
               onRailReset={() => panels.resetWidth("guided-rail")}
