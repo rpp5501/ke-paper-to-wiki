@@ -6,7 +6,11 @@ from pathlib import Path
 import yaml
 
 _CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|[_\-\s.:]+")
-_STOP = {"the", "a", "an", "of", "and"}
+# Function words carry no evidence that code implements a concept: a shared
+# "on" paired _reachable_on_non_directed_path with an unrelated concept.
+_STOP = {"the", "a", "an", "of", "and", "on", "in", "to", "for", "with", "by",
+         "from", "at", "as", "is", "are", "be", "or", "not", "that", "this",
+         "it", "its", "into", "over", "per", "via", "up", "out"}
 _VERDICT = re.compile(r"(YES|NO):[ \t]*(\S[^\r\n]*)")
 
 
@@ -14,13 +18,35 @@ def _tokens(name: str) -> set:
     return {t.lower() for t in _CAMEL.split(name) if t and t.lower() not in _STOP}
 
 
+# Scaled by the share of the code name the definition covers, so a code entity
+# whose name is *entirely* accounted for by the definition (parallel_heads vs
+# "...heads in parallel...") clears the 0.25 gate on its own, while partial
+# coverage does not. Below the label weight throughout: a matching name is
+# stronger evidence than a matching word in a sentence.
+DEFINITION_WEIGHT = 0.3
+
+
 def propose_candidates(concept_graph: dict, code_graph: dict,
-                       top: int = 30) -> list[dict]:
+                       top: int = 30, definitions: dict | None = None) -> list[dict]:
+    """Deterministic concept<->code candidates. Zero tokens.
+
+    ``definitions`` maps concept id -> the paper's own one-line definition, as
+    written by P2 into the TOC rows. Label-only matching compares prose
+    ("Equivalent Graphical Formulation") against identifiers
+    (_compute_path_matrix) and scores near zero unless the names coincide: on
+    pgmpy's sid.py all 30 candidates hit the single token "sid" and the two
+    functions implementing the algorithms drew none at all. Definition text is
+    the vocabulary the two halves share, so it contributes -- at a lower weight,
+    because a matching *name* is stronger evidence than a matching word in a
+    sentence.
+    """
+    definitions = definitions or {}
     out = []
     for c in concept_graph["nodes"]:
         ct = _tokens(c["label"])
         if not ct:
             continue
+        dt = _tokens(definitions.get(c["id"], "")) - ct
         for k in code_graph["nodes"]:
             kt = _tokens(k["label"])
             if not kt:
@@ -29,12 +55,30 @@ def propose_candidates(concept_graph: dict, code_graph: dict,
             source_path = k.get("source_ref", "").split(":L", 1)[0]
             filename = re.split(r"[\\/]", source_path)[-1].lower()
             bonus = 0.2 if any(t in filename for t in ct) else 0.0
-            score = round(jac + bonus, 3)
+            shared_def = dt & kt
+            def_score = (DEFINITION_WEIGHT * len(shared_def) / len(kt)
+                         if shared_def else 0.0)
+            score = round(jac + bonus + def_score, 3)
             if score >= 0.25:
+                evidence = f"shared tokens: {sorted(ct & kt)}"
+                if shared_def:
+                    evidence += f"; via definition: {sorted(shared_def)}"
                 out.append({"concept": c["id"], "code": k["id"], "score": score,
-                            "evidence": f"shared tokens: {sorted(ct & kt)}"})
-    out.sort(key=lambda r: (-r["score"], r["concept"], r["code"]))
-    return out[:top]
+                            "evidence": evidence})
+
+    # Order for truncation by round-robin over CODE entities, best first within
+    # each. Pure score order let a few pairs sharing one loud token ("sid") take
+    # all 30 slots while half the code entities drew nothing -- and the verifier
+    # can only reject what it is shown. Ranking within each entity means every
+    # function gets its best candidate considered before any gets a second.
+    rank: dict[str, int] = {}
+    ordered = []
+    for cand in sorted(out, key=lambda r: (-r["score"], r["concept"], r["code"])):
+        rank[cand["code"]] = rank.get(cand["code"], -1) + 1
+        ordered.append((rank[cand["code"]], -cand["score"],
+                        cand["concept"], cand["code"], cand))
+    ordered.sort(key=lambda t: t[:4])
+    return [t[4] for t in ordered[:top]]
 
 
 VERIFY_PROMPT = """Does this code entity implement this paper concept?
@@ -44,7 +88,15 @@ Answer with exactly one line: "YES: <reason>" or "NO: <reason>"."""
 
 
 def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
-                      spawn) -> list[dict]:
+                      spawn, definitions: dict | None = None) -> list[dict]:
+    """One leased verdict per candidate.
+
+    ``definitions`` is the same TOC-sourced map propose_candidates takes.
+    Without it the prompt reads "Concept: X -- X", because P2 moves definition
+    onto the TOC rows and off the graph nodes, so the node-level .get() here
+    always fell through to its label fallback.
+    """
+    definitions = definitions or {}
     concepts = {n["id"]: n for n in concept_graph["nodes"]}
     code = {n["id"]: n for n in code_graph["nodes"]}
     out = []
@@ -52,7 +104,9 @@ def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
         cn, kn = concepts[c["concept"]], code[c["code"]]
         try:
             raw = spawn(VERIFY_PROMPT.format(
-                label=cn["label"], definition=cn.get("definition", cn["label"]),
+                label=cn["label"],
+                definition=(definitions.get(c["concept"])
+                            or cn.get("definition") or cn["label"]),
                 code_label=kn["label"],
                 source_ref=kn.get("source_ref", "?"))).strip()
         except Exception as exc:
