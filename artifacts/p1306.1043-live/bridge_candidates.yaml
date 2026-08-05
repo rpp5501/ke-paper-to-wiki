@@ -5,142 +5,190 @@ candidates:
   code: sid_sid
   score: 0.7
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: The docstring explicitly states the class "follows Algorithms 1 and 2 in
+    Appendix F of the paper," converting graphs to adjacency matrices and computing
+    path/reachability — directly matching the concept of two algorithms for computing
+    SID from two adjacency matrices.
+  confirmed: true
 - concept: sid-algorithms
   code: sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: sid.py does not exist in this repository (no file found at that path or
-    anywhere else in the codebase).
+  reason: The pasted excerpt shows only helper functions (`_compute_path_matrix`,
+    part of `_reachable_on_non_directed_path`) with no visible pseudocode or full
+    algorithm implementation matching "SID Algorithms" as a concept covering two complete
+    algorithms; the source is truncated before establishing that correspondence.
   confirmed: false
 - concept: sid-algorithms
   code: sid_sid_matrix
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: The function explicitly implements "Algorithm 1" and operates on two adjacency
+    matrices (true_graph, est_graph) to compute intervention-distance correctness,
+    matching the SID Algorithms concept.
+  confirmed: true
 - concept: sid-scalability
   code: sid_compute_path_matrix
   score: 0.3
   evidence: 'shared tokens: []; via definition: [''compute'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: This is a transitive-closure helper (matrix squaring for reachability),
+    not a benchmarking routine — it contains no timing/measurement logic or loop over
+    graph sizes needed to produce an empirical runtime-vs-node-count report.
   confirmed: false
 - concept: sid-implementation
   code: sid_sid
   score: 0.7
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: The class docstring explicitly states "The implementation follows Algorithms
+    1 and 2 in Appendix F of the paper," directly matching the concept's description
+    of an implementation sketch whose full algorithmic details live elsewhere (the
+    paper's Appendix F).
+  confirmed: true
 - concept: sid-implementation
   code: sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'unparseable verdict: No such file exists in this repository — nothing named
-    sid.p'
-  confirmed: false
+  verdict: 'yes'
+  reason: sid.py directly implements the SID algorithm — it computes the transitive
+    closure and implements "Algorithm 2 (rondp) from Peters and Buehlmann (2015),"
+    which is the foundational SID paper, confirming this file realizes the paper's
+    SID implementation concept.
+  confirmed: true
 - concept: sid-implementation
   code: sid_sid_matrix
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: '`_sid_matrix()` computes the SID by implementing Algorithm 1 (the generalized
+    adjustment criterion checks) to identify incorrect interventions between true
+    and estimated graphs, which is exactly the core computation described by the "Implementation
+    of SID" concept.'
+  confirmed: true
 - concept: sid-scalability
   code: sid_sid
   score: 0.7
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: This is the SID metric implementation itself (the algorithm), not an empirical
+    benchmark/report. The docstring's remark about "100-node pair takes a few seconds
+    and a 200-node pair around a minute" is a complexity note, not code that runs
+    or reports timing experiments across growing node counts.
   confirmed: false
 - concept: sid-scalability
   code: sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'unparseable verdict: No file named `sid.py` exists anywhere in this repository.
-
-
-    '
+  reason: The excerpt only shows path/reachability computation helpers (Algorithm
+    2, transitive closure), with no benchmarking, timing, or scaling-with-node-count
+    code visible.
   confirmed: false
 - concept: sid-scalability
   code: sid_sid_matrix
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: The shown source of `_sid_matrix()` implements Algorithm 1's correctness
+    computation (building the matrix of incorrect interventions via the adjustment
+    criterion) — it contains no timing/benchmarking logic, loop over node counts,
+    or reporting of processor time, so it does not implement the scalability/empirical-runtime
+    concept.
   confirmed: false
 - concept: symmetrization
   code: sid_sid
   score: 0.7
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: 'The shown code is the base asymmetric SID class itself (`"is_symmetric":
+    False`, docstring states "SID is asymmetric"); no symmetrized/averaged variant
+    is present in this excerpt.'
   confirmed: false
 - concept: symmetrization
   code: sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: The shown excerpt only contains `_compute_path_matrix` and `_reachable_on_non_directed_path`
+    (the SID reachability/adjustment-criterion internals), with no function implementing
+    a symmetric combination of SID(A→B) and SID(B→A) or any equivalent symmetrization
+    logic.
   confirmed: false
 - concept: symmetrization
   code: sid_sid_matrix
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: The shown code computes the standard (asymmetric) SID matrix treating `true_graph`
+    as ground truth against `est_graph` via the adjustment criterion — there's no
+    evidence here of a symmetrized variant (e.g., combining both directions when neither
+    graph is ground truth).
   confirmed: false
 - concept: motivation-and-definition
   code: sid_sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: The docstring explicitly defines SID as counting ordered pairs of variables
+    where the estimated graph's implied intervention distribution disagrees with the
+    true graph's — matching the concept's definition of checking, per ordered node
+    pair, whether true and estimated DAGs imply the same interventional distribution
+    under intervention.
+  confirmed: true
 - concept: motivation-and-definition
   code: sid
   score: 0.45
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: The shown code only implements path-matrix/reachability helpers (transitive
+    closure, Algorithm 2 "rondp" for the adjustment criterion) — it contains no logic
+    comparing interventional distributions between true and estimated DAGs for node
+    pairs, which is the actual concept described.
   confirmed: false
 - concept: motivation-and-definition
   code: sid_sid_matrix
   score: 0.45
   evidence: 'shared tokens: [''sid'']'
-  verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
-  confirmed: false
+  verdict: 'yes'
+  reason: The function directly computes, for every ordered pair (source, target),
+    whether the estimated parent set is a valid adjustment set in the true graph (via
+    the two-condition adjustment criterion), which is exactly the operational test
+    for whether true/estimated DAGs imply the same interventional distribution — matching
+    the concept's definition and mirroring "Algorithm 1" as noted in the docstring.
+  confirmed: true
 - concept: sid-properties
   code: sid_sid
   score: 0.533
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: The docstring only describes computing SID and its runtime cost (~O(n^4)
+    time), which is a complexity bound on the algorithm, not a bound on the SID metric's
+    value in terms of node count or any metric-like property (e.g., triangle inequality)
+    of SID itself. This class implements the SID computation, not an investigation
+    of its metric properties.
   confirmed: false
 - concept: sid-properties
   code: sid
   score: 0.45
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'unparseable verdict: No file named `sid.py` exists anywhere in the repository.
-
-
-    N'
+  reason: The shown code implements transitive-closure/path-matrix computation and
+    Algorithm 2 (rondp) for the adjustment criterion — graph reachability utilities,
+    not any computation or statement of SID's metric-like properties or node-count
+    bounds.
   confirmed: false
 - concept: sid-properties
   code: sid_sid_matrix
   score: 0.45
   evidence: 'shared tokens: [''sid'']'
   verdict: 'no'
-  reason: 'verifier error: LLMUnavailable'
+  reason: This function computes the SID matrix itself (Algorithm 1's per-pair intervention-validity
+    check), not an investigation of metric properties like bounds expressed in terms
+    of node count; no bound derivation or metric-property reasoning appears here.
   confirmed: false
 - concept: proof-sidshd
   code: sid_sid

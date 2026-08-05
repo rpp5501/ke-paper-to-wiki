@@ -1,0 +1,552 @@
+{
+ "meta": {
+  "kind": "bridged",
+  "source": "arXiv:1306.1043 + repo:pgmpy/metrics/sid.py",
+  "generated": "2026-08-05",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "structural-intervention-distance",
+   "kind": "concept",
+   "label": "Structural Intervention Distance (SID)",
+   "level": 0,
+   "source_ref": "sec_2",
+   "page": "05_structural-intervention-distance.md"
+  },
+  {
+   "id": "graph-comparison-problem",
+   "kind": "concept",
+   "label": "Comparing Estimated and True Causal Graphs",
+   "level": 1,
+   "source_ref": "sec_1",
+   "page": "01_graph-comparison-problem.md"
+  },
+  {
+   "id": "structural-hamming-distance",
+   "kind": "concept",
+   "label": "Structural Hamming Distance (SHD)",
+   "level": 1,
+   "source_ref": "sec_1_1",
+   "page": "07_structural-hamming-distance.md"
+  },
+  {
+   "id": "intervention-distributions",
+   "kind": "concept",
+   "label": "Intervention Distributions",
+   "level": 1,
+   "source_ref": "sec_1_2",
+   "page": "04_intervention-distributions.md"
+  },
+  {
+   "id": "motivation-and-definition",
+   "kind": "concept",
+   "label": "Motivation and Definition of SID",
+   "level": 1,
+   "source_ref": "sec_2_1",
+   "page": "06_motivation-and-definition.md"
+  },
+  {
+   "id": "equivalent-formulation",
+   "kind": "concept",
+   "label": "Equivalent Graphical Formulation",
+   "level": 2,
+   "source_ref": "sec_2_2",
+   "page": "10_equivalent-formulation.md"
+  },
+  {
+   "id": "sid-properties",
+   "kind": "concept",
+   "label": "Metric Properties of SID",
+   "level": 2,
+   "source_ref": "sec_2_3",
+   "page": "11_sid-properties.md"
+  },
+  {
+   "id": "sid-dag-cpdag",
+   "kind": "concept",
+   "label": "SID between a DAG and a CPDAG",
+   "level": 2,
+   "source_ref": "sec_2_4_1",
+   "page": "12_sid-dag-cpdag.md"
+  },
+  {
+   "id": "sid-cpdag-dag-cpdag",
+   "kind": "concept",
+   "label": "SID between a CPDAG and a DAG or CPDAG",
+   "level": 2,
+   "source_ref": "sec_2_4_2",
+   "page": "13_sid-cpdag-dag-cpdag.md"
+  },
+  {
+   "id": "penalizing-additional-edges",
+   "kind": "concept",
+   "label": "Penalizing Additional Edges",
+   "level": 3,
+   "source_ref": "sec_2_4_3",
+   "page": "20_penalizing-additional-edges.md"
+  },
+  {
+   "id": "symmetrization",
+   "kind": "concept",
+   "label": "Symmetrization of SID",
+   "level": 3,
+   "source_ref": "sec_2_4_4",
+   "page": "24_symmetrization.md"
+  },
+  {
+   "id": "alternative-adjustment-sets",
+   "kind": "concept",
+   "label": "Alternative Adjustment Sets",
+   "level": 3,
+   "source_ref": "sec_2_4_5",
+   "page": "17_alternative-adjustment-sets.md"
+  },
+  {
+   "id": "hidden-variables-extension",
+   "kind": "concept",
+   "label": "Hidden Variables (Future Work)",
+   "level": 3,
+   "source_ref": "sec_2_4_6",
+   "page": "18_hidden-variables-extension.md"
+  },
+  {
+   "id": "multiple-interventions-extension",
+   "kind": "concept",
+   "label": "Multiple Interventions (Future Work)",
+   "level": 3,
+   "source_ref": "sec_2_4_7",
+   "page": "19_multiple-interventions-extension.md"
+  },
+  {
+   "id": "sid-vs-shd-simulation",
+   "kind": "concept",
+   "label": "SID versus SHD Simulation",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "page": "14_sid-vs-shd-simulation.md"
+  },
+  {
+   "id": "comparing-causal-inference-methods",
+   "kind": "concept",
+   "label": "Comparing Causal Inference Methods",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "page": "15_comparing-causal-inference-methods.md"
+  },
+  {
+   "id": "sid-scalability",
+   "kind": "concept",
+   "label": "Scalability of the SID",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "16_sid-scalability.md"
+  },
+  {
+   "id": "sid-implementation",
+   "kind": "concept",
+   "label": "Implementation of SID",
+   "level": 1,
+   "source_ref": "sec_4",
+   "page": "03_sid-implementation.md"
+  },
+  {
+   "id": "dag-terminology",
+   "kind": "concept",
+   "label": "DAG Terminology",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "02_dag-terminology.md"
+  },
+  {
+   "id": "proof-main-proposition",
+   "kind": "equation",
+   "label": "Proof: Equivalence of Definitions",
+   "level": 3,
+   "source_ref": "sec_8",
+   "page": "21_proof-main-proposition.md"
+  },
+  {
+   "id": "proof-sidsuper",
+   "kind": "equation",
+   "label": "Proof: SID for Superset Estimates",
+   "level": 3,
+   "source_ref": "sec_9",
+   "page": "23_proof-sidsuper.md"
+  },
+  {
+   "id": "proof-sidshd",
+   "kind": "equation",
+   "label": "Proof: SID and SHD Relationship",
+   "level": 3,
+   "source_ref": "sec_10",
+   "page": "22_proof-sidshd.md"
+  },
+  {
+   "id": "linear-gaussian-sem-effects",
+   "kind": "equation",
+   "label": "Causal Effects in Linear Gaussian SEMs",
+   "level": 2,
+   "source_ref": "sec_11",
+   "page": "08_linear-gaussian-sem-effects.md"
+  },
+  {
+   "id": "sid-algorithms",
+   "kind": "figure",
+   "label": "SID Algorithms",
+   "level": 1,
+   "source_ref": "sec_12",
+   "page": "09_sid-algorithms.md"
+  },
+  {
+   "id": "sid",
+   "kind": "function",
+   "label": "sid.py",
+   "source_ref": "sid.py:L1"
+  },
+  {
+   "id": "sid_compute_path_matrix",
+   "kind": "function",
+   "label": "_compute_path_matrix()",
+   "source_ref": "sid.py:L10"
+  },
+  {
+   "id": "sid_reachable_on_non_directed_path",
+   "kind": "function",
+   "label": "_reachable_on_non_directed_path()",
+   "source_ref": "sid.py:L29"
+  },
+  {
+   "id": "sid_sid_matrix",
+   "kind": "function",
+   "label": "_sid_matrix()",
+   "source_ref": "sid.py:L183"
+  },
+  {
+   "id": "sid_sid",
+   "kind": "function",
+   "label": "SID",
+   "source_ref": "sid.py:L256"
+  },
+  {
+   "id": "sid_sid_evaluate",
+   "kind": "function",
+   "label": "._evaluate()",
+   "source_ref": "sid.py:L300"
+  }
+ ],
+ "edges": [
+  {
+   "src": "graph-comparison-problem",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "structural-hamming-distance",
+   "dst": "structural-intervention-distance",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "intervention-distributions",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "dag-terminology",
+   "dst": "structural-intervention-distance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "motivation-and-definition",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "equivalent-formulation",
+   "dst": "motivation-and-definition",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-properties",
+   "dst": "equivalent-formulation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-dag-cpdag",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-cpdag-dag-cpdag",
+   "dst": "sid-dag-cpdag",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "penalizing-additional-edges",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetrization",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "alternative-adjustment-sets",
+   "dst": "motivation-and-definition",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hidden-variables-extension",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "multiple-interventions-extension",
+   "dst": "structural-intervention-distance",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-vs-shd-simulation",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "comparing-causal-inference-methods",
+   "dst": "sid-vs-shd-simulation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-scalability",
+   "dst": "sid-implementation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-implementation",
+   "dst": "structural-intervention-distance",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid-algorithms",
+   "dst": "sid-implementation",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "linear-gaussian-sem-effects",
+   "dst": "sid-algorithms",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-main-proposition",
+   "dst": "equivalent-formulation",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-sidsuper",
+   "dst": "sid-properties",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proof-sidshd",
+   "dst": "sid-properties",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sid",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_reachable_on_non_directed_path",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_sid",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_sid_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_reachable_on_non_directed_path",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid_reachable_on_non_directed_path",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_evaluate",
+   "dst": "sid_sid_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid",
+   "dst": "sid_sid_evaluate",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid",
+   "dst": "sid-algorithms",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid-algorithms",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid",
+   "dst": "sid-implementation",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid-implementation",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid-implementation",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid",
+   "dst": "motivation-and-definition",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "motivation-and-definition",
+   "kind": "implements",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  }
+ ]
+}

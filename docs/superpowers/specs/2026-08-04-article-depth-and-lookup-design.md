@@ -1,7 +1,19 @@
 # Article depth, term lookup, and the bridged re-run — design
 
 **Date:** 2026-08-04
-**Status:** approved, not yet implemented
+**Status:** implemented 2026-08-05. Deviations from the design as written, all
+deliberate:
+
+- **`figure` blocks left out of the prompt.** They reference pre-registered
+  explorables by id and the writer cannot invent those; asking for them buys
+  broken refs.
+- **The block syntax lives in `dashboard/src/lib/contentBlocksExample.md`,** not
+  a top-level `fixtures/`. Vite refuses to load files outside its root, and
+  next to the parser it pins is where the contract belongs anyway.
+- **Two harvest rules, not three, and the reason inverted.** I predicted a thin
+  harvest; it was noisy. See Part 2.
+- **The miss queue is dropped.** Nothing read it — persistence, validation and a
+  cap in service of no reader. Worth adding once something displays it.
 **Motivating feedback:** reader review of the arXiv:1306.1043 (SID) dashboard —
 no visuals in the article, no pseudocode, math too high level, filler tiers, no
 hover explanations, no way to look up a term the hover missed.
@@ -213,13 +225,29 @@ in two — is now fixed at source; see Part 0.)
 ### New module `paper_skill/terms.py`
 
 - `harvest_terms(pages, known) -> list[str]` — deterministic, **zero tokens**.
-  A term qualifies when it appears in **two or more pages** and matches one of:
-  a capitalised multi-word phrase (`Markov Equivalence Class`), an all-caps
-  acronym of 2–6 letters (`CPDAG`, `SHD`), or a hyphenated lowercase compound
-  (`d-separation`, `pre-metric`). Anything already in `known` is dropped, as is
-  any term inside a `$…$` span — those are notation, and the macro table
-  already handles them. Ordered by page count, then alphabetically, so the list
-  is stable across runs.
+  A term qualifies when it appears in **two or more pages** and is either an
+  all-caps acronym of 2–6 letters (`CPDAG`, `SHD`) or a hyphenated lowercase
+  compound (`d-separation`, `pre-metric`). Anything already in `known` is
+  dropped, as is anything outside prose. Ordered by page count, then
+  alphabetically, so the list is stable across runs.
+
+  **What measuring changed.** The capitalised-multi-word rule is not
+  implemented. Run against the real 24 pages, two rules produced 24 candidates —
+  not thin, as predicted, but *noisy*, and adding a third rule would only have
+  made it noisier. Two genuine defects surfaced and are fixed:
+  the tier headings scored above every real term in the paper (`TL`, `DR`,
+  `the-math`, `go-deeper`), and `\HH`/`\CC` leaked from display math because a
+  `$…$` pattern matches the empty span between the two dollars of `$$…$$` and
+  leaves the body exposed. Non-prose is now stripped display-math-first, taking
+  24 candidates to 18.
+
+  The residue (`ground-truth`, `data-generating`, `re-deriving`) is ordinary
+  English compounding, which no regex separates from `d-separation`. So the
+  scan is deliberately a **recall** net and the single batched call does
+  **precision**: it is told to omit candidates that are not terms of art, and
+  omission costs nothing because `define_terms` only returns what came back.
+  Same deterministic-gather-then-one-judgement shape as `next_steps` and bridge
+  propose/verify.
 - `define_terms(terms, pages, spawn) -> dict[str, str]` — **one batched call**.
   Definitions grounded in the page text only, with the same anti-fabrication
   rule the quiz contract uses: never invent what the pages do not support.
@@ -276,11 +304,11 @@ were an answer.
   vitest's `environment: "node"` with `renderToStaticMarkup`, and the
   `selectionchange` wiring stays a thin shell.
 
-### Miss queue
+### Miss queue — dropped
 
-Phrases that resolve to `null` are appended to a capped localStorage list via
-the existing `persist.ts` helpers, readable as a glossary to-do list. Capped and
-validated on read, because localStorage is user-editable.
+Not built. Persistence, validation and a cap in service of a list nothing ever
+displays; "readable as a glossary to-do list" meant opening devtools. Worth
+adding the day something surfaces it.
 
 ### Tests
 
