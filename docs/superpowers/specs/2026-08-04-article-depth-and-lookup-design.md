@@ -193,23 +193,29 @@ kind of paper actually produces, each still earned:
 A tier that is genuinely one argument stays one paragraph. Anchors still
 terminate list items and table rows.
 
-### Lint: one objective check, not a structure quota
+### Lint: nothing. Formatting is the writer's judgement
 
-`p5_lint` gains a paragraph-length ceiling (>90 words) in Mechanics and The
-Math. Deliberately the only formatting check:
+A >90-word paragraph ceiling was built, measured, and **removed** at the
+reader's direction: a soft limit, not a hard one.
 
-- It is objective and paper-independent. "Should have had a table" is a
-  judgement a linter cannot make; "this is a 101-word wall" is arithmetic.
-- Requiring a table or a bullet count would force decoration onto pages that
-  do not want it — the same failure the earned-not-forced rule in Part 1
-  guards against. A quota would produce tables comparing one thing.
+The design error was structural, not the threshold. Every entry `lint_page`
+returns is blocking — `scripts/gate_slice7.py` gates on "all pages lint clean"
+— so there was no way to express "prefer shorter" as a preference. A style
+opinion became a build failure, and the judgement moved from the writer, which
+can see the content, to a word count, which cannot.
 
-### Known trap
+Measured before removal, on the first regenerated page: the ceiling fired twice
+(101 and 134 words) on paragraphs that were genuinely dense rather than
+malformed. The rule worked; it just should not have had a veto.
 
-LaTeX array bodies word-count high, so display-math paragraphs must be exempt
-from the ceiling or every verbatim equation is reported as a wall of text.
-(The *other* half of this trap — blank lines inside `$$…$$` splitting the block
-in two — is now fixed at source; see Part 0.)
+Formatting now lives entirely in `PAGE_PROMPT`, as preferences with reasons:
+short paragraphs over long, bolded colon lead-ins acting as subtitles, bullets
+wherever the content enumerates at all, a table for things compared on shared
+axes, mermaid for small structural relationships — and an explicit "you can see
+the content, so you pick the form".
+
+The only formatting-adjacent thing the linter still does is fold fenced blocks
+so the paragraph split cannot tear one in half.
 
 ### Tests
 

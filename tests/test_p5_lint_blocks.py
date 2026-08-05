@@ -4,9 +4,6 @@ lint_page splits Mechanics/The Math on blank lines to find unanchored claims.
 A fenced YAML content block contains blank lines, so left alone it is torn in
 half and its anchor-less first fragment reported as an unanchored claim -- the
 identical failure already fixed for $$...$$ display math.
-
-The paragraph ceiling is the only formatting check. "Should have used a table"
-is a judgement a linter cannot make; "this is a 101-word wall" is arithmetic.
 """
 from paper_skill.p5_lint import lint_page
 
@@ -46,30 +43,16 @@ def test_a_block_with_no_anchor_anywhere_is_still_caught():
                for p in _lint(BLOCK.replace(" [§sec_3]", "")))
 
 
-def test_a_long_prose_paragraph_is_flagged():
-    wall = " ".join(["word"] * 100) + " [§sec_3]"
-    assert any("long paragraph" in p for p in _lint(wall))
+def test_formatting_is_not_linted():
+    """Length, bullets and tables are PAGE_PROMPT's business, not the linter's.
 
-
-def test_a_paragraph_under_the_ceiling_is_not_flagged():
-    assert _lint(" ".join(["word"] * 80) + " [§sec_3]") == []
-
-
-def test_a_long_display_equation_is_not_flagged():
-    """LaTeX array bodies word-count high; they are not walls of text."""
-    body = "$$\n" + " \\\\ ".join(["a_{i} &= b_{i}"] * 40) + "\n$$ [eq_1]"
-    assert not any("long paragraph" in p for p in _lint(body))
-
-
-def test_a_long_content_block_is_not_flagged():
-    lines = "\n".join(
-        [f'  - code: "step {i}"\n    intent: "does a thing [§sec_3]"'
-         for i in range(30)])
-    assert not any("long paragraph" in p
-                   for p in _lint("```algorithm\nlines:\n" + lines + "\n```"))
+    A ceiling was tried and removed: every lint problem is blocking (see
+    scripts/gate_slice7.py), so a style preference became a build failure and
+    took the judgement away from the writer that can see the content.
+    """
+    wall = " ".join(["word"] * 200) + " [§sec_3]"
+    assert _lint(wall) == []
 
 
 def test_a_page_with_no_table_and_no_list_still_passes():
-    """Absence of structure is not a defect -- a quota would produce tables
-    comparing one thing."""
     assert _lint("Short and anchored [§sec_3].") == []

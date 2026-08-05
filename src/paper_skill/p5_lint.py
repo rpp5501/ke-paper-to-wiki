@@ -10,10 +10,11 @@ _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
 _FENCED_BLOCK = re.compile(
     r"^```(?:annotated-eq|derivation|algorithm|figure)\n.*?\n```$", re.S | re.M)
 
-# The only formatting check. "Should have been a table" is a judgement a linter
-# cannot make; "this is a 101-word wall" is arithmetic. Deliberately no quota on
-# lists or tables -- forcing structure produces tables comparing one thing.
-MAX_PARAGRAPH_WORDS = 90
+# No formatting check lives here, on purpose. A paragraph ceiling was tried and
+# removed: every lint problem is blocking (scripts/gate_slice7.py gates on "all
+# pages lint clean"), which turns a style preference into a build failure and
+# takes the formatting judgement away from the writer that can see the content.
+# Length, bullets and tables are steered by PAGE_PROMPT instead.
 
 # p4_write forbids a tier whose content is that it has no content. A prompt
 # rule is a hope; this is the check. Deliberately narrow -- each pattern needs
@@ -94,15 +95,6 @@ def lint_page(page_md: str, pack: dict, check_links=None,
                     "the reader real material (worked example, complexity or "
                     "termination argument, invariant, boundary case), not a "
                     "report that it has none")
-            # Maths is not prose: a folded array body or algorithm block
-            # word-counts high without being a wall of text.
-            if "$$" in para or para.startswith("```"):
-                continue
-            if len(para.split()) > MAX_PARAGRAPH_WORDS:
-                probs.append(
-                    f"long paragraph in {tier} ({len(para.split())} words): "
-                    f"{para[:60]}… — break it up, or use the bullets/table/"
-                    "bold lead-in the content genuinely calls for")
     for m in _LINK.finditer(page_md):
         if not check_links(m.group(1)):
             probs.append(f"dead link: {m.group(1)}")

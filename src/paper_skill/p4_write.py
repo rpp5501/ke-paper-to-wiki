@@ -42,18 +42,25 @@ with concrete values, a complexity or termination argument, a loop invariant,
 a boundary case, or a derivation of the rule the prose states in words. Say
 less, but say something true and load-bearing.
 
-Format for scanning, not for prose volume. Reach for a device when its shape
-is actually present:
-- a TABLE when two or more named things are compared on shared axes — two
-  metrics, two graph classes, two algorithms and their costs;
-- BULLETS when the paper itself enumerates — the conditions of a criterion,
-  the cases of a proof, the steps of a procedure that is not pseudocode;
-- a BOLD lead-in clause when a paragraph turns on one term;
-- a ```mermaid graph when a relationship is structural and small (a graph, a
+Write to be grasped quickly. Nothing here is a quota and none of it is checked
+mechanically — you can see the content, so you pick the form. What the reader
+needs is to find the point without mining for it, so strongly prefer:
+- SHORT paragraphs over long ones. A big block is usually several claims
+  stacked up; split it at the seams. Two or three tight paragraphs beat one
+  dense one, and a paragraph past a handful of sentences is probably two.
+- A bolded lead-in ending in a colon, then the explanation:
+  **Why the bound is tight:** the estimate cannot ... [§sec_3]
+  These read as subtitles and let the eye land on the right paragraph.
+- BULLETS wherever the content enumerates at all — conditions, cases, steps,
+  trade-offs. Prefer them to a sentence listing the same things with commas.
+- A TABLE when two or more named things are compared on shared axes: two
+  metrics, two graph classes, two algorithms and their costs.
+- A ```mermaid graph when a relationship is structural and small (a graph, a
   dependency, a state change), never for decoration.
-Do not force these — a tier that is genuinely one argument stays one paragraph.
-Keep paragraphs under 90 words. Anchors still terminate every claim, including
-list items, table rows, and each explanation inside the blocks below.
+A tier with none of these shapes in it stays prose — formatting a paragraph
+that is genuinely one argument only scatters it. Anchors still terminate every
+claim, including list items, table rows, and each explanation inside the blocks
+below.
 
 CONTENT BLOCKS: where the LOCAL context supports it, emit one of these fenced
 YAML blocks instead of describing the same thing in prose. They render as
