@@ -1,24 +1,32 @@
 # Scalability of the SID
 ## TL;DR {#tldr}
-Computing the SID gets slower as graphs grow, but the rate depends on density: for sparse graphs runtime grows roughly with the square of the node count, for dense graphs roughly with the cube. This was measured empirically by timing the reference implementation on random graphs of increasing size, not derived as a formal bound, and it directly characterizes the cost of the procedure introduced for computing SID.
+Computing the SID between two graphs gets more expensive as the number of nodes grows, and the rate depends on how dense the graphs are: roughly quadratic time for sparse graphs, roughly cubic for dense ones. This matters because it sets a practical ceiling on how large a causal-discovery benchmark can be before scoring the output graphs becomes the bottleneck rather than learning them.
 
 ## Intuition {#intuition}
-Picture SID checking, for every pair of variables, whether the estimated graph's parent set still recovers the true causal effect. In a sparse graph each such check is cheap — few parents, few competing paths to rule out. In a dense graph the same check has to reckon with many more potential parents and alternative paths, so each individual check gets more expensive as the graph grows, not just more numerous. Stack that per-check slowdown on top of a check count that already grows with the graph, and quadratic growth in the sparse regime becomes cubic in the dense one.
+SID scores a graph by checking, for every pair of variables, whether the estimated graph's implied adjustment set would correctly identify the causal effect. More nodes means more pairs to check, and denser graphs mean each individual check has more to look at — bigger parent sets, more paths to trace. The empirical study behind this concept just runs the SID computation across a range of graph sizes and times it, for both sparse and dense random graphs, to see how those two effects combine in practice.
 
 ## Mechanics {#mechanics}
-The experiment times SID computation between two random graphs on nodes, sweeping across a range of values and repeating the measurement for both a sparse and a dense random-graph setting — the same generative setup used to characterize the SID implementation elsewhere. Processor time is recorded per pair of graphs and summarized with box plots so that the spread across repeated draws, not just the average, is visible at each graph size [§sec_3_3].
+**The experimental setup:** for a sequence of node counts, random sparse and dense graph pairs are generated using the same graph-generation setting used elsewhere in the evaluation, and the wall-clock/processor time to compute SID on one pair is recorded [§sec_3_3].
 
-Results are averaged over 100 independently sampled graph pairs at each node count, which is what lets the box plots separate a genuine trend in with sampling noise from any one unlucky pair of random graphs. The resulting curves are then read off visually for their approximate growth rate rather than fit to a closed-form model [§sec_3_3].
+**Why box plots over repeated pairs:** each node count is evaluated on 100 independently sampled graph pairs rather than a single pair, and the spread is shown as a box plot — this exposes how much timing varies across random instances of the same size, not just the average trend [§sec_3_3].
 
-| Setting | Observed scaling in | What drives it |
-|---|---|---|
-| Sparse random graphs | Roughly quadratic | Each pairwise check stays cheap as grows [§sec_3_3] |
-| Dense random graphs | Roughly cubic | Each pairwise check gets costlier as grows [§sec_3_3] |
+**The observed trend:** across the range of node counts tested, processor time grows approximately quadratically with the number of nodes for sparse graphs, and approximately cubically for dense graphs [§sec_3_3].
 
 ## The Math {#the-math}
-No closed-form runtime bound is stated in this section — the quadratic and cubic rates are read off the timing curves, not proved — but the shape of the result follows from how SID is built. Evaluating SID between two -node graphs requires examining relationships across the node pairs, so the number of checks performed scales as regardless of density [§sec_3_3]. What separates sparse from dense is the cost of each individual check: in a sparse graph, parent sets stay small and roughly constant in size as grows, so per-pair cost is , giving an total that matches the observed quadratic curve [§sec_3_3].
+No cost formula is stated directly in this section, but the quadratic/cubic split follows from counting what SID has to check. SID evaluates every ordered pair of distinct nodes, and the cost of each pair's check scales with how much of the graph that check has to touch — which is exactly where sparsity vs. density enters.
 
-In a dense graph, parent-set size grows along with the graph itself, so per-pair cost scales as rather than staying flat; multiplying that by the pairs gives an total, matching the observed cubic curve [§sec_3_3]. A quick sanity check: doubling under this account should roughly quadruple runtime for sparse graphs () and roughly octuple it for dense graphs () — the qualitative gap the box plots are built to show [§sec_3_3].
+```derivation
+shape: Account for why runtime is quadratic on sparse graphs and cubic on dense graphs.
+steps:
+  - latex: "|\\{(i,j) : i \\neq j\\}| = n(n-1) = O(n^2)"
+    why: "SID makes one adjustment-set check per ordered node pair, so the number of checks alone is already quadratic in the node count before any per-check cost is added [§sec_3_3]"
+  - latex: "T_{\\text{sparse}}(n) = O(n^2) \\cdot O(1) = O(n^2)"
+    why: "A sparse graph keeps each node's neighborhood bounded, so a single adjustment-set check costs roughly constant work, leaving the pair count as the dominant term [§sec_3_3]"
+  - latex: "T_{\\text{dense}}(n) = O(n^2) \\cdot O(n) = O(n^3)"
+    why: "A dense graph gives nodes parent/adjustment sets that can grow with n, so each check now costs O(n) work, multiplying the O(n^2) pair count into an O(n^3) total — matching the cubic trend seen in the dense-graph box plots [§sec_3_3]"
+```
+
+This is why the two curves separate as n grows: the pair-counting term is identical for sparse and dense graphs, and the entire gap between quadratic and cubic scaling traces back to how much work a single adjustment-set check does in a denser neighborhood [§sec_3_3].
 
 ## Go Deeper {#go-deeper}
-- **Implementation of SID** — the algorithm whose runtime this section is measuring; read it first to see what a single SID evaluation actually computes before judging why its cost scales the way it does.
+- **Implementation of SID** — the algorithm being timed here; read it first to see what a single adjustment-set check actually does, which is what drives the per-pair cost term in the complexity account above.

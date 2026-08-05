@@ -1,44 +1,53 @@
 # Intervention Distributions
 ## TL;DR {#tldr}
-An intervention distribution is the distribution a variable $Y$ would have if some other variable $X$ were forcibly *set* to a value, rather than merely observed to take that value. This is the object SID actually compares between the true and estimated graph: not correlations, but the outcome of a hypothetical experiment. Because it is defined for every pair of nodes in a DAG, it gives SID a well-defined, causally meaningful unit to check graph by graph.
+
+An intervention distribution asks a counterfactual question: if we forced a variable to take a specific value, what would the rest of the system look like? It is the object SID actually compares between two graphs — not correlations, but the outcome of hypothetically setting a variable by hand.
+
+Because SID measures whether a graph gets the *causal* structure right, it needs a notion of "effect of an action," not just a joint density. Intervention distributions are that notion, and they are the prerequisite for defining SID at all.
 
 ## Intuition {#intuition}
-Conditioning on $X=x$ asks "what does $Y$ look like among the cases where $X$ happened to equal $x$?" — it lets information flow backward through $X$'s parents. Intervening asks "what does $Y$ look like if we reach in and force $X=x$?" — that severs $X$ from its usual causes, so any path from $Y$ back through $X$'s parents is cut. The two coincide only when $X$ has no parents worth cutting from $Y$'s point of view; otherwise the intervention distribution strips out confounding that plain conditioning would leave in.
+
+Ordinary conditioning asks "what do we observe about Y among cases where X happened to equal x?" An intervention asks something stronger: "what would Y look like if we reached in and *set* X to x, overriding whatever normally determines it?" These two questions coincide only when X has no confounded relationship with Y — otherwise they can give different answers.
+
+A graph encodes, for every variable, which other variables are its direct causes. Once you accept the graph, the intervention distribution is fully determined: you keep every other mechanism in the system exactly as it was, and just clip out the mechanism that used to generate X, replacing it with a constant. Two candidate graphs can therefore be compared by asking whether they predict the same effect of the same intervention — this comparison is exactly what SID is built on.
 
 ## Mechanics {#mechanics}
-The intervention distribution $p_\mathcal{G}(y \mid do(X=\hat x))$ is built from the graph's Markov factorization with $X$'s own factor replaced by a point mass at $\hat x$; since it remains a genuine probability distribution, it can be marginalized or have expectations taken over it just like any other density [§sec_1_2].
 
-**Two structurally different cases determine how it simplifies.** If $Y$ is a parent — or more generally a non-descendant — of $X$, the intervention on $X$ cannot propagate to $Y$ at all, so the interventional and observational distributions of $Y$ coincide [eq_2]. If instead $X$ is a parent of $Y$, the intervention distribution is not just equal to something observational, but *computable* from observational quantities by summing over $X$'s parents [eq_3].
-
-Whenever a marginalized intervention distribution can be obtained this way, the set summed over is called an **adjustment set** for the intervention; $\mathrm{pa}(X)$ is always a valid one and, notably, the smallest such set [§sec_1_2]. Adjustment sets are not unique — a graph can admit several valid sets besides $\mathrm{pa}(X)$, but a Lemma rules out certain supersets of $\mathrm{pa}(X)$ from being valid at all, so validity is not simply "bigger is safer" [§sec_1_2].
-
-## The Math {#the-math}
-When $Y$ is a parent or non-descendant of $X$, intervening leaves $Y$'s marginal untouched, so the interventional distribution collapses to the plain observational one, with no adjustment needed [eq_2].
+**When intervening on a non-cause does nothing:** if X is a parent — or more generally a non-descendant — of Y, setting X by hand cannot change Y's distribution at all, because nothing about Y's generating mechanism depended on X in the first place [§sec_1_2]. This is the degenerate case, and it collapses the intervention distribution back to the plain marginal of Y [eq_2].
 
 $$p_{\G}(y \given \doo(X = \hat x)) = p(y) \,.$$ [eq_2]
 
-When $X$ is a parent of $Y$, the interventional distribution instead becomes an average of $Y$'s conditional over $X$'s parent configurations, weighted by how likely each configuration is to occur naturally [eq_3].
+**Why the general case needs a specific set:** when X is not a parent of Y, the intervention distribution is generally *not* just p(y) — X does have downstream effects — but it can still be computed from purely observational quantities by summing over the right set of variables rather than over the whole graph [§sec_1_2]. The graph tells you which set that is: it must contain the parents of X, since those are exactly the variables that would otherwise confound the observed association between X and Y [§sec_1_2].
+
+**What makes a set "valid":** any set Z for which the marginalized formula reproduces the true intervention distribution is called a valid adjustment set for the pair (X, Y) — this is stated as a proposition, and the parents of X are one such set that always works [§sec_1_2]. Crucially, a valid adjustment set is not unique: a given graph can admit several different sets that all yield the correct intervention distribution, some smaller than others, while other candidate sets fail outright (adding certain nodes to an otherwise-valid set can break validity, as shown by a companion lemma) [§sec_1_2].
+
+## The Math {#the-math}
+
+The general adjustment formula replaces the intractable "reach in and set X" operation with an expression built entirely from the observational joint density [eq_3]:
 
 $$p_{\G}(y \given \doo(X = \hat x)) = \sum_{\pa{}{X}} p(y \given \hat x, \pa{}{X}) \, p(\pa{}{X}) \,.$$ [eq_3]
 
 ```annotated-eq
 latex: "p_{\\G}(y \\given \\doo(X = \\hat x)) = \\sum_{\\pa{}{X}} p(y \\given \\hat x, \\pa{}{X}) \\, p(\\pa{}{X})"
 terms:
-  - tex: "p_{\\G}(y \\given \\doo(X = \\hat x))"
+  - tex: "\\doo(X = \\hat x)"
     role: 1
-    words: "The target quantity — Y's distribution under a forced setting of X, computed entirely from observational pieces on the right [eq_3]"
-  - tex: "\\sum_{\\pa{}{X}}"
+    words: "The intervention itself: X is forced to the fixed value x, not merely observed to equal x [§sec_1_2]"
+  - tex: "\\pa{}{X}"
     role: 2
-    words: "Sums out X's parents, the adjustment set that stands in for everything the do-operator would otherwise sever [§sec_1_2]"
+    words: "The adjustment set — here, the parents of X in graph G — chosen because it blocks the confounding path between X and Y [§sec_1_2]"
   - tex: "p(y \\given \\hat x, \\pa{}{X})"
     role: 3
-    words: "An ordinary observational conditional — no do-operator needed once the parents are fixed [eq_3]"
+    words: "An ordinary conditional density, computable from observational data since it conditions rather than intervenes [§sec_1_2]"
   - tex: "p(\\pa{}{X})"
     role: 4
-    words: "Reweights each parent configuration by its natural (observational) probability of occurring [eq_3]"
+    words: "The marginal distribution of the adjustment variables, reweighting each conditional slice by how often that parent configuration actually occurs [§sec_1_2]"
 ```
 
-Because $\mathrm{pa}(X)$ is only the *smallest* valid adjustment set, not the only one, this identity is one instance of a broader adjustment-formula family that a supporting Proposition guarantees is valid for any node $X$ [§sec_1_2].
+**Why summing over the parents suffices:** the formula replaces an operation the data cannot directly show you — forcing X — with a weighted average of things the data *can* show you, conditionals and marginals, and this substitution is only licensed because the parent set screens off every other path by which X's assignment could correlate with Y [§sec_1_2]. Drop the sum, or adjust over the wrong set, and the right-hand side answers a different, purely associational question instead.
+
+**Why this matters for SID specifically:** SID's whole comparison hinges on treating the parent sets that graph G implies as the correct adjustment sets, then asking whether an estimated graph H recovers the same intervention distributions using its own (possibly wrong) parent sets [§sec_1_2]. Equation [eq_2] is the boundary check — if H claims X is not even an ancestor of Y, the predicted intervention distribution must reduce to the marginal p(y); if it instead uses [eq_3] with the wrong adjustment set, the mismatch is exactly the kind of error SID is designed to count.
 
 ## Go Deeper {#go-deeper}
-- **Structural Intervention Distance (SID)** — the prerequisite concept this page feeds: SID's per-pair comparisons are built by checking whether the estimated graph's adjustment sets reproduce these true intervention distributions.
+
+- No research note is attached to this concept — the primary source for intervention distributions and their role in SID is the paper's own §sec_1_2, including the proposition establishing valid adjustment sets and the lemma on sets that fail.

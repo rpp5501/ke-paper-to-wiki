@@ -1,45 +1,43 @@
 # Hidden Variables (Future Work)
 
 ## TL;DR {#tldr}
-SID as originally defined assumes every variable is observed, so every intervention distribution needed for the comparison can actually be computed from the true DAG. This concept sketches a road map for what happens when that assumption breaks: some intervention effects are no longer identifiable at all, and the framework has to be extended to graph classes that explicitly represent hidden confounding. The extension is not a finished method — it is a set of directions building on the core SID definition.
+When some variables are unobserved, the true causal structure can no longer be assumed to be a fully identifiable DAG, so the Structural Intervention Distance (SID) as originally defined cannot be computed outright. This section sketches a roadmap rather than a finished method: treat the ground truth as a richer object (an ADMG or a MAG), exclude pairs whose intervention effect isn't identifiable, and — when the estimate is only known up to an equivalence class (a PAG) — bound the SID the same way CPDAGs are bounded against DAGs. A second, looser option scores a causal-discovery method by how often it correctly reports an effect as identifiable (or not) at all.
 
 ## Intuition {#intuition}
-Think of the original SID as grading a map against the true terrain, where every landmark on the terrain is visible. Hidden variables punch blank patches into that terrain: some causal effects simply cannot be read off from the data no matter how good the graph estimate is. The natural response, already used once before when comparing to a CPDAG, is not to guess at the blank patches but to route around them — score only the effects that are knowable, and widen the comparison itself to admit graph types built to represent unobserved confounding.
+SID's whole premise is that the true DAG's parent sets give you the *actual* intervention distributions to check the estimate against. Hidden confounders break that premise: for some pairs, no observed adjustment set recovers p(y | do(x)), no matter how good the estimated graph is. Those pairs aren't "wrong," they're simply unanswerable, and folding them into the same count as genuine errors would unfairly penalize (or credit) an estimate for something the data never determined.
+
+The natural fix, already used elsewhere in the paper for equivalence classes, is to drop what can't be judged and only count what can. The complication with hidden variables is that even "what can be judged" is harder to pin down, because the object standing in for the true graph is itself less informative than a DAG.
 
 ## Mechanics {#mechanics}
-The first move mirrors what was already done for CPDAGs: rather than trying to score every pair of variables, **non-identifiable pairs are excluded from the structural intervention distance outright**, so the metric only ever grades effects that could in principle be recovered from the data. This keeps the comparison honest instead of forcing a value onto an effect nothing could estimate [§sec_2_4_6].
+**Three candidate ground-truth objects, in increasing order of difficulty.** An acyclic directed mixed graph (ADMG) marks confounders explicitly with bidirected edges, and existing work characterizes exactly which intervention distributions are identifiable from such a graph — so non-identifiable pairs can simply be excluded from the SID count, mirroring how CPDAGs exclude pairs with undetermined orientation. A maximal ancestral graph (MAG) is a coarser representation with no direct marker for which variables are confounders, so working out identifiability there is described as harder. A partial ancestral graph (PAG) — what FCI-type algorithms actually output — is coarser still: an equivalence class of MAGs, exactly analogous to how a CPDAG is an equivalence class of DAGs [§sec_2_4_6].
 
-With unobserved variables in play, the "true" structure itself needs a richer representation than a DAG. The road map considers two candidates side by side:
-
-| Ground-truth representation | What it adds over a DAG | Identifiability characterization | Role in the SID road map |
-|---|---|---|---|
-| Acyclic directed mixed graph (ADMG) | bidirected edges for latent confounding | already addressed by prior work | preferred ground truth — lets non-identifiable pairs be excluded directly [§sec_2_4_6] |
-| Maximal ancestral graph (MAG) | ancestral/non-ancestral relations abstracting hidden variables | markedly harder, open | alternative ground truth — usable but costlier to work with [§sec_2_4_6] |
-
-Methods like FCI don't output a single MAG; they output a **partial ancestral graph (PAG)**, an equivalence class of MAGs, which is the estimation-side analogue of a CPDAG standing in for a class of DAGs [§sec_2_4_6]. Comparing an estimated PAG against a true MAG therefore has to reuse the same enumeration trick used for CPDAGs: walk every MAG the PAG represents, score each one, and report the resulting interval.
+**Comparing an estimated PAG to a true MAG reuses the CPDAG machinery.** Because a PAG doesn't pick out one MAG, the roadmap proposes enumerating every MAG the PAG represents and computing lower and upper bounds on the SID over that set, the same bracketing strategy used for CPDAG-vs-DAG comparisons elsewhere in the paper. Making that enumeration efficient is explicitly left open [§sec_2_4_6].
 
 ```algorithm
-title: Road map — scoring an estimated PAG against a true MAG
+title: Roadmap — comparing an estimated PAG to the true MAG
 lines:
-  - code: "for each MAG M consistent with the estimated PAG:"
-    intent: "A PAG leaves some edge marks undetermined, so it stands for a whole equivalence class of MAGs, exactly as a CPDAG stands for a class of DAGs [§sec_2_4_6]"
-  - code: "    compute SID(M, true_MAG)"
-    intent: "Each resolved MAG can be scored against the true MAG directly, since identifiability is well-defined once the marks are fixed [§sec_2_4_6]"
-  - code: "report [min over M, max over M]"
-    intent: "The true resolution is unknown, so the comparison degrades gracefully to a lower/upper bound rather than a single guessed number, the same move used for CPDAGs [§sec_2_4_6]"
+  - code: "for each ordered pair (i, j):"
+    intent: "SID is still scored pointwise per intervention target/effect pair, as in the DAG and CPDAG cases [§sec_2_4_6]"
+  - code: "    if effect of i on j is non-identifiable under the true structure:"
+    intent: "Hidden confounders can make an intervention distribution unrecoverable from the graph alone [§sec_2_4_6]"
+  - code: "        exclude (i, j) from the count"
+    intent: "Mirrors how CPDAG-SID drops pairs whose orientation is undetermined by the equivalence class [§sec_2_4_6]"
+  - code: "    else:"
+    intent: "Only identifiable effects can meaningfully be checked against the estimate [§sec_2_4_6]"
+  - code: "        enumerate every MAG consistent with the estimated PAG"
+    intent: "A PAG stands for a class of MAGs just as a CPDAG stands for a class of DAGs [§sec_2_4_6]"
+  - code: "        compute lower and upper bound of the mismatch over that class"
+    intent: "Reuses the bracketing already built for CPDAG-vs-DAG, since no single representative MAG can be singled out [§sec_2_4_6]"
 ```
 
-A separate, more permissive extension drops the DAG-like structure altogether: if a causal inference method outputs *any* graph over the observed variables together with, for each potential effect, either an adjustment set or an explicit "not identifiable" flag, SID can still compare methods — by the proportion of effects each one identifies and identifies **correctly** [§sec_2_4_6].
+**A looser, method-agnostic alternative sidesteps graph comparison entirely.** If a causal-discovery method reports, for every pair, either a usable adjustment set or an explicit "not identifiable" flag, SID can instead score it by the proportion of pairs correctly identified as identifiable *and* correctly solved among those — trading precision about graph structure for a metric that works for any method, not just DAG/CPDAG estimators [§sec_2_4_6].
 
 ## The Math {#the-math}
-No display equation accompanies this extension in the source text, but the two mechanisms above still have concrete content worth making explicit. Take the enumeration-and-bound procedure first: its cost is driven entirely by how many MAGs a single PAG can represent. Every edge mark a PAG leaves unresolved is a fork in what the true MAG might be, so the count of representable MAGs grows combinatorially in the number of unresolved marks — structurally the same blow-up that makes CPDAG-to-DAG enumeration expensive, just transplanted to ancestral graphs. The text is explicit that no efficient algorithm is known yet; it flags this as open, not solved [§sec_2_4_6].
+No display equation accompanies this section — it is a roadmap, not a derivation — but the *why* behind the stated difficulty is concrete enough to work out.
 
-The adjustment-set-oracle variant is easier to pin down with a worked count. Suppose a method is run on $p = 4$ observed variables, giving $p(p-1) = 12$ ordered pairs, each pair being one potential causal effect $i \to j$. Say the method returns an adjustment set (rather than "not identifiable") for 9 of those 12 pairs, and of those 9, 7 match what the true, possibly-hidden-variable structure actually licenses. The comparison metric is then the proportion $7/12$ — a single number that simultaneously penalizes both under-identification (the 3 pairs left unaddressed) and mis-identification (the 2 wrong adjustment sets among the 9 attempted) [§sec_2_4_6].
+**Why identifiability is easy to read off an ADMG but not a MAG:** in a plain DAG, pa(X) is a single graph-determined adjustment set, so identifiability is immediate and the SID never has to ask "can this even be checked?" An ADMG keeps that property for the confounded case because bidirected edges mark exactly where the unobserved common causes sit, so the existing identifiability characterization can be applied edge-by-edge. A MAG discards that marker: it encodes ancestral and separation relations that are consistent with some underlying confounded structure, but not the structure itself, so deciding identifiability means reasoning over the whole family of latent-variable graphs a MAG could compress — which is precisely why the text calls this characterization "more difficult" rather than solved [§sec_2_4_6].
 
-The reason both routes exclude rather than impute unidentifiable effects is the same reason the CPDAG case excludes ambiguous pairs: assigning a numeric penalty to an effect that no amount of data could pin down would make the metric measure the graph class's inherent non-identifiability rather than the estimator's quality. Exclusion keeps SID measuring the thing it was built to measure [§sec_2_4_6].
+**Why the PAG case compounds the enumeration cost already flagged for CPDAGs:** an undirected CPDAG edge has exactly two resolutions (X→Y or Y→X), so each undetermined edge doubles the DAG count in the equivalence class. A PAG edge carries an endpoint mark at *each* end (arrowhead, tail, or still-circle), and those two marks can resolve independently, so an undetermined PAG edge admits at least as many resolutions as a CPDAG edge and typically more. The enumeration of the equivalence class therefore grows at least as fast, which is the concrete reason the lower/upper-bound approach is proposed rather than an exact count, and why making it efficient is left as an open question [§sec_2_4_6].
 
 ## Go Deeper {#go-deeper}
-No dedicated research note is attached to this concept; the paragraph itself names three threads worth following from here, each a direct extension of [[Structural Intervention Distance (SID)]]:
-- **ADMG identifiability characterization** — cited work already characterizes which intervention distributions are identifiable from an ADMG; this is the load-bearing piece that lets non-identifiable pairs be excluded cleanly [§sec_2_4_6].
-- **MAG/PAG enumeration bounds** — the harder, open half of the road map: extending the CPDAG-style lower/upper-bound enumeration to MAGs and PAGs, with efficiency left as future work [§sec_2_4_6].
-- **FCI and successors** — the estimation methods that actually produce PAGs in practice, making them the natural test bed once the PAG-to-MAG comparison exists [§sec_2_4_6].
+- **Structural Intervention Distance (SID)** — this section is explicitly framed as extending SID's machinery (exclusion of non-identifiable pairs, lower/upper bounding over an equivalence class) to settings with hidden variables; read it first to see the CPDAG version of the same bounding trick this roadmap reuses.

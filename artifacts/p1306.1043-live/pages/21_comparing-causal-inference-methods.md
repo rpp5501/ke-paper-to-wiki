@@ -1,32 +1,57 @@
 # Comparing Causal Inference Methods
+
 ## TL;DR {#tldr}
-This experiment asks a sharper question than the earlier SID-versus-SHD comparison: when you evaluate real causal discovery algorithms rather than random perturbations of the true graph, does SID change which method looks best? The answer is yes — an algorithm that wins on SHD can be the worst performer on SID, because the two metrics reward different things. SID rewards getting the causal effects right; SHD rewards getting the edges right.
+When several causal discovery algorithms are run on the same simulated data and scored against the true DAG, SID and SHD frequently disagree about which method won — a method that reconstructs the causal skeleton well but gets edge directions wrong can look strong under SHD and mediocre-to-random under SID. The comparison exposes that "structurally close" and "causally close" are different properties, and that exploiting extra identifiability assumptions (rather than just more data) is what lets a method's SID collapse toward zero.
 
 ## Intuition {#intuition}
-Four estimators are pitted against a random baseline: PC, conservative PC (CPC), and greedy equivalent search (GES) all return a Markov equivalence class rather than a single DAG, while a fourth method exploits the extra assumption of equal error variances to identify the DAG outright. Because PC-type methods only commit to a skeleton and a partial orientation, their SID score isn't one number but a range — how good or bad the estimate looks depends on which member of the equivalence class you pick. The experiment shows that this range can swing from "close to the truth" down to "no better than guessing," and that ranking algorithms by SHD versus by SID can point in opposite directions.
+Think of the methods on a spectrum of how much they assume. PC and its conservative variant (CPC) and GES search only for a Markov equivalence class — a CPDAG — because that's all the observational distribution can tell them without further assumptions; some edges are left undirected. Greedy DAG search adds one more assumption, equal error variances, which happens to make the full DAG identifiable, not just its equivalence class. RAND adds nothing: it ignores the data entirely and returns a DAG with a random edge count.
+
+The punchline of the comparison is that skeleton accuracy and orientation accuracy matter very differently to the two metrics. SHD counts edges: a missing edge, an extra edge, and a reversed edge all cost the same, one point. SID counts broken causal-effect predictions, and a single wrong orientation near the root of the graph can invalidate the predicted intervention effect for every descendant, while the same reversal contributes only one unit to SHD. A method can therefore look reasonable by SHD's bookkeeping while its causal claims are barely better than a coin flip.
+
+The other intuition worth carrying forward is that assumptions are what buy identifiability, and identifiability is what collapses the CPDAG down to a single DAG. GDS isn't "smarter" in a generic sense — it's exploiting a fact about equal-variance linear Gaussian SEMs that PC, CPC, and GES don't use, and that's exactly what removes the ambiguity band that plagues the other methods' evaluation.
 
 ## Mechanics {#mechanics}
-The setup mirrors the earlier simulation: sparse random ground-truth DAGs, data drawn from a linear Gaussian SEM with equal error variances and uniformly chosen coefficients, repeated 100 times per setting. The difference is that instead of hand-perturbing the true DAG, the estimates now come from actual inference algorithms run on the sampled data, and both average SID and average SHD to the true DAG are recorded for comparison [§sec_3_2].
+The experiment repeats a fixed pipeline: draw a sparse random ground-truth DAG, generate data from a linear Gaussian structural equation model with equal error variances and uniformly-drawn coefficients, then hand that same data to each competing method and score its output against the known DAG [§sec_3_2]. Repeating this many times per configuration and averaging is what turns a single lucky or unlucky run into a comparison that means something [§sec_3_2].
 
-The five estimators differ in what they output and what they assume, which is why they need different treatment before SID can even be computed [§sec_3_2]:
+```algorithm
+title: Simulation protocol for comparing causal discovery methods
+lines:
+  - code: "for each (n, p) setting:"
+    intent: "n is the sample size and p the number of nodes; performance is compared across a grid of both [§sec_3_2]"
+  - code: "  repeat 100 times:"
+    intent: "Averaging over 100 independent DAGs and datasets keeps the reported SID/SHD from being an artifact of one graph [§sec_3_2]"
+  - code: "    G_true = random sparse DAG()"
+    intent: "The ground truth is unknown to every method being scored, mimicking a real discovery setting [§sec_3_2]"
+  - code: "    data = sample linear-Gaussian SEM(G_true, equal error variances)"
+    intent: "Equal error variances is a deliberate modeling choice: it is the extra structure GDS alone is built to exploit [§sec_3_2]"
+  - code: "    for method in {PC, CPC, GES, GDS, RAND}:"
+    intent: "PC/CPC/GES only assume a linear Gaussian SEM; GDS additionally assumes equal variances; RAND uses no data at all [§sec_3_2]"
+  - code: "      out = method(data)"
+    intent: "GDS returns a single DAG because equal-variance identifiability pins down orientations that PC/CPC/GES cannot [§sec_3_2]"
+  - code: "      if out is a CPDAG: score = (SID_lower(out, G_true), SID_upper(out, G_true))"
+    intent: "For an equivalence class, report the best- and worst-case member DAG rather than pretending there is one answer [§sec_3_2]"
+  - code: "      else: score = SID(out, G_true)"
+    intent: "GDS and RAND already output a single DAG, so no bound is needed [§sec_3_2]"
+  - code: "  average and report SID, SHD across the 100 repeats"
+    intent: "Reporting both metrics side by side is what lets a method's ranking flip between them become visible [§sec_3_2]"
+```
 
-| Method | Output | Assumption exploited | SID reported |
-|---|---|---|---|
-| ARGES-type method | single DAG | equal error variances → identifiability from the distribution alone | one value [§sec_3_2] |
-| PC | CPDAG (equivalence class) | conditional-independence structure only | lower and upper bound [§sec_3_2] |
-| CPC | CPDAG, conservative orientation rule | conditional-independence structure only | lower and upper bound [§sec_3_2] |
-| GES | CPDAG | score-based search over equivalence classes | lower and upper bound [§sec_3_2] |
-| RAND | DAG, ignores the data | none — density parameter drawn as in the earlier simulation | one value [§sec_3_2] |
-
-Because PC, CPC, and GES only commit to a Markov equivalence class, each is scored with the extension from the earlier section that reports the smallest and largest SID achievable by any DAG consistent with the estimated CPDAG — the lower and upper bound rows in the table [§sec_3_2]. The paper's headline finding is that the two metrics disagree on rankings: for some combinations of sample size and sparsity, PC is best under SHD but worst under SID, since SHD and SID are counting fundamentally different kinds of error [§sec_3_2].
+The reason PC, CPC, and GES each get two rows instead of one is that they only ever commit to a CPDAG, and the same equivalence class can contain a DAG whose SID to the truth is near zero and one whose SID is close to the worst possible — the earlier extension of SID to equivalence classes is what supplies this lower/upper bound pair [§sec_3_2]. GDS and RAND need no such bound since both output one concrete DAG per run, though for opposite reasons: GDS earns identifiability from its assumption, RAND simply commits to an arbitrary orientation [§sec_3_2].
 
 ## The Math {#the-math}
-No new estimator or bound is introduced here — the section instead uses the already-defined lower/upper-bound extension and average SID/SHD to expose a gap between the metrics that a single-number comparison would hide [§sec_3_2]. The key observation is about *where* SHD and SID put their weight, and a small worked case makes it concrete [§sec_3_2].
+The central empirical claim is a divergence between two rankings, and it's sharpest at small sample size: for small n and p, the number of simulation runs where a random DAG (RAND) actually beat PC's own *upper-bound* DAG under SID was reported as non-negligible, whereas under SHD, RAND beat PC in far fewer of the same runs [§sec_3_2]. That single contrast — same data, same PC output, opposite conclusion depending on which metric is applied — is the paper's evidence that PC's failure mode is orientation, not skeleton recovery [§sec_3_2].
 
-Take a chain of three variables where the true DAG has one edge reversed by the estimator, so SHD registers exactly one error regardless of which edge it is [§sec_3_2]. SID does not treat all single-edge errors alike: reversing an edge near the root of the chain corrupts the parent set used to compute every downstream intervention distribution, inflating SID by counting every pair whose do-effect is now miscalculated, while reversing a leaf edge affects only that one pair [§sec_3_2]. This is exactly the asymmetry the section reports empirically — the PC algorithm gets skeletons largely right (good SHD) but its orientation errors, when they occur, tend to be exactly the propagating kind that SID penalizes heavily, which is why it can lag behind random guessing on SID while still beating it on SHD [§sec_3_2].
+| Method | Output | Extra assumption used | SID bound behavior at small n |
+|---|---|---|---|
+| PC | CPDAG | Linear Gaussian SEM, faithfulness | Upper bound can be no better than RAND [§sec_3_2] |
+| CPC | CPDAG | + conservative orientation rule | Same lower/upper structure as PC, more edges left unoriented [§sec_3_2] |
+| GES | CPDAG | Score-based search, linear Gaussian SEM | Same lower/upper structure as PC [§sec_3_2] |
+| GDS | single DAG | + equal error variances (identifiability) | No bound needed; SID collapses toward the identified DAG [§sec_3_2] |
+| RAND | single DAG | none — ignores the data | Baseline; the yardstick the others must beat [§sec_3_2] |
 
-The bound gap also carries information. When the upper bound for PC is no better than the RAND estimator at small sample size while the lower bound is close to the truth, the two numbers together say the correct skeleton has been found but its orientation is essentially unresolved — an average SID alone would blur this into a single mediocre-looking value [§sec_3_2]. The method restricted to equal-error-variance identifiability avoids this ambiguity entirely by outputting one DAG rather than a class, converting the extra distributional assumption directly into a narrower, single-valued SID rather than a bound [§sec_3_2].
+Why the upper bound degrades to random performance is a direct consequence of what the CPDAG leaves unresolved: when the sample size is too small to pin down orientation, the true DAG and the worst member of PC's returned equivalence class can differ on essentially every edge direction, which is the same failure mode RAND exhibits by construction, so their SID values converge [§sec_3_2]. Under SHD this convergence does not happen, because SHD only ever penalizes each wrong orientation by one, so a CPDAG that gets the skeleton right and the orientations wrong still scores close to the truth on SHD even in its worst-case member — which is exactly why PC can be reported as best by SHD and worst by SID in the same (n, p) cell [§sec_3_2]. The gap between GDS and the CPDAG-based methods is the identifiability argument made quantitative: equal error variances is enough extra structure to determine the DAG (not just its equivalence class) from the observational distribution, so GDS carries no orientation ambiguity into its score at all [§sec_3_2].
 
 ## Go Deeper {#go-deeper}
-- Builds on **SID versus SHD Simulation** — this section reuses that experiment's DAG-sampling and data-generating setup, and its lower/upper-bound extension for CPDAG-valued estimates, so read it first to know what the bounds mean.
-- No research note is attached to this concept; the table and its exact percentages referenced in the text (e.g., how often RAND beats PC's upper bound) live in the paper's Table for Section 3.2 and are worth checking directly for the precise figures.
+- **SID versus SHD Simulation** (builds on this page) — the single-DAG-output version of this same experiment (GDS only), before CPDAG-outputting methods and their lower/upper bounds are introduced.
+- The Markov-equivalence-class extension of SID referenced here (turning one CPDAG into a lower and an upper bound) is worth reading in full where SID is extended from DAG-vs-DAG to DAG-vs-CPDAG comparisons — it's the mechanism that makes PC, CPC, and GES scoreable at all in this table.
+- The equal-error-variance identifiability result that GDS relies on is the reason it alone escapes the bound machinery — worth tracing back to where that identifiability claim is established.

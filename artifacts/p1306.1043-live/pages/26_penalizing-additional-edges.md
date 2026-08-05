@@ -1,37 +1,37 @@
 # Penalizing Additional Edges
+
 ## TL;DR {#tldr}
-SID can score a graph as flawless — zero errors on every intervention — even when that graph carries strictly more edges than the truth. Because that gap is a real blind spot in practice, it is common to pair SID with a second, simpler distance that just counts the extra edges.
+
+SID can score a graph as perfect — SID = 0 — even when that graph has strictly more edges than the truth. This is a deliberate blind spot: SID only checks whether every intervention effect computed from the estimated graph matches the truth, not whether the graph is otherwise parsimonious. A companion edge-count distance is introduced to catch the cases where SID's silence would otherwise be mistaken for structural correctness.
 
 ## Intuition {#intuition}
-SID asks a narrow question: does every parent set the estimated graph implies still work as a valid adjustment set in the true model? A graph can pad itself with harmless extra edges — ones that never corrupt an adjustment — and still answer that question perfectly. Those extra edges aren't free, though: they mean adjusting on more variables than necessary, which is a data-efficiency cost even when it isn't a correctness cost. An edge-count distance is the natural complement, since it flags exactly the sparsity that SID is structurally blind to.
+
+SID asks a narrow, causal question for every ordered pair of variables: "if I intervened on one and adjusted using the estimated parent set, would I get the true interventional distribution?" An extra edge that happens to sit on top of an already-valid adjustment set never breaks that check — it's redundant information, not wrong information. So a denser graph can pass every single one of SID's pairwise tests.
+
+That's fine for the purpose SID was built for: it isn't lying about causal effects. But a graph with superfluous edges is still a worse *model* — it has more parameters to estimate, is harder to interpret, and in finite samples the extra edges translate into higher variance when the adjustment sets are actually put to use. SID doesn't see that cost because it evaluates population-level distributions, not estimation difficulty. The fix isn't to change SID — it's to report a second, orthogonal number alongside it: how many edges got added.
 
 ## Mechanics {#mechanics}
-The starting fact is a **Proposition**: an estimated DAG can have strictly more edges than the true DAG and still receive SID equal to zero [§sec_2_4_3]. Nothing in SID's definition rules this out, because SID only checks whether implied adjustments succeed, not whether the graph is minimal [§sec_2_4_3].
 
-For causal inference itself, this is framed as a **statistical rather than a structural problem** — extra covariates in an adjustment set cost variance, and that cost shrinks as sample size grows, so it is not treated as a correctness failure [§sec_2_4_3]. The paper is explicit, though, that in some practical settings this is "nevertheless... seen as an unwanted side effect," which is the motivation for a second measure [§sec_2_4_3].
+**Why SID alone can't flag this:** the zero-SID result for edge-inflated graphs is a direct consequence of the proposition characterizing when SID vanishes — it holds whenever every pairwise adjustment set implied by the estimated graph remains valid in the true graph, and adding edges consistent with the true topological order can preserve that validity for every pair simultaneously [§sec_2_4_3].
 
-The fix is an **additional distance that counts edges directly**: the difference in edge count between the estimated and true graph, with the convention that a directed edge and an undirected edge each count as exactly one edge [§sec_2_4_3]. This keeps the edge tally comparable whether the estimate is a fully-oriented DAG or a partially-oriented CPDAG [§sec_2_4_3].
+**What the extra measure counts:** a directed or undirected edge each count as exactly one unit, so the measure is a simple cardinality difference between the edge sets of the true DAG and the estimate — it does not care about edge orientation, only about whether an edge is present at all [§sec_2_4_3].
 
-The same construction is stated **twice, for two comparison settings**: once for a true DAG against an estimated DAG, and analogously for a true DAG against an estimated CPDAG [§sec_2_4_3]. Both follow directly from the same Proposition, since neither the DAG-vs-DAG nor the DAG-vs-CPDAG version of SID bounds the estimate's edge count [§sec_2_4_3].
+**Where it plugs in:** the same edge-count comparison is defined for both the DAG-vs-DAG case and the DAG-vs-CPDAG case, so it can be reported next to SID regardless of which type of graph the estimation procedure produces [§sec_2_4_3].
+
+**What it's for:** the passage is explicit that in most practical settings the extra-edges phenomenon is a statistical problem that shrinks as sample size grows, not a correctness problem — the edge-count distance exists only for the practical situations where a user cares about parsimony independently of causal-effect accuracy [§sec_2_4_3].
 
 ## The Math {#the-math}
-No display equation is given for this measure in the source text, but its logic can be made explicit. The Proposition's content is that zero SID and edge inflation can coexist — formalizing that relationship is what motivates the edge-count distance [§sec_2_4_3].
 
-```derivation
-shape: Formalizing why zero SID does not bound the edge count.
-steps:
-  - latex: "\\mathrm{SID}(G,H) = 0"
-    why: "Every parent set H implies yields a valid adjustment in G for every ordered pair — that is all SID checks [§sec_2_4_3]"
-  - latex: "|E(H)| > |E(G)|"
-    why: "The Proposition places no upper bound on H's edge count once every adjustment succeeds, so H can carry strictly more edges than G [§sec_2_4_3]"
-  - latex: "\\mathrm{ED}(G,H) = \\big|\\,|E(H)| - |E(G)|\\,\\big|"
-    why: "A second distance, counting only the edge-count gap, recovers the sparsity signal SID discards — directed and undirected edges weighted equally [§sec_2_4_3]"
-```
+No new estimator or bound is derived here beyond the edge-cardinality count itself, so the useful thing to make concrete is *how* SID = 0 coexists with strictly more edges — a worked boundary case.
 
-This is a genuine **complement, not a replacement**: SID(G,H) = 0 says every causal query answerable from H matches G; ED(G,H) > 0 says H is doing that with unnecessary machinery [§sec_2_4_3]. The two numbers can move independently — a graph can be SID-perfect and edge-heavy, or edge-light and SID-imperfect — which is exactly why the paper reports them side by side rather than folding one into the other [§sec_2_4_3].
+Take true DAG $G: X \to Y \to Z$ (2 edges) and estimate $H: X \to Y \to Z,\ X \to Z$ (3 edges) — $H$ adds one edge but keeps the same topological order [§sec_2_4_3].
 
-The **DAG-vs-CPDAG case** uses the identical count, not a reweighted one: the "one edge" convention applies whether an edge in H is drawn as directed (a DAG) or undirected (a CPDAG edge left unoriented), so ED stays comparable across both settings without a separate scale [§sec_2_4_3].
+- For the pair $(X, Z)$: in $G$, $X$ has no parents, so the true causal effect of $X$ on $Z$ is identified by the unconditional distribution $p(z \mid x)$. In $H$, $X$ still has no parents, so the adjustment set $H$ implies for this pair is also empty — the extra edge changes the graph's picture of *how* $X$ reaches $Z$ but not *which variables must be adjusted for*, so the estimated intervention distribution still matches [§sec_2_4_3].
+- Every other ordered pair's adjustment set is unaffected by the new edge, so the pairwise indicator SID sums over is 0 for all of them too, giving $\mathrm{SID}(G,H) = 0$ [§sec_2_4_3].
+- Meanwhile the edge-count distance between $G$ and $H$ is $|3-2| = 1$: the two graphs are causal-effect-equivalent under SID but not identical as models, and that difference is exactly what the extra measure is built to surface [§sec_2_4_3].
+
+This is the general mechanism behind the proposition referenced in the text: any edge added between a node and a descendant that doesn't sit on the minimal path needed for identification is "free" from SID's perspective, however many of them accumulate [§sec_2_4_3].
 
 ## Go Deeper {#go-deeper}
-- No dedicated research note is attached to this concept.
-- See **Structural Intervention Distance (SID)** — the parent concept this edge-count measure supplements; understanding what SID does and does not check is the prerequisite for seeing why this gap matters.
+
+- **Structural Intervention Distance (SID)** — the parent concept this measure is a companion to; read it first to see the pairwise adjustment-set check that the extra-edges case exploits.

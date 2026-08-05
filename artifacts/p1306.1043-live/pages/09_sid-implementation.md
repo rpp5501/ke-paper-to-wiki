@@ -1,62 +1,82 @@
 # Implementation of SID
 ## TL;DR {#tldr}
-Implementing SID means turning the abstract generalized adjustment criterion into a concrete matrix algorithm: for every ordered pair of nodes, decide whether the estimated graph's parent set is a valid adjustment set in the true graph. The implementation reduces this to two reachability computations over the true DAG's adjacency matrix, reusing the expensive one across all pairs sharing a source. The dominant cost is building directed reachability by repeated matrix squaring, which is why the paper singles out implementation efficiency as a design goal rather than an afterthought.
+- SID's definition is combinatorial — check an adjustment condition for every ordered pair of nodes — but the reference implementation turns that combinatorics into two matrix routines, each computed once per source node and then reused across every target, rather than re-derived pair by pair.
+- The two routines mirror the two halves of the generalized adjustment criterion: one is a directed-reachability closure (does a causal path exist, and does the estimated parent set sit on it), the other is a breadth-first search over "arrived from which direction" states that finds every node reachable by a path that stays open but is not itself causal.
+- Sharing the expensive closure computation across all p−1 targets for a fixed source — instead of calling a general d-separation routine once per pair — is the specific choice that keeps SID computable at all on graphs with a few hundred nodes.
 
 ## Intuition {#intuition}
-Checking the adjustment criterion by hand for every pair of nodes would mean re-deriving path structure from scratch each time — wasteful, since most of that structure is shared across pairs. The implementation instead precomputes "who can reach whom" once as a matrix, then answers each pair's yes/no question by reading off entries and running one graph traversal per source rather than per pair. This is the classic trick of trading a symbolic separation criterion for numerical linear algebra: matrix squaring stands in for path-finding, and a single breadth-first pass standing in for many.
+Picture the source node as a spigot: everything the true graph reaches downstream by a directed path is a genuine causal effect, and every other route out of the source is a spurious channel that a valid adjustment set has to plug. Checking this the naive way means re-deriving "is this path open" once per (source, target, adjustment-set) triple — that's what a generic d-separation call would cost. The implementation instead fixes the source and its estimated parent set once, builds two matrices that jointly answer both halves of the criterion for *every* possible target in a single pass, and only then loops over targets to read off a yes/no.
+
+That's also why this concept sits between *SID Algorithms*, which specifies what has to be checked, and *Scalability of the SID*, which is a direct consequence of how expensive that check turns out to be — the implementation is the bridge between the definition and its cost.
 
 ## Mechanics {#mechanics}
-The criterion behind SID has two parts that the implementation checks separately. Part (a) asks whether any node in the adjustment set is a descendant of a node lying on a directed path from source to target — an ancestry check. Part (b) asks whether the adjustment set blocks every *non-directed* path between them — a separation check that must specifically exclude directed causal paths, which is why it cannot be delegated to a generic d-separation routine [§sec_4].
+**The Proposition splits into two checks, and the code splits into two matrices to match:** part (1) asks whether any node in the estimated parent set descends from a node on a directed source→target path, and part (2) asks whether that same parent set blocks every non-directed path between source and target [§sec_4].
 
-Part (a)'s ancestry check relies on the **PathMatrix**: entry `(i, j)` is true iff a directed path runs from `i` to `j`. Computing it once for the whole true graph and reusing it for every source is deliberate — the paper notes this reuse is one reason the implementation avoids existing separation libraries, which would recompute path structure per query [§sec_4].
+| Condition | Question | Answered by |
+|---|---|---|
+| (a) | Does an adjustment-set node descend from a node on the source→target directed path? | PathMatrix, the transitive closure, computed once per source [§sec_4] |
+| (b) | Does the adjustment set block every non-causal path? | `rondp`, a BFS over direction-doubled states [§sec_4] |
+
+**Part (a) reduces to a transitive closure, computed by squaring:** the PathMatrix's entry (i, j) is 1 iff a directed path runs from i to j, and it is built by repeated squaring because the relation is idempotent once the closure is reached — further squarings stop changing anything [§sec_4].
 
 ```algorithm
-title: Algorithm 1 — _sid_matrix, checking the adjustment criterion per source
+title: Transitive closure via repeated squaring (_compute_path_matrix)
 lines:
-  - code: "path_matrix = compute_path_matrix(true_graph)"
-    intent: "Computed once for the whole graph and reused for every source, since building it is the dominant cost [sid.py:L256]"
-  - code: "for source in nodes:"
-    intent: "The generalized adjustment criterion is checked once per source against every target in a single pass [sid.py:L183]"
-  - code: "    if true_parents(source) == est_parents(source): continue"
-    intent: "A source whose estimated parents match the truth already has the correct back-door set for every target, so it can be skipped entirely [sid.py:L183]"
-  - code: "    path_matrix_no_tails = compute_path_matrix(true_graph minus est_parents' outgoing edges)"
-    intent: "Removing the adjustment set's outgoing edges lets rondp later tell a path that dodges a conditioned tail from one that does not [sid.py:L183]"
-  - code: "    reachable = rondp(source, est_parents, path_matrix, path_matrix_no_tails)"
-    intent: "One breadth-first traversal answers condition (b) — non-causal-path blocking — for every target at once [sid.py:L1]"
-  - code: "    for target in nodes: incorrect[source,target] = criterion fails"
-    intent: "Condition (a) is evaluated only for targets with a real causal path; a null true effect needs only condition (b) [sid.py:L183]"
+  - code: "path_matrix = graph | I"
+    intent: "Reflexive one-step reachability: every node reaches its direct children and, via the identity, itself [sid.py:L1]"
+  - code: "for _ in range(ceil(log2(n))):"
+    intent: "Each squaring doubles the path length covered; a p-node DAG's longest simple path has p-1 edges, so ceil(log2 p) rounds are enough, and the matrix stops changing once it is idempotent [sid.py:L1]"
+  - code: "    path_matrix = path_matrix @ path_matrix"
+    intent: "Boolean matmul composes 'a reaches b' with 'b reaches c' into 'a reaches c', so squaring doubles the reachable horizon each round [sid.py:L1]"
 ```
 
-Part (b)'s traversal, `rondp`, cannot reuse ordinary d-separation because "open path" here excludes directed causal paths on purpose — those are the effect being measured, not a confound to block. The routine tracks, for each node, *which direction* the path arrived from, since whether a collider opens a path depends on that direction. This is why the state space is doubled: each node gets two indices, one for "arrived via an edge into it" and one for "arrived via an edge out of it," and the collider rule is applied per-direction rather than per-node [sid.py:L1].
+**Part (b) needs more than plain reachability, because direction matters:** a collider is open only if it or a descendant is conditioned on, so whether a path may continue through a node depends on whether the path arrived via an incoming or an outgoing edge at that node [sid.py:L1]. `rondp` handles this by doubling the state space — node *v* gets two indices, one for "arrived via an edge into v" and one for "arrived via an edge out of v" — and running a breadth-first search over that 2p-state graph before closing it into a reachabilityPathMatrix [§sec_4].
 
-Two special cases shortcut the general check. If the target itself is in the adjustment set, its estimated intervention distribution collapses to a marginal, which is correct exactly when the source has no true causal effect on it at all — no traversal needed. And if the estimated parent set exactly matches the true parent set for a source, that source is skipped outright, since a matching back-door set is valid for every target simultaneously [sid.py:L183].
+**One traversal per source, not one per pair, is the point:** `_sid_matrix` computes PathMatrix and runs `rondp` once for each source node, then loops over all targets reusing both results, because recomputing the closure per pair is exactly the cost this design avoids [sid.py:L183].
 
-The DAG–CPDAG and CPDAG–CPDAG variants layer on top of this same per-pair check by enumerating the DAGs consistent with a partially directed graph and evaluating each; the paper omits this enumeration from its pseudocode purely for readability, not because it's a separate algorithm [§sec_4].
+```algorithm
+title: Per-source loop (_sid_matrix)
+lines:
+  - code: "if true_parents == est_parents: continue"
+    intent: "A matching parent set is automatically the true back-door set for every target, so the whole source can be skipped without touching the matrices [sid.py:L183]"
+  - code: "path_matrix_wo_tails = closure(true_graph with est_parents' out-edges removed)"
+    intent: "Removing the adjustment set's outgoing edges lets the later check tell a directed path that avoids conditioned tails from one that does not [sid.py:L183]"
+  - code: "reachable = rondp(source, est_parents, path_matrix, path_matrix_wo_tails)"
+    intent: "One rondp call answers condition (b) for every target at once, instead of once per (source, target) pair [sid.py:L183]"
+  - code: "for target: check condition (a) using path_matrix and reachable"
+    intent: "Both halves of the adjustment criterion are now read off already-built matrices, so the inner loop over targets does no further matrix work [sid.py:L183]"
+```
+
+**The heavy lifting is deliberately not delegated to an existing d-separation routine:** the paper is explicit that computing PathMatrix only once per source, and sharing it across all targets, is the reason a generic library implementation was not reused — a generic call would rebuild that closure per pair [§sec_4].
 
 ## The Math {#the-math}
-The PathMatrix is built by squaring `I | G` rather than by explicit path enumeration, and the number of rounds needed is a direct consequence of how far each squaring reaches.
+No display equation is carried in this section of the paper, but the squaring recurrence that drives PathMatrix has a definite closed form worth writing out, since it is what fixes the round count and hence the cost.
 
-```derivation
-shape: Why ceil(log2(n)) squarings of (I | G) suffice to close the directed reachability of an n-node DAG.
-steps:
-  - latex: "M_0 = I \\lor G"
-    why: "Reflexive one-step reachability: every node reaches itself and its direct children [sid.py:L1]"
-  - latex: "M_{t+1} = M_t \\lor (M_t \\, @ \\, M_t)"
-    why: "If M_t marks every path of length <= 2^t, then M_t @ M_t marks every path of length <= 2^{t+1} formed by chaining two such paths, since boolean matmul composes 'a reaches b and b reaches c' into 'a reaches c' [sid.py:L1]"
-  - latex: "M_{\\lceil \\log_2 n \\rceil}[i,j] = \\text{true} \\iff i \\text{ reaches } j"
-    why: "A simple path in an n-node DAG has at most n-1 edges, and 2^{\\lceil \\log_2 n \\rceil} \\geq n-1, so this many doubling rounds cover every possible path length [sid.py:L1]"
+```annotated-eq
+latex: "P \\leftarrow (A \\lor I)^{2^{k}}, \\qquad k = \\lceil \\log_2 p \\rceil"
+terms:
+  - tex: "P"
+    role: 1
+    words: "PathMatrix, the reflexive transitive closure of the true DAG's adjacency matrix [§sec_4]"
+  - tex: "A \\lor I"
+    role: 2
+    words: "One-step reachability plus the identity, so every node reaches itself and its direct children before any squaring happens [sid.py:L1]"
+  - tex: "2^{k}"
+    role: 3
+    words: "The effective path length covered after k squarings; boolean matrix exponentiation composes reachability, doubling the horizon each round [sid.py:L1]"
+  - tex: "k = \\lceil \\log_2 p \\rceil"
+    role: 4
+    words: "The smallest round count guaranteeing 2^k exceeds p-1, the longest possible simple path in a p-node DAG, so no true path is missed [sid.py:L1]"
 ```
 
-This squaring is the cost driver the paper flags: recomputing a PathMatrix is far more expensive than any other step, and the general implementation must build one such matrix per source — the shared `path_matrix` once, plus a source-specific `path_matrix_without_conditioned_tails` whenever that source's estimated parent set is non-empty, since the removed edges differ per source [sid.py:L183].
+**Why the cost is quartic, not cubic:** each squaring is an O(p³) matmul under naive multiplication, and O(log p) of them are needed per source, but PathMatrix (or its tails-removed variant) is rebuilt for every one of the p sources — so the total is on the order of p⁴ (with a slowly-growing log p riding along), which is exactly what the implementation's own complexity note claims [sid.py:L256].
 
-That per-source recomputation is why cost grows roughly with the fourth power of the node count `p`: `p` sources, each needing `O(log p)` squarings, each squaring costing polynomial time in `p`. The docstring reports this empirically rather than asymptotically — a 100-node pair takes a few seconds, a 200-node pair around a minute [sid.py:L256]. Doubling `p` under quartic growth predicts roughly a 16x slowdown; going from "a few seconds" (~4s) to "around a minute" (~60s) is about 15x, consistent with that prediction and a useful sanity check on the complexity claim [sid.py:L256].
+**A concrete check against that claim:** the implementation reports a 100-node pair taking a few seconds and a 200-node pair taking around a minute [sid.py:L256]. Doubling p from 100 to 200 under pure p⁴ scaling predicts a (200/100)⁴ = 16× slowdown; going from "a few seconds" to "around a minute" is in that same 15–20× range, which is consistent with the quartic bound rather than, say, cubic (which would predict only 8×) [sid.py:L256].
 
-Sparse graphs change this picture directly: fewer nonzero entries mean cheaper matrix products at every squaring round, so the paper notes sparse implementations improve on the dense-matrix bound without changing the algorithm's structure [§sec_4].
+**Where the exponent could shrink, and why the code doesn't chase it:** the paper notes that naive matrix multiplication is what yields this bound, and that fast matrix-multiplication results report a smaller exponent, with sparse matrices improving things further still [§sec_4]. The implementation described here works with dense NumPy arrays and pays the naive cost, leaving the sparse and CPDAG-enumeration variants the paper mentions as separate, unshown code paths [§sec_4].
 
 ## Go Deeper {#go-deeper}
-- **Structural Intervention Distance (SID)** — the parent concept this code implements; read it first for what the adjustment criterion is actually deciding.
-- **SID Algorithms** — the pseudocode (Algorithms 1 and 2) this implementation follows line-for-line, including the parts elided here for readability.
-- **Scalability of the SID** — the complexity and sparse-matrix discussion this implementation's cost model builds on.
-- **sid.py** — the full source file, including `_compute_path_matrix` and `_reachable_on_non_directed_path` in complete form.
-- **`_sid_matrix()`** — the core per-source loop summarized in the algorithm block above.
-- **`SID` class** — the metric-facing wrapper that aligns two graphs' adjacency matrices and sums `_sid_matrix`'s output.
+- **SID Algorithms** — specifies Algorithm 1 and the `rondp` procedure (Algorithm 2) that this page's two matrix routines directly implement.
+- **Structural Intervention Distance (SID)** — the metric this implementation ultimately computes: the count of ordered pairs this per-source loop flags as incorrect.
+- **Scalability of the SID** — builds directly on the p⁴ cost argument made here; explains why SID is impractical on very large graphs.
+- **sid.py / `_sid_matrix()`** — the actual source referenced throughout this page; read it alongside `_compute_path_matrix` and `_reachable_on_non_directed_path` for the full traversal logic past what's excerpted here.

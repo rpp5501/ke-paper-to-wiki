@@ -1,69 +1,36 @@
 # SID Algorithms
 ## TL;DR {#tldr}
-SID Algorithms is the operational layer beneath the SID metric: two procedures that turn "does the estimated graph correctly predict this pair's intervention effect?" into something a computer can check pair by pair. The first algorithm sweeps every ordered pair of nodes and tallies where the estimated graph's parent set fails as an adjustment set; the second is a reachability subroutine it calls to test whether that adjustment set actually blocks every non-causal path. Together they implement the SID metric and its matrix-level computation, building on the linear-Gaussian intervention-effect machinery that tells you what a "correct" effect even means.
+Two algorithms turn the definition of SID from a pairwise check into something you can actually run. Algorithm 1 walks every ordered pair of variables once and decides whether the estimated graph's parent set is a valid adjustment set for that pair; Algorithm 2 (rondp) is the traversal it leans on to answer the hard half of that question — whether the adjustment set blocks every non-causal path — for an entire source node's targets in one pass instead of one target at a time. Together they implement the metric defined in SID and are what `_sid_matrix()` actually runs.
 
 ## Intuition {#intuition}
-You can't get SID by diffing two adjacency matrices, because a wrong edge doesn't always break a prediction and a missing edge doesn't always matter — what matters is whether adjusting for the estimated graph's parents still recovers the right intervention distribution in the true graph. That's a question about paths, not about edges: does some route from source to target sneak past the chosen adjustment set? Algorithm 1 asks this question once per ordered pair; Algorithm 2 answers the "is there an unblocked route" part by walking the graph outward from the source, tracking which direction each edge was crossed in, since that determines whether the path counts as blocked.
+Checking, for a single pair of variables, whether one graph's parent set is a valid adjustment set for another graph's causal effect is itself a small graph problem — you'd normally solve it by searching the graph fresh for that one pair. Naively repeating that search for every ordered pair scales badly.
+
+The move both algorithms make is to fix a *source* node and answer the question for every possible target at once, by computing reachability information a single time and reading off each target's verdict from it. That reachability computation is exactly Algorithm 2's job, and it in turn depends on the effect definitions from Causal Effects in Linear Gaussian SEMs: an effect is "real" only when a directed path exists, so blocking and reachability are checked against that same causal structure.
 
 ## Mechanics {#mechanics}
-Algorithm 1 fixes a source node, reads off its parent set under the estimated graph, and reuses it as the candidate adjustment set for every target simultaneously — one traversal answers all targets at once rather than repeating work per pair [§sec_12]. It first builds the transitive closure of the true graph, `PathMatrix`, which tells it whether *any* causal path exists at all — the ground truth the estimated prediction gets checked against [§sec_12].
+**Skip when the parent sets already match:** if the estimated graph gives a source node exactly the same parents as the true graph, that parent set is the true back-door set and is valid for *every* target — the whole source can be skipped without touching any target [sid.py:L183].
 
-```algorithm
-title: Algorithm 1 — computing the incorrect-intervention matrix
-lines:
-  - code: "PathMatrix = computePathMatrix(G)"
-    intent: "Transitive closure of the true graph gives the ground-truth answer to whether source has any causal effect on target at all [§sec_12]"
-  - code: "for source in nodes: PaH = parents(source) in H"
-    intent: "The estimated graph's parent set of source is the adjustment set every target for that source gets checked against [§sec_12]"
-  - code: "PathMatrix2 = computePathMatrix(G with edges leaving PaH removed)"
-    intent: "Deleting PaH's outgoing edges simulates conditioning on it, isolating which paths survive adjustment [sid.py:L183]"
-  - code: "reachable = rondp(G, source, PaH, PathMatrix, PathMatrix2)"
-    intent: "Algorithm 2 finds every target still reachable from source on a path PaH fails to block — condition (b) of the adjustment criterion [sid.py:L183]"
-  - code: "for target in nodes: compare PathMatrix[source,target] to (target in PaH)"
-    intent: "True effect is null iff no path exists; estimated effect is null iff target sits inside the adjustment set itself [sid.py:L183]"
-  - code: "incorrectCausalEffects[source, target] = mismatch OR unblocked non-causal path"
-    intent: "A pair counts as wrong on a null/non-null mismatch, or when rondp shows PaH lets a non-causal path through [sid.py:L183]"
-  - code: "output sum(incorrectCausalEffects)"
-    intent: "SID counts pairs, not error magnitude, so every wrong adjustment contributes exactly one regardless of severity [§sec_12]"
-```
+**Removing conditioned tails before the second pass:** before checking paths, the algorithm deletes the outgoing edges of nodes in the estimated adjustment set from a copy of the true graph, then recomputes reachability on that pruned graph. This is what lets a later check distinguish a directed path that truly reaches the target from one that only appears to, because it leaves through a node the adjustment set already controls for [sid.py:L183].
 
-Algorithm 2 (`rondp`) is where the direction-sensitivity lives: each reachable node is tagged with whether it was entered through an outgoing or incoming edge, because that tag — not just "reachable or not" — decides which of the node's own edges can legally continue the path [§sec_12]. A neighbor outside the adjustment set never blocks anything, so reachability propagates through it unconditionally; a neighbor that loops back to an ancestor of the source re-opens the path and forces the rule to re-apply to that ancestor's parents [§sec_12]. The same pair of rules is applied symmetrically to the source's children, since a back-door path can leave through either side [§sec_12].
+**One reachability call answers condition (b) for every target:** `_reachable_on_non_directed_path` — the `_sid_matrix()` counterpart of Algorithm 2's rondp — is invoked once per source and returns which nodes are reachable from it along paths that the adjustment set fails to block. Every target's condition-(b) verdict is then a lookup into that one result rather than a fresh traversal [§sec_12].
 
-```algorithm
-title: Algorithm 2 — reachable nodes on a non-directed path (rondp)
-lines:
-  - code: "Pa(x), Ch(x) = parents(x), children(x) in G"
-    intent: "The walk starts at source x and explores both directions at once, since a blocked-or-not path can leave through a parent or a child edge [§sec_12]"
-  - code: "mark each neighbor with the direction it was reached by"
-    intent: "Direction of entry, not just reachability, decides which further edges keep the path unblocked at that node [§sec_12]"
-  - code: "if a parent of cN is reachable and cN not in PaH: mark cN reachable"
-    intent: "A node outside the adjustment set cannot block, so reachability passes through it for free [§sec_12]"
-  - code: "if cN reachable via outgoing edge and cN is an ancestor of x: propagate to parents(cN)"
-    intent: "A path curling back to an ancestor of x re-opens once that ancestor's own parents are considered, so the rule recurses [§sec_12]"
-  - code: "apply the analogous rules to Ch(x)"
-    intent: "The traversal is symmetric across parents and children of the source [§sec_12]"
-  - code: "reachabilityPathMatrix = computePathMatrix(reachabilityMatrix)"
-    intent: "Closing the one-step reachability graph turns local propagation into full reachability, exactly as PathMatrix does for G [§sec_12]"
-  - code: "recover missed nodes via PathMatrix2, then remove blocked (x,y) entries"
-    intent: "A directed path from x to y surviving adjustment implies every parent of y is reachable too — a case local propagation alone misses [§sec_12]"
-  - code: "output the completed reachability set"
-    intent: "This set is exactly the targets for which PaH fails to block a non-causal route, feeding condition (b) back into Algorithm 1 [§sec_12]"
-```
+**Per-target verdict splits on whether the target is itself in the adjustment set:** if the target is a parent of the source in the estimated graph, the estimated intervention distribution collapses to the marginal — correct only if the source truly has no causal effect on the target. Otherwise, with a causal path assumed to exist, the check falls to condition (a): the adjustment set is rejected if it contains a descendant of a child of the source that still reaches the target, since adjusting for a mediator or its descendant is the classic case that breaks an intervention estimate [sid.py:L183].
+
+**rondp's traversal state carries how a node was reached:** the pseudocode tags each visited node with whether it was entered via an outgoing or an incoming edge, because whether a path is still "non-blocked" past that node depends on that direction — a node reached with an incoming edge propagates reachability to its parents only under different conditions than one reached with an outgoing edge [§sec_12].
+
+**The traversal has to patch itself:** the pseudocode notes that some directed, non-blocked paths get missed by the direction-tagged pass alone, and adds a correction step that uses the auxiliary path matrix (computed with conditioned tails removed) to find descendants reachable with no adjustment-set node in between, before folding those back into the reachable set [§sec_12].
 
 ## The Math {#the-math}
-The pairwise verdict Algorithm 1 produces reduces to comparing two booleans per pair — whether a causal path exists, and whether the target lies inside the adjustment set — with the reachability check as a tiebreaker on the remaining case [sid.py:L183].
+No display equations are given for this concept, but the module's own worked example makes the counting rule concrete. For `true_dag = DAG([(1, 2)])` and `est_dag = DAG([(2, 1)])`, `SID()(true, est)` returns `2` [sid.py:L256].
 
-| True effect (`PathMatrix[source,target]`) | Estimated effect (`target ∈ PaH`) | Verdict |
-|---|---|---|
-| path exists | target in PaH (est. says null) | mismatch → incorrect [sid.py:L183] |
-| no path | target not in PaH (est. says non-null) | mismatch → incorrect [sid.py:L183] |
-| path exists | target not in PaH, but rondp finds an unblocked non-causal path | condition (b) fails → incorrect [sid.py:L183] |
-| path exists | target not in PaH, PaH blocks every non-causal path, and no PaH member descends from a mediator on the causal path | condition (a)+(b) hold → correct [sid.py:L183] |
+**Why it's exactly 2, not 0 or 4:** there are two ordered pairs to check, (1→2) and (2→1). For source 1, the true graph gives node 1 no parents, but the estimated graph makes 2 a parent of 1 (since the estimated edge runs 2→1). Node 2 is the target, so `est_parents[target]` is true — the estimate says target 2 belongs to source 1's own adjustment set, collapsing the predicted effect to the marginal, i.e. "no effect." But the true graph has the real edge 1→2, so the true effect is *not* null: mismatch, one incorrect pair. For source 2, the true graph gives it no causal path to target 1 (`path_matrix[2,1]` is false, so the true effect is null), while the estimated graph's parent set for source 2 is empty, so the estimate predicts a nonzero effect: mismatch again. Both ordered pairs land on the wrong side, giving SID = 2 out of a maximum of 2 for a 2-node graph [sid.py:L183].
 
-When the estimated and true parent sets of a source are identical, `_sid_matrix` skips the whole per-target loop for that source: a graph's own parent set is always a valid adjustment set for itself, so every target is guaranteed correct and the extra `PathMatrix2` closure is unnecessary [sid.py:L183]. This shortcut matters for cost, not just cleanliness. Algorithm 1 calls `computePathMatrix` once globally, then once more per source whenever that source's parent sets differ — each closure costing roughly O(n³) over an n-node graph — so the total is bounded by O(n⁴) source-target work in the worst case where every source's estimated parents diverge from the truth [sid.py:L256]. That bound is exactly what the implementation's own scaling note reports: a few seconds at n=100 and around a minute at n=200, since quadrupling n roughly sixteen-folds the runtime under a fourth-power law [sid.py:L256].
+**Where the fourth-power cost comes from:** the path matrix that Algorithm 1 relies on is a transitive closure, computable in roughly O(n³) time over an n-node graph. That closure is recomputed once per source rather than once overall, because the conditioned-tail pruning depends on that source's estimated parent set. n sources times an O(n³) closure each gives the O(n⁴) total the implementation documents — cheap at 100 nodes (seconds), heavy by 200 (about a minute) [sid.py:L256].
+
+**Why the traversal in rondp is guaranteed to terminate:** each node is tagged with the direction it was entered from, giving at most two live states per node (entered via an outgoing edge, entered via an incoming edge). The reachable set only grows by adding new (node, direction) states and never revisits one already recorded, so the traversal is bounded by 2n additions regardless of how many paths actually exist in the graph [§sec_12].
 
 ## Go Deeper {#go-deeper}
-- **SID** — the metric these two algorithms exist to compute; read it first to know what "correct" and "incorrect" intervention distribution mean before tracing the pseudocode.
-- **_sid_matrix()** — the concrete NumPy implementation of Algorithm 1 (and its `_reachable_on_non_directed_path` helper for Algorithm 2); the actual code these blocks are transcribed from.
-- **Causal Effects in Linear Gaussian SEMs** — prerequisite: defines the intervention distributions whose equality Algorithm 1 is testing pair by pair.
-- **Implementation of SID** — the parent page this concept is defined under; useful for how the two algorithms fit into the surrounding module.
+- **Implementation of SID** — the parent page these two algorithms live under; this page is the pseudocode-to-code mapping for it.
+- **Causal Effects in Linear Gaussian SEMs** (prerequisite) — defines what a "real" causal effect is, which is exactly what Algorithm 1's null/non-null check is deciding per pair.
+- **SID** (implements) — the metric whose value is the sum of incorrect pairs these algorithms produce.
+- **`_sid_matrix()`** (implements) — the concrete function that carries out Algorithm 1's per-source, all-targets-at-once loop described above.

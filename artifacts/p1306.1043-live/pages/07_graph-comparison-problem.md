@@ -1,45 +1,34 @@
 # Comparing Estimated and True Causal Graphs
 
 ## TL;DR {#tldr}
-Given a true causal DAG and an estimate of it, the paper asks how to measure their closeness in a way that actually matters for causal inference, not just graph structure. The standard answer, Structural Hamming Distance, counts wrong edges. The paper's answer, Structural Intervention Distance, counts wrong *causal predictions* instead — a shift from "does the picture match" to "does the estimate let you compute the right interventional effects."
+
+Given a true causal DAG and an estimate of it produced by some structure-learning procedure, how good is the estimate? The obvious answer — count the edges that differ — misses the point of learning a causal graph in the first place: what you actually care about is whether the estimate lets you predict the *effect of interventions* correctly, not whether it matches the true graph edge-for-edge. Comparing two DAGs for causal purposes therefore means asking, for each pair of variables, whether the estimated graph would get the interventional prediction right if you used it and were correct in every other respect. This reframing is what motivates the Structural Intervention Distance (SID), the prerequisite concept this page sits under.
 
 ## Intuition {#intuition}
-Two DAGs can differ by the same number of edges yet imply wildly different causal conclusions, or differ by many edges while still supporting all the same interventional predictions. Edge-counting treats every mismatch as equally bad; it can't tell the difference between a cosmetic error and one that silently corrupts every downstream effect estimate. The paper's proposal is to grade the estimate on the task it's actually used for — predicting what happens under intervention — rather than on how well it redraws the picture.
+
+Two estimated graphs can have the same number of wrong edges and yet be wildly different in how useful they are for causal reasoning — a wrong edge near a variable that acts as a confounder can corrupt many downstream intervention predictions, while a wrong edge elsewhere might change nothing about what you'd conclude from an intervention. A metric that only counts edges, like the Structural Hamming Distance, cannot tell these two situations apart. The idea behind comparing graphs by their causal capacity is to instead ask a "would this still work" question for every ordered pair of variables: if you used the estimated graph's parent structure to compute the effect of intervening on one variable and reading off another, would you get the same answer as the true graph gives? Counting how often the answer is yes turns "how wrong is my graph" into "how much of my graph's causal usefulness survived."
 
 ## Mechanics {#mechanics}
-The comparison problem is stated for a finite family of random variables indexed by a set **V**, with joint distribution **P** and densities **p** (with respect to Lebesgue or counting measure), plus the conditional and marginal densities needed to describe sub-collections of variables. A graph is the pair of nodes and edges, and nodes are identified with the variables they index. This notation is the shared scaffolding both distances are built on top of [§sec_1].
 
-| Distance | What it counts | Blind spot |
-|---|---|---|
-| SHD | Number of incorrect edges between the true and estimated DAG | Two edge-errors of equal count can have unequal causal consequences [§sec_1] |
-| SID | Pairs of vertices for which the estimate correctly predicts intervention distributions, judged within the class of distributions Markov with respect to the true DAG | Requires committing to the true DAG's Markov class as the reference [§sec_1] |
+The comparison is set up over a finite family of random variables indexed by a vertex set, with a joint distribution and (assumed-existing) densities with respect to Lebesgue or counting measure, plus the corresponding conditional densities; graphs are pairs of nodes and edges, and nodes are identified with the variables they represent [§sec_1]. This identification is what lets the same object serve two roles: a vertex in the DAG and a random variable whose distribution can be conditioned on or intervened upon [§sec_1].
 
-SID is introduced explicitly as a **pre-distance**: it adds information on top of SHD rather than replacing it, since the paper frames the two as complementary rather than competing measures [§sec_1].
+The estimate is scored by counting, over pairs of vertices, how many pairs it gets right — where "right" means it correctly predicts the intervention distribution for that pair, evaluated within the class of distributions that are Markov with respect to the true graph [§sec_1]. Fixing the reference class to distributions Markov to the *true* graph (rather than the estimate) is what keeps the comparison well-defined: the ground truth being tested against does not itself depend on which graph you happen to be scoring [§sec_1].
+
+This produces a genuinely new pre-distance between DAGs rather than a variant of SHD, and the paper is explicit that it is not aware of a directly related prior notion — it is meant to supplement SHD with information about causal-inference capacity, not replace it [§sec_1].
 
 ## The Math {#the-math}
-No display equation is given for this concept in the introduction, but the paper's own contrast between the two distances can be made concrete. Take a true chain **G0: X1 → X2 → X3**, and two estimates that each make exactly one edge error under SHD: **G1** adds a redundant edge, **G2** drops the mediating edge [§sec_1].
 
-```mermaid
-graph LR
-  subgraph G0["True: G0"]
-    A1[X1] --> A2[X2] --> A3[X3]
-  end
-  subgraph G1["Estimate: extra edge, SHD=1"]
-    B1[X1] --> B2[X2] --> B3[X3]
-    B1 --> B3
-  end
-  subgraph G2["Estimate: missing edge, SHD=1"]
-    C1[X1] --> C2[X2]
-  end
-```
+No display equation is introduced yet at this point in the paper — the formal apparatus below is the notation the rest of the SID definition builds on, not the metric itself [§sec_1].
 
-Both estimates score identically under SHD, yet they are not equally useful for causal inference. G1 still encodes that X1 causes X2 and that X2 causes X3, so the ordered pairs (1,2) and (2,3) remain correctly predicted, and the redundant (1,3) edge does not remove a true causal path — it only adds one. G2 severs the edge X2 → X3 entirely, so the pair (2,3) is now predicted to have no causal effect when it does, and the mediated pair (1,3) inherits the same error since the only path from X1 to X3 ran through X2 [§sec_1].
+**Why the formalism separates variables from their densities:** the family of random variables is indexed by the vertex set, its joint distribution is denoted separately from its densities, and conditional densities are denoted separately again [§sec_1]. Keeping these three objects distinct matters because the intervention distributions that SID compares are conditional/interventional densities of exactly this kind — the notation has to support writing "the density of one variable given an intervention on another" before any comparison of graphs can even be stated [§sec_1].
 
-Counting pairs this way is exactly the mechanism the introduction describes: SID counts vertex pairs (i, j) where the estimate's implied intervention distribution, evaluated within the true DAG's Markov class, matches the truth [§sec_1]. In this toy case that gives SID(G0, G1) = 0 wrongly-predicted pairs versus SID(G0, G2) = 2, despite SHD reporting the same "1" for both — the concrete demonstration of why the paper calls SHD's intuitive edge count insufficient for judging causal-inference capacity [§sec_1].
+**What breaks without the node–variable identification:** treating vertices and variables as literally the same object (with only "a slight abuse of notation" flagged) is what allows a graph edge to be read simultaneously as a structural claim and as a statement about conditional independence or intervention effects [§sec_1]. If nodes and variables were kept formally distinct, every downstream definition of an intervention distribution "with respect to a graph" would need an explicit translation step between the two; the abuse of notation is a deliberate simplification that removes that overhead [§sec_1].
+
+**Boundary condition worth noting:** existence of the densities is assumed rather than derived, which quietly restricts the results that follow to distributions absolutely continuous with respect to Lebesgue or counting measure — discrete or continuous, but not, e.g., distributions with a singular component [§sec_1].
 
 ## Go Deeper {#go-deeper}
-- **Structural Intervention Distance** (prerequisite concept) — the formal pre-distance this comparison problem motivates; read it for the precise pair-counting rule.
-- Section 2 (Structural Hamming Distance) — the baseline distance being critiqued here; useful for seeing exactly what "incorrect edges" means before contrasting it with SID.
-- Section 3 (do-calculus) — supplies the intervention-distribution machinery ("intervention distributions Markov with respect to a DAG") that SID's pair predictions are checked against.
-- Section 4 (SID definition and properties) — where the pair-counting idea above is made rigorous and its properties as a pre-metric are proved.
-- Section 6 (implementation) — relevant once you want to actually compute SID on graphs larger than a 3-node toy example.
+
+- **§sec_2 (Structural Hamming Distance)** — the baseline metric this concept is defined in contrast to; read it first to see exactly what "counting wrong edges" misses [§sec_1].
+- **§sec_3 (do-calculus)** — supplies the machinery for the intervention distributions that SID actually compares, referenced here as prerequisite background [§sec_1].
+- **§sec_4 (SID definition and properties)** — where the pairwise-correctness counting sketched above is turned into the formal (pre-)distance [§sec_1].
+- **Appendix (DAG terminology)** — the graph-theoretic definitions the paper leans on throughout, flagged in the introduction as required background [§sec_1].
