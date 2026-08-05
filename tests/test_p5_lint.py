@@ -1,3 +1,5 @@
+import pytest
+
 from paper_skill.p5_lint import lint_page, _mermaid_ok
 
 PACK = {"sections": [{"id": "sec_3", "title": "S", "level": 1, "text": "t"}],
@@ -64,6 +66,35 @@ $$ [eq_1]
 ## Go Deeper {#go-deeper}
 - [d2l](https://d2l.ai/x)
 """
+
+
+# p4_write's PAGE_PROMPT forbids tiers whose content is that they have no
+# content. A prompt rule is a hope; this is the check. Real examples from
+# arXiv:1306.1043 before the rule existed:
+#   "No equations were supplied in the local context for this concept ..."
+#   "The local context describes complexity in prose rather than as a ..."
+@pytest.mark.parametrize("filler", [
+    "No equations were supplied in the local context for this concept [§sec_3].",
+    "The local context does not include a labeled equation here [§sec_3].",
+    "No [eq_N]-tagged equations are present for this concept [§sec_3].",
+    "No formal expression can be reproduced here without fabricating it [§sec_3].",
+])
+def test_a_tier_that_only_reports_its_own_emptiness_is_caught(filler):
+    page = CLEAN.replace("Variance grows [§sec_3].", filler)
+
+    probs = lint_page(page, PACK, check_links=lambda url: True)
+
+    assert any("no-content" in p for p in probs), probs
+
+
+def test_real_material_mentioning_equations_is_not_flagged():
+    """The rule targets tiers ABOUT their own emptiness, not any sentence that
+    happens to say "equation" — that would ban ordinary maths writing."""
+    page = CLEAN.replace(
+        "Variance grows [§sec_3].",
+        "The equation is derived by expanding the quadratic form [eq_1].")
+
+    assert lint_page(page, PACK, check_links=lambda url: True) == []
 
 
 def test_blank_line_inside_display_math_is_not_an_unanchored_claim():

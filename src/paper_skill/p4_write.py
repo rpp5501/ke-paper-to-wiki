@@ -20,8 +20,27 @@ Anchor rule (hard): every claim paragraph in Mechanics/The Math ends with a
 semantic anchor like [§sec_3_2], [eq_1], or a research tag [S1]. TL;DR and
 Intuition use the GLOBAL context only (no equations). Mechanics and The Math
 use the LOCAL context. Go Deeper lists the note's resources with one-line whys.
-Honesty: if the local context lacks material for a tier, write one sentence
-saying so rather than padding.
+
+Depth (hard): the reader has the paper. A tier that only restates it is a
+wasted tier. Mechanics and The Math must do work the paper leaves implicit —
+why a step is correct, what a quantity is doing, what breaks without it, why a
+bound holds, what the cost is and where it comes from. Prefer the specific over
+the summarising: name the objects, give the sizes, state the conditions.
+
+Never write a tier whose content is that it has no content. "No equations were
+supplied", "the local context does not include", "cannot be reproduced here"
+and their paraphrases are forbidden — they tell the reader nothing they could
+not see. If the LOCAL context has no display equation for this concept, The
+Math still owes them real material drawn from what IS there: a worked example
+with concrete values, a complexity or termination argument, a loop invariant,
+a boundary case, or a derivation of the rule the prose states in words. Say
+less, but say something true and load-bearing.
+
+Format for scanning, not for prose volume: use a short bulleted list where the
+content is genuinely a list, a small table where two or more things are being
+compared on the same axes, a bolded lead-in clause where a paragraph turns on
+one term. Do not force these — a paragraph that is genuinely a paragraph stays
+one. Anchors still terminate every claim, including list items and table rows.
 Equations (hard): in The Math, reproduce each relevant equation from the LOCAL
 CONTEXT [eq_N] entries VERBATIM as a display block wrapped in $$ ... $$ — keep it
 as LaTeX, never convert to Unicode symbols — and put its [eq_N] anchor right after

@@ -8,6 +8,19 @@ _ANCHOR = re.compile(r"\[(§(sec_[\w]+)|(eq_\d+)|S\d+)\]")
 _LINK = re.compile(r"\((https?://[^)]+)\)")
 _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
 
+# p4_write forbids a tier whose content is that it has no content. A prompt
+# rule is a hope; this is the check. Deliberately narrow -- each pattern needs
+# an absence word ("no", "not", "lacks", "cannot") next to a context/equation
+# word, so ordinary maths prose that merely mentions an equation is untouched.
+_NO_CONTENT = (
+    re.compile(r"\bno\b[^.]{0,60}\bequations?\b[^.]{0,60}"
+               r"\b(suppl|present|available|provid|includ|given|tagged)", re.I),
+    re.compile(r"\blocal context\b[^.]{0,60}"
+               r"\b(does not|lacks|has no|contains no|no )", re.I),
+    re.compile(r"\b(cannot|can not|could not|no)\b[^.]{0,60}"
+               r"\b(reproduc|render|deriv|express)[^.]{0,60}\bhere\b", re.I),
+)
+
 
 def _fold_display_math(body: str) -> str:
     """Make each $$...$$ block a single paragraph for the blank-line split.
@@ -65,6 +78,12 @@ def lint_page(page_md: str, pack: dict, check_links=None,
         for para in (p.strip() for p in body.split("\n\n") if p.strip()):
             if len(para.split()) >= 4 and not _ANCHOR.search(para):
                 probs.append(f"unanchored claim in {tier}: {para[:60]}…")
+            if any(p.search(para) for p in _NO_CONTENT):
+                probs.append(
+                    f"no-content filler in {tier}: {para[:60]}… — a tier owes "
+                    "the reader real material (worked example, complexity or "
+                    "termination argument, invariant, boundary case), not a "
+                    "report that it has none")
     for m in _LINK.finditer(page_md):
         if not check_links(m.group(1)):
             probs.append(f"dead link: {m.group(1)}")
