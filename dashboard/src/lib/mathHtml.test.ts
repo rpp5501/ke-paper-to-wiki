@@ -197,3 +197,54 @@ describe("renderMathToString", () => {
     expect(renderMathToString(invalid)).toBe(invalid);
   });
 });
+
+// remark-math treats whatever sits on the same line as an opening block `$$`
+// as an INFO STRING -- the same way ```python tags a code fence -- and drops
+// it. Pages write the equation on that line, so `$$\begin{aligned}` lost its
+// environment and KaTeX got a body starting with a bare `&`, reporting
+// "Expected 'EOF', got '&'". 7 of 24 shipped pages showed raw LaTeX or a red
+// katex-error because of it, and normalize_math's `aligned` wrapper made it
+// more likely by putting an environment right after the delimiter.
+describe("block math must not put content on the opening delimiter line", () => {
+  const D = "$".repeat(2);
+
+  it("moves same-line content onto its own line", () => {
+    const out = preserveMathForMarkdown(`${D}\begin{aligned}\na &= b\n\end{aligned}${D}`);
+    expect(out.startsWith(`${D}\n\begin{aligned}`)).toBe(true);
+  });
+
+  it("leaves a block that is already well-formed alone", () => {
+    const good = `${D}\n\begin{aligned}\na &= b\n\end{aligned}\n${D}`;
+    expect(preserveMathForMarkdown(good)).toBe(good);
+  });
+
+  it("closes on its own line too", () => {
+    const out = preserveMathForMarkdown(`${D}\na = b${D}`);
+    expect(out.endsWith(`\n${D}`)).toBe(true);
+  });
+
+  it("leaves inline math inside a sentence alone", () => {
+    const text = `The value $x$ is fine.`;
+    expect(preserveMathForMarkdown(text)).toBe(text);
+  });
+
+  it("leaves a fenced code block alone", () => {
+    const fenced = "```algorithm\nlines:\n  - code: \"a\"\n```";
+    expect(preserveMathForMarkdown(fenced)).toBe(fenced);
+  });
+});
+
+describe("the anchor that follows a closing $$", () => {
+  const D = "$".repeat(2);
+
+  it("moves to its own line so the block can close", () => {
+    const out = preserveMathForMarkdown(`${D}\n\begin{aligned}\na &= b\n\end{aligned}${D} [eq_9]`);
+    expect(out).toBe(`${D}\n\begin{aligned}\na &= b\n\end{aligned}\n${D}\n[eq_9]`);
+  });
+
+  it("keeps prose after the block on its own line too", () => {
+    const out = preserveMathForMarkdown(`${D}\nx = 1\n${D} [eq_1]\n\nNext paragraph.`);
+    expect(out).toContain(`${D}\n[eq_1]`);
+    expect(out).toContain("Next paragraph.");
+  });
+});

@@ -233,8 +233,34 @@ function normalizeLegacyMathInProse(text: string): string {
     if (text.startsWith("$$", cursor)) {
       const close = text.indexOf("$$", cursor + 2);
       if (close < 0) return output + text.slice(cursor);
-      output += text.slice(cursor, close + 2);
+      // remark-math reads whatever shares the line with an opening block `$$`
+      // as an INFO STRING -- the way ```python tags a fence -- and drops it.
+      // Pages put the equation there, so `$$\begin{aligned}` lost its
+      // environment and KaTeX received a body starting with a bare `&`.
+      //
+      // Only multi-line blocks are affected: `$$x$$` all on one line parses as
+      // ordinary inline math and renders correctly, so it is left exactly as
+      // written rather than promoted to a display block.
+      const atLineStart = output === "" || output.endsWith("\n");
+      const inner = text.slice(cursor + 2, close);
+      if (!(atLineStart && inner.trim() && inner.includes("\n"))) {
+        output += text.slice(cursor, close + 2);
+        cursor = close + 2;
+        continue;
+      }
+      // Both delimiters must stand alone on their own lines. Pages write
+      // `\end{aligned}$$ [eq_9]`, putting the environment AND the anchor on
+      // the closing line, so the block never parsed. The anchor is not
+      // dropped, only moved to the next line -- P5 lint reads the source,
+      // where it stays on the same line as the writer put it.
+      output += `$$\n${inner.trim()}\n$$`;
       cursor = close + 2;
+      const eol = text.indexOf("\n", cursor);
+      const tail = eol < 0 ? text.slice(cursor) : text.slice(cursor, eol);
+      if (tail.trim()) {
+        output += `\n${tail.trim()}`;
+        cursor = eol < 0 ? text.length : eol;
+      }
       continue;
     }
 
