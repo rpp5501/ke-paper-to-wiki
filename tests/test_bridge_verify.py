@@ -162,3 +162,48 @@ def test_merge_deduplicates_implements_pair_and_human_confirmation_wins():
         "confidence": "extracted",
         "confidence_score": 1.0,
     }]
+
+
+# The prompt named a file and did not show it. `claude -p` has file tools, so
+# it read that as an instruction to go and open sid.py -- from paper-skill's
+# cwd, where a path recorded against another repo does not resolve. Every
+# parseable verdict in the real run was a variation on "No file named `sid.py`
+# exists anywhere in this repository", which is not an answer to the question
+# asked. The verifier must judge from evidence carried in the prompt.
+def test_prompt_carries_the_source_not_just_its_path(tmp_path):
+    (tmp_path / "model.py").write_text(
+        "\n" * 119 + "class MultiHeadedAttention:\n    'parallel heads'\n",
+        encoding="utf-8")
+    seen = []
+
+    verify_candidates(
+        [{"concept": "multi-head-attention",
+          "code": "model.py::MultiHeadedAttention", "score": 1.0,
+          "evidence": "x"}],
+        CONCEPTS, CODE, spawn=lambda p: (seen.append(p), "YES: yes")[1],
+        repo_dir=tmp_path)
+
+    assert "class MultiHeadedAttention" in seen[0]
+
+
+def test_prompt_tells_the_verifier_not_to_go_looking():
+    seen = []
+
+    verify_candidates(
+        [{"concept": "multi-head-attention",
+          "code": "model.py::MultiHeadedAttention", "score": 1.0,
+          "evidence": "x"}],
+        CONCEPTS, CODE, spawn=lambda p: (seen.append(p), "YES: yes")[1])
+
+    assert "do not open" in seen[0].lower() or "do not read" in seen[0].lower()
+
+
+def test_unreadable_source_still_gets_a_verdict(tmp_path):
+    """A stale path must not turn into a filesystem question."""
+    out = verify_candidates(
+        [{"concept": "multi-head-attention",
+          "code": "model.py::MultiHeadedAttention", "score": 1.0,
+          "evidence": "x"}],
+        CONCEPTS, CODE, spawn=lambda p: "NO: unrelated", repo_dir=tmp_path)
+
+    assert out[0]["verdict"] == "no"

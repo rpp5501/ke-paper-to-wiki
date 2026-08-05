@@ -64,6 +64,51 @@ def test_section_anchor_survives_the_round_trip(cli_present, monkeypatch):
     assert "Â" not in out and "â€" not in out
 
 
+# A batch of 30 verifier calls lost 26 of them to non-zero exits that cleared
+# on the next attempt -- rate limiting, not a broken CLI. Failing the whole
+# batch on a transient is as wrong as failing silently; a missing CLI still
+# fails at once, since retrying that can never help.
+def test_a_transient_failure_is_retried(cli_present, monkeypatch):
+    attempts = []
+
+    def flaky(argv, **kwargs):
+        attempts.append(1)
+        code = 1 if len(attempts) == 1 else 0
+        return subprocess.CompletedProcess(argv, code, "recovered", "overloaded")
+
+    monkeypatch.setattr("paper_skill.llm_spawn.subprocess.run", flaky)
+    monkeypatch.setattr("paper_skill.llm_spawn.time.sleep", lambda _s: None)
+
+    assert claude_spawn("hi") == "recovered"
+    assert len(attempts) == 2
+
+
+def test_retries_are_bounded(cli_present, monkeypatch):
+    attempts = []
+
+    def always_fails(argv, **kwargs):
+        attempts.append(1)
+        return subprocess.CompletedProcess(argv, 1, "", "still overloaded")
+
+    monkeypatch.setattr("paper_skill.llm_spawn.subprocess.run", always_fails)
+    monkeypatch.setattr("paper_skill.llm_spawn.time.sleep", lambda _s: None)
+
+    with pytest.raises(LLMUnavailable):
+        claude_spawn("hi")
+    assert len(attempts) <= 4
+
+
+def test_a_missing_cli_is_not_retried(monkeypatch):
+    """Retrying a CLI that is not installed only delays the same answer."""
+    calls = []
+    monkeypatch.setattr("paper_skill.llm_spawn.shutil.which",
+                        lambda _: calls.append(1) or None)
+
+    with pytest.raises(LLMUnavailable):
+        claude_spawn("hi")
+    assert len(calls) == 1
+
+
 def test_nonzero_exit_is_loud_not_empty(cli_present, monkeypatch):
     monkeypatch.setattr(
         "paper_skill.llm_spawn.subprocess.run",

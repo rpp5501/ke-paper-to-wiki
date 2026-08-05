@@ -11,6 +11,13 @@ import json
 import re
 import shutil
 import subprocess
+import time
+
+# A batch of 30 verifier calls lost 26 to non-zero exits that cleared on the
+# next attempt: rate limiting, not a broken CLI. Failing a whole batch on a
+# transient is as wrong as failing silently.
+MAX_ATTEMPTS = 3
+BACKOFF_SECONDS = 2.0
 
 _JSON_BLOCK = re.compile(r"\{.*\}", re.S)
 
@@ -54,17 +61,24 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
     # (cp1252 on Windows), which turned every [§sec_N] anchor the page writer
     # emits into [Â§sec_N] and broke P5 lint. errors="replace" keeps one odd
     # byte from killing a 24-page run.
-    proc = subprocess.run(
-        ["claude", "-p", prompt, "--max-turns", str(max_turns)],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        timeout=timeout,
-    )
-    if proc.returncode != 0:
-        # Same contract as a missing CLI: "the model never ran" must not reach
-        # callers as "the model returned nothing".
-        raise LLMUnavailable(
-            f"`claude -p` exited {proc.returncode}, so this LLM stage did not "
-            f"run. Do NOT treat this as an empty result. CLI said: "
-            f"{(proc.stderr or proc.stdout or '').strip()[:500]}"
+    for attempt in range(MAX_ATTEMPTS):
+        proc = subprocess.run(
+            ["claude", "-p", prompt, "--max-turns", str(max_turns)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=timeout,
         )
-    return proc.stdout
+        if proc.returncode == 0:
+            return proc.stdout
+        # A non-zero exit here is usually transient (rate limit, overload); the
+        # not-installed case already returned above and retrying it could only
+        # delay the same answer.
+        if attempt < MAX_ATTEMPTS - 1:
+            time.sleep(BACKOFF_SECONDS * (2 ** attempt))
+
+    # Same contract as a missing CLI: "the model never ran" must not reach
+    # callers as "the model returned nothing".
+    raise LLMUnavailable(
+        f"`claude -p` exited {proc.returncode} on {MAX_ATTEMPTS} attempts, so "
+        f"this LLM stage did not run. Do NOT treat this as an empty result. "
+        f"CLI said: {(proc.stderr or proc.stdout or '').strip()[:500]}"
+    )

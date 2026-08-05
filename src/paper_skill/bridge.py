@@ -81,14 +81,49 @@ def propose_candidates(concept_graph: dict, code_graph: dict,
     return [t[4] for t in ordered[:top]]
 
 
+# The source is inlined rather than referenced. Naming a path and not showing it
+# made an agentic spawn go open the file -- from the caller's cwd, where a path
+# recorded against another repo does not resolve -- so every parseable verdict
+# in the first real run was a variation on "No file named sid.py exists in this
+# repository". That is not an answer to the question being asked.
 VERIFY_PROMPT = """Does this code entity implement this paper concept?
 Concept: {label} — {definition}
 Code: {code_label} at {source_ref}
+{code_excerpt}
+Judge only from what is written above. Do not open, read, or search for any
+file; the source you need is already here, and the path is from another
+repository. If the evidence above is insufficient, answer NO.
 Answer with exactly one line: "YES: <reason>" or "NO: <reason>"."""
+
+CODE_EXCERPT_LINES = 40
+
+
+def _code_excerpt(node: dict, repo_dir) -> str:
+    """The source behind ``node``, or a line saying it is unavailable.
+
+    Never raises and never returns something that invites a lookup: a stale
+    path must produce a verdict on the evidence, not a filesystem question.
+    """
+    if not repo_dir:
+        return "(source not provided)"
+    ref = str(node.get("source_ref", ""))
+    path, _, line = ref.partition(":L")
+    target = Path(repo_dir) / path
+    if not target.is_file():
+        return "(source unavailable — judge from the labels above)"
+    try:
+        lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return "(source unavailable — judge from the labels above)"
+    start = max(0, int(line) - 1) if line.isdigit() else 0
+    body = "\n".join(lines[start:start + CODE_EXCERPT_LINES]).strip()
+    return f"Source:\n{body}" if body else (
+        "(source unavailable — judge from the labels above)")
 
 
 def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
-                      spawn, definitions: dict | None = None) -> list[dict]:
+                      spawn, definitions: dict | None = None,
+                      repo_dir=None) -> list[dict]:
     """One leased verdict per candidate.
 
     ``definitions`` is the same TOC-sourced map propose_candidates takes.
@@ -108,7 +143,8 @@ def verify_candidates(cands: list[dict], concept_graph: dict, code_graph: dict,
                 definition=(definitions.get(c["concept"])
                             or cn.get("definition") or cn["label"]),
                 code_label=kn["label"],
-                source_ref=kn.get("source_ref", "?"))).strip()
+                source_ref=kn.get("source_ref", "?"),
+                code_excerpt=_code_excerpt(kn, repo_dir))).strip()
         except Exception as exc:
             out.append({**c, "verdict": "no",
                         "reason": f"verifier error: {type(exc).__name__}"})
