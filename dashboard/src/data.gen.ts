@@ -632,42 +632,42 @@ export const KE_DATA = {
  "tour": [
   {
    "order": 1,
-   "title": "._evaluate()",
-   "description": "Next stop on the dependency-ordered reading path.",
+   "title": "Comparing Estimated and True Causal Graphs",
+   "description": "Given a true causal DAG and an estimate of it produced by some structure-learning procedure, how good is the estimate?",
    "nodeIds": [
-    "sid_sid_evaluate"
+    "graph-comparison-problem"
    ]
   },
   {
    "order": 2,
-   "title": "SID",
-   "description": "Next stop on the dependency-ordered reading path.",
+   "title": "DAG Terminology",
+   "description": "Structural Intervention Distance compares a true DAG against an estimated graph, and the estimate is very often not a single DAG but an equivalence class of them — so before SID c…",
    "nodeIds": [
-    "sid_sid"
+    "dag-terminology"
    ]
   },
   {
    "order": 3,
-   "title": "_compute_path_matrix()",
-   "description": "Next stop on the dependency-ordered reading path.",
+   "title": "Implementation of SID",
+   "description": "- SID's definition is combinatorial — check an adjustment condition for every ordered pair of nodes — but the reference implementation turns that combinatorics into two matrix rou…",
    "nodeIds": [
-    "sid_compute_path_matrix"
+    "sid-implementation"
    ]
   },
   {
    "order": 4,
-   "title": "_reachable_on_non_directed_path()",
-   "description": "Next stop on the dependency-ordered reading path.",
+   "title": "Intervention Distributions",
+   "description": "An intervention distribution asks a counterfactual question: if we forced a variable to take a specific value, what would the rest of the system look like?",
    "nodeIds": [
-    "sid_reachable_on_non_directed_path"
+    "intervention-distributions"
    ]
   },
   {
    "order": 5,
-   "title": "_sid_matrix()",
-   "description": "Next stop on the dependency-ordered reading path.",
+   "title": "Structural Intervention Distance (SID)",
+   "description": "The Structural Intervention Distance (SID) is a pre-metric for comparing an estimated causal DAG against a true one, built specifically for settings where the graph will be used t…",
    "nodeIds": [
-    "sid_sid_matrix"
+    "structural-intervention-distance"
    ]
   }
  ],

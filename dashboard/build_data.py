@@ -121,7 +121,18 @@ def _tour(plan_graph, hotspots, pages):
         picks = [h["id"] for h in hotspots[:5]]
         fallback = "High-churn, high-dependency hotspot — start here."
     else:
-        picks = reading_path(plan_graph)[:5]
+        # On a bridged graph the `implements` edges run code -> concept, so the
+        # code nodes are roots of the dependency order and reading_path hands
+        # back five pgmpy functions before any concept. None has a page, so the
+        # tour walked the reader through empty panels -- and the article, whose
+        # chapters are built from these same steps, rendered nothing at all.
+        # The tour is about the paper; a step with no page has nothing to show.
+        # Filtering on kind, not on "has a page": a concept whose page is
+        # missing still belongs on the reading path, with the fallback blurb.
+        order = reading_path(plan_graph)
+        concepts = [p for p in order
+                    if nodes.get(p, {}).get("kind", "concept") == "concept"]
+        picks = (concepts or order)[:5]
         fallback = "Next stop on the dependency-ordered reading path."
     steps = []
     for i, p in enumerate(picks):

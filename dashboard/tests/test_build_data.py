@@ -604,3 +604,67 @@ def test_bridged_excerpt_is_embedded_in_generated_module():
     ts = to_data_ts(b)
     assert "attention.py::attention" in ts
     assert "def attention" in ts
+
+
+# On a bridged graph the `implements` edges run code -> concept, which makes the
+# code nodes roots of the dependency order -- so reading_path handed the tour
+# five pgmpy functions (._evaluate(), _compute_path_matrix(), ...). None of them
+# has a page, so the guided tour walked the reader through empty panels and the
+# article, whose chapters are built from those same steps, rendered nothing at
+# all. The tour is about the paper; a step with no page has nothing to show.
+BRIDGED = {
+    "meta": {"kind": "bridged"},
+    "nodes": [
+        {"id": "fn_a", "kind": "function", "label": "_helper()", "level": 0},
+        {"id": "fn_b", "kind": "function", "label": "_other()", "level": 0},
+        {"id": "c1", "kind": "concept", "label": "First Concept", "level": 0,
+         "page": "01_c1.md"},
+        {"id": "c2", "kind": "concept", "label": "Second Concept", "level": 1,
+         "page": "02_c2.md"},
+    ],
+    "edges": [
+        {"src": "fn_a", "dst": "c1", "kind": "implements", "weight": 1.0},
+        {"src": "fn_b", "dst": "c2", "kind": "implements", "weight": 1.0},
+        {"src": "c1", "dst": "c2", "kind": "prerequisite", "weight": 1.0},
+    ],
+}
+def _bridged_pages(tmp_path):
+    d = tmp_path / "pages"
+    d.mkdir()
+    (d / "01_c1.md").write_text("## TL;DR {#tldr}\nFirst blurb.\n", encoding="utf-8")
+    (d / "02_c2.md").write_text("## TL;DR {#tldr}\nSecond blurb.\n", encoding="utf-8")
+    return d
+
+
+def test_the_tour_skips_code_nodes(tmp_path):
+    b = build_bundle(BRIDGED, pages_dir=_bridged_pages(tmp_path))
+    picked = [s["nodeIds"][0] for s in b["tour"]]
+    assert picked == ["c1", "c2"], picked
+
+
+def test_the_tour_keeps_the_reading_order_of_what_is_left(tmp_path):
+    b = build_bundle(BRIDGED, pages_dir=_bridged_pages(tmp_path))
+    assert [s["title"] for s in b["tour"]] == ["First Concept", "Second Concept"]
+
+
+def test_tour_steps_still_describe_themselves_from_the_page(tmp_path):
+    b = build_bundle(BRIDGED, pages_dir=_bridged_pages(tmp_path))
+    assert b["tour"][0]["description"] == "First blurb."
+
+
+def test_a_graph_with_no_pages_at_all_still_gets_a_tour(tmp_path):
+    """A code-only build has no pages; an empty tour would be worse than a
+    generic one."""
+    empty = tmp_path / "none"
+    empty.mkdir()
+    assert len(build_bundle(BRIDGED, pages_dir=empty)["tour"]) > 0
+
+
+def test_a_graph_of_only_code_still_gets_a_tour(tmp_path):
+    """Filtering to concepts must not empty the tour of a pure code graph."""
+    code_only = {"meta": {"kind": "bridged"},
+                 "nodes": [n for n in BRIDGED["nodes"] if n["kind"] == "function"],
+                 "edges": []}
+    empty = tmp_path / "none2"
+    empty.mkdir()
+    assert len(build_bundle(code_only, pages_dir=empty)["tour"]) > 0
