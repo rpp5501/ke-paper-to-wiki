@@ -20,6 +20,7 @@ assumption when something "doesn't exist" is that it exists and is unfed.
 | Derivation steps | `DerivationSteps` | no page emits a `derivation` block |
 | Annotated equations | `AnnotatedEquation` | no page emits an `annotated-eq` block |
 | Term hover | `mathHtml` tokenizer + `ArticleView`/`Drawer` | glossary map was empty (partly fixed) |
+| Diagrams | `lint_page` mermaid validator, `MermaidBlock` | `PAGE_PROMPT` never mentions mermaid |
 
 `ArticleView` already calls `parseContent` and `BlockRenderer`, so a block in a
 page's markdown renders in the article with no component work at all.
@@ -77,6 +78,68 @@ paragraph split.
 - `parseContent` accepts what the prompt describes — the prompt's example is
   used as a test vector, so prompt and parser cannot drift apart.
 - Generalization: a paper with no algorithms produces no `algorithm` blocks.
+
+---
+
+## Part 1b — Scannable formatting, with a check
+
+### Measured baseline (24 SID pages, before the re-run)
+
+| | pages with none |
+|---|---|
+| tables | 24 / 24 |
+| mermaid | 24 / 24 |
+| content blocks | 24 / 24 |
+| bullet lists | 17 / 24 |
+| bold lead-ins | 20 / 24 |
+
+Longest paragraph 101 words; four pages over 80. These pages were written before
+the "Format for scanning" rule was added to `PAGE_PROMPT`, so the rule is not
+failing — it has never run. This baseline is the before-picture for the re-run.
+
+### Prompt: name the shapes, keep the gate
+
+The existing rule says to use a list "where the content is genuinely a list".
+That is true and useless — it names no trigger. Replace with the shapes this
+kind of paper actually produces, each still earned:
+
+- **Table** when two or more named things are compared on shared axes — two
+  metrics, two graph classes, two algorithms and their costs.
+- **Bullets** when the content is an enumerated set the paper itself
+  enumerates — the conditions of a criterion, the cases of a proof, the steps
+  of a procedure that is not pseudocode (pseudocode is an `algorithm` block).
+- **Bold lead-in** when a paragraph turns on one term, so the eye can find it.
+- **Mermaid** when a relationship is structural and small — a graph, a
+  dependency, a state change. Not for decoration, and not where an `algorithm`
+  block is the better fit.
+
+A tier that is genuinely one argument stays one paragraph. Anchors still
+terminate list items and table rows.
+
+### Lint: one objective check, not a structure quota
+
+`p5_lint` gains a paragraph-length ceiling (>90 words) in Mechanics and The
+Math. Deliberately the only formatting check:
+
+- It is objective and paper-independent. "Should have had a table" is a
+  judgement a linter cannot make; "this is a 101-word wall" is arithmetic.
+- Requiring a table or a bullet count would force decoration onto pages that
+  do not want it — the same failure the earned-not-forced rule in Part 1
+  guards against. A quota would produce tables comparing one thing.
+
+### Known trap
+
+`_fold_display_math` collapses a `$$…$$` block into one paragraph, and LaTeX
+array bodies word-count high. Display-math paragraphs must be exempt from the
+ceiling, or every verbatim equation is reported as a wall of text — the third
+appearance of this same fold interacting with the paragraph split.
+
+### Tests
+
+- A 100-word prose paragraph is flagged; an 80-word one is not.
+- A long `$$…$$` block is not flagged.
+- A page of short paragraphs with no table and no list passes — absence of
+  structure is not a defect.
 
 ---
 
