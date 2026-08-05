@@ -117,8 +117,70 @@ def extract_macros(tex: str) -> dict:
             continue
         if kind == "DeclareMathOperator":
             body = f"\\operatorname{star}{{{body}}}"
-        macros["\\" + name] = body
+        # A macro body carries the same bookkeeping an equation body does, and
+        # a numbering-only macro (\eqnr and friends) reduces to nothing --
+        # which is correct: it never contributed maths, only a counter.
+        macros["\\" + name] = _EMPTY_TAG.sub("", _BOOKKEEPING.sub("", body)).strip()
     return macros
+
+
+# Bookkeeping that carries no maths: cross-reference anchors, the numbering
+# suppressors, and LaTeX's counter machinery. KaTeX implements none of it, and
+# one occurrence anywhere in a body loses the WHOLE equation to the raw-LaTeX
+# fallback -- so this is stripped from equations and from macro bodies alike.
+_BOOKKEEPING = re.compile(
+    r"\\(?:label\s*\{[^{}]*\}"
+    r"|(?:add|set|ref|step)?(?:to)?counter\s*(?:\{[^{}]*\}){1,2}"
+    r"|the[a-zA-Z]+\b|nonumber\b|notag\b)")
+# \tag{} left behind once its \thecounter argument is gone renders an empty tag.
+_EMPTY_TAG = re.compile(r"\\tag\*?\s*\{\s*\}")
+
+
+def _needs_alignment(latex: str) -> bool:
+    """True when an ``&`` or ``\\\\`` sits outside every environment.
+
+    Such a body came from an align/eqnarray wrapper this extractor drops, so
+    the markers are left with nothing to align against. Testing for the mere
+    PRESENCE of an environment is not enough: a body can open an array, close
+    it, and only then use a top-level ``&``.
+    """
+    depth = i = 0
+    while i < len(latex):
+        if latex[i] == "\\":
+            for token, step in ((r"\begin{", 7), (r"\end{", 5), ("\\\\", 2)):
+                if latex.startswith(token, i):
+                    if token == r"\begin{":
+                        depth += 1
+                    elif token == r"\end{":
+                        depth -= 1
+                    elif depth == 0:
+                        return True
+                    i += step
+                    break
+            else:
+                i += 2          # any other escape, \& and \% included
+            continue
+        if latex[i] == "&" and depth == 0:
+            return True
+        i += 1
+    return False
+
+
+def normalize_math(latex: str) -> str:
+    """Make an extracted equation body renderable without changing its maths.
+
+    Three rules, each about LaTeX in general rather than any one paper:
+    strip bookkeeping; collapse the blank lines _strip_comments leaves where
+    ``%`` lines were (illegal inside LaTeX math, and they end the markdown
+    paragraph, tearing the ``$$`` block in half); and give orphaned alignment
+    markers the ``aligned`` environment they need. Idempotent, because a body
+    that already has its own environment is left alone.
+    """
+    latex = _EMPTY_TAG.sub("", _BOOKKEEPING.sub("", latex))
+    latex = re.sub(r"\n\s*\n+", "\n", latex).strip()
+    if _needs_alignment(latex):
+        latex = "\\begin{aligned}\n" + latex + "\n\\end{aligned}"
+    return latex
 
 
 def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
@@ -154,8 +216,8 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                 latex = tex[n.nodelist[0].pos:n.nodelist[-1].pos
                             + n.nodelist[-1].len] if n.nodelist else ""
                 equations.append({"id": f"eq_{len(equations) + 1}",
-                                  "latex": normalize_optional_args(
-                                      latex.strip(), optional_args),
+                                  "latex": normalize_math(normalize_optional_args(
+                                      latex.strip(), optional_args)),
                                   "section": cur_id or "sec_0"})
             elif isinstance(n, LatexCharsNode):
                 buf.append(n.chars)

@@ -2,7 +2,7 @@
 import argparse, io, json, os, re, sys, tarfile
 from pathlib import Path
 import requests
-from .latex_pack import latex_to_pack
+from .latex_pack import latex_to_pack, normalize_math
 from .references import parse_bbl
 
 UA = {"User-Agent": "paper-skill/0.1 (keyless research tool)"}
@@ -56,7 +56,8 @@ def _pack_from_ar5iv(html: bytes, source: str) -> dict:
                              "level": 2 if node.tag == "h2" else 3, "text": ""})
         elif node.tag == "math" and node.attributes.get("alttext") is not None:
             eq_n += 1
-            equations.append({"id": f"eq_{eq_n}", "latex": node.attributes["alttext"],
+            equations.append({"id": f"eq_{eq_n}",
+                              "latex": normalize_math(node.attributes["alttext"]),
                               "section": current_section})
     return {"meta": {"source": source, "title": doc.css_first("title").text()
                      if doc.css_first("title") else "",
@@ -99,6 +100,26 @@ def _pdf_title(path: str) -> str:
     return Path(path).stem
 
 
+class EmptyExtraction(ValueError):
+    """A rung parsed cleanly and produced nothing."""
+
+
+def _require_content(pack: dict) -> dict:
+    """Refuse a pack with no sections and no equations.
+
+    The ladder descends on exceptions only, so a rung that PARSED but yielded
+    nothing used to be returned as a success. Both rungs did exactly that for
+    arXiv:1412.6980 -- a wrapper .tex whose \\input targets are missing parses
+    perfectly, and ar5iv serves an "Untitled Document" stub when its own
+    conversion failed. Reported as path=latex either way, and P2 would then
+    extract concepts from nothing: the TOC-shaped garbage the anti-TOC guard
+    catches, arriving a stage earlier and cheaper.
+    """
+    if not pack.get("sections") and not pack.get("equations"):
+        raise EmptyExtraction(pack.get("meta", {}).get("source", "pack"))
+    return pack
+
+
 def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
     kind = detect(target)
     if kind == "tex":
@@ -123,13 +144,19 @@ def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
             resp = get(f"https://arxiv.org/e-print/{arxiv_id}",
                        timeout=60, headers=UA)
             resp.raise_for_status()
-            return _pack_from_tarball(resp.content, source)
+            return _require_content(_pack_from_tarball(resp.content, source))
         except Exception:
             try:
                 resp = get(f"https://ar5iv.labs.arxiv.org/html/{arxiv_id}",
                            timeout=60, headers=UA)
                 resp.raise_for_status()
-                return _pack_from_ar5iv(resp.content, source)
+                return _require_content(_pack_from_ar5iv(resp.content, source))
+            except EmptyExtraction:
+                return {"status": "empty_extraction",
+                        "hint": f"{source}: the e-print tarball and ar5iv both "
+                                "parsed to nothing (ar5iv serves a stub when "
+                                "its own conversion failed) — download the PDF "
+                                "and pass it as a local file for the pdf rung"}
             except Exception:
                 return {"status": "fetch_failed",
                         "hint": "both arXiv e-print and ar5iv unreachable"}

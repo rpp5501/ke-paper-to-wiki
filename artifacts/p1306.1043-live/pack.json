@@ -186,22 +186,22 @@
   },
   {
    "id": "eq_2",
-   "latex": "\\label{eq:par1}\np_{\\G}(y \\given \\doo(X = \\hat x)) = p(y) \\,.",
+   "latex": "p_{\\G}(y \\given \\doo(X = \\hat x)) = p(y) \\,.",
    "section": "sec_1_2"
   },
   {
    "id": "eq_3",
-   "latex": "\\label{eq:par}\np_{\\G}(y \\given \\doo(X = \\hat x)) = \\sum_{\\pa{}{X}} p(y \\given \\hat x, \\pa{}{X}) \\, p(\\pa{}{X}) \\,.",
+   "latex": "p_{\\G}(y \\given \\doo(X = \\hat x)) = \\sum_{\\pa{}{X}} p(y \\given \\hat x, \\pa{}{X}) \\, p(\\pa{}{X}) \\,.",
    "section": "sec_1_2"
   },
   {
    "id": "eq_4",
-   "latex": "p_{\\HH_1}(y_3\\given \\doo(Y_2 = \\hat y_2)) &= \\sum_{x_1,x_2,y_1} p(y_3\\given x_1,x_2,y_1,\\hat y_2) p(x_1,x_2,y_1)\\\\\n& = \\sum_{x_1,x_2,y_1} \\frac{p(x_1,x_2,y_1,\\hat y_2,y_3)}{p(\\hat y_2 \\given x_1,x_2,y_1)}\n = \\sum_{x_1,x_2,y_1} \\frac{p(x_1,x_2,y_1,\\hat y_2,y_3)}{p(\\hat y_2 \\given x_1,x_2)}\\\\\n& = \\sum_{x_1,x_2} p(y_3\\given x_1,x_2,\\hat y_2) p(x_1,x_2)\n = p_{\\G}(y_3\\given \\doo(Y_2 = \\hat y_2))",
+   "latex": "\\begin{aligned}\np_{\\HH_1}(y_3\\given \\doo(Y_2 = \\hat y_2)) &= \\sum_{x_1,x_2,y_1} p(y_3\\given x_1,x_2,y_1,\\hat y_2) p(x_1,x_2,y_1)\\\\\n& = \\sum_{x_1,x_2,y_1} \\frac{p(x_1,x_2,y_1,\\hat y_2,y_3)}{p(\\hat y_2 \\given x_1,x_2,y_1)}\n = \\sum_{x_1,x_2,y_1} \\frac{p(x_1,x_2,y_1,\\hat y_2,y_3)}{p(\\hat y_2 \\given x_1,x_2)}\\\\\n& = \\sum_{x_1,x_2} p(y_3\\given x_1,x_2,\\hat y_2) p(x_1,x_2)\n = p_{\\G}(y_3\\given \\doo(Y_2 = \\hat y_2))\n\\end{aligned}",
    "section": "sec_2_1"
   },
   {
    "id": "eq_5",
-   "latex": "\\label{eq:SIDdagdag}\n\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{G} &\\rightarrow& \\mathbb{N}\\\\\n\n\n\n(\\G,\\HH)& \\mapsto &\\# \\{\\,(i,j), i \\neq j\\;|\\;\\text{ the intervention distribution from } i \\text{ to } j\\\\\n&& \\qquad \\qquad \\qquad \\quad \\text{ is falsely estimated by } \\HH \\text{ with respect to } \\G \\}\n\\end{array}",
+   "latex": "\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{G} &\\rightarrow& \\mathbb{N}\\\\\n(\\G,\\HH)& \\mapsto &\\# \\{\\,(i,j), i \\neq j\\;|\\;\\text{ the intervention distribution from } i \\text{ to } j\\\\\n&& \\qquad \\qquad \\qquad \\quad \\text{ is falsely estimated by } \\HH \\text{ with respect to } \\G \\}\n\\end{array}",
    "section": "sec_2_1"
   },
   {
@@ -216,22 +216,22 @@
   },
   {
    "id": "eq_8",
-   "latex": "\\label{eq:SIDdagcpdag}\n\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{C} &\\rightarrow& \\mathbb{N} \\times \\mathbb{N}\\\\\n(\\G,\\CC)& \\mapsto & \\big({\\SID}_{\\mathrm{lower}}(\\G,\\CC), {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\big)\n\\end{array}",
+   "latex": "\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{C} &\\rightarrow& \\mathbb{N} \\times \\mathbb{N}\\\\\n(\\G,\\CC)& \\mapsto & \\big({\\SID}_{\\mathrm{lower}}(\\G,\\CC), {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\big)\n\\end{array}",
    "section": "sec_2_4_1"
   },
   {
    "id": "eq_9",
-   "latex": "\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ identifiable in }\\CC \\text{ wrt } \\G \\text{ and}\\\\\n\\text{ inferred falsely by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;= \\;{\\SID}_{\\mathrm{lower}}(\\G,\\CC)  \\\\\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ identifiable in }\\CC \\text{ wrt } \\G \\text{ and}\\\\\n\\text{ inferred correctly by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;= \\;p \\cdot (p-1) - {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\\\\n\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ strictly identifiable in }\\CC \\text{ and}\\\\\n\\text{ inferred falsely by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;\\leq \\;{\\SID}_{\\mathrm{lower}}(\\G,\\CC)  \\\\\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ strictly identifiable in }\\CC \\text{ and}\\\\\n\\text{ inferred correctly by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;\\leq \\;p \\cdot (p-1) - {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\,.",
+   "latex": "\\begin{aligned}\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ identifiable in }\\CC \\text{ wrt } \\G \\text{ and}\\\\\n\\text{ inferred falsely by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;= \\;{\\SID}_{\\mathrm{lower}}(\\G,\\CC)  \\\\\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ identifiable in }\\CC \\text{ wrt } \\G \\text{ and}\\\\\n\\text{ inferred correctly by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;= \\;p \\cdot (p-1) - {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\\\\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ strictly identifiable in }\\CC \\text{ and}\\\\\n\\text{ inferred falsely by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;\\leq \\;{\\SID}_{\\mathrm{lower}}(\\G,\\CC)  \\\\\n\\# \\left\\{ \\text{interv. distr. that are } \n\\begin{array}{c}\n\\text{ strictly identifiable in }\\CC \\text{ and}\\\\\n\\text{ inferred correctly by }\\CC \\text{ wrt } \\G\n\\end{array}\n\\right\\}\n&\\;\\leq \\;p \\cdot (p-1) - {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\,.\n\\end{aligned}",
    "section": "sec_2_4_1"
   },
   {
    "id": "eq_10",
-   "latex": "\\label{eq:SIDcpdagdag}\n\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{C} \\times \\mathbb{G} &\\rightarrow& \\mathbb{N}\\\\\n(\\CC,\\HH)& \\mapsto &\\# \\{\\,(i,j), i \\neq j\\;|\\;\\text{the interv. distr from $i$ to $j$ is identif. in $\\CC$}\\\\\n&& \\qquad \\qquad \\qquad \\quad \\text{and } \\exists \\lawX \\text{ that is Markov wrt } \\CC_1 \\in \\CC \\text{ such that}\\\\\n&& \\qquad \\qquad \\qquad \\quad p_{\\CC_1}(x_j\\given \\doo(X_i = \\hat x_i)) \\neq p_{\\HH}(x_j\\given \\doo(X_i = \\hat x_i)) \\}\n\\end{array}",
+   "latex": "\\begin{array}{rcl}\n\\mathrm{SID}: \\; \\mathbb{C} \\times \\mathbb{G} &\\rightarrow& \\mathbb{N}\\\\\n(\\CC,\\HH)& \\mapsto &\\# \\{\\,(i,j), i \\neq j\\;|\\;\\text{the interv. distr from $i$ to $j$ is identif. in $\\CC$}\\\\\n&& \\qquad \\qquad \\qquad \\quad \\text{and } \\exists \\lawX \\text{ that is Markov wrt } \\CC_1 \\in \\CC \\text{ such that}\\\\\n&& \\qquad \\qquad \\qquad \\quad p_{\\CC_1}(x_j\\given \\doo(X_i = \\hat x_i)) \\neq p_{\\HH}(x_j\\given \\doo(X_i = \\hat x_i)) \\}\n\\end{array}",
    "section": "sec_2_4_2"
   },
   {
    "id": "eq_11",
-   "latex": "p_{\\G}(x_j \\given \\doo(X_i = \\hat x_i)) &= \\int_{\\text{anc}(j)} \\int_{\\text{non-anc}(j)} p(x_1, \\ldots, x_p \\given \\hat x_i) \\;d\\B{x}_{\\text{non-anc}(j)} \\;d\\B{x}_{\\text{anc}(j)}\\\\\n&\\overset{(\\dagger)}{=} \\int_{\\text{anc}(j)} \\prod_{k \\in \\text{anc}(j)} p(x_k \\given x_{\\text{pa}(k)}) \\;d\\B{x}_{\\text{anc}(j)}\\\\\n&= \\int_{\\text{anc}(j)} \\int_{\\text{non-anc}(j)} p(x_1, \\ldots, x_p) \\;d\\B{x}_{\\text{non-anc}(j)} \\;d\\B{x}_{\\text{anc}(j)}\n= p(x_j)",
+   "latex": "\\begin{aligned}\np_{\\G}(x_j \\given \\doo(X_i = \\hat x_i)) &= \\int_{\\text{anc}(j)} \\int_{\\text{non-anc}(j)} p(x_1, \\ldots, x_p \\given \\hat x_i) \\;d\\B{x}_{\\text{non-anc}(j)} \\;d\\B{x}_{\\text{anc}(j)}\\\\\n&\\overset{(\\dagger)}{=} \\int_{\\text{anc}(j)} \\prod_{k \\in \\text{anc}(j)} p(x_k \\given x_{\\text{pa}(k)}) \\;d\\B{x}_{\\text{anc}(j)}\\\\\n&= \\int_{\\text{anc}(j)} \\int_{\\text{non-anc}(j)} p(x_1, \\ldots, x_p) \\;d\\B{x}_{\\text{non-anc}(j)} \\;d\\B{x}_{\\text{anc}(j)}\n= p(x_j)\n\\end{aligned}",
    "section": "sec_8"
   }
  ],

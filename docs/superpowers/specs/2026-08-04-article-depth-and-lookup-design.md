@@ -38,6 +38,71 @@ Unchanged, and this design does not spend any of them:
 
 ---
 
+## Part 0 — Renderable equations (DONE, not deferred)
+
+The reader's first complaint, measured: **8 of 11 SID equations threw in KaTeX**
+and fell back to printing raw LaTeX. Fixed at extraction, so every consumer of a
+pack benefits, and verified against four further papers.
+
+### Three general LaTeX rules, in `latex_pack.normalize_math`
+
+1. **Strip bookkeeping** — `\label`, `\nonumber`, `\notag`, the counter family
+   (`\addtocounter`, `\setcounter`, `\stepcounter`, `\refstepcounter`),
+   `\the<counter>`, and an `\tag{}` left empty once its argument is gone. KaTeX
+   implements none of it, and one occurrence loses the *whole* equation.
+2. **Collapse blank lines** — our own artefact: `_strip_comments` deletes `%`
+   lines and leaves the holes. Illegal inside LaTeX math anyway, and they end
+   the markdown paragraph, tearing the `$$` block in half.
+3. **Give orphaned alignment markers a home** — an `align`/`eqnarray` *body*
+   keeps the `&` and `\\` that only mean something inside the wrapper this
+   extractor drops, so wrap in `aligned`. The test is whether a marker sits at
+   environment depth 0, not whether the body contains an environment at all —
+   SID's eq_9 opens an array, closes it, and only then uses a top-level `&`.
+
+Applied on the ar5iv rung too: `alttext` is the original LaTeX and carries the
+same hazards.
+
+### Bookkeeping hides one level up
+
+`extract_macros` exported VAE's `\eqnr` = `\addtocounter{equation}{1}\tag{\theequation}`
+verbatim — a pure numbering macro that killed 22 of its 30 equations. Macro
+bodies are stripped by the same rule; one that reduces to nothing exports as
+empty, which is correct, and one with real maths around its bookkeeping keeps
+the maths.
+
+### The empty-pack guard
+
+Adam (arXiv:1412.6980) produced 0 sections, 0 equations, 0 macros and an empty
+title, and `paper2pack` still reported `path=latex`. The fidelity ladder only
+ever descended on a thrown exception, so a rung that *parsed* and yielded
+nothing counted as success. `_require_content` now refuses such a pack: rung 1
+descends to ar5iv, and when ar5iv is also empty (it serves an "Untitled
+Document" stub when its own conversion failed — which is the real story for
+Adam) the result is a success-shaped `empty_extraction` pointing at the PDF
+rung. Without this, P2 would extract concepts from nothing: the TOC-shaped
+garbage the anti-TOC guard catches, arriving a stage earlier and cheaper.
+
+### Measured, five papers
+
+| paper | before | after |
+|---|---|---|
+| SID 1306.1043 | 3/11 (27%) | **11/11** |
+| Batch Normalization 1502.03167 | 0/3 (0%) | **3/3** |
+| GANs 1406.2661 | 2/6 (33%) | **6/6** |
+| Auto-Encoding VB 1312.6114 | 1/30 (3%) | **30/30** |
+| Adam 1412.6980 | 0/0 | refused, `empty_extraction` |
+| **total** | **6/50 (12%)** | **50/50 (100%)** |
+
+Each pack rendered with its own macro table, under the dashboard's exact KaTeX
+options (`strict: "error"`, `throwOnError: true`).
+
+### Still owed
+
+The 24 committed SID pages hold the pre-fix LaTeX copied verbatim. They are
+corrected by the Part 4 re-run, not separately.
+
+---
+
 ## Part 1 — Rich content blocks in P4
 
 ### What changes
@@ -129,10 +194,10 @@ Math. Deliberately the only formatting check:
 
 ### Known trap
 
-`_fold_display_math` collapses a `$$…$$` block into one paragraph, and LaTeX
-array bodies word-count high. Display-math paragraphs must be exempt from the
-ceiling, or every verbatim equation is reported as a wall of text — the third
-appearance of this same fold interacting with the paragraph split.
+LaTeX array bodies word-count high, so display-math paragraphs must be exempt
+from the ceiling or every verbatim equation is reported as a wall of text.
+(The *other* half of this trap — blank lines inside `$$…$$` splitting the block
+in two — is now fixed at source; see Part 0.)
 
 ### Tests
 

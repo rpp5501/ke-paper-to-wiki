@@ -150,3 +150,108 @@ def test_brackets_after_an_ordinary_macro_are_left_alone():
     after any other macro is real content, e.g. an interval."""
     tex = OPT_TEX.replace(r"p(\pa[]X)", r"p(\G[0,1])")
     assert r"\G[0,1]" in latex_to_pack(tex)["equations"][0]["latex"]
+
+
+# --- Renderable math -------------------------------------------------------
+#
+# The pack's LaTeX is copied VERBATIM into pages and handed straight to KaTeX.
+# Measured on arXiv:1306.1043, 8 of 11 equations threw and the reader was shown
+# raw LaTeX instead of maths. Two causes, both general to LaTeX rather than to
+# that paper: \label is cross-reference bookkeeping KaTeX has no command for,
+# and an align/eqnarray BODY keeps the & and \ that only mean something inside
+# the wrapper this extractor drops. A third, blank lines, is our own artefact:
+# _strip_comments deletes % lines and leaves the holes behind, and a blank line
+# is invalid inside LaTeX math anyway -- it also ends the markdown paragraph,
+# tearing the $$ block in half.
+
+from paper_skill.latex_pack import normalize_math
+
+
+def _wrapped(latex):
+    return latex.startswith(r"\begin{aligned}") and latex.endswith(r"\end{aligned}")
+
+
+def test_label_is_stripped():
+    assert normalize_math(r"\label{eq:foo}x = 1") == "x = 1"
+
+
+def test_nonumber_and_notag_are_stripped():
+    assert normalize_math(r"x = 1 \nonumber") == "x = 1"
+    assert normalize_math(r"x = 1 \notag") == "x = 1"
+
+
+def test_align_body_is_wrapped_so_its_ampersands_have_a_home():
+    out = normalize_math(r"a &= b \\ c &= d")
+    assert _wrapped(out)
+    assert "a &= b" in out
+
+
+def test_row_breaks_alone_are_enough_to_need_alignment():
+    r"""A gather/multline body has \\ but no & and is equally unrenderable bare."""
+    assert _wrapped(normalize_math(r"a = b \\ c = d"))
+
+
+def test_an_environment_that_already_owns_its_ampersands_is_left_alone():
+    """array/aligned/cases bodies are already valid; wrapping would nest badly."""
+    out = normalize_math(r"\begin{array}{rcl} a &=& b \\ c &=& d \end{array}")
+    assert not _wrapped(out)
+
+
+def test_an_ampersand_outside_a_nested_environment_still_needs_wrapping():
+    """The failing shape a containment check misses: the body HAS an
+    environment, but the alignment marker sits after it, at top level."""
+    assert _wrapped(normalize_math(
+        r"\left\{ \begin{array}{c} p \\ q \end{array} \right\} &= r"))
+
+
+def test_an_escaped_ampersand_is_not_an_alignment_marker():
+    assert not _wrapped(normalize_math(r"\text{Smith \& Jones} = 1"))
+
+
+def test_a_row_break_inside_an_environment_does_not_trigger_wrapping():
+    assert not _wrapped(normalize_math(
+        r"\begin{cases} a \\ b \end{cases}"))
+
+
+def test_blank_lines_are_collapsed():
+    """Left by _strip_comments; invalid in LaTeX math and fatal to the $$ block."""
+    assert "\n\n" not in normalize_math("a = b \\\\\n\n\n\nc = d")
+
+
+def test_normalizing_twice_changes_nothing():
+    once = normalize_math(r"\label{e}a &= b \\ c &= d")
+    assert normalize_math(once) == once
+
+
+# Bookkeeping hides one level up too. arXiv:1312.6114 (VAE) defines
+#   \newcommand{\eqnr}{\addtocounter{equation}{1}\tag{\theequation}}
+# purely to number its equations. extract_macros exported it faithfully, KaTeX
+# has no counters, and 22 of that paper's 30 equations died on it.
+def test_a_numbering_only_macro_exports_empty():
+    tex = "\n".join([
+        r"\newcommand{\eqnr}{\addtocounter{equation}{1}\tag{\theequation}}",
+        r"\section{S}", r"\begin{equation}", r"x = 1 \eqnr", r"\end{equation}"])
+    assert latex_to_pack(tex)["macros"][r"\eqnr"] == ""
+
+
+def test_a_macro_keeps_the_maths_around_its_bookkeeping():
+    """Dropping the whole body would lose real notation."""
+    tex = "\n".join([
+        r"\newcommand{\myeq}[1]{\addtocounter{equation}{1}#1 = 0}",
+        r"\section{S}", r"\begin{equation}", r"\myeq{y}", r"\end{equation}"])
+    assert latex_to_pack(tex)["macros"][r"\myeq"] == "#1 = 0"
+
+
+def test_an_ordinary_macro_is_untouched():
+    tex = "\n".join([
+        r"\newcommand{\R}{\mathbb{R}}",
+        r"\section{S}", r"\begin{equation}", r"x \in \R", r"\end{equation}"])
+    assert latex_to_pack(tex)["macros"][r"\R"] == r"\mathbb{R}"
+
+
+def test_pack_equations_are_normalized_on_the_way_out():
+    tex = "\n".join([r"\section{S}", r"\begin{align}",
+                     r"\label{eq:x}a &= b \\ c &= d", r"\end{align}"])
+    latex = latex_to_pack(tex)["equations"][0]["latex"]
+    assert r"\label" not in latex
+    assert _wrapped(latex)
