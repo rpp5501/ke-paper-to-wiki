@@ -1,0 +1,62 @@
+concept: _paper
+status: verified
+date: "2026-08-04"
+synthesis: >-
+  Paper-wide terminology for arXiv:1306.1043 (Peters & Buhlmann, Structural
+  Intervention Distance). Terms here hover on every concept page; a concept
+  that defines the same term more precisely overrides this entry.
+glossary:
+  DAG: >-
+    Directed acyclic graph: nodes joined by arrows with no directed cycle. The
+    object SID compares.
+  CPDAG: >-
+    Completed partially directed acyclic graph: represents a whole Markov
+    equivalence class at once, so some edges stay undirected because the data
+    cannot orient them.
+  PDAG: >-
+    Partially directed acyclic graph, allowing both directed and undirected
+    edges. SHD is defined over these, which is why it covers DAGs as a special
+    case.
+  d-separation: >-
+    A purely graphical test for whether conditioning on a set blocks every path
+    between two nodes. Blocks chains and forks at a conditioned node, and opens
+    a collider when the collider or one of its descendants is conditioned on.
+  collider: >-
+    A node with two arrowheads into it on a path. Blocked by default, and opened
+    by conditioning on it or on any of its descendants -- the reverse of every
+    other node's behaviour.
+  Markov: >-
+    A distribution is Markov with respect to a graph when the graph's
+    d-separations imply the distribution's conditional independences. SID scores
+    correctness over the whole class of distributions Markov to the true DAG.
+  intervention distribution: >-
+    The distribution of one variable when another is set by intervention rather
+    than observed, written p(y | do(X = x)). What SID compares, in place of edges.
+  adjustment set: >-
+    A set of variables to condition on so an intervention distribution can be
+    computed from observational data. SID uses the estimated graph's parent set
+    by default.
+  parent set: >-
+    The direct causes of a node in a graph. Always a valid adjustment set in the
+    graph it comes from, which is why SID uses it -- it is cheap and local.
+  mediator: >-
+    A node on a directed path between the intervened node and the target.
+    Adjusting for one, or for its descendants, destroys the effect being
+    measured -- condition (a) of the adjustment criterion.
+  pre-metric: >-
+    Satisfies non-negativity and identity but not symmetry. SID is one: swapping
+    the true and estimated graph can change the value.
+  idempotence: >-
+    Applying an operation twice changes nothing after the first time. Path-matrix
+    squaring reaches this once the closure is complete, which is why a bounded
+    number of squarings suffices.
+  transitive closure: >-
+    The reachability relation: an entry is true when a directed path exists, not
+    just an edge. Computed by repeated squaring of the adjacency matrix.
+  SHD: >-
+    Structural Hamming Distance: counts the variable pairs whose edge type
+    differs between two graphs. The edge-counting baseline SID is contrasted
+    against.
+  Markov equivalence class: >-
+    The set of DAGs implying exactly the same conditional independences, and so
+    indistinguishable from observational data alone. Summarised by a CPDAG.

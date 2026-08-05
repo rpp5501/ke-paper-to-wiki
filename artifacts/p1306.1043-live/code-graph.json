@@ -1,0 +1,120 @@
+{
+ "meta": {
+  "kind": "code",
+  "source": "repo:pgmpy/metrics/sid.py",
+  "generated": "2026-08-04",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "sid",
+   "kind": "function",
+   "label": "sid.py",
+   "source_ref": "sid.py:L1"
+  },
+  {
+   "id": "sid_compute_path_matrix",
+   "kind": "function",
+   "label": "_compute_path_matrix()",
+   "source_ref": "sid.py:L10"
+  },
+  {
+   "id": "sid_reachable_on_non_directed_path",
+   "kind": "function",
+   "label": "_reachable_on_non_directed_path()",
+   "source_ref": "sid.py:L29"
+  },
+  {
+   "id": "sid_sid_matrix",
+   "kind": "function",
+   "label": "_sid_matrix()",
+   "source_ref": "sid.py:L183"
+  },
+  {
+   "id": "sid_sid",
+   "kind": "function",
+   "label": "SID",
+   "source_ref": "sid.py:L256"
+  },
+  {
+   "id": "sid_sid_evaluate",
+   "kind": "function",
+   "label": "._evaluate()",
+   "source_ref": "sid.py:L300"
+  }
+ ],
+ "edges": [
+  {
+   "src": "sid",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_reachable_on_non_directed_path",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_sid",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid",
+   "dst": "sid_sid_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_reachable_on_non_directed_path",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid_compute_path_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_matrix",
+   "dst": "sid_reachable_on_non_directed_path",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid_evaluate",
+   "dst": "sid_sid_matrix",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  },
+  {
+   "src": "sid_sid",
+   "dst": "sid_sid_evaluate",
+   "kind": "calls",
+   "weight": 1.0,
+   "confidence": "extracted",
+   "confidence_score": 1.0
+  }
+ ]
+}

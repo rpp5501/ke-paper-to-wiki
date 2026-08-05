@@ -1,0 +1,242 @@
+[
+ {
+  "concept": "sid-algorithms",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-algorithms",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "sid.py does not exist in this repository (no file found at that path or anywhere else in the codebase)."
+ },
+ {
+  "concept": "sid-algorithms",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_compute_path_matrix",
+  "score": 0.3,
+  "evidence": "shared tokens: []; via definition: ['compute']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "unparseable verdict: No such file exists in this repository — nothing named sid.p"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "unparseable verdict: No file named `sid.py` exists anywhere in this repository.\n\n"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid_sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid_sid_matrix",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid_sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "unparseable verdict: No file named `sid.py` exists anywhere in the repository.\n\nN"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid_sid_matrix",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-dag-cpdag",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ },
+ {
+  "concept": "sid-dag-cpdag",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']",
+  "verdict": "no",
+  "reason": "verifier error: LLMUnavailable"
+ }
+]

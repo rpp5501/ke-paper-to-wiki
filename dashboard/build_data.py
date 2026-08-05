@@ -178,13 +178,26 @@ def _load_pages(pages_dir):
     return pages, stripped
 
 
+# A note under this id carries terminology for the whole paper rather than
+# research about one concept. Terms like "d-separation" or "Markov" belong to
+# the paper, and keying the glossary per concept meant repeating them in every
+# note that used them.
+PAPER_GLOSSARY_ID = "_paper"
+
+
 def _load_notes(wiki_dir, fallback_date):
     notes, glossary, trace = {}, {}, []
+    shared = {}
     if not wiki_dir:
-        return notes, glossary, trace
+        return notes, glossary, trace, shared
     for f in sorted(Path(wiki_dir).glob("*.yaml")):
         note = yaml.safe_load(f.read_text(encoding="utf-8"))
         cid = note.get("concept", f.stem)
+        if cid == PAPER_GLOSSARY_ID:
+            # Terminology only: it is not a concept, so it earns no note entry
+            # and no trace row for a node that does not exist.
+            shared.update(note.get("glossary") or {})
+            continue
         text, _ = strip_images(note.get("synthesis", ""))
         note["synthesis"] = text
         notes[cid] = note
@@ -195,7 +208,7 @@ def _load_notes(wiki_dir, fallback_date):
         trace.append({"nodeId": cid, "phase": "researched",
                       "status": note.get("status", "unknown"),
                       "date": trace_date})
-    return notes, glossary, trace
+    return notes, glossary, trace, shared
 
 
 def _source_dates(plan_graph, repo_dir):
@@ -427,8 +440,13 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  next_steps=None, quiz=None):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir)
-    notes, glossary, trace = _load_notes(
+    notes, glossary, trace, shared_terms = _load_notes(
         wiki_dir, plan_graph["meta"].get("generated", ""))
+    if shared_terms:
+        # Paper-wide terms reach every concept; a concept that defines the same
+        # term keeps its own, more precise sense.
+        glossary = {node["id"]: {**shared_terms, **glossary.get(node["id"], {})}
+                    for node in plan_graph["nodes"]}
     page_owners = {
         _page_key(node["page"]): node["id"]
         for node in plan_graph["nodes"]

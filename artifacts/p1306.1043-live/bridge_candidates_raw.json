@@ -1,0 +1,182 @@
+[
+ {
+  "concept": "sid-algorithms",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-algorithms",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-algorithms",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_compute_path_matrix",
+  "score": 0.3,
+  "evidence": "shared tokens: []; via definition: ['compute']"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-implementation",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-scalability",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid_sid",
+  "score": 0.7,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "symmetrization",
+  "code": "sid_sid_matrix",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid_sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "motivation-and-definition",
+  "code": "sid_sid_matrix",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid_sid",
+  "score": 0.533,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-properties",
+  "code": "sid_sid_matrix",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidshd",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "proof-sidsuper",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-cpdag-dag-cpdag",
+  "code": "sid_sid_matrix",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-dag-cpdag",
+  "code": "sid_sid",
+  "score": 0.45,
+  "evidence": "shared tokens: ['sid']"
+ },
+ {
+  "concept": "sid-dag-cpdag",
+  "code": "sid",
+  "score": 0.4,
+  "evidence": "shared tokens: ['sid']"
+ }
+]
