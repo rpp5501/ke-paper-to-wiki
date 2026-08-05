@@ -62,8 +62,12 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
     # emits into [Â§sec_N] and broke P5 lint. errors="replace" keeps one odd
     # byte from killing a 24-page run.
     for attempt in range(MAX_ATTEMPTS):
+        # The prompt goes on stdin, not in argv: Windows caps a command line at
+        # ~32,767 characters, so a large prompt died with WinError 206 "The
+        # filename or extension is too long" before the model was ever reached.
         proc = subprocess.run(
-            ["claude", "-p", prompt, "--max-turns", str(max_turns)],
+            ["claude", "-p", "--max-turns", str(max_turns)],
+            input=prompt,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
         )

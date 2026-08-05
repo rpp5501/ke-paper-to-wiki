@@ -5,6 +5,12 @@ import requests
 
 _TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
 _ANCHOR = re.compile(r"\[(§(sec_[\w]+)|(eq_\d+)|S\d+)\]")
+# A page written with repo_dir cites the implementation as well as the paper.
+# The anchor rule is about traceability, and [sid.py:L24] is traceable; it is
+# simply not a pack id, so it satisfies "is anchored" without being subject to
+# the dangling-id check above it.
+_CODE_REF = re.compile(r"\[[\w./-]+\.(?:py|ts|tsx|js|rs|go|java|cpp|c|h)"
+                       r"(?::L?\d+(?:-L?\d+)?)?\]")
 _LINK = re.compile(r"\((https?://[^)]+)\)")
 _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
 _FENCED_BLOCK = re.compile(
@@ -87,7 +93,8 @@ def lint_page(page_md: str, pack: dict, check_links=None,
             continue
         body = _fold_multiline(page_md.split(tier, 1)[1].split("## ", 1)[0])
         for para in (p.strip() for p in body.split("\n\n") if p.strip()):
-            if len(para.split()) >= 4 and not _ANCHOR.search(para):
+            if (len(para.split()) >= 4 and not _ANCHOR.search(para)
+                    and not _CODE_REF.search(para)):
                 probs.append(f"unanchored claim in {tier}: {para[:60]}…")
             if any(p.search(para) for p in _NO_CONTENT):
                 probs.append(

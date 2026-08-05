@@ -43,6 +43,30 @@ def test_a_block_with_no_anchor_anywhere_is_still_caught():
                for p in _lint(BLOCK.replace(" [§sec_3]", "")))
 
 
+# Once P4 gets repo_dir, pages cite the implementation as well as the paper --
+# 27 such references across the 24 SID pages. The anchor rule exists so a claim
+# is traceable, and a claim about the code is traceable by pointing at the
+# code; without this, 16 of 26 "unanchored claims" were paragraphs that carried
+# a perfectly good reference of the wrong shape.
+def test_a_code_reference_anchors_a_claim():
+    assert _lint("The loop squares the matrix [sid.py:L24].") == []
+
+
+def test_a_bare_filename_reference_anchors_too():
+    assert _lint("Handled by the helper [sid.py].") == []
+
+
+def test_a_claim_with_no_reference_of_any_kind_is_still_caught():
+    assert any("unanchored" in p
+               for p in _lint("The loop squares the matrix repeatedly."))
+
+
+def test_prose_mentioning_a_module_is_not_an_anchor():
+    """Only a bracketed reference counts; naming a file mid-sentence does not."""
+    assert any("unanchored" in p
+               for p in _lint("The code in sid.py squares the matrix twice."))
+
+
 def test_formatting_is_not_linted():
     """Length, bullets and tables are PAGE_PROMPT's business, not the linter's.
 

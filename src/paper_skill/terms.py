@@ -53,11 +53,36 @@ definition, give the term's plain meaning in this paper's context and nothing
 more -- never invent a claim the paper does not make. Say what the term is,
 then what it is doing here.
 
-TERMS: {terms}
-
-PAGES:
-{pages}
+TERMS AND WHERE THEY ARE USED:
+{evidence}
 """
+
+# Enough to see how a term is used, not so much that the paper is re-sent. The
+# whole corpus was being pasted in for every call: 24 pages for a list of terms
+# whose evidence is a sentence each.
+SNIPPETS_PER_TERM = 3
+SNIPPET_CHARS = 240
+
+
+def _evidence(terms, pages) -> str:
+    """Each term with the few places it actually appears."""
+    out = []
+    for term in terms:
+        found = []
+        for page in pages:
+            start = 0
+            while len(found) < SNIPPETS_PER_TERM:
+                at = page.find(term, start)
+                if at < 0:
+                    break
+                lo = max(0, at - SNIPPET_CHARS // 2)
+                found.append(" ".join(
+                    page[lo:at + SNIPPET_CHARS // 2].split()))
+                start = at + len(term)
+            if len(found) >= SNIPPETS_PER_TERM:
+                break
+        out.append(f"- {term}\n" + "\n".join(f"    …{s}…" for s in found))
+    return "\n".join(out)
 
 
 def harvest_terms(pages, known) -> list[str]:
@@ -81,8 +106,7 @@ def define_terms(terms, pages, spawn=claude_spawn) -> dict[str, str]:
     """One batched call for the whole list; loud on an unusable reply."""
     if not terms:
         return {}
-    reply = spawn(DEFINE_PROMPT.format(terms=", ".join(terms),
-                                       pages="\n\n".join(pages)))
+    reply = spawn(DEFINE_PROMPT.format(evidence=_evidence(terms, pages)))
     parsed = parse_json_reply(reply)
     if not parsed:
         raise LLMUnavailable(

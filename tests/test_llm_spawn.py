@@ -155,3 +155,34 @@ def test_json_survives_fences_and_preamble(raw):
 def test_non_object_replies_are_none_not_exceptions(raw):
     from paper_skill.llm_spawn import parse_json_reply
     assert parse_json_reply(raw) is None
+
+
+# Windows caps a command line at ~32,767 characters, and the prompt was being
+# passed as an argv argument -- so any large prompt died with WinError 206 "The
+# filename or extension is too long". Hit for real by the term-definition
+# stage, but latent for every stage: a paper with big sections would have taken
+# P4 over the same cliff. `claude -p` reads the prompt from stdin, which has no
+# such limit.
+class _CaptureArgv(_FakeRun):
+    def __call__(self, argv, **kwargs):
+        self.argv = argv
+        return super().__call__(argv, **kwargs)
+
+
+def test_the_prompt_goes_by_stdin_not_argv(monkeypatch):
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    claude_spawn("x" * 50_000)
+
+    assert fake.kwargs["input"] == "x" * 50_000
+    assert not any(len(str(a)) > 1000 for a in fake.argv), "prompt still in argv"
+
+
+def test_a_prompt_far_over_the_windows_argv_limit_is_fine(monkeypatch):
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    assert claude_spawn("y" * 200_000) == "ok"
