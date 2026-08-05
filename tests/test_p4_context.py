@@ -94,6 +94,56 @@ def test_the_fallback_does_not_swallow_unrelated_sections():
     assert "[eq_9]" not in ctx["local_slice"]
 
 
+# After merge_bridge the concept graph carries code nodes and `implements`
+# edges. The source behind them is where an algorithm's real detail lives --
+# loop bounds, invariants, why a step terminates -- which is exactly the
+# material a paper states in words and a page is asked to go deeper on.
+BRIDGED_GRAPH = {
+    "meta": {"kind": "bridged", "source": "x", "generated": "x", "version": 1},
+    "nodes": [
+        {"id": "sid", "kind": "concept", "label": "SID", "level": 0,
+         "source_ref": "sec_2"},
+        {"id": "code::path", "kind": "function", "label": "_compute_path_matrix()",
+         "source_ref": "sid.py:L2"},
+    ],
+    "edges": [{"src": "code::path", "dst": "sid", "kind": "implements",
+               "weight": 1.0, "confidence": "extracted", "confidence_score": 1.0}]}
+
+SOURCE = """import numpy as np
+
+
+def _compute_path_matrix(graph):
+    # Each squaring doubles the path length covered.
+    for _ in range(ceil(log2(n))):
+        m = m @ m
+    return m
+"""
+
+
+def test_bridged_code_reaches_the_local_slice(tmp_path):
+    (tmp_path / "sid.py").write_text(SOURCE, encoding="utf-8")
+
+    ctx = assemble_context(NESTED_PACK, BRIDGED_GRAPH, "sid", None,
+                           repo_dir=tmp_path)
+
+    assert "_compute_path_matrix" in ctx["local_slice"]
+    assert "Each squaring doubles" in ctx["local_slice"]
+
+
+def test_code_is_absent_without_a_repo_dir():
+    """Opt-in: a build that does not point at the source is byte-identical."""
+    ctx = assemble_context(NESTED_PACK, BRIDGED_GRAPH, "sid", None)
+
+    assert "_compute_path_matrix()" not in ctx["local_slice"]
+
+
+def test_a_missing_source_file_is_skipped_not_fatal(tmp_path):
+    ctx = assemble_context(NESTED_PACK, BRIDGED_GRAPH, "sid", None,
+                           repo_dir=tmp_path)
+
+    assert "falsely inferred" in ctx["local_slice"]
+
+
 def test_a_section_with_its_own_text_is_unchanged():
     """Byte-for-byte the old behaviour when the section carries its own prose."""
     ctx = assemble_context(PACK, GRAPH, "sdpa", NOTE)

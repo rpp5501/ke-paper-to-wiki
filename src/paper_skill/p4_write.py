@@ -68,7 +68,7 @@ def _page_problems(page: str) -> list[str]:
 
 
 def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
-                home=None, out_dir="pages", workdir=None) -> dict:
+                home=None, out_dir="pages", workdir=None, repo_dir=None) -> dict:
     try:
         import sys
         sys.path.insert(0, str(Path(__file__).resolve().parents[3]
@@ -89,7 +89,8 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
             continue
         note = wiki_get(cid, home=home)
         ctx = assemble_context(pack, graph, cid,
-                               note["note"] if note["status"] == "ok" else None)
+                               note["note"] if note["status"] == "ok" else None,
+                               repo_dir=repo_dir)
         page, problems = "", ["spawn failed"]
         for attempt in range(2):
             try:

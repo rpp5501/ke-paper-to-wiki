@@ -1,5 +1,8 @@
 """Dual-level context assembly (round-2): global for TL;DR/Intuition,
 local for Mechanics/Math. Deterministic, zero tokens."""
+from pathlib import Path
+
+CODE_EXCERPT_LINES = 60
 
 
 def _neighborhood(graph: dict, concept_id: str) -> list[str]:
@@ -24,8 +27,43 @@ def _descendants(sec_id: str, sections: list) -> list:
     return [s for s in sections if str(s["id"]).startswith(prefix)]
 
 
+def _implementations(graph: dict, concept_id: str) -> list[dict]:
+    """Code nodes joined to ``concept_id`` by a confirmed `implements` edge."""
+    nodes = {n["id"]: n for n in graph["nodes"]}
+    out = []
+    for e in graph["edges"]:
+        if e.get("kind") != "implements":
+            continue
+        other = (e["src"] if e["dst"] == concept_id else
+                 e["dst"] if e["src"] == concept_id else None)
+        if other and other in nodes and nodes[other].get("source_ref"):
+            out.append(nodes[other])
+    return out
+
+
+def _excerpt(node: dict, repo_dir) -> str | None:
+    """The source behind a bridged code node, capped and line-numbered.
+
+    A missing file is skipped rather than fatal: the bridge records where code
+    was when it was graphed, and a page should still be written if the repo has
+    moved on since.
+    """
+    ref = str(node.get("source_ref", ""))
+    path, _, line = ref.partition(":L")
+    target = Path(repo_dir) / path
+    if not target.is_file():
+        return None
+    try:
+        lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    start = max(0, int(line) - 1) if line.isdigit() else 0
+    body = "\n".join(lines[start:start + CODE_EXCERPT_LINES])
+    return f'[{ref}] {node["label"]}\n{body}' if body.strip() else None
+
+
 def assemble_context(pack: dict, graph: dict, concept_id: str,
-                     note: dict | None) -> dict:
+                     note: dict | None, repo_dir=None) -> dict:
     node = next(n for n in graph["nodes"] if n["id"] == concept_id)
     sec_id = node.get("source_ref", "")
     section = next((s for s in pack["sections"] if s["id"] == sec_id), None)
@@ -59,6 +97,16 @@ def assemble_context(pack: dict, graph: dict, concept_id: str,
             local_parts.append(child["text"])
     for e in eqs:
         local_parts.append(f'[{e["id"]}] {e["latex"]}')
+    # Bridged source. This is where an algorithm's real detail lives -- loop
+    # bounds, invariants, why a step terminates -- i.e. exactly the material a
+    # paper states in words and a page is asked to go deeper on. Opt-in: with
+    # no repo_dir the slice is byte-identical to a build without it.
+    if repo_dir:
+        for impl in _implementations(graph, concept_id):
+            excerpt = _excerpt(impl, repo_dir)
+            if excerpt:
+                local_parts.append(f"Implementation:\n{excerpt}")
+
     if note:
         local_parts.append(f'Research note: {note["synthesis"]}')
         for r in note.get("resources", []):
