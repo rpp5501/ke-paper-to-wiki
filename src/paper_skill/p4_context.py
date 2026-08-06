@@ -97,6 +97,15 @@ def assemble_context(pack: dict, graph: dict, concept_id: str,
             local_parts.append(child["text"])
     for e in eqs:
         local_parts.append(f'[{e["id"]}] {e["latex"]}')
+    # A results page can only carry the paper's numbers if the numbers reach
+    # the writer. Same section scope as the equations above.
+    section_ids = {sec_id} | {c["id"] for c in children}
+    for t in pack.get("tables", []):
+        if t.get("section") not in section_ids or not t.get("rows"):
+            continue
+        local_parts.append(f'[{t["id"]}] Table: {t.get("caption", "")}'.rstrip())
+        for row in t["rows"]:
+            local_parts.append("  | " + " | ".join(row) + " |")
     # Bridged source. This is where an algorithm's real detail lives -- loop
     # bounds, invariants, why a step terminates -- i.e. exactly the material a
     # paper states in words and a page is asked to go deeper on. Opt-in: with

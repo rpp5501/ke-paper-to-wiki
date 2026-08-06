@@ -7,6 +7,49 @@ from pylatexenc.latexwalker import (LatexWalker, LatexEnvironmentNode,
 
 _SECTION_MACROS = {"section": 1, "subsection": 2, "subsubsection": 3}
 _EQ_ENVS = {"equation", "equation*", "align", "align*", "eqnarray", "displaymath"}
+_TABLE_ENVS = {"table", "table*"}
+
+# A results table is where an empirical paper keeps its evidence. Walking into
+# the environment the way every other environment is walked poured the cells
+# into the surrounding prose as one run-on line, so the numbers technically
+# reached the pack and were unusable by the time they got there.
+_TABULAR = re.compile(
+    r"\\begin\{tabular\*?\}(?:\[[^\]]*\])?(?:\{[^{}]*\})+(.*?)\\end\{tabular\*?\}",
+    re.S)
+_RULE_MACROS = re.compile(
+    r"\\(?:hline|toprule|midrule|bottomrule|addlinespace)\b\s*"
+    # cmidrule and cline carry a column span, and cmidrule an optional (lr)
+    # trim; without the arguments the leftover braces land inside a cell.
+    r"|\\(?:cmidrule|cline)\s*(?:\([^)]*\))?\s*\{[^}]*\}\s*")
+# TeX escapes that are ordinary characters once out of TeX.
+_ESCAPES = ((r"\&", "&"), (r"\%", "%"), (r"\_", "_"), (r"\$", "$"), (r"\#", "#"))
+# Formatting wrappers whose argument is the actual cell content.
+_CELL_WRAPPER = re.compile(
+    r"\\(?:textbf|textit|emph|mathbf|texttt|small|bf)\s*\{([^{}]*)\}")
+_MULTICOLUMN = re.compile(r"\\multicolumn\{[^}]*\}\{[^}]*\}\{([^{}]*)\}")
+
+
+def _unescape(text: str) -> str:
+    for tex_form, plain in _ESCAPES:
+        text = text.replace(tex_form, plain)
+    return text
+
+
+def _cell(raw: str) -> str:
+    text = _MULTICOLUMN.sub(r"\1", raw)
+    text = _CELL_WRAPPER.sub(r"\1", text)
+    text = _RULE_MACROS.sub(" ", text)
+    return " ".join(_unescape(text).split())
+
+
+def _tabular_rows(body: str) -> list[list[str]]:
+    """Rows of cells, dropping rule macros and blank trailing rows."""
+    rows = []
+    for line in re.split(r"\\\\", _RULE_MACROS.sub(" ", body)):
+        cells = [_cell(c) for c in re.split(r"(?<!\\)&", line)]
+        if any(cells):
+            rows.append(cells)
+    return rows
 
 
 def _flatten_inputs(tex: str, resolve_input, depth=0) -> str:
@@ -188,7 +231,7 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
     tex = _strip_comments(_flatten_inputs(main_tex, resolve_input))
     optional_args = _optional_arg_macros(tex)
     nodes, _, _ = LatexWalker(tex).get_latex_nodes()
-    sections, equations = [], []
+    sections, equations, tables = [], [], []
     counters = [0, 0, 0]
     cur_id, buf = None, []
 
@@ -219,6 +262,25 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                                   "latex": normalize_math(normalize_optional_args(
                                       latex.strip(), optional_args)),
                                   "section": cur_id or "sec_0"})
+            elif (isinstance(n, LatexEnvironmentNode)
+                    and n.environmentname in _TABLE_ENVS):
+                raw = tex[n.pos:n.pos + n.len]
+                rows = [row for m in _TABULAR.finditer(raw)
+                        for row in _tabular_rows(m.group(1))]
+                caption = ""
+                at = raw.find("\\caption")
+                if at != -1:
+                    brace = raw.find("{", at)
+                    if brace != -1:
+                        caption = _unescape(_CELL_WRAPPER.sub(
+                            r"\1", _clean(_read_group(raw, brace)[0])))
+                # Emitted even when the body is a graphic rather than a
+                # tabular: the caption alone tells the writer the table exists.
+                tables.append({"id": f"tab_{len(tables) + 1}",
+                               "section": cur_id or "sec_0",
+                               "caption": caption, "rows": rows})
+                # Deliberately not walked -- that is what smeared the cells
+                # across the section prose.
             elif isinstance(n, LatexCharsNode):
                 buf.append(n.chars)
             elif isinstance(n, (LatexEnvironmentNode, LatexGroupNode)):
@@ -230,5 +292,6 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                      "generated": datetime.date.today().isoformat()},
             "extraction": {"path": "latex", "equation_fidelity": "exact"},
             "sections": sections, "equations": equations,
+            "tables": tables,
             "macros": extract_macros(tex),
             "references": [], "figures": []}
