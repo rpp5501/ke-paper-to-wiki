@@ -58,11 +58,23 @@ python -m paper_skill.paper2pack arXiv:1706.03762 -o pack.json
 A paper arrives at whatever fidelity its source allows, so ingestion is a
 ladder rather than a single parser:
 
-| Rung | Source | Module | Equation fidelity |
-|------|--------|--------|-------------------|
-| 1 | LaTeX source | `latex_pack.py` | exact |
-| 2 | ar5iv HTML | `paper2pack.py` | good |
-| 4 | PDF | `paper2pack.py` (PyMuPDF) | lossy |
+| Rung | Source | Module | Equation fidelity | Table fidelity |
+|------|--------|--------|-------------------|----------------|
+| 1 | LaTeX source | `latex_pack.py` | exact | exact |
+| 2 | ar5iv HTML | `paper2pack.py` | good | exact |
+| 4 | PDF | `paper2pack.py` (PyMuPDF) | lossy | none |
+
+Results tables are extracted into `pack["tables"]` as caption + rows, because a
+page that reports what a paper measured can only do so if the numbers reach the
+writer. LaTeX and ar5iv both carry real structure — `tabular` rows, `<tr>`/`<td>`
+— so both are exact.
+
+The PDF rung deliberately does not try, and `extraction.table_fidelity` says so
+rather than leaving the absence ambiguous. PyMuPDF's `find_tables()` was run
+against a real 19-page paper: it reported ordinary prose as a two-cell table and
+returned the genuine results grid with whole columns collapsed into single cells.
+A number sitting against the wrong condition is a fabricated result, which is
+worse than no table at all.
 
 `latex_pack.py` walks TeX with `pylatexenc` — it never regexes over TeX, which
 is the standard way equation extraction silently corrupts.
@@ -125,13 +137,41 @@ into a schema-valid brief for `research-mcp`'s playbook loop.
 ### P4 — `p4_context` + `p4_write`: tiered pages
 
 `p4_context` assembles context at two levels with zero tokens: global context
-for TL;DR and Intuition, local context for Mechanics and Math. `p4_write` then
-does one spawn per concept page against an enforced tier template.
+for TL;DR and Intuition, local context for Mechanics and Math — plus the
+section's equations and any extracted results tables. `p4_write` then does one
+spawn per concept page against the writing contract in
+[`skills/write-paper-tutor/SKILL.md`](skills/write-paper-tutor/SKILL.md), which
+is a single reviewable artifact rather than a prompt buried in Python.
+
+**Pedagogy gates** (`pedagogy.py`) run in the retry loop, so a page that fails
+one is sent back to the writer rather than failing the build:
+
+| Gate | Rule |
+|------|------|
+| Paragraph length | >100 prose words is an error; >60 capped at 10% of paragraphs |
+| Diagram | prose that repeatedly walks the reader along edges must carry a ` ```mermaid ` graph |
+| Results | a page whose own title says results/experiment/evaluation owes the reader the figures |
+
+The diagram gate counts graph relations *and* dataflow language (`sub-layer`,
+`residual connection`, `stack of`, `feeds into`, `followed by`). An earlier
+version was built while looking at one causal paper and scored every page of the
+Transformer build zero — including the encoder-decoder stack — while flagging
+six pages of a backdoor-attack paper on the homonym. It now flags ~45% of the
+SID pages, ~18% of the Transformer pages, and none of either empirical paper.
+
+These live in the retry loop and **not** in `p5_lint` on purpose: every lint
+problem is blocking, which would turn a formatting preference into a build
+failure.
 
 ### P5 — `p5_lint`: deterministic validation
 
 Anchors resolve, every claim is anchored, links are live, Mermaid blocks parse
 (via `scripts/mermaid_parse.mjs`). No model involved.
+
+Mermaid ≥ 11 initialises DOMPurify against a browser DOM, so under bare node the
+parse check reports *skipped* rather than failing — an environment that cannot
+run the check must not report every valid diagram as broken. The real check on a
+diagram is the dashboard, which renders it and falls back to showing the source.
 
 ### P6 — `p6_explorer`: single-file offline explorer
 
@@ -178,11 +218,20 @@ python -m paper_skill.viz review <node> --viz-dir viz/ --pages-dir pages/
 `propose` prints a capped candidate list and **stops** — no params are authored
 until a human confirms the list.
 
-Five self-contained templates ship in `viz_templates/`: attention heatmap,
+Six self-contained templates ship in `viz_templates/`: attention heatmap,
 gradient descent 2D, positional encoding, softmax temperature, vector
-projection. Each is offline HTML with a `{{PARAMS_JSON}}` placeholder; output
-is one HTML per node plus a `viz/manifest.json` sidecar keyed by node id. The
-§5.1 schema is never touched.
+projection, and **DAG adjustment** — a graph with a toggleable adjustment set,
+for causal-inference and Bayes-net papers. It enumerates the paths itself and
+classifies each as causal, blocked, or open, so its verdict is computed rather
+than authored; GUIDELINES.md's faithfulness rule does not survive a canned
+answer. The first five are all transformer- or optimization-shaped, which is why
+a causal paper previously matched nothing and fell through to the bespoke path.
+
+Each is offline HTML with a `{{PARAMS_JSON}}` placeholder; output is one HTML
+per node plus a `viz/manifest.json` sidecar keyed by node id. The §5.1 schema is
+never touched. A template reports its resolved predict-then-reveal bet to the
+host with `postMessage({type: "ke-bet-resolved", correct})`, which is what feeds
+the dashboard's mastery ledger.
 
 `review` is the paperbanana-pattern critic: a **bounded** critique pass, capped
 at `MAX_REVIEWS = 2`, working from a written style guide (`GUIDELINES.md`) that
@@ -190,6 +239,27 @@ the critic must cite, against a fixed rubric-as-checklist (faithfulness,
 conciseness, readability). It can edit `params`, `prompt`, and `caption` — never
 the template HTML, never the page. The packet deliberately omits the rendered
 HTML so the critic reasons about parameters rather than redesigning.
+
+### The writing contract and its benchmark
+
+`skills/write-paper-tutor/SKILL.md` is the page-writing contract. `p4_write`
+composes its prompt from that file, so the rules live in one reviewable artifact
+instead of a string literal. `skillopt-trial/` is an offline benchmark over that
+one file — a locked task manifest, a weighted rubric, hashed evidence, six
+deterministic gates, and a hash-chained `tuning → selection → final-test →
+human-review` ledger. It never invokes a model; it checks recorded scores.
+
+```bash
+cd skillopt-trial
+python validation/validate_skillopt.py policy
+python validation/validate_skillopt.py accept --baseline ... --candidate ... --run-record ...
+```
+
+The rubric weights `visual_explanation` at 15, taken from
+`factual_evidence_accuracy` — which carried 30 while six deterministic gates
+already enforced it. Without that dimension a candidate that drew a diagram on
+every structural page scored exactly the same as one that drew none, so the
+optimizer could never be asked for diagrams.
 
 ### Mermaid mind map (R15.10)
 
@@ -210,9 +280,14 @@ Obsidian.
 A React + zustand + React Flow app under [`dashboard/`](dashboard) — see
 [`dashboard/README.md`](dashboard/README.md) for the full feature list. In
 short: four graph views (`concepts` / `clusters` / `code` / `bridged`), two
-modes (`learn` / `explore`), ELK layout in a worker, KaTeX math, mastery
-tracking with a spaced-review queue, quizzes, source provenance chips, and the
-Visualize tier.
+modes (`learn` / `explore`), ELK layout in a worker, KaTeX math, mermaid
+diagrams, mastery tracking with a spaced-review queue, inline checkpoints,
+source provenance chips, and the Visualize tier.
+
+A ` ```mermaid ` fence in a page is lifted out by `parseContent` as its own
+segment — the same path `derivation`, `algorithm`, and `figure` already take —
+and rendered from a lazily imported bundle, falling back to the diagram source
+if it will not parse.
 
 `dashboard/build_data.py` compiles everything into one static
 `src/data.gen.ts`. Optional inputs are strictly opt-in — omit the flag and the
@@ -220,11 +295,21 @@ bundle is byte-identical to a build without the feature:
 
 ```
 --graph --pack --pages-dir --wiki-dir --hotspots --repo-dir
---viz-dir      # R13 visuals
---next-steps   # R15.1 ideas
---quiz         # R15.2 quiz
---update       # patch an existing bundle in place
+--viz-dir         # R13 visuals
+--next-steps      # R15.1 ideas
+--quiz            # R15.2 quiz
+--learning-path   # reviewed chapter order + checkpoint placement
+--release         # refuse to build unless qualityReport.releasePass
+--update          # patch an existing bundle in place
 ```
+
+`qualityReport` carries the build's own verdict on itself: paragraph
+readability, section and worked-example coverage, unresolved references, and
+**checkpoint density** — at least one checkpoint per 800 prose words and no
+chapter below two. Density feeds `releasePass`, so `--release` refuses a build
+whose retrieval practice is too thin to do anything. Fenced blocks are excluded
+from that word count; otherwise every diagram added would raise the checkpoint
+budget and charge the author for illustrating.
 
 ---
 
@@ -255,9 +340,11 @@ PYTHONPATH="src;../research-mcp/src" python -m pytest tests dashboard/tests -q
 
 ```bash
 cd dashboard && npm test
+python skillopt-trial/validation/validate_skillopt.py policy
 ```
 
-266 Python tests (209 pipeline + 57 `build_data`) and 328 vitest tests.
+527 Python tests (384 pipeline + 122 `build_data` + 21 skillopt gate) and 399
+vitest tests.
 
 The dashboard suite runs in vitest with `environment: "node"` — no jsdom, no
 `@testing-library/react`. Component tests assert against `renderToStaticMarkup`
@@ -276,6 +363,8 @@ src/paper_skill/     pipeline stages, one module per stage
   schemas/           §5.1 JSON schemas
 dashboard/           React dashboard + build_data.py compiler
 skills/visualize/    the opt-in R13 skill definition
+skills/write-paper-tutor/  the page-writing contract p4_write composes from
+skillopt-trial/      offline benchmark + hash-chained ledger for that contract
 scripts/             explorer/viz fixture builders, acceptance gates, Anki export
 fixtures/            small hand-built inputs the tests run against
 artifacts/           built deliverables (aiayn-live and friends)
