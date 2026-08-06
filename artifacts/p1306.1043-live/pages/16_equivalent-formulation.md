@@ -20,6 +20,19 @@ The criterion accepts sets that block confounding while preserving the causal ch
 
 **Worked example:** in the shared graph $H=G+(B\to C)$, estimate $G$ uses $\{A\}$ for source $C$. That set leaves $C\leftarrow B\to D$ open, so condition $(*)$ rejects it for $(C,D)$ without evaluating a density [eq_6].
 
+```mermaid
+graph TD
+  subgraph h["H — estimate G adjusts for {A} only"]
+    A(("A — in the set")) --> B((B))
+    A --> C((C))
+    B -.-> C
+    B -.-> D((D))
+    C --> D
+  end
+```
+
+$B$ is a parent of $C$ in $H$ but is not in $\{A\}$, so the fork $C\leftarrow B\to D$ (dotted) stays open and no density has to be computed to reject the set.
+
 ## Mechanics {#mechanics}
 **From distributions to one candidate set:** for each ordered pair $(i,j)$, SID stops searching over adjustment sets [§sec_2_2].
 

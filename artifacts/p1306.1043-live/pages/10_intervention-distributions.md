@@ -24,6 +24,23 @@ Return to $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$.
 
 For the ordered intervention $C\to D$, $G$ adjusts for $\mathrm{PA}_G(C)=\{A\}$. Estimate $H$ instead adjusts for $\mathrm{PA}_H(C)=\{A,B\}$.
 
+```mermaid
+graph TD
+  subgraph g["Intervene on C in G — adjust for {A}"]
+    gA(("A — adjusted")) --> gB((B))
+    gA --> gC((C))
+    gB --> gD((D))
+    gC --> gD
+  end
+  subgraph h["Same intervention in H — adjust for {A, B}"]
+    hA(("A — adjusted")) --> hB(("B — adjusted"))
+    hA --> hC((C))
+    hB --> hC
+    hB --> hD((D))
+    hC --> hD
+  end
+```
+
 **Worked example:** $B$ is not a descendant of $C$ in true graph $G$. Adding it does not place a mediator or its descendant in the adjustment set, and the set still blocks every non-causal $C$--$D$ path [eq_6]. Both parent adjustments therefore recover the same $p_G(d\mid\mathrm{do}(C=c))$ [§sec_2_3].
 
 ## Mechanics {#mechanics}

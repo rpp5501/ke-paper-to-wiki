@@ -17,6 +17,23 @@ This page bridges *SID Algorithms*, which states the checks, and *Scalability of
 
 Trace the harder direction, $\mathrm{SID}(H,G)$, for the shared graphs $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$.
 
+```mermaid
+graph TD
+  subgraph h["True H — source C has parents {A, B}"]
+    hA((A)) --> hB((B))
+    hA --> hC((C))
+    hB --> hC
+    hB --> hD((D))
+    hC --> hD
+  end
+  subgraph g["Estimate G — source C has parents {A} only"]
+    gA((A)) --> gB((B))
+    gA --> gC((C))
+    gB --> gD((D))
+    gC --> gD
+  end
+```
+
 In `_sid_matrix`, source $C$ has true parents $\{A,B\}$ in $H$ but estimated parents $\{A\}$ in $G$. The fast parent-equality branch therefore cannot skip this source [sid.py:L183-L253].
 
 The path matrix says $C$ reaches $D$. The non-directed-path traversal also exposes the omitted-parent route to $B$. The target loop consequently marks $(C,B)$ and $(C,D)$, while every other source either has matching parents or produces no error [sid.py:L29-L253].

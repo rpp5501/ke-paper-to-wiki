@@ -11,6 +11,22 @@ Any set blocking the right paths can work, and some are smaller. This asks wheth
 
 **Worked example:** for $C\to D$ in the shared true graph, $\{A\}$ is a valid smaller set and $\{A,B\}$ is also valid. The second set adjusts for a safe extra ancestor, illustrating why validity and minimality are different questions [§sec_2_4_5; eq_6].
 
+```mermaid
+graph TD
+  subgraph small["Minimal set {A} — blocks C ← A → B → D"]
+    sA(("A — adjusted")) --> sB((B))
+    sA --> sC((C))
+    sB --> sD((D))
+    sC --> sD
+  end
+  subgraph parents["Parent set {A, B} — also valid, one larger"]
+    pA(("A — adjusted")) --> pB(("B — adjusted"))
+    pA --> pC((C))
+    pB --> pD((D))
+    pC --> pD
+  end
+```
+
 ## Mechanics {#mechanics}
 **Why parent sets are the default:** they are easy to compute and depend only on the neighbourhood of the intervened node — no need to inspect the rest of the graph — which is exactly why they are widely used in practice for adjustment [§sec_2_4_5].
 

@@ -25,6 +25,17 @@ SID must therefore compare against CPDAGs as well as DAGs. Observational causal 
 
 **Worked example:** compare $A\to B\to C$ with $A\to B\leftarrow C$. Conditioning on $B$ blocks the chain but opens the collider, so the same three nodes encode opposite path-blocking behavior [§sec_7].
 
+```mermaid
+graph TD
+  subgraph chain["Chain — conditioning on B closes the path"]
+    cA((A)) --> cB((B)) --> cC((C))
+  end
+  subgraph collider["Collider — conditioning on B opens the path"]
+    kA((A)) --> kB((B))
+    kC((C)) --> kB
+  end
+```
+
 ## Mechanics {#mechanics}
 **Subgraphs and skeletons separate structure from orientation.** $H$ is a subgraph of $G$ when its nodes and edges are subsets of $G$'s. It is proper when it misses at least one edge [§sec_7].
 

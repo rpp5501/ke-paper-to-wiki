@@ -11,6 +11,20 @@ Both algorithms fix one *source* and answer for every target from shared reachab
 
 Algorithm 2 provides that reachability. It uses the same causal structure as linear-Gaussian effects: a real effect requires a directed path.
 
+For source $C$ and target $D$ in $G: A\to B, A\to C, B\to D, C\to D$, the two checks look at two different routes out of $C$: the directed one Algorithm 1 must preserve, and the non-causal one Algorithm 2 must find and block.
+
+```mermaid
+graph TD
+  subgraph g["G — source C, target D"]
+    A((A)) --> B((B))
+    A --> C((C))
+    B --> D((D))
+    C ==> D
+  end
+```
+
+The doubled arrow is the directed path $C\to D$ — the causal channel. The route $C\leftarrow A\to B\to D$ runs backwards out of $C$ through $A$, which is why adjusting for $\mathrm{PA}_G(C)=\{A\}$ closes it.
+
 ## Mechanics {#mechanics}
 **Skip when the parent sets already match:** if the estimated graph gives a source node exactly the same parents as the true graph, that parent set is the true back-door set and is valid for *every* target — the whole source can be skipped without touching any target [sid.py:L183].
 

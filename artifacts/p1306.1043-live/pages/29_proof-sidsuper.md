@@ -21,6 +21,25 @@ The shared pair makes both proof directions concrete. Let $G: A\to B, A\to C, B\
 
 **Worked example:** every parent set in $H$ contains its counterpart in $G$, so the forward direction proves $\mathrm{SID}(G,H)=0$. When the arguments swap, estimate $G$ omits the true $H$-parent $B$ of $C$; the graphical check finds $(C,B)$ and $(C,D)$ [§sec_9; sid.py:L183-L253].
 
+```mermaid
+graph TD
+  subgraph g["G — PA(C) = {A}"]
+    gA((A)) --> gB((B))
+    gA --> gC((C))
+    gB --> gD((D))
+    gC --> gD
+  end
+  subgraph h["H — PA(C) = {A, B} ⊇ {A}"]
+    hA((A)) --> hB((B))
+    hA --> hC((C))
+    hB --> hC
+    hB --> hD((D))
+    hC --> hD
+  end
+```
+
+Containment runs one way only. Reading left to right the estimate gains a parent, which is slack; reading right to left it loses one, which is a hole.
+
 The example is not the proof itself. It is a four-node witness showing why the containment hypothesis is directional and why zero SID does not imply graph equality.
 
 ## Mechanics {#mechanics}

@@ -12,6 +12,27 @@ SID asks whether estimated-parent adjustment returns the true intervention distr
 
 An edge redundant to a valid adjustment set does not break that check. A denser graph can pass every SID pairwise test.
 
+$H=G+(B\to C)$ is the shared example of exactly that: one more edge than $G$, and $\mathrm{SID}(G,H)=0$.
+
+```mermaid
+graph TD
+  subgraph g["True G — 4 edges"]
+    gA((A)) --> gB((B))
+    gA --> gC((C))
+    gB --> gD((D))
+    gC --> gD
+  end
+  subgraph h["Estimate H — 5 edges, SID(G,H) = 0"]
+    hA((A)) --> hB((B))
+    hA --> hC((C))
+    hB -.->|extra| hC
+    hB --> hD((D))
+    hC --> hD
+  end
+```
+
+The dotted edge is the whole difference. SID scores it zero; only an edge count says it is there.
+
 SID is not wrong about causal effects. Yet extra edges make a model harder to interpret and add parameters.
 
 In finite samples, they can increase adjustment-set estimation variance. SID evaluates population distributions, not this difficulty.
