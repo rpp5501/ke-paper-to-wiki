@@ -19,6 +19,23 @@ That can make one reversed edge much more costly than one added edge, even when 
 
 Use $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$.
 
+```mermaid
+graph TD
+  subgraph g["G — the true DAG"]
+    gA((A)) --> gB((B))
+    gA --> gC((C))
+    gB --> gD((D))
+    gC --> gD
+  end
+  subgraph h["H — G plus the edge B→C"]
+    hA((A)) --> hB((B))
+    hA --> hC((C))
+    hB --> hD((D))
+    hC --> hD
+    hB -. added .-> hC
+  end
+```
+
 For $\mathrm{SID}(G,H)$, the estimated parent sets are supersets of the true ones. All 12 ordered pairs pass, so the SID error matrix is empty and $\mathrm{SID}(G,H)=0$ [§sec_2_3; sid.py:L183-L253].
 
 Now swap the arguments. For $\mathrm{SID}(H,G)$, estimate $G$ omits true parent $B$ from $C$'s adjustment set. Exactly two ordered pairs fail: $(C,B)$ and $(C,D)$. Thus $\mathrm{SID}(H,G)=2$ [eq_7; sid.py:L183-L253].

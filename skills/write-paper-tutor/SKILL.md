@@ -56,6 +56,7 @@ Prose that walks the reader along edges makes them rebuild a shape in their head
 - **Required (checked):** a page that repeatedly names directed paths, parent or adjustment sets, colliders, descendants, ancestors, or d-separation must carry at least one ` ```mermaid ` diagram. One diagram satisfies the page however many relations it describes.
 - Draw the specific graph the page argues about — the running example's own nodes, with its own labels — never a generic illustration.
 - Keep it under a dozen nodes. A diagram that needs scrolling has replaced one comprehension problem with another.
+- Open with `graph TD` so causes sit above effects, and put each graph being compared in its own `subgraph` — two of them lay out side by side, which is what makes a comparison readable. Do not write `direction` inside a subgraph; it has no effect and `graph LR` turns a branching graph into a tall column.
 - No diagram when the structure already lives inside a display equation or an `algorithm` block; those show it already.
 - The diagram supplements the anchored prose, it does not replace it. Claims still carry their anchors.
 
