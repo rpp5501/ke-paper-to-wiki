@@ -22,15 +22,19 @@ export type FigureBlock = {
   caption?: string;
   props?: Record<string, unknown>;
 };
+export type MermaidBlock = { type: "mermaid"; code: string };
 export type MarkdownSegment = { type: "markdown"; markdown: string };
 export type ContentSegment =
   | MarkdownSegment
   | AnnotatedEqBlock
   | DerivationBlock
   | AlgorithmBlock
-  | FigureBlock;
+  | FigureBlock
+  | MermaidBlock;
 
-const BLOCK_TYPES = new Set(["annotated-eq", "derivation", "algorithm", "figure"]);
+const BLOCK_TYPES = new Set([
+  "annotated-eq", "derivation", "algorithm", "figure", "mermaid",
+]);
 const FENCE = /^```([\w-]+)\r?\n([\s\S]*?)\r?\n```$/;
 
 export function parseContent(markdown: string): ContentSegment[] {
@@ -93,6 +97,9 @@ function asRecord(kind: string, item: unknown, where: string): Record<string, un
 }
 
 function toBlock(kind: string, body: string): ContentSegment {
+  // Mermaid is diagram source, not a YAML payload; it never reaches the parser.
+  if (kind === "mermaid") return { type: "mermaid", code: body };
+
   let data: Record<string, unknown>;
   try {
     const parsed = parseYaml(body);

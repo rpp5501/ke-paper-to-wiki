@@ -5,7 +5,7 @@ description: Write rigorous, evidence-grounded learning pages from academic-pape
 
 # Write Paper Tutor
 
-Contract version: 1.
+Contract version: 2.
 
 Write one concept page as Markdown. Use only claims supported by the supplied global context, local paper evidence, or code evidence. Never invent a formula, result, citation, implementation bridge, or empirical value.
 
@@ -49,6 +49,16 @@ For each major concept, include at least one worked example, counterexample, pre
 - Prefer a bold lead-in ending with a colon for a paragraph readers may need to find quickly.
 - Do not mechanically chop sentences. Rewrite so each resulting paragraph has a coherent claim.
 
+## Diagrams
+
+Prose that walks the reader along edges makes them rebuild a shape in their head. Draw it instead.
+
+- **Required (checked):** a page that repeatedly names directed paths, parent or adjustment sets, colliders, descendants, ancestors, or d-separation must carry at least one ` ```mermaid ` diagram. One diagram satisfies the page however many relations it describes.
+- Draw the specific graph the page argues about — the running example's own nodes, with its own labels — never a generic illustration.
+- Keep it under a dozen nodes. A diagram that needs scrolling has replaced one comprehension problem with another.
+- No diagram when the structure already lives inside a display equation or an `algorithm` block; those show it already.
+- The diagram supplements the anchored prose, it does not replace it. Claims still carry their anchors.
+
 ## Structured teaching blocks
 
 When the evidence has the corresponding shape, use the supplied exact fenced-YAML syntax:
@@ -59,11 +69,14 @@ When the evidence has the corresponding shape, use the supplied exact fenced-YAM
 
 Do not add decorative blocks. A concept without an algorithm gets no algorithm block.
 
+A page that ends up with no block, no table, and no diagram is a page of unbroken prose. That is correct only when the concept genuinely has no procedure, no stepwise derivation, no compared alternatives, and no structure — check that it is true before settling for it.
+
 ## Final check
 
 Before returning the page, verify:
 
 - Every tier exists and contributes useful content.
+- Structural prose carries its diagram.
 - Equations and source anchors match the supplied evidence exactly.
 - Complexity claims distinguish a worst-case bound from empirical scaling.
 - Parallel conditions are scannable.

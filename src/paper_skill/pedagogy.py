@@ -5,6 +5,26 @@ import re
 _WORD = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)?")
 _LIST_ITEM = re.compile(r"^(?:[-+*]|\d+[.)])\s+(?P<content>.+)$")
 
+_FENCE_BLOCK = re.compile(r"```.*?```", re.S)
+_DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
+_MERMAID_FENCE = re.compile(r"^```mermaid\s*$", re.M)
+# Prose that walks the reader along edges: LaTeX and ASCII arrows alike.
+_ARROW = re.compile(r"\\to\b|\\rightarrow\b|-->|→")
+# Vocabulary that only makes sense about a graph. Deliberately narrow: these
+# name a structural relation, unlike "node" or "edge" which show up in prose
+# about data structures, tables, and neural nets.
+_STRUCTURE_TERM = re.compile(
+    r"\b(parent set|adjustment set|backdoor|collider|v-structure|"
+    r"d-separat\w*|descendant|ancestor|directed path|directed cycle|"
+    r"acyclic|topological order)\b", re.I)
+
+# ponytail: a signal count, not a parse. It asks "does this page walk the
+# reader along edges often enough that a picture would carry it better", and
+# a page can satisfy it with one diagram however many relations it describes.
+# Calibrated against the 24 SID pages (see tests); raise the floor rather than
+# widen the vocabulary if a future paper trips it spuriously.
+DIAGRAM_SIGNAL_FLOOR = 8
+
 
 def prose_word_counts(markdown: str) -> list[int]:
     counts: list[int] = []
@@ -53,6 +73,21 @@ def prose_word_counts(markdown: str) -> list[int]:
     return counts
 
 
+def structural_signals(markdown: str) -> int:
+    """How hard this page leans on relationships a reader has to hold in mind.
+
+    Fenced blocks and display math are excluded: an equation carries its own
+    structure, and an ```algorithm block is already a walkthrough. What counts
+    is prose that describes a shape the reader must assemble from words.
+    """
+    body = _DISPLAY_MATH.sub(" ", _FENCE_BLOCK.sub(" ", markdown))
+    return len(_ARROW.findall(body)) + len(_STRUCTURE_TERM.findall(body))
+
+
+def has_diagram(markdown: str) -> bool:
+    return bool(_MERMAID_FENCE.search(markdown))
+
+
 def pedagogy_problems(markdown: str) -> list[str]:
     counts = prose_word_counts(markdown)
     problems = [
@@ -63,4 +98,9 @@ def pedagogy_problems(markdown: str) -> list[str]:
     if counts and long_count / len(counts) > 0.10:
         problems.append(
             f"{long_count}/{len(counts)} prose paragraphs exceed 60 words")
+    signals = structural_signals(markdown)
+    if signals >= DIAGRAM_SIGNAL_FLOOR and not has_diagram(markdown):
+        problems.append(
+            f"describes structure {signals} times with no ```mermaid diagram "
+            f"(floor {DIAGRAM_SIGNAL_FLOOR})")
     return problems

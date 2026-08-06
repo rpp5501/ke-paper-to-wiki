@@ -6,7 +6,10 @@ from paper_skill.p4_write import (
     annotate_graph,
     write_pages,
 )
-from paper_skill.pedagogy import prose_word_counts
+from paper_skill.pedagogy import (
+    DIAGRAM_SIGNAL_FLOOR, pedagogy_problems, prose_word_counts,
+    structural_signals,
+)
 
 # fixtures repeated verbatim (tasks may execute out of order — no cross-test imports)
 PACK = {"meta": {"source": "arXiv:1706.03762", "title": "AIAYN", "generated": "x"},
@@ -93,6 +96,47 @@ def test_dense_prose_triggers_one_bounded_regeneration(tmp_path):
 
     assert result["done"] == ["sdpa"]
     assert len(calls) == 2
+
+
+def test_live_prompt_carries_the_diagram_rule():
+    """v1 of the contract said nothing about diagrams and the build shipped 24
+    pages with none. The rule has to reach the prompt the writer actually gets,
+    which is WRITING_SKILL — not the unreferenced _LEGACY_PAGE_PROMPT that also
+    mentions mermaid."""
+    from paper_skill.p4_write import PAGE_PROMPT, WRITING_SKILL
+
+    assert "## Diagrams" in WRITING_SKILL
+    assert "```mermaid" in WRITING_SKILL
+    assert "## Diagrams" in PAGE_PROMPT
+
+
+def test_structural_prose_without_a_diagram_is_a_problem():
+    page = ("The parent set of C is a descendant of A, so every directed path "
+            "$A\\to B\\to C$ that a collider blocks needs an adjustment set "
+            "chosen by d-separation from an ancestor of the backdoor path.")
+
+    assert structural_signals(page) >= DIAGRAM_SIGNAL_FLOOR
+    assert any("mermaid" in problem for problem in pedagogy_problems(page))
+
+
+def test_one_diagram_satisfies_the_whole_page():
+    page = ("The parent set of C is a descendant of A, so every directed path "
+            "$A\\to B\\to C$ that a collider blocks needs an adjustment set "
+            "chosen by d-separation from an ancestor of the backdoor path.\n\n"
+            "```mermaid\ngraph TD\n  A --> B --> C\n```\n")
+
+    assert not any("mermaid" in problem for problem in pedagogy_problems(page))
+
+
+def test_equations_and_algorithm_blocks_do_not_demand_a_diagram():
+    """A page whose structure lives inside math or a walkthrough already shows
+    it; only prose the reader must assemble from words should trip the floor."""
+    inside_blocks = ("$$A\\to B\\to C\\to D\\to E$$\n\n"
+                     "```algorithm\nlines:\n  - code: 'walk(A\\to B)'\n"
+                     "    intent: 'follow every directed path'\n```\n")
+
+    assert structural_signals(inside_blocks) == 0
+    assert pedagogy_problems(inside_blocks) == []
 
 
 def test_pedagogy_counts_each_list_item_as_prose():

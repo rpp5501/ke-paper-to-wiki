@@ -1588,6 +1588,32 @@ input:focus-visible,
   font-style: italic;
 }
 
+.mermaid-diagram {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-card);
+  /* A wide graph scrolls inside its own box; the article never scrolls
+     sideways. */
+  overflow-x: auto;
+}
+.mermaid-diagram svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+/* Reserve the box before the async render lands so the text below it does not
+   jump once the SVG arrives. */
+.mermaid-diagram-pending { min-height: 96px; }
+.mermaid-diagram-failed pre {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--fs-small);
+  white-space: pre-wrap;
+}
+
 .math-reveal {
   margin: 16px 0;
   border: 1px solid var(--line);

@@ -7,6 +7,21 @@ import BlockRenderer from "./BlockRenderer";
 import DerivationSteps from "./DerivationSteps";
 import FigurePlaceholder from "./FigurePlaceholder";
 
+describe("MermaidDiagram", () => {
+  it("dispatches a mermaid segment to a diagram figure", () => {
+    const html = renderToStaticMarkup(
+      <BlockRenderer
+        renderMarkdown={(md) => <p>{md}</p>}
+        segment={{ type: "mermaid", code: "graph TD\n  A --> B" }}
+      />,
+    );
+    expect(html).toContain("mermaid-diagram");
+    expect(html).toContain('data-testid="mermaid-diagram"');
+    // The SVG arrives from an effect, so a static render shows the reserved box.
+    expect(html).toContain("mermaid-diagram-pending");
+  });
+});
+
 describe("AnnotatedEquation", () => {
   it("renders equation and one legend row per term", () => {
     const html = renderToStaticMarkup(

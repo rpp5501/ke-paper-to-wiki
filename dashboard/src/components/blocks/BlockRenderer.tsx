@@ -5,6 +5,7 @@ import AlgorithmWalkthrough from "./AlgorithmWalkthrough";
 import AnnotatedEquation from "./AnnotatedEquation";
 import DerivationSteps from "./DerivationSteps";
 import FigurePlaceholder from "./FigurePlaceholder";
+import MermaidDiagram from "./MermaidDiagram";
 
 export default function BlockRenderer({
   expandAll = false,
@@ -26,5 +27,7 @@ export default function BlockRenderer({
       return <AlgorithmWalkthrough block={segment} expandAll={expandAll} />;
     case "figure":
       return <FigurePlaceholder block={segment} />;
+    case "mermaid":
+      return <MermaidDiagram block={segment} />;
   }
 }

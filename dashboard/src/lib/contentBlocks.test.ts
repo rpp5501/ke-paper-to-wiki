@@ -73,6 +73,18 @@ describe("parseContent", () => {
     expect(parseContent(src)).toEqual([{ type: "markdown", markdown: src }]);
   });
 
+  it("lifts a mermaid fence out as diagram source, not YAML", () => {
+    // `A --> B` is valid YAML-ish garbage; the parser must never see it.
+    const src = "before\n\n```mermaid\ngraph TD\n  A[Cause] --> B[Effect]\n```\n\nafter";
+    const segs = parseContent(src);
+
+    expect(segs.map((s) => s.type)).toEqual(["markdown", "mermaid", "markdown"]);
+    expect(segs[1]).toEqual({
+      type: "mermaid",
+      code: "graph TD\n  A[Cause] --> B[Effect]",
+    });
+  });
+
   it("throws on malformed payload", () => {
     expect(() => parseContent("```annotated-eq\nterms: []\n```")).toThrow(/content-block/);
     expect(() => parseContent("```derivation\nsteps: []\n```")).toThrow(/content-block/);
