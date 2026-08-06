@@ -9,39 +9,55 @@
       "timestamp": "2026-08-05T18:00:00Z",
       "skillSha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c",
       "reports": [
-        {"role": "candidate", "path": "validation/fixtures/candidate-tuning.json", "sha256": "303a3cd4680bf74fad467d676a38fac1c94f341dd1ab0ceb08f46261f4f76145"}
+        {
+          "role": "candidate",
+          "path": "validation/fixtures/candidate-tuning.json",
+          "sha256": "0dac061b4eaceea5992bff055b26a1bc94f2417e1f7ed2d4b46d832e5673ecbd"
+        }
       ],
       "previousEventSha256": "0000000000000000000000000000000000000000000000000000000000000000",
-      "eventSha256": "d52f1d31a6c4292a181ef51e4902fad2b2435906970285a861e7b5ba9be9656d"
+      "eventSha256": "6af999b5c57c8422d7aca77ae37ec7ec1e5bf86b8a9ed45ee74dd967645d88db"
     },
     {
       "stage": "selection",
       "timestamp": "2026-08-05T19:00:00Z",
       "skillSha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c",
       "reports": [
-        {"role": "baseline", "path": "validation/fixtures/baseline-selection.json", "sha256": "1b19f2734685572c1c97aa68ee32485010e40bb30d0fdd753e5c3424a055b2e8"},
-        {"role": "candidate", "path": "validation/fixtures/candidate-accepted-selection.json", "sha256": "f712e3906a0a698dd005f5a59efef76f058f4bff68a9e7d095aca31a4739498c"}
+        {
+          "role": "baseline",
+          "path": "validation/fixtures/baseline-selection.json",
+          "sha256": "b8342de98bb831521b10e6d2753908efa319d1744014e25211040d205f9365ca"
+        },
+        {
+          "role": "candidate",
+          "path": "validation/fixtures/candidate-accepted-selection.json",
+          "sha256": "ef22228f501ebf3c2204ed418318da25693edde26323a044cbb773b63074f604"
+        }
       ],
-      "previousEventSha256": "d52f1d31a6c4292a181ef51e4902fad2b2435906970285a861e7b5ba9be9656d",
-      "eventSha256": "0e046e25f6128a14cf1105f1f0368dca7f1f556509c0aece4d4e88c456566eaf"
+      "previousEventSha256": "6af999b5c57c8422d7aca77ae37ec7ec1e5bf86b8a9ed45ee74dd967645d88db",
+      "eventSha256": "606317c3247fea9c971818c4a95bb35a44e21e72c925bf86cfc351666a9c154e"
     },
     {
       "stage": "final-test",
       "timestamp": "2026-08-05T20:00:00Z",
       "skillSha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c",
       "reports": [
-        {"role": "candidate", "path": "validation/fixtures/candidate-final-test.json", "sha256": "3d527fa59e447ef68d89c6cb1527d65e8f91516cc159356af42ada943a2a756f"}
+        {
+          "role": "candidate",
+          "path": "validation/fixtures/candidate-final-test.json",
+          "sha256": "b3a34432698ac2ce209a09eb272e960ae2e484223bd3aa426ec58f60a36c3e04"
+        }
       ],
-      "previousEventSha256": "0e046e25f6128a14cf1105f1f0368dca7f1f556509c0aece4d4e88c456566eaf",
-      "eventSha256": "3d4fac99e3293bf9603071826c23f0c3f92f6dc9243f83423db6874483b8d05d"
+      "previousEventSha256": "606317c3247fea9c971818c4a95bb35a44e21e72c925bf86cfc351666a9c154e",
+      "eventSha256": "72a3978c887f0b055ca4ac28dbee0e1911d78bd6395f982ffcaf757a85c44ee3"
     },
     {
       "stage": "human-review",
       "timestamp": "2026-08-05T21:00:00Z",
       "skillSha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c",
       "reports": [],
-      "previousEventSha256": "3d4fac99e3293bf9603071826c23f0c3f92f6dc9243f83423db6874483b8d05d",
-      "eventSha256": "83ade0db4b1bc8f2fbda982afe0ffa2441a1fd54fa71073543683109de3a01af"
+      "previousEventSha256": "72a3978c887f0b055ca4ac28dbee0e1911d78bd6395f982ffcaf757a85c44ee3",
+      "eventSha256": "a9e71f67e4f7d08cd94f195e255b053da5d5284d71891cc32229cea7506ea680"
     }
   ],
   "review": {

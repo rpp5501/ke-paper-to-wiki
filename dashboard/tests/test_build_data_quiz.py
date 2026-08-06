@@ -200,3 +200,44 @@ def test_update_requires_a_section(tmp_path):
         assert e.code == 2
     else:
         raise AssertionError("expected argparse error")
+
+
+def test_checkpoint_density_is_reported_and_gates_release():
+    """9 items across 20k words, 5 of them in one chapter, used to ship with
+    releasePass=true. Density now has to answer for itself."""
+    from build_data import _checkpoint_density
+
+    pages = {"a": " ".join(["word"] * 4000)}
+    learning = {"chapters": [{"id": "one"}, {"id": "two"}]}
+    thin = [{"id": "q1", "chapterId": "one"}, {"id": "q2", "chapterId": "one"}]
+
+    report = _checkpoint_density(pages, thin, learning)
+    assert report["expectedItems"] == 5          # 4000 words / 800
+    assert report["items"] == 2
+    assert report["thinChapterIds"] == ["two"]   # chapter with no checkpoint
+    assert report["pass"] is False
+
+
+def test_checkpoint_density_passes_when_spaced():
+    from build_data import _checkpoint_density
+
+    pages = {"a": " ".join(["word"] * 1600)}     # expects 2
+    learning = {"chapters": [{"id": "one"}, {"id": "two"}]}
+    spaced = [
+        {"id": "q1", "chapterId": "one"}, {"id": "q2", "chapterId": "one"},
+        {"id": "q3", "chapterId": "two"}, {"id": "q4", "chapterId": "two"},
+    ]
+
+    report = _checkpoint_density(pages, spaced, learning)
+    assert report["thinChapterIds"] == []
+    assert report["pass"] is True
+
+
+def test_absent_quiz_does_not_fail_release():
+    """--quiz is opt-in; a bundle built without it must not be gated on a
+    density it was never asked to have."""
+    from build_data import _content_quality_report
+
+    report = _content_quality_report({"a": "short prose"}, checkpoints=None)
+    assert report["checkpointDensity"] == {}
+    assert report["releasePass"] is True

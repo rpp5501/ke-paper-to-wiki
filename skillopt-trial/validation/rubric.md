@@ -4,10 +4,11 @@ Score each dimension from 0 to 100, then apply its weight.
 
 | Dimension | Weight | Full-credit behavior |
 |---|---:|---|
-| Factual and evidence accuracy | 30% | Every formula, result, assumption, citation, and code bridge is supported and resolves to the supplied paper or repository. |
+| Factual and evidence accuracy | 15% | Every formula, result, assumption, citation, and code bridge is supported and resolves to the supplied paper or repository. |
 | Conceptual depth | 20% | Explains mechanisms, assumptions, failure modes, and consequences rather than restating the source. |
 | Prerequisite clarity | 15% | Introduces required ideas before first use and supplies concise novice refreshers without slowing expert readers. |
 | Worked examples | 15% | Uses a correct, useful worked example, counterexample, prediction, or boundary case tied to the concept. |
+| Visual explanation | 15% | Prose that walks the reader along a structure carries a diagram of the specific example it argues about; the diagram is readable, faithful to the page, and absent where an equation or algorithm block already shows the structure. |
 | Scanability | 10% | One claim per paragraph; parallel cases use bullets; shared comparisons use tables; no prose paragraph exceeds 100 words and no more than 10% exceed 60. |
 | Checkpoint quality | 10% | Includes an application-level check with plausible distractors and targeted remediation grounded in a source passage. |
 
@@ -36,10 +37,11 @@ policy decision.
 ```json
 {
   "weights": {
-    "factual_evidence_accuracy": 30,
+    "factual_evidence_accuracy": 15,
     "conceptual_depth": 20,
     "prerequisite_clarity": 15,
     "worked_examples": 15,
+    "visual_explanation": 15,
     "scanability": 10,
     "checkpoint_quality": 10
   },

@@ -116,8 +116,8 @@ class SkillOptValidationGateTests(unittest.TestCase):
         """A misleading percentage cannot pass beside the machine policy."""
         rubric_text = (VALIDATION_DIR / "rubric.md").read_text(encoding="utf-8")
         altered = rubric_text.replace(
-            "| Factual and evidence accuracy | 30% |",
-            "| Factual and evidence accuracy | 29% |",
+            "| Factual and evidence accuracy | 15% |",
+            "| Factual and evidence accuracy | 14% |",
             1,
         )
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -196,8 +196,14 @@ class SkillOptValidationGateTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 1)
         self.assertIn("final-test must occur after selection", completed.stdout)
 
-    def test_exact_three_point_candidate_with_ledger_is_accepted(self) -> None:
-        """The inclusive +3 boundary passes only with the complete evidence ledger."""
+    def test_accepted_candidate_earns_its_margin_on_visual_explanation(self) -> None:
+        """The accepted fixture passes only with the complete evidence ledger.
+
+        Its margin is deliberately the diagram gap: baseline scores 40 on
+        visual_explanation (contract v1 never mentioned diagrams), candidate 85.
+        Strip that dimension and the remaining improvement is 2.55, below the
+        +3 gate -- which is the point of adding the dimension.
+        """
         completed = self._accept_cli(
             FIXTURES / "baseline-selection.json",
             FIXTURES / "candidate-accepted-selection.json",
@@ -207,14 +213,37 @@ class SkillOptValidationGateTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
         self.assertTrue(payload["accepted"])
-        self.assertEqual(payload["aggregate_improvement"], 3.0)
+        self.assertAlmostEqual(payload["aggregate_improvement"], 9.3, places=6)
+
+    def test_inclusive_three_point_boundary_is_accepted(self) -> None:
+        """+3 exactly still passes; the gate is inclusive."""
+        candidate = json.loads(json.dumps(self.candidate))
+        # Weights sum to 100, so subtracting c from every dimension of every
+        # row lowers the aggregate by exactly c. 9.3 - 6.3 lands on the bound.
+        for row in candidate["rows"]:
+            for dimension in row["scores"]:
+                row["scores"][dimension] -= 6.3
+        record = json.loads(json.dumps(self.run_record))
+        with tempfile.TemporaryDirectory(dir=TRIAL_ROOT) as temporary_directory:
+            candidate_path = Path(temporary_directory) / "candidate.json"
+            candidate_path.write_text(json.dumps(candidate), encoding="utf-8")
+            self._bind_selection_report(record, "candidate", candidate_path)
+            record_path = Path(temporary_directory) / "record.json"
+            record_path.write_text(json.dumps(record), encoding="utf-8")
+            completed = self._accept_cli(
+                FIXTURES / "baseline-selection.json", candidate_path, record_path)
+
+        payload = json.loads(completed.stdout)
+        self.assertAlmostEqual(payload["aggregate_improvement"], 3.0, places=6)
+        self.assertTrue(payload["accepted"], payload)
 
     def test_improvement_below_three_is_a_valid_exit_two_rejection(self) -> None:
         """An otherwise valid +2.9 candidate is rejected, not treated as malformed."""
         candidate = json.loads(json.dumps(self.candidate))
+        # Same arithmetic as the boundary test: 9.3 - 6.4 = 2.9, just under.
         for row in candidate["rows"]:
             for dimension in row["scores"]:
-                row["scores"][dimension] -= 0.1
+                row["scores"][dimension] -= 6.4
         record = json.loads(json.dumps(self.run_record))
         with tempfile.TemporaryDirectory(dir=TRIAL_ROOT) as temporary_directory:
             candidate_path = Path(temporary_directory) / "candidate.json"

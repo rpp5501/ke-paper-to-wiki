@@ -23,11 +23,17 @@ EXPECTED_TASK_MANIFEST_SHA256 = (
     "56e7dcbece4c91b3b3a6296a91b610345afb4e83ff663cf9df465405ec3aaa43"
 )
 EXPECTED_TARGET_SKILL = "skills/write-paper-tutor/SKILL.md"
+# factual_evidence_accuracy carried 30 while six deterministic gates already
+# enforced it, and nothing scored whether the page showed the reader anything.
+# A candidate that drew a diagram on every structural page scored identically
+# to one that drew none, so the optimizer could never be asked for diagrams.
+# Half of factual's weight funds visual_explanation.
 RUBRIC_WEIGHTS = {
-    "factual_evidence_accuracy": 30,
+    "factual_evidence_accuracy": 15,
     "conceptual_depth": 20,
     "prerequisite_clarity": 15,
     "worked_examples": 15,
+    "visual_explanation": 15,
     "scanability": 10,
     "checkpoint_quality": 10,
 }
@@ -36,6 +42,7 @@ RUBRIC_TABLE_DIMENSIONS = {
     "Conceptual depth": "conceptual_depth",
     "Prerequisite clarity": "prerequisite_clarity",
     "Worked examples": "worked_examples",
+    "Visual explanation": "visual_explanation",
     "Scanability": "scanability",
     "Checkpoint quality": "checkpoint_quality",
 }

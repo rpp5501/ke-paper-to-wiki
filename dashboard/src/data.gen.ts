@@ -1491,7 +1491,27 @@ export const KE_DATA = {
     }
    ]
   },
-  "releasePass": true
+  "checkpointDensity": {
+   "words": 21942,
+   "items": 9,
+   "expectedItems": 27,
+   "wordsPerItem": 2438,
+   "perChapter": {
+    "guarantees-and-limits": 1,
+    "how-sid-is-computed": 1,
+    "intervention-machinery": 1,
+    "what-sid-measures": 5,
+    "why-graph-distance-is-not-enough": 1
+   },
+   "thinChapterIds": [
+    "guarantees-and-limits",
+    "how-sid-is-computed",
+    "intervention-machinery",
+    "why-graph-distance-is-not-enough"
+   ],
+   "pass": false
+  },
+  "releasePass": false
  },
  "provenance": {
   "path": "latex",

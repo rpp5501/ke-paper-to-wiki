@@ -8,7 +8,7 @@ import ast
 import json
 import re
 import subprocess
-from collections import defaultdict
+from collections import Counter, defaultdict
 from itertools import islice
 from pathlib import Path
 
@@ -919,8 +919,42 @@ def _prose_paragraphs(markdown):
     return paragraphs
 
 
+# Retrieval practice only does work when it is spaced through the reading. The
+# first SID build carried 9 checkpoints across 20k words -- one per ~2,250 --
+# and put 5 of them in a single chapter, which is a feature that exists rather
+# than one that teaches.
+CHECKPOINT_WORDS_PER_ITEM = 800
+CHECKPOINT_MIN_PER_CHAPTER = 2
+
+
+def _checkpoint_density(pages, quiz_items, learning_path):
+    """Are checkpoints spaced through the reading, or clumped into one chapter?
+
+    Reported, never raised: quiz content follows the same never-break-the-build
+    rule as _load_quiz. It reaches releasePass, so a release build still has to
+    answer for it.
+    """
+    words = sum(len(_WORD.findall(markdown)) for markdown in pages.values())
+    expected = max(1, round(words / CHECKPOINT_WORDS_PER_ITEM))
+    per_chapter = Counter(
+        item.get("chapterId", "") for item in quiz_items if item.get("chapterId"))
+    chapters = [chapter["id"] for chapter in (learning_path or {}).get("chapters", [])]
+    thin = sorted(
+        chapter for chapter in chapters
+        if per_chapter.get(chapter, 0) < CHECKPOINT_MIN_PER_CHAPTER)
+    return {
+        "words": words,
+        "items": len(quiz_items),
+        "expectedItems": expected,
+        "wordsPerItem": round(words / len(quiz_items)) if quiz_items else None,
+        "perChapter": dict(sorted(per_chapter.items())),
+        "thinChapterIds": thin,
+        "pass": len(quiz_items) >= expected and not thin,
+    }
+
+
 def _content_quality_report(pages, coverage=None, known_refs=None,
-                            required_example_ids=None):
+                            required_example_ids=None, checkpoints=None):
     warnings, errors = [], []
     paragraph_rows = []
     duplicate_owners = defaultdict(list)
@@ -1011,6 +1045,7 @@ def _content_quality_report(pages, coverage=None, known_refs=None,
         "contradictoryFormulas": contradictory,
         "conflictingComplexityClaims": conflicting_complexity,
         "workedExampleCoverage": worked_example_coverage,
+        "checkpointDensity": checkpoints or {},
         "releasePass": (not errors
                         and (not paragraph_count
                              or long_count / paragraph_count <= 0.10)
@@ -1019,7 +1054,10 @@ def _content_quality_report(pages, coverage=None, known_refs=None,
                         and not contradictory
                         and not conflicting_complexity
                         and not uncovered_sections
-                        and not missing_example_ids),
+                        and not missing_example_ids
+                        # An absent quiz is a viz-free-style opt-out, not a
+                        # failure; a quiz that is present has to be spaced.
+                        and (not checkpoints or checkpoints.get("pass", True))),
     }
 
 
@@ -1062,7 +1100,9 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
     }
     quality_report = _content_quality_report(
         pages, coverage=coverage, known_refs=known_refs,
-        required_example_ids=_authored_node_ids(graph, pages))
+        required_example_ids=_authored_node_ids(graph, pages),
+        checkpoints=_checkpoint_density(pages, quiz_items, learning)
+        if quiz else None)
     if release and not quality_report["releasePass"]:
         raise ValueError("release build requires qualityReport.releasePass=true")
     notes, glossary, trace, shared_terms = _load_notes(

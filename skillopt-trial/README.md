@@ -51,7 +51,7 @@ match their paper.
 A report's stage fixes its complete row set: `tuning` is SID and Transformer,
 `selection` is backdoor, and `final-test` is privacy. Thus a final-test row
 cannot be submitted as tuning input. Each report records its baseline or
-candidate kind, hashed skill artifact, six 0-100 rubric scores per row, hashed
+candidate kind, hashed skill artifact, seven 0-100 rubric scores per row, hashed
 raw output, automatic rejection flags, and all six deterministic gates. Every
 gate has a `green` value and hashed local evidence; the combined source check
 is consistently named `evidence_citation`.
