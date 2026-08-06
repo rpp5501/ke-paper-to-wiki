@@ -122,9 +122,9 @@ def _spawn_claude(prompt: str) -> str:
     return claude_spawn(prompt, max_turns=3, timeout=600)
 
 
-def _page_problems(page: str) -> list[str]:
+def _page_problems(page: str, cid: str = "") -> list[str]:
     return ([f"missing tier {t}" for t in TIERS if t not in page]
-            + pedagogy_problems(page))
+            + pedagogy_problems(page, cid))
 
 
 def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
@@ -158,7 +158,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break
-            problems = _page_problems(page)
+            problems = _page_problems(page, cid)
             if not problems:
                 break
         if problems:

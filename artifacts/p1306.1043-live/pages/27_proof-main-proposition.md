@@ -18,6 +18,19 @@ For descendants, the proof uses an explicit causal-model witness with a mismatch
 
 **Worked example:** for $(C,D)$ in shared truth $H$, candidate set $\{A\}$ leaves $C\leftarrow B\to D$ open. The graphical criterion rejects the pair, and the proof guarantees a distribution Markov to $H$ on which the corresponding intervention formulas disagree [§sec_8; eq_6].
 
+```mermaid
+graph TD
+  subgraph h["Truth H — candidate set {A} for the pair (C, D)"]
+    A(("A — in the set")) --> B((B))
+    A --> C((C))
+    B -.-> C
+    B -.-> D((D))
+    C --> D
+  end
+```
+
+The dotted fork is the path the criterion rejects on. The proof's job is to show a rejected pair always has a witness distribution behind it, not merely an open path.
+
 ## Mechanics {#mechanics}
 **The proof strategy is double inclusion.** Writing the pair-set from the Definition and the pair-set from the Proposition, the proof shows each is a subset of the other, so they coincide as sets of index pairs $(i,j)$ [§sec_8].
 

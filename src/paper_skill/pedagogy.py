@@ -10,13 +10,25 @@ _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
 _MERMAID_FENCE = re.compile(r"^```mermaid\s*$", re.M)
 # Prose that walks the reader along edges: LaTeX and ASCII arrows alike.
 _ARROW = re.compile(r"\\to\b|\\rightarrow\b|-->|→")
-# Vocabulary that only makes sense about a graph. Deliberately narrow: these
-# name a structural relation, unlike "node" or "edge" which show up in prose
-# about data structures, tables, and neural nets.
+# Relations in a graph. Narrow on purpose: these name a structural relation,
+# unlike "node" or "edge", which show up in prose about data structures and
+# neural nets. "back-door path" and never bare "backdoor" -- in a security
+# paper that word means a planted trojan, and the bare form flagged six pages
+# of the backdoor-attack paper for a homonym.
 _STRUCTURE_TERM = re.compile(
-    r"\b(parent set|adjustment set|backdoor|collider|v-structure|"
+    r"\b(parent set|adjustment set|back-?door path|collider|v-structure|"
     r"d-separat\w*|descendant|ancestor|directed path|directed cycle|"
     r"acyclic|topological order)\b", re.I)
+
+# How parts connect and in what order, in any field. Without this the check
+# was causal-paper-shaped: it scored every page of the Transformer paper zero,
+# including the encoder-decoder stack, which is the page most in need of a
+# picture in that whole build.
+_DATAFLOW_TERM = re.compile(
+    r"\b(sub-?layer|residual connection|encoder|decoder|stacked|stack of|"
+    r"consists of|composed of|feeds? (?:into|forward)|passes? through|"
+    r"followed by|output of (?:each|the)|input to (?:each|the)|"
+    r"in parallel|pipeline|propagate\w* through)\b", re.I)
 
 # ponytail: a signal count, not a parse. It asks "does this page walk the
 # reader along edges often enough that a picture would carry it better", and
@@ -24,6 +36,21 @@ _STRUCTURE_TERM = re.compile(
 # Calibrated against the 24 SID pages (see tests); raise the floor rather than
 # widen the vocabulary if a future paper trips it spuriously.
 DIAGRAM_SIGNAL_FLOOR = 8
+
+# A page that exists to report what the paper measured, by its own title.
+# Matched on the page identity and never on prose: "comparison" and "evaluate"
+# are ordinary words, and matching them in body text flagged the SID
+# terminology page as an experiment.
+_RESULTS_PAGE = re.compile(
+    r"result|experiment|evaluation|simulation|performance|benchmark|"
+    r"ablation|variation", re.I)
+_FIGURE = re.compile(r"\b\d+(?:\.\d+)?\s*%|\b\d+\.\d+\b|\b\d{2,}\b")
+
+# ponytail: counts figures, does not check they are the right ones -- that is
+# the evidence anchor's job. Six is "a couple of conditions with numbers
+# against them", calibrated so results pages carrying their table pass and
+# ones that only describe the outcome in words do not.
+RESULTS_FIGURE_FLOOR = 6
 
 
 def prose_word_counts(markdown: str) -> list[int]:
@@ -81,14 +108,24 @@ def structural_signals(markdown: str) -> int:
     is prose that describes a shape the reader must assemble from words.
     """
     body = _DISPLAY_MATH.sub(" ", _FENCE_BLOCK.sub(" ", markdown))
-    return len(_ARROW.findall(body)) + len(_STRUCTURE_TERM.findall(body))
+    return (len(_ARROW.findall(body))
+            + len(_STRUCTURE_TERM.findall(body))
+            + len(_DATAFLOW_TERM.findall(body)))
 
 
 def has_diagram(markdown: str) -> bool:
     return bool(_MERMAID_FENCE.search(markdown))
 
 
-def pedagogy_problems(markdown: str) -> list[str]:
+def is_results_page(page_id: str) -> bool:
+    return bool(_RESULTS_PAGE.search((page_id or "").replace("-", " ").replace("_", " ")))
+
+
+def figure_count(markdown: str) -> int:
+    return len(_FIGURE.findall(_FENCE_BLOCK.sub(" ", markdown)))
+
+
+def pedagogy_problems(markdown: str, page_id: str = "") -> list[str]:
     counts = prose_word_counts(markdown)
     problems = [
         f"prose paragraph {index} exceeds 100 words ({words})"
@@ -103,4 +140,11 @@ def pedagogy_problems(markdown: str) -> list[str]:
         problems.append(
             f"describes structure {signals} times with no ```mermaid diagram "
             f"(floor {DIAGRAM_SIGNAL_FLOOR})")
+    if is_results_page(page_id):
+        figures = figure_count(markdown)
+        if figures < RESULTS_FIGURE_FLOOR:
+            problems.append(
+                f"reports results but carries only {figures} figures "
+                f"(floor {RESULTS_FIGURE_FLOOR}) — give the reader the "
+                f"numbers, not a description of them")
     return problems

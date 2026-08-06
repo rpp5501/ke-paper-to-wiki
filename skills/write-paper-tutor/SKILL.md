@@ -60,6 +60,16 @@ Prose that walks the reader along edges makes them rebuild a shape in their head
 - No diagram when the structure already lives inside a display equation or an `algorithm` block; those show it already.
 - The diagram supplements the anchored prose, it does not replace it. Claims still carry their anchors.
 
+## Results pages
+
+A page whose subject is what the paper measured — results, experiments, an evaluation, a simulation, an ablation, a benchmark — owes the reader the numbers.
+
+- **Required (checked):** reproduce the actual figures from the supplied evidence, in a table where conditions share comparison axes. "Accuracy improved substantially" is not a result; "62.1% → 91.4% on Census" is.
+- Name the dataset, the metric, and the condition each figure belongs to. A bare number is not self-describing.
+- Give the baseline alongside the headline number. A result with nothing to compare against cannot be judged.
+- Where the paper reports a spread, a range, or a variance, carry it. Dropping it turns a measurement into a claim.
+- If the evidence does not supply the figures, say so plainly rather than describing them in words.
+
 ## Structured teaching blocks
 
 When the evidence has the corresponding shape, use the supplied exact fenced-YAML syntax:

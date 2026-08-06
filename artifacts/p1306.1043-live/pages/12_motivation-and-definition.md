@@ -16,6 +16,27 @@ Interventions are directional: asking about $Y$ after intervening on $X$ differs
 
 Directionality also makes SID asymmetric. Swapping truth and estimate can change the count, which lets SID distinguish estimates that appear equally wrong to SHD.
 
+The build's running pair is the smallest case of that. With $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$, reading the pair one way scores $\mathrm{SID}(G,H)=0$ and the other way $\mathrm{SID}(H,G)=2$ [§sec_2_3; eq_7].
+
+```mermaid
+graph TD
+  subgraph fwd["SID(G, H) = 0 — estimate's parents are supersets"]
+    fA((A)) --> fB((B))
+    fA --> fC((C))
+    fB --> fD((D))
+    fC --> fD
+    fB -.->|added| fC
+  end
+  subgraph rev["SID(H, G) = 2 — estimate drops B from C's parents"]
+    rA((A)) --> rB((B))
+    rA --> rC((C))
+    rB --> rD((D))
+    rC --> rD
+  end
+```
+
+The two graphs never change; only which one is called the truth does. That alone moves the score, which is what an edge count can never do.
+
 **Prediction check:** two estimates can each have SHD one while only the reversal damages intervention predictions. Predict which parent set loses a needed confounder before reading the paper's comparison below [§sec_2_1].
 
 ## Mechanics {#mechanics}
