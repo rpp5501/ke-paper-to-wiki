@@ -102,7 +102,11 @@ def write_viz(
             f"anchor_tier {anchor_tier!r} not one of {ANCHOR_TIERS}")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    html = instantiate_template(template_id, params)
+    # The manifest's `prompt` is the required place-your-bets question, but
+    # templates read it from their params block, so authoring only the
+    # documented field used to leave the bet showing a generic placeholder.
+    # Params still win where they name a prompt of their own.
+    html = instantiate_template(template_id, {"prompt": prompt, **params})
     src = f"{node_id}.html"
     (out_dir / src).write_text(html, encoding="utf-8")
     entry = {
@@ -234,6 +238,12 @@ DEFAULT_K = 4
 MATH_TIER_MARKERS = ("{#the-math}", "## the math")
 
 TEMPLATE_KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
+    # Graph papers first: "adjustment set" and "d-separation" are unambiguous,
+    # and the rest of the catalog is transformer-shaped, so a causal-inference
+    # or Bayes-net paper used to fall through to the expensive bespoke path.
+    ("dag-adjustment",
+     ("adjustment set", "backdoor", "d-separat", "collider",
+      "intervention distribution")),
     ("attention-heatmap", ("attention", "qk", "dot-product")),
     ("softmax-temperature", ("softmax", "temperature", "logit")),
     ("positional-encoding", ("positional", "encoding", "sinusoid")),

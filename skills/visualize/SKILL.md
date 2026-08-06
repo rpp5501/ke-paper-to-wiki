@@ -65,6 +65,17 @@ pattern catalog: `plans/2026-07-17-viz-exemplar-research.md`.
 5. **Surface**: rebuild the dashboard with `build_data.py ... --viz-dir viz`.
    Without the flag the build is untouched — that is the contract.
 
+## Template catalog
+
+`attention-heatmap`, `softmax-temperature`, `positional-encoding`,
+`gradient-descent-2d`, `vector-projection` — transformer and optimization
+shapes. `dag-adjustment` — a graph with a toggleable adjustment set, for
+causal-inference and Bayes-net papers; it enumerates the paths itself, so the
+verdict it shows is computed from the params, never authored.
+
+A paper whose shape is not in this list is the signal to add a template, not
+to reach for the bespoke path for every node.
+
 ## Design rules (pinned, from exemplar research)
 
 Seeded state, never a blank sandbox. Predict-then-reveal wherever there is a

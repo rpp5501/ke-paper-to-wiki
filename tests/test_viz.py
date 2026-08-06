@@ -22,6 +22,7 @@ TEMPLATE_IDS = [
     "positional-encoding",
     "gradient-descent-2d",
     "vector-projection",
+    "dag-adjustment",
 ]
 
 

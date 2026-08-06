@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adjustment set, live</title>
+<style>
+  :root{--bg:#0b1220;--surface:#111a2c;--border:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--accent:#4a7ebb;--warn:#eab308;--good:#4a9b5e;--bad:#b3595e;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:12px;position:relative;}
+  h1{font-size:15px;margin:0 0 6px;}
+  .eq{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:16px;}
+  .node circle{fill:var(--surface);stroke:var(--muted);stroke-width:2;cursor:pointer;}
+  .node.inset circle{stroke:var(--warn);stroke-width:3.5;fill:#2a2410;}
+  .node.src circle{stroke:var(--accent);stroke-width:3.5;}
+  .node.tgt circle{stroke:var(--good);stroke-width:3.5;}
+  .node text{fill:var(--text);font-size:13px;text-anchor:middle;dominant-baseline:central;pointer-events:none;}
+  .node .role{font-size:9px;fill:var(--muted);}
+  .edge{stroke:var(--muted);stroke-width:2;}
+  .edge.openpath{stroke:var(--bad);stroke-width:4;}
+  .edge.causal{stroke:var(--accent);stroke-width:4;}
+  .paths{margin-top:8px;font-size:12px;}
+  .paths li{margin:2px 0;list-style:none;}
+  .paths .blocked{color:var(--muted);}
+  .paths .open{color:var(--bad);}
+  .paths .causal{color:var(--accent);}
+  .tag{display:inline-block;min-width:52px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;}
+  .hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .verdict{font-size:13px;margin-top:8px;min-height:18px;}
+  .verdict .win{color:var(--good);} .verdict .lose{color:var(--warn);}
+  .status{font-size:13px;margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);}
+  .status.valid{border-color:var(--good);} .status.invalid{border-color:var(--bad);}
+  #overlay{position:absolute;inset:0;background:rgba(11,18,32,.94);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center;z-index:2;}
+  #overlay p{font-size:14px;max-width:440px;margin:0;}
+  #overlay button{background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;font-size:13px;cursor:pointer;margin:3px;transition:background 140ms;}
+  #overlay button:hover{background:var(--accent);}
+  #overlay button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+</style>
+</head>
+<body>
+<script id="params" type="application/json">{{PARAMS_JSON}}</script>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <div class="eq">
+    <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+      <mrow>
+        <mi>p</mi><mo>(</mo><mi>y</mi><mo>&#8739;</mo><mi>do</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>)</mo>
+        <mo>=</mo>
+        <munder><mo>&#8721;</mo><mi mathvariant="bold">z</mi></munder>
+        <mi>p</mi><mo>(</mo><mi>y</mi><mo>&#8739;</mo><mi>x</mi><mo>,</mo><mi mathvariant="bold">z</mi><mo>)</mo>
+        <mi>p</mi><mo>(</mo><mi mathvariant="bold">z</mi><mo>)</mo>
+      </mrow>
+    </math>
+  </div>
+  <svg id="viz" width="100%" viewBox="0 0 620 300" role="img" aria-label="directed graph with a toggleable adjustment set"></svg>
+  <div class="status" id="status"></div>
+  <ul class="paths" id="paths"></ul>
+  <div class="hint" id="hint"></div>
+  <div class="verdict" id="verdict"></div>
+  <div id="overlay"><p id="prompt"></p><div id="bets"></div></div>
+</div>
+<script>
+"use strict";
+const P = JSON.parse(document.getElementById("params").textContent);
+const NS = "http://www.w3.org/2000/svg";
+const NODES = P.nodes || [];
+const EDGES = (P.edges || []).map(e => Array.isArray(e) ? {from: e[0], to: e[1]} : e);
+const SRC = P.source, TGT = P.target;
+const byId = {};
+NODES.forEach(n => { byId[n.id] = n; });
+
+let inSet = new Set(P.adjustment || []);
+let revealed = false;
+
+document.getElementById("title").textContent = P.title || "Is this a valid adjustment set?";
+document.getElementById("prompt").textContent = P.prompt || "Place your bet before you reveal.";
+document.getElementById("hint").textContent =
+  "click a node to add or remove it from the adjustment set · "
+  + "blue is the causal channel · red is an open non-causal path";
+
+/* ---- graph primitives -------------------------------------------------- */
+const parentsOf = id => EDGES.filter(e => e.to === id).map(e => e.from);
+const childrenOf = id => EDGES.filter(e => e.from === id).map(e => e.to);
+
+function descendants(id) {
+  const seen = new Set(), stack = [id];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const kid of childrenOf(cur)) {
+      if (!seen.has(kid)) { seen.add(kid); stack.push(kid); }
+    }
+  }
+  return seen;
+}
+
+/* Every simple path over the skeleton. Graphs here are a handful of nodes --
+   the templates are for toy-sized honest examples -- so enumeration is
+   cheaper than reasoning about d-separation symbolically, and it lets the
+   panel show the reader each path by name. */
+function simplePaths(from, to) {
+  const out = [], path = [from], seen = new Set([from]);
+  (function walk(cur) {
+    if (cur === to) { out.push(path.slice()); return; }
+    const nbrs = EDGES
+      .filter(e => e.from === cur || e.to === cur)
+      .map(e => (e.from === cur ? e.to : e.from));
+    for (const nb of nbrs) {
+      if (seen.has(nb)) continue;
+      seen.add(nb); path.push(nb);
+      walk(nb);
+      path.pop(); seen.delete(nb);
+    }
+  })(from);
+  return out;
+}
+
+const isDirected = path => path.every((n, i) =>
+  i === 0 || EDGES.some(e => e.from === path[i - 1] && e.to === n));
+
+/* A collider at position i means both neighbours point into it. */
+function isCollider(path, i) {
+  const prev = path[i - 1], cur = path[i], next = path[i + 1];
+  return EDGES.some(e => e.from === prev && e.to === cur)
+      && EDGES.some(e => e.from === next && e.to === cur);
+}
+
+function pathIsOpen(path, Z) {
+  for (let i = 1; i < path.length - 1; i++) {
+    const node = path[i];
+    if (isCollider(path, i)) {
+      // A collider blocks unless it, or one of its descendants, is conditioned.
+      const opens = Z.has(node) || [...descendants(node)].some(d => Z.has(d));
+      if (!opens) return false;
+    } else if (Z.has(node)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/* The criterion the page states: block every non-causal path, and put no
+   descendant of the source that sits on a causal path into the set. */
+function evaluate(Z) {
+  const paths = simplePaths(SRC, TGT).map(p => {
+    const causal = isDirected(p);
+    return { path: p, causal, open: pathIsOpen(p, Z) };
+  });
+  const openNonCausal = paths.filter(p => !p.causal && p.open);
+  const onCausal = new Set();
+  paths.filter(p => p.causal).forEach(p => p.path.slice(1, -1).forEach(n => onCausal.add(n)));
+  const badDescendants = [...Z].filter(z => onCausal.has(z));
+  return { paths, openNonCausal, badDescendants,
+           valid: openNonCausal.length === 0 && badDescendants.length === 0 };
+}
+
+/* ---- rendering --------------------------------------------------------- */
+const svg = document.getElementById("viz");
+
+function drawEdge(e, cls) {
+  const a = byId[e.from], b = byId[e.to];
+  if (!a || !b) return;
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const r = 22;
+  const x1 = a.x + dx / len * r, y1 = a.y + dy / len * r;
+  const x2 = b.x - dx / len * (r + 7), y2 = b.y - dy / len * (r + 7);
+  const line = document.createElementNS(NS, "line");
+  line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+  line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+  line.setAttribute("class", "edge " + cls);
+  line.setAttribute("marker-end", "url(#arrow)");
+  svg.appendChild(line);
+}
+
+function render() {
+  const Z = revealed ? inSet : new Set();
+  const res = evaluate(inSet);
+  svg.innerHTML = "";
+
+  const defs = document.createElementNS(NS, "defs");
+  defs.innerHTML = '<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" '
+    + 'markerWidth="6" markerHeight="6" orient="auto-start-reverse">'
+    + '<path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/></marker>';
+  svg.appendChild(defs);
+
+  // Highlight edges only once the reader has committed to a bet.
+  const causalEdges = new Set(), openEdges = new Set();
+  if (revealed) {
+    res.paths.filter(p => p.causal).forEach(p => {
+      for (let i = 1; i < p.path.length; i++) causalEdges.add(p.path[i - 1] + ">" + p.path[i]);
+    });
+    res.openNonCausal.forEach(p => {
+      for (let i = 1; i < p.path.length; i++) {
+        openEdges.add(p.path[i - 1] + ">" + p.path[i]);
+        openEdges.add(p.path[i] + ">" + p.path[i - 1]);
+      }
+    });
+  }
+  EDGES.forEach(e => {
+    const key = e.from + ">" + e.to;
+    drawEdge(e, causalEdges.has(key) ? "causal" : (openEdges.has(key) ? "openpath" : ""));
+  });
+
+  NODES.forEach(n => {
+    const g = document.createElementNS(NS, "g");
+    let cls = "node";
+    if (inSet.has(n.id)) cls += " inset";
+    if (n.id === SRC) cls += " src";
+    if (n.id === TGT) cls += " tgt";
+    g.setAttribute("class", cls);
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", n.x); c.setAttribute("cy", n.y); c.setAttribute("r", 22);
+    g.appendChild(c);
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", n.x); t.setAttribute("y", n.y);
+    t.textContent = n.label || n.id;
+    g.appendChild(t);
+    const role = n.id === SRC ? "source" : (n.id === TGT ? "target" : (inSet.has(n.id) ? "in Z" : ""));
+    if (role) {
+      const rt = document.createElementNS(NS, "text");
+      rt.setAttribute("x", n.x); rt.setAttribute("y", n.y + 34);
+      rt.setAttribute("class", "role"); rt.textContent = role;
+      g.appendChild(rt);
+    }
+    g.addEventListener("click", () => {
+      if (n.id === SRC || n.id === TGT) return;
+      if (inSet.has(n.id)) inSet.delete(n.id); else inSet.add(n.id);
+      render();
+    });
+    svg.appendChild(g);
+  });
+
+  const status = document.getElementById("status");
+  const setText = inSet.size ? "{" + [...inSet].join(", ") + "}" : "{ }";
+  if (!revealed) {
+    status.className = "status";
+    status.textContent = "Adjustment set Z = " + setText + " — verdict hidden until you bet.";
+  } else {
+    status.className = "status " + (res.valid ? "valid" : "invalid");
+    status.textContent = res.valid
+      ? "Z = " + setText + " is a valid adjustment set for " + SRC + " → " + TGT + "."
+      : "Z = " + setText + " is NOT valid: "
+        + (res.openNonCausal.length ? res.openNonCausal.length + " non-causal path(s) still open" : "")
+        + (res.openNonCausal.length && res.badDescendants.length ? "; " : "")
+        + (res.badDescendants.length ? "conditions on " + res.badDescendants.join(", ") + " on the causal path" : "")
+        + ".";
+  }
+
+  const list = document.getElementById("paths");
+  list.innerHTML = "";
+  if (revealed) {
+    res.paths.forEach(p => {
+      const li = document.createElement("li");
+      const kind = p.causal ? "causal" : (p.open ? "open" : "blocked");
+      li.className = kind;
+      li.innerHTML = '<span class="tag">' + kind + "</span> " + p.path.join(" — ");
+      list.appendChild(li);
+    });
+  }
+}
+
+/* ---- predict-then-reveal ----------------------------------------------- */
+const bets = document.getElementById("bets");
+const options = P.betOptions || ["Valid", "Not valid"];
+const correct = P.betCorrect != null ? P.betCorrect : 0;
+options.forEach((opt, i) => {
+  const btn = document.createElement("button");
+  btn.textContent = opt;
+  btn.addEventListener("click", () => {
+    revealed = true;
+    document.getElementById("overlay").style.display = "none";
+    render();
+    const v = document.getElementById("verdict");
+    const reveal = P.betReveal || "Toggle a node to see which paths open and close.";
+    v.innerHTML = i === correct
+      ? '<span class="win">You bet “' + opt + '” — correct.</span> ' + reveal
+      : '<span class="lose">You bet “' + opt + '” — actually: “'
+        + options[correct] + '”.</span> ' + reveal;
+    // R16.A1 — report the resolved bet so the drawer can credit mastery.
+    if (window.parent !== window) {
+      window.parent.postMessage({type: "ke-bet-resolved", correct: i === correct}, "*");
+    }
+  });
+  bets.appendChild(btn);
+});
+
+render();
+</script>
+</body>
+</html>

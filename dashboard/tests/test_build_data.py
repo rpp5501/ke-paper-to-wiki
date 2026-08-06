@@ -1509,6 +1509,7 @@ def test_sid_production_regeneration_matches_checked_in_bundle():
         next_steps=SID_ARTIFACT / "ideas.yaml",
         quiz=SID_ARTIFACT / "quiz.json",
         learning_path=SID_ARTIFACT / "learning-path.json",
+        viz_dir=SID_ARTIFACT / "viz",
         release=True,
     )
     committed = parse_data_ts(COMMITTED_DATA.read_text(encoding="utf-8"))

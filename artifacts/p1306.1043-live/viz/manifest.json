@@ -1,0 +1,76 @@
+{
+  "equivalent-formulation": {
+    "kind": "template",
+    "template_id": "dag-adjustment",
+    "src": "equivalent-formulation.html",
+    "title": "Adjustment sets in the running four-node graph",
+    "caption": "Toggle nodes in and out of Z. The panel re-derives which paths stay open, so the graphical criterion settles the question without any density.",
+    "prompt": "Estimate G offers Z = {A} for the pair (C, D) in the true graph H. Valid or not?",
+    "page": "16_equivalent-formulation.md",
+    "page_sha256": "37499ec0f9db7a7f7817449a8d8a0764e105e84cf6d7c6f9552936d3fdc9d76d",
+    "generated": "2026-08-06",
+    "anchor_tier": "after-intuition",
+    "params": {
+      "title": "Is Z = {A} a valid adjustment set for (C, D)?",
+      "source": "C",
+      "target": "D",
+      "adjustment": [
+        "A"
+      ],
+      "nodes": [
+        {
+          "id": "A",
+          "label": "A",
+          "x": 310,
+          "y": 50
+        },
+        {
+          "id": "B",
+          "label": "B",
+          "x": 170,
+          "y": 150
+        },
+        {
+          "id": "C",
+          "label": "C",
+          "x": 450,
+          "y": 150
+        },
+        {
+          "id": "D",
+          "label": "D",
+          "x": 310,
+          "y": 250
+        }
+      ],
+      "edges": [
+        [
+          "A",
+          "B"
+        ],
+        [
+          "A",
+          "C"
+        ],
+        [
+          "B",
+          "D"
+        ],
+        [
+          "C",
+          "D"
+        ],
+        [
+          "B",
+          "C"
+        ]
+      ],
+      "betOptions": [
+        "Not valid — a non-causal path stays open",
+        "Valid — A closes everything that matters"
+      ],
+      "betCorrect": 0,
+      "betReveal": "B is a parent of C in H but is not in Z, so the fork C ← B → D stays open. Click B to add it and the path closes."
+    }
+  }
+}
