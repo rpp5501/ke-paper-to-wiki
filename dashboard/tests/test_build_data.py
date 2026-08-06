@@ -1509,19 +1509,17 @@ def test_sid_production_regeneration_matches_checked_in_bundle():
         next_steps=SID_ARTIFACT / "ideas.yaml",
         quiz=SID_ARTIFACT / "quiz.json",
         learning_path=SID_ARTIFACT / "learning-path.json",
+        release=True,
     )
     committed = parse_data_ts(COMMITTED_DATA.read_text(encoding="utf-8"))
 
     assert _stable_generated_bundle(generated) == _stable_generated_bundle(committed)
 
 
-def test_sid_bundle_currently_fails_the_checkpoint_density_floor():
-    """release=True used to pass here, on an artifact carrying one checkpoint
-    per ~2,400 words with five of nine in a single chapter. The floor now says
-    so out loud. This test is the ledger of that debt: when the quiz is written
-    up to the floor it will fail, and the assertions below become release=True
-    again on the test above.
-    """
+def test_sid_bundle_meets_the_checkpoint_density_floor():
+    """The debt this replaces: 9 checkpoints over ~22k words, five of them in
+    one chapter, shipping with releasePass=true. Keep the floor honest here so
+    a future quiz edit cannot quietly thin it out again."""
     graph = json.loads(
         (SID_ARTIFACT / "bridged-graph.json").read_text(encoding="utf-8"))
     pack = json.loads((SID_ARTIFACT / "pack.json").read_text(encoding="utf-8"))
@@ -1536,11 +1534,9 @@ def test_sid_bundle_currently_fails_the_checkpoint_density_floor():
     )
     density = bundle["qualityReport"]["checkpointDensity"]
 
-    assert density["items"] < density["expectedItems"], (
-        "quiz now meets the density floor -- restore release=True above and "
-        "delete this test")
-    assert density["thinChapterIds"], "every chapter now has >=2 checkpoints"
-    assert bundle["qualityReport"]["releasePass"] is False
+    assert density["items"] >= density["expectedItems"]
+    assert density["thinChapterIds"] == []
+    assert density["pass"] is True
 
 
 def test_sid_pages_have_honest_worked_example_evidence_for_every_concept():

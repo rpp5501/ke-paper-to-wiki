@@ -689,7 +689,10 @@ export const KE_DATA = {
     "foundationConceptIds": [],
     "advancedConceptIds": [],
     "checkpointIds": [
-     "shd-graph-class"
+     "shd-graph-class",
+     "superset-parents-are-safe",
+     "why-parent-adjustment-is-fixed",
+     "which-shd-one-error-hurts"
     ],
     "estimatedCoreMinutes": 7,
     "estimatedFullMinutes": 11
@@ -711,7 +714,11 @@ export const KE_DATA = {
     ],
     "advancedConceptIds": [],
     "checkpointIds": [
-     "adjustment-set-default-choice"
+     "adjustment-set-default-choice",
+     "chain-versus-collider",
+     "cpdag-undirected-edge",
+     "conditioning-versus-intervening",
+     "intervention-leaves-outcome-variance"
     ],
     "estimatedCoreMinutes": 8,
     "estimatedFullMinutes": 15
@@ -738,7 +745,8 @@ export const KE_DATA = {
      "running-dag-pair-count",
      "equivalent-formulation-why",
      "sid-is-not-a-metric",
-     "symmetrization-motivating-case"
+     "symmetrization-motivating-case",
+     "extra-edges-need-their-own-number"
     ],
     "estimatedCoreMinutes": 8,
     "estimatedFullMinutes": 18
@@ -758,7 +766,10 @@ export const KE_DATA = {
      "sid-algorithms"
     ],
     "checkpointIds": [
-     "complexity-bound-vs-observation"
+     "complexity-bound-vs-observation",
+     "skip-when-parents-match",
+     "why-not-generic-d-separation",
+     "two-matrices-two-conditions"
     ],
     "estimatedCoreMinutes": 7,
     "estimatedFullMinutes": 14
@@ -788,7 +799,11 @@ export const KE_DATA = {
      "multiple-interventions-extension"
     ],
     "checkpointIds": [
-     "cpdag-bound-interpretation"
+     "cpdag-bound-interpretation",
+     "containment-is-directional",
+     "one-edit-bounded-damage",
+     "sid-tracks-wrong-effect-count",
+     "unidentifiable-pairs-are-excluded"
     ],
     "estimatedCoreMinutes": 7,
     "estimatedFullMinutes": 17
@@ -1492,26 +1507,21 @@ export const KE_DATA = {
    ]
   },
   "checkpointDensity": {
-   "words": 22475,
-   "items": 9,
-   "expectedItems": 28,
-   "wordsPerItem": 2497,
+   "words": 16888,
+   "items": 24,
+   "expectedItems": 21,
+   "wordsPerItem": 704,
    "perChapter": {
-    "guarantees-and-limits": 1,
-    "how-sid-is-computed": 1,
-    "intervention-machinery": 1,
-    "what-sid-measures": 5,
-    "why-graph-distance-is-not-enough": 1
+    "guarantees-and-limits": 5,
+    "how-sid-is-computed": 4,
+    "intervention-machinery": 5,
+    "what-sid-measures": 6,
+    "why-graph-distance-is-not-enough": 4
    },
-   "thinChapterIds": [
-    "guarantees-and-limits",
-    "how-sid-is-computed",
-    "intervention-machinery",
-    "why-graph-distance-is-not-enough"
-   ],
-   "pass": false
+   "thinChapterIds": [],
+   "pass": true
   },
-  "releasePass": false
+  "releasePass": true
  },
  "provenance": {
   "path": "latex",
@@ -3010,6 +3020,441 @@ export const KE_DATA = {
    "correct": 0,
    "sourceRef": "#mechanics",
    "sectionRef": "sec_2_4_1"
+  },
+  {
+   "id": "superset-parents-are-safe",
+   "nodeId": "graph-comparison-problem",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "The running estimate $H$ holds every edge of the true graph $G$ plus the extra edge $B\\to C$. Why does the page call $H$'s parent sets safe for $G$?",
+   "options": [
+    {
+     "text": "Each is a superset of $G$'s parent set, and adjusting for extra ancestors does not break the calculation",
+     "explain": "Yes. $G\\subseteq H$ makes every $H$ parent set a superset adjustment set, which is exactly the containment the zero-SID proof needs."
+    },
+    {
+     "text": "The two graphs have the same skeleton",
+     "explain": "No. $H$ carries an edge $G$ does not, so the skeletons differ by that pair."
+    },
+    {
+     "text": "An SHD of one is below the threshold at which adjustment stops being valid",
+     "explain": "No. There is no such threshold; SHD does not bound adjustment validity at all, which is the whole reason SID exists."
+    },
+    {
+     "text": "The extra edge is undirected, so it contributes no parent",
+     "explain": "No. $B\\to C$ is directed, and it is precisely what adds $B$ to $C$'s parent set in $H$."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_2_3"
+  },
+  {
+   "id": "why-parent-adjustment-is-fixed",
+   "nodeId": "motivation-and-definition",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "SID fixes one prediction procedure — parent adjustment. What does fixing it buy?",
+   "options": [
+    {
+     "text": "It makes SID computable from graph structure alone, given Markovianity to the true DAG",
+     "explain": "Correct. Without a fixed procedure the comparison would depend on which adjustment set a reader happened to pick."
+    },
+    {
+     "text": "It guarantees the smallest adjustment set for every pair",
+     "explain": "No. Minimal sets are a separate design choice the paper studies on its own; parents are often not minimal."
+    },
+    {
+     "text": "It makes SID symmetric in its two arguments",
+     "explain": "No. SID stays asymmetric — swapping truth and estimate can change the count."
+    },
+    {
+     "text": "It removes the need to know the true graph",
+     "explain": "No. Correctness is still defined against the true graph's intervention distributions."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_1"
+  },
+  {
+   "id": "which-shd-one-error-hurts",
+   "nodeId": "motivation-and-definition",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "prediction",
+   "placement": "after-intuition",
+   "prompt": "Two estimates each sit at SHD one: one adds an edge, one reverses an edge. Predict which damages intervention predictions.",
+   "options": [
+    {
+     "text": "The reversal, because the intervened node loses the parent it needed to block confounding",
+     "explain": "Right. The paper reports eight erroneous predictions for the reversal, while the added edge costs nothing."
+    },
+    {
+     "text": "The added edge, because it introduces an extra parameter to estimate",
+     "explain": "No. The extra adjustment variable is conditionally irrelevant given the true parents, so every pair stays correct."
+    },
+    {
+     "text": "Both, equally — one edge of damage each",
+     "explain": "No. That is exactly SHD's verdict, and the divergence from it is what motivates SID."
+    },
+    {
+     "text": "Neither, since SHD one is a single local change",
+     "explain": "No. A local edit can have global consequences; that asymmetry is the point of the example."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_1"
+  },
+  {
+   "id": "chain-versus-collider",
+   "nodeId": "dag-terminology",
+   "chapterId": "intervention-machinery",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "Compare $A\\to B\\to C$ with $A\\to B\\leftarrow C$. What does conditioning on $B$ do?",
+   "options": [
+    {
+     "text": "Closes the chain and opens the collider",
+     "explain": "Correct, and it is why the same three nodes encode opposite path-blocking behaviour."
+    },
+    {
+     "text": "Closes both paths",
+     "explain": "No. A collider is closed by default and conditioning on it opens the path."
+    },
+    {
+     "text": "Opens both paths",
+     "explain": "No. A chain closes when you condition on its middle node."
+    },
+    {
+     "text": "Opens the chain and closes the collider",
+     "explain": "No — this is the two cases the wrong way round."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_7"
+  },
+  {
+   "id": "cpdag-undirected-edge",
+   "nodeId": "dag-terminology",
+   "chapterId": "intervention-machinery",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "An edge in a CPDAG is left undirected. What does that record?",
+   "options": [
+    {
+     "text": "Members of the Markov equivalence class disagree about its orientation",
+     "explain": "Yes. A CPDAG directs an edge only where every member of the class agrees."
+    },
+    {
+     "text": "The edge is confounded by an unobserved common cause",
+     "explain": "No. That is what a bidirected edge marks in an ADMG, a different object."
+    },
+    {
+     "text": "The orientation is unknown because of missing data",
+     "explain": "No. The ambiguity is structural: observational data cannot distinguish Markov-equivalent DAGs however much of it you have."
+    },
+    {
+     "text": "The edge may be deleted without changing the class",
+     "explain": "No. The edge is present in every member; only its direction varies."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_7"
+  },
+  {
+   "id": "conditioning-versus-intervening",
+   "nodeId": "intervention-distributions",
+   "chapterId": "intervention-machinery",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "When do conditioning on $X=x$ and setting $X$ to $x$ give the same answer for $Y$?",
+   "options": [
+    {
+     "text": "When $X$ has no confounded relationship with $Y$",
+     "explain": "Correct. Confounding is exactly what makes the observed association differ from the effect of acting."
+    },
+    {
+     "text": "Whenever the graph is acyclic",
+     "explain": "No. Acyclicity is assumed throughout and does not remove confounding."
+    },
+    {
+     "text": "Whenever the distribution is Gaussian",
+     "explain": "No. The gap is structural, not distributional; a linear Gaussian SEM can be badly confounded."
+    },
+    {
+     "text": "Whenever $X$ and $Y$ are marginally independent",
+     "explain": "No. Marginal independence can coexist with a real effect that a second path cancels."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_1_2"
+  },
+  {
+   "id": "intervention-leaves-outcome-variance",
+   "nodeId": "linear-gaussian-sem-effects",
+   "chapterId": "intervention-machinery",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "In a linear Gaussian SEM you intervene on $X$. What happens to $Y$'s variance?",
+   "options": [
+    {
+     "text": "It is unchanged — the intervention replaces only $X$'s own noise source",
+     "explain": "Right. The intervention shifts downstream means proportionally while leaving every other mechanism, and so the variance, intact."
+    },
+    {
+     "text": "It collapses to zero, because $X$ is now fixed",
+     "explain": "No. Fixing $X$ removes $X$'s noise, not the noise of every variable downstream of it."
+    },
+    {
+     "text": "It scales with the value $X$ is set to",
+     "explain": "No. The model is linear with additive noise; the set value moves means, not spreads."
+    },
+    {
+     "text": "It becomes the covariance between $X$ and $Y$",
+     "explain": "No. A variance and a covariance are different quantities, and the intervention does not equate them."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_11"
+  },
+  {
+   "id": "extra-edges-need-their-own-number",
+   "nodeId": "penalizing-additional-edges",
+   "chapterId": "what-sid-measures",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "An estimate scores $\\mathrm{SID}=0$ but carries strictly more edges than the truth. What does the paper propose?",
+   "options": [
+    {
+     "text": "Report a separate added-edge count beside SID, because SID scores effects and not parsimony",
+     "explain": "Correct. The two numbers are orthogonal, and the edge count serves readers who value parsimony independently."
+    },
+    {
+     "text": "Treat SID zero as proof the graphs are identical",
+     "explain": "No. Zero SID means every estimated adjustment set stays valid, which a strict superset can achieve."
+    },
+    {
+     "text": "Fall back to SHD, since SID has failed here",
+     "explain": "No. SID has not failed; it answered the causal question correctly and a different question needs a different number."
+    },
+    {
+     "text": "Divide SID by the edge count to penalise density",
+     "explain": "No. The paper keeps the measures separate rather than blending them into one score."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_4_3"
+  },
+  {
+   "id": "skip-when-parents-match",
+   "nodeId": "sid-algorithms",
+   "chapterId": "how-sid-is-computed",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "The estimate gives a source node exactly the same parents as the true graph. What may the algorithm do?",
+   "options": [
+    {
+     "text": "Skip that whole source — the true back-door set is valid for every target",
+     "explain": "Correct, and it is a per-source skip, not a per-pair one, which is where the saving comes from."
+    },
+    {
+     "text": "Skip only the pairs whose target is a child of that source",
+     "explain": "No. Matching parents make the set valid for every target, not a subset of them."
+    },
+    {
+     "text": "Skip the check only when the source has no parents at all",
+     "explain": "No. The condition is that the parent sets agree, which an empty set satisfies but does not require."
+    },
+    {
+     "text": "Nothing — each ordered pair must still be checked separately",
+     "explain": "No. Checking every pair regardless is the naive shape the implementation exists to avoid."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_12"
+  },
+  {
+   "id": "why-not-generic-d-separation",
+   "nodeId": "sid-algorithms",
+   "chapterId": "how-sid-is-computed",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "Why do both algorithms fix a source and answer for every target at once?",
+   "options": [
+    {
+     "text": "Reachability computed once for a source serves all its targets, turning each target's verdict into a lookup",
+     "explain": "Right. Sharing the expensive closure across all $p-1$ targets is what keeps SID computable on graphs of a few hundred nodes."
+    },
+    {
+     "text": "Because d-separation is undefined for a single ordered pair",
+     "explain": "No. It is perfectly well defined per pair; calling it per pair is simply wasteful."
+    },
+    {
+     "text": "Because the adjustment set changes with every target",
+     "explain": "No. The adjustment set is the source's estimated parent set and is fixed once the source is."
+    },
+    {
+     "text": "Because the true graph must be rebuilt for each source anyway",
+     "explain": "No. The graph is fixed; only the conditioned-tail copy is derived, and that too is per source."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_12"
+  },
+  {
+   "id": "two-matrices-two-conditions",
+   "nodeId": "sid-implementation",
+   "chapterId": "how-sid-is-computed",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "The implementation builds two matrix routines. What do they correspond to?",
+   "options": [
+    {
+     "text": "The two halves of the adjustment criterion: a directed-reachability closure, and a search for open non-causal routes",
+     "explain": "Correct. One asks whether a causal path exists and where the parent set sits on it; the other finds every node reachable by an open, non-causal path."
+    },
+    {
+     "text": "One for the true graph and one for the estimated graph",
+     "explain": "No. Both routines are computed against the true graph; the estimate supplies the adjustment set."
+    },
+    {
+     "text": "One for DAGs and one for CPDAGs",
+     "explain": "No. The CPDAG case is handled by which graphs are compared, not by a separate matrix routine here."
+    },
+    {
+     "text": "One for the forward SID direction and one for the reverse",
+     "explain": "No. Asymmetry comes from swapping the arguments and re-running, not from a second routine."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_3_3"
+  },
+  {
+   "id": "containment-is-directional",
+   "nodeId": "proof-sidsuper",
+   "chapterId": "guarantees-and-limits",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "Why does the proof treat an omitted parent so much more harshly than an added one?",
+   "options": [
+    {
+     "text": "Extra ancestors are slack the adjustment can absorb; a missing parent leaves genuine confounding unblocked",
+     "explain": "Correct. Extra edges elsewhere cannot repair the hole, which is why the containment hypothesis runs in one direction only."
+    },
+    {
+     "text": "Added edges are cheaper to detect, so they are penalised less",
+     "explain": "No. The asymmetry is about the validity of the adjustment, not about detection cost."
+    },
+    {
+     "text": "Because an omitted parent always reverses an edge as well",
+     "explain": "No. A parent can be omitted by deletion, with no reversal involved."
+    },
+    {
+     "text": "Because SID counts unordered pairs, which doubles omission errors",
+     "explain": "No. SID counts ordered pairs, and that ordering is what makes it asymmetric."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_9"
+  },
+  {
+   "id": "one-edit-bounded-damage",
+   "nodeId": "proof-sidshd",
+   "chapterId": "guarantees-and-limits",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "A single SHD unit separates two graphs. How far can SID move, and why?",
+   "options": [
+    {
+     "text": "By a bounded amount, because one edge changes parent sets only at its two endpoints",
+     "explain": "Correct, and the bound is sharp: an explicit one-edge flip attains it, so it is worst case rather than loose."
+    },
+    {
+     "text": "Not at all — one edge cannot change any intervention distribution",
+     "explain": "No. That is the SHD-zero case; one edit can and does move SID."
+    },
+    {
+     "text": "Without bound, since a single edge sits on arbitrarily many paths",
+     "explain": "No. Every node other than the edge's two endpoints keeps its adjustment logic untouched, which is what bounds the damage."
+    },
+    {
+     "text": "By exactly one, matching the SHD unit",
+     "explain": "No. The two measures live on different scales; a single edit can spoil a whole treatment row."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_10"
+  },
+  {
+   "id": "sid-tracks-wrong-effect-count",
+   "nodeId": "sid-vs-shd-simulation",
+   "chapterId": "guarantees-and-limits",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "SID is defined through the existence of a discriminating distribution, not as a literal count of wrong effects. What did the second experiment establish?",
+   "options": [
+    {
+     "text": "That the abstract definition and the practical count of wrongly estimated effects coincide almost perfectly",
+     "explain": "Correct, and that is what lets practitioners read SID as a count when comparing causal-discovery methods."
+    },
+    {
+     "text": "That SID and SHD are strongly correlated after all",
+     "explain": "No. The first experiment found them nearly uncorrelated, which is the point of introducing SID."
+    },
+    {
+     "text": "That SID is an upper bound on the number of wrong effects, never tight",
+     "explain": "No. The experiment reports agreement, not a loose one-sided bound."
+    },
+    {
+     "text": "That the discriminating distribution can always be constructed by hand",
+     "explain": "No. The experiment measures agreement of two quantities; it does not construct witnesses."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_3_1"
+  },
+  {
+   "id": "unidentifiable-pairs-are-excluded",
+   "nodeId": "hidden-variables-extension",
+   "chapterId": "guarantees-and-limits",
+   "kind": "prediction",
+   "placement": "chapter-end",
+   "prompt": "An unobserved $U$ causes both $X$ and $Y$, so $p(y\\mid do(x))$ is not recoverable from any observed adjustment set. How should the pair be scored?",
+   "options": [
+    {
+     "text": "Excluded from the count — the pair is unanswerable, not answered wrongly",
+     "explain": "Correct, and it mirrors how the CPDAG case excludes what cannot be judged rather than penalising it."
+    },
+    {
+     "text": "Counted as an SID error, since the estimate failed to predict it",
+     "explain": "No. Scoring it as a mistake would punish a method for a limit of the data rather than a fault of the graph."
+    },
+    {
+     "text": "Counted as correct, since no estimate could do better",
+     "explain": "No. Crediting it would inflate every method equally and hide the identifiability problem."
+    },
+    {
+     "text": "Scored by substituting the nearest identifiable pair",
+     "explain": "No. The roadmap excludes non-identifiable effects; it does not substitute for them."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_2_4_6"
   }
  ],
  "quiz": [
@@ -3261,6 +3706,441 @@ export const KE_DATA = {
    "correct": 0,
    "sourceRef": "#mechanics",
    "sectionRef": "sec_2_4_1"
+  },
+  {
+   "id": "superset-parents-are-safe",
+   "nodeId": "graph-comparison-problem",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "The running estimate $H$ holds every edge of the true graph $G$ plus the extra edge $B\\to C$. Why does the page call $H$'s parent sets safe for $G$?",
+   "options": [
+    {
+     "text": "Each is a superset of $G$'s parent set, and adjusting for extra ancestors does not break the calculation",
+     "explain": "Yes. $G\\subseteq H$ makes every $H$ parent set a superset adjustment set, which is exactly the containment the zero-SID proof needs."
+    },
+    {
+     "text": "The two graphs have the same skeleton",
+     "explain": "No. $H$ carries an edge $G$ does not, so the skeletons differ by that pair."
+    },
+    {
+     "text": "An SHD of one is below the threshold at which adjustment stops being valid",
+     "explain": "No. There is no such threshold; SHD does not bound adjustment validity at all, which is the whole reason SID exists."
+    },
+    {
+     "text": "The extra edge is undirected, so it contributes no parent",
+     "explain": "No. $B\\to C$ is directed, and it is precisely what adds $B$ to $C$'s parent set in $H$."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_2_3"
+  },
+  {
+   "id": "why-parent-adjustment-is-fixed",
+   "nodeId": "motivation-and-definition",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "SID fixes one prediction procedure — parent adjustment. What does fixing it buy?",
+   "options": [
+    {
+     "text": "It makes SID computable from graph structure alone, given Markovianity to the true DAG",
+     "explain": "Correct. Without a fixed procedure the comparison would depend on which adjustment set a reader happened to pick."
+    },
+    {
+     "text": "It guarantees the smallest adjustment set for every pair",
+     "explain": "No. Minimal sets are a separate design choice the paper studies on its own; parents are often not minimal."
+    },
+    {
+     "text": "It makes SID symmetric in its two arguments",
+     "explain": "No. SID stays asymmetric — swapping truth and estimate can change the count."
+    },
+    {
+     "text": "It removes the need to know the true graph",
+     "explain": "No. Correctness is still defined against the true graph's intervention distributions."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_1"
+  },
+  {
+   "id": "which-shd-one-error-hurts",
+   "nodeId": "motivation-and-definition",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "prediction",
+   "placement": "after-intuition",
+   "prompt": "Two estimates each sit at SHD one: one adds an edge, one reverses an edge. Predict which damages intervention predictions.",
+   "options": [
+    {
+     "text": "The reversal, because the intervened node loses the parent it needed to block confounding",
+     "explain": "Right. The paper reports eight erroneous predictions for the reversal, while the added edge costs nothing."
+    },
+    {
+     "text": "The added edge, because it introduces an extra parameter to estimate",
+     "explain": "No. The extra adjustment variable is conditionally irrelevant given the true parents, so every pair stays correct."
+    },
+    {
+     "text": "Both, equally — one edge of damage each",
+     "explain": "No. That is exactly SHD's verdict, and the divergence from it is what motivates SID."
+    },
+    {
+     "text": "Neither, since SHD one is a single local change",
+     "explain": "No. A local edit can have global consequences; that asymmetry is the point of the example."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_1"
+  },
+  {
+   "id": "chain-versus-collider",
+   "nodeId": "dag-terminology",
+   "chapterId": "intervention-machinery",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "Compare $A\\to B\\to C$ with $A\\to B\\leftarrow C$. What does conditioning on $B$ do?",
+   "options": [
+    {
+     "text": "Closes the chain and opens the collider",
+     "explain": "Correct, and it is why the same three nodes encode opposite path-blocking behaviour."
+    },
+    {
+     "text": "Closes both paths",
+     "explain": "No. A collider is closed by default and conditioning on it opens the path."
+    },
+    {
+     "text": "Opens both paths",
+     "explain": "No. A chain closes when you condition on its middle node."
+    },
+    {
+     "text": "Opens the chain and closes the collider",
+     "explain": "No — this is the two cases the wrong way round."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_7"
+  },
+  {
+   "id": "cpdag-undirected-edge",
+   "nodeId": "dag-terminology",
+   "chapterId": "intervention-machinery",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "An edge in a CPDAG is left undirected. What does that record?",
+   "options": [
+    {
+     "text": "Members of the Markov equivalence class disagree about its orientation",
+     "explain": "Yes. A CPDAG directs an edge only where every member of the class agrees."
+    },
+    {
+     "text": "The edge is confounded by an unobserved common cause",
+     "explain": "No. That is what a bidirected edge marks in an ADMG, a different object."
+    },
+    {
+     "text": "The orientation is unknown because of missing data",
+     "explain": "No. The ambiguity is structural: observational data cannot distinguish Markov-equivalent DAGs however much of it you have."
+    },
+    {
+     "text": "The edge may be deleted without changing the class",
+     "explain": "No. The edge is present in every member; only its direction varies."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_7"
+  },
+  {
+   "id": "conditioning-versus-intervening",
+   "nodeId": "intervention-distributions",
+   "chapterId": "intervention-machinery",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "When do conditioning on $X=x$ and setting $X$ to $x$ give the same answer for $Y$?",
+   "options": [
+    {
+     "text": "When $X$ has no confounded relationship with $Y$",
+     "explain": "Correct. Confounding is exactly what makes the observed association differ from the effect of acting."
+    },
+    {
+     "text": "Whenever the graph is acyclic",
+     "explain": "No. Acyclicity is assumed throughout and does not remove confounding."
+    },
+    {
+     "text": "Whenever the distribution is Gaussian",
+     "explain": "No. The gap is structural, not distributional; a linear Gaussian SEM can be badly confounded."
+    },
+    {
+     "text": "Whenever $X$ and $Y$ are marginally independent",
+     "explain": "No. Marginal independence can coexist with a real effect that a second path cancels."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_1_2"
+  },
+  {
+   "id": "intervention-leaves-outcome-variance",
+   "nodeId": "linear-gaussian-sem-effects",
+   "chapterId": "intervention-machinery",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "In a linear Gaussian SEM you intervene on $X$. What happens to $Y$'s variance?",
+   "options": [
+    {
+     "text": "It is unchanged — the intervention replaces only $X$'s own noise source",
+     "explain": "Right. The intervention shifts downstream means proportionally while leaving every other mechanism, and so the variance, intact."
+    },
+    {
+     "text": "It collapses to zero, because $X$ is now fixed",
+     "explain": "No. Fixing $X$ removes $X$'s noise, not the noise of every variable downstream of it."
+    },
+    {
+     "text": "It scales with the value $X$ is set to",
+     "explain": "No. The model is linear with additive noise; the set value moves means, not spreads."
+    },
+    {
+     "text": "It becomes the covariance between $X$ and $Y$",
+     "explain": "No. A variance and a covariance are different quantities, and the intervention does not equate them."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_11"
+  },
+  {
+   "id": "extra-edges-need-their-own-number",
+   "nodeId": "penalizing-additional-edges",
+   "chapterId": "what-sid-measures",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "An estimate scores $\\mathrm{SID}=0$ but carries strictly more edges than the truth. What does the paper propose?",
+   "options": [
+    {
+     "text": "Report a separate added-edge count beside SID, because SID scores effects and not parsimony",
+     "explain": "Correct. The two numbers are orthogonal, and the edge count serves readers who value parsimony independently."
+    },
+    {
+     "text": "Treat SID zero as proof the graphs are identical",
+     "explain": "No. Zero SID means every estimated adjustment set stays valid, which a strict superset can achieve."
+    },
+    {
+     "text": "Fall back to SHD, since SID has failed here",
+     "explain": "No. SID has not failed; it answered the causal question correctly and a different question needs a different number."
+    },
+    {
+     "text": "Divide SID by the edge count to penalise density",
+     "explain": "No. The paper keeps the measures separate rather than blending them into one score."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_2_4_3"
+  },
+  {
+   "id": "skip-when-parents-match",
+   "nodeId": "sid-algorithms",
+   "chapterId": "how-sid-is-computed",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "The estimate gives a source node exactly the same parents as the true graph. What may the algorithm do?",
+   "options": [
+    {
+     "text": "Skip that whole source — the true back-door set is valid for every target",
+     "explain": "Correct, and it is a per-source skip, not a per-pair one, which is where the saving comes from."
+    },
+    {
+     "text": "Skip only the pairs whose target is a child of that source",
+     "explain": "No. Matching parents make the set valid for every target, not a subset of them."
+    },
+    {
+     "text": "Skip the check only when the source has no parents at all",
+     "explain": "No. The condition is that the parent sets agree, which an empty set satisfies but does not require."
+    },
+    {
+     "text": "Nothing — each ordered pair must still be checked separately",
+     "explain": "No. Checking every pair regardless is the naive shape the implementation exists to avoid."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_12"
+  },
+  {
+   "id": "why-not-generic-d-separation",
+   "nodeId": "sid-algorithms",
+   "chapterId": "how-sid-is-computed",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "Why do both algorithms fix a source and answer for every target at once?",
+   "options": [
+    {
+     "text": "Reachability computed once for a source serves all its targets, turning each target's verdict into a lookup",
+     "explain": "Right. Sharing the expensive closure across all $p-1$ targets is what keeps SID computable on graphs of a few hundred nodes."
+    },
+    {
+     "text": "Because d-separation is undefined for a single ordered pair",
+     "explain": "No. It is perfectly well defined per pair; calling it per pair is simply wasteful."
+    },
+    {
+     "text": "Because the adjustment set changes with every target",
+     "explain": "No. The adjustment set is the source's estimated parent set and is fixed once the source is."
+    },
+    {
+     "text": "Because the true graph must be rebuilt for each source anyway",
+     "explain": "No. The graph is fixed; only the conditioned-tail copy is derived, and that too is per source."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_12"
+  },
+  {
+   "id": "two-matrices-two-conditions",
+   "nodeId": "sid-implementation",
+   "chapterId": "how-sid-is-computed",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "The implementation builds two matrix routines. What do they correspond to?",
+   "options": [
+    {
+     "text": "The two halves of the adjustment criterion: a directed-reachability closure, and a search for open non-causal routes",
+     "explain": "Correct. One asks whether a causal path exists and where the parent set sits on it; the other finds every node reachable by an open, non-causal path."
+    },
+    {
+     "text": "One for the true graph and one for the estimated graph",
+     "explain": "No. Both routines are computed against the true graph; the estimate supplies the adjustment set."
+    },
+    {
+     "text": "One for DAGs and one for CPDAGs",
+     "explain": "No. The CPDAG case is handled by which graphs are compared, not by a separate matrix routine here."
+    },
+    {
+     "text": "One for the forward SID direction and one for the reverse",
+     "explain": "No. Asymmetry comes from swapping the arguments and re-running, not from a second routine."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_3_3"
+  },
+  {
+   "id": "containment-is-directional",
+   "nodeId": "proof-sidsuper",
+   "chapterId": "guarantees-and-limits",
+   "kind": "interpretation",
+   "placement": "after-intuition",
+   "prompt": "Why does the proof treat an omitted parent so much more harshly than an added one?",
+   "options": [
+    {
+     "text": "Extra ancestors are slack the adjustment can absorb; a missing parent leaves genuine confounding unblocked",
+     "explain": "Correct. Extra edges elsewhere cannot repair the hole, which is why the containment hypothesis runs in one direction only."
+    },
+    {
+     "text": "Added edges are cheaper to detect, so they are penalised less",
+     "explain": "No. The asymmetry is about the validity of the adjustment, not about detection cost."
+    },
+    {
+     "text": "Because an omitted parent always reverses an edge as well",
+     "explain": "No. A parent can be omitted by deletion, with no reversal involved."
+    },
+    {
+     "text": "Because SID counts unordered pairs, which doubles omission errors",
+     "explain": "No. SID counts ordered pairs, and that ordering is what makes it asymmetric."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_9"
+  },
+  {
+   "id": "one-edit-bounded-damage",
+   "nodeId": "proof-sidshd",
+   "chapterId": "guarantees-and-limits",
+   "kind": "application",
+   "placement": "after-mechanics",
+   "prompt": "A single SHD unit separates two graphs. How far can SID move, and why?",
+   "options": [
+    {
+     "text": "By a bounded amount, because one edge changes parent sets only at its two endpoints",
+     "explain": "Correct, and the bound is sharp: an explicit one-edge flip attains it, so it is worst case rather than loose."
+    },
+    {
+     "text": "Not at all — one edge cannot change any intervention distribution",
+     "explain": "No. That is the SHD-zero case; one edit can and does move SID."
+    },
+    {
+     "text": "Without bound, since a single edge sits on arbitrarily many paths",
+     "explain": "No. Every node other than the edge's two endpoints keeps its adjustment logic untouched, which is what bounds the damage."
+    },
+    {
+     "text": "By exactly one, matching the SHD unit",
+     "explain": "No. The two measures live on different scales; a single edit can spoil a whole treatment row."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_10"
+  },
+  {
+   "id": "sid-tracks-wrong-effect-count",
+   "nodeId": "sid-vs-shd-simulation",
+   "chapterId": "guarantees-and-limits",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
+   "prompt": "SID is defined through the existence of a discriminating distribution, not as a literal count of wrong effects. What did the second experiment establish?",
+   "options": [
+    {
+     "text": "That the abstract definition and the practical count of wrongly estimated effects coincide almost perfectly",
+     "explain": "Correct, and that is what lets practitioners read SID as a count when comparing causal-discovery methods."
+    },
+    {
+     "text": "That SID and SHD are strongly correlated after all",
+     "explain": "No. The first experiment found them nearly uncorrelated, which is the point of introducing SID."
+    },
+    {
+     "text": "That SID is an upper bound on the number of wrong effects, never tight",
+     "explain": "No. The experiment reports agreement, not a loose one-sided bound."
+    },
+    {
+     "text": "That the discriminating distribution can always be constructed by hand",
+     "explain": "No. The experiment measures agreement of two quantities; it does not construct witnesses."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#mechanics",
+   "sectionRef": "sec_3_1"
+  },
+  {
+   "id": "unidentifiable-pairs-are-excluded",
+   "nodeId": "hidden-variables-extension",
+   "chapterId": "guarantees-and-limits",
+   "kind": "prediction",
+   "placement": "chapter-end",
+   "prompt": "An unobserved $U$ causes both $X$ and $Y$, so $p(y\\mid do(x))$ is not recoverable from any observed adjustment set. How should the pair be scored?",
+   "options": [
+    {
+     "text": "Excluded from the count — the pair is unanswerable, not answered wrongly",
+     "explain": "Correct, and it mirrors how the CPDAG case excludes what cannot be judged rather than penalising it."
+    },
+    {
+     "text": "Counted as an SID error, since the estimate failed to predict it",
+     "explain": "No. Scoring it as a mistake would punish a method for a limit of the data rather than a fault of the graph."
+    },
+    {
+     "text": "Counted as correct, since no estimate could do better",
+     "explain": "No. Crediting it would inflate every method equally and hide the identifiability problem."
+    },
+    {
+     "text": "Scored by substituting the nearest identifiable pair",
+     "explain": "No. The roadmap excludes non-identifiable effects; it does not substitute for them."
+    }
+   ],
+   "correct": 0,
+   "sourceRef": "#intuition",
+   "sectionRef": "sec_2_4_6"
   }
  ],
  "sections": {

@@ -15,7 +15,10 @@
       "foundationConceptIds": [],
       "advancedConceptIds": [],
       "checkpointIds": [
-        "shd-graph-class"
+        "shd-graph-class",
+        "superset-parents-are-safe",
+        "why-parent-adjustment-is-fixed",
+        "which-shd-one-error-hurts"
       ],
       "estimatedCoreMinutes": 7,
       "estimatedFullMinutes": 11
@@ -37,7 +40,11 @@
       ],
       "advancedConceptIds": [],
       "checkpointIds": [
-        "adjustment-set-default-choice"
+        "adjustment-set-default-choice",
+        "chain-versus-collider",
+        "cpdag-undirected-edge",
+        "conditioning-versus-intervening",
+        "intervention-leaves-outcome-variance"
       ],
       "estimatedCoreMinutes": 8,
       "estimatedFullMinutes": 15
@@ -64,7 +71,8 @@
         "running-dag-pair-count",
         "equivalent-formulation-why",
         "sid-is-not-a-metric",
-        "symmetrization-motivating-case"
+        "symmetrization-motivating-case",
+        "extra-edges-need-their-own-number"
       ],
       "estimatedCoreMinutes": 8,
       "estimatedFullMinutes": 18
@@ -84,7 +92,10 @@
         "sid-algorithms"
       ],
       "checkpointIds": [
-        "complexity-bound-vs-observation"
+        "complexity-bound-vs-observation",
+        "skip-when-parents-match",
+        "why-not-generic-d-separation",
+        "two-matrices-two-conditions"
       ],
       "estimatedCoreMinutes": 7,
       "estimatedFullMinutes": 14
@@ -114,7 +125,11 @@
         "multiple-interventions-extension"
       ],
       "checkpointIds": [
-        "cpdag-bound-interpretation"
+        "cpdag-bound-interpretation",
+        "containment-is-directional",
+        "one-edit-bounded-damage",
+        "sid-tracks-wrong-effect-count",
+        "unidentifiable-pairs-are-excluded"
       ],
       "estimatedCoreMinutes": 7,
       "estimatedFullMinutes": 17

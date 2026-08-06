@@ -934,7 +934,12 @@ def _checkpoint_density(pages, quiz_items, learning_path):
     rule as _load_quiz. It reaches releasePass, so a release build still has to
     answer for it.
     """
-    words = sum(len(_WORD.findall(markdown)) for markdown in pages.values())
+    # Prose words only. Diagram source and fenced teaching blocks are read, not
+    # waded through, and counting them would raise the checkpoint budget every
+    # time a page gained a diagram -- charging the author for illustrating.
+    words = sum(
+        len(_WORD.findall(re.sub(r"```.*?```", " ", markdown, flags=re.S)))
+        for markdown in pages.values())
     expected = max(1, round(words / CHECKPOINT_WORDS_PER_ITEM))
     per_chapter = Counter(
         item.get("chapterId", "") for item in quiz_items if item.get("chapterId"))
