@@ -30,7 +30,8 @@ def test_equation_latex_is_verbatim_and_anchored():
 
 def test_extraction_block_says_exact():
     pack = latex_to_pack(TEX, resolve_input=lambda n: "")
-    assert pack["extraction"] == {"path": "latex", "equation_fidelity": "exact"}
+    assert pack["extraction"] == {"path": "latex", "equation_fidelity": "exact",
+                                  "table_fidelity": "exact"}
 
 
 # The title is not cosmetic: it is interpolated into CONCEPT_PROMPT as

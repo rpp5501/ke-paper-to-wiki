@@ -45,7 +45,7 @@ def _pack_from_ar5iv(html: bytes, source: str) -> dict:
     import datetime
     from selectolax.parser import HTMLParser
     doc = HTMLParser(html)
-    sections, equations = [], []
+    sections, equations, tables = [], [], []
     current_section = "sec_0"
     sec_n = eq_n = 0
     for node in doc.root.traverse():
@@ -59,11 +59,33 @@ def _pack_from_ar5iv(html: bytes, source: str) -> dict:
             equations.append({"id": f"eq_{eq_n}",
                               "latex": normalize_math(node.attributes["alttext"]),
                               "section": current_section})
+        elif node.tag == "table":
+            rows = []
+            for tr in node.css("tr"):
+                cells = [c.text(strip=True) for c in tr.css("td, th")]
+                if any(cells):
+                    rows.append(cells)
+            if not rows:
+                continue
+            # ar5iv keeps the caption in a sibling figcaption/caption rather
+            # than inside the table, so look at the enclosing figure first.
+            caption = ""
+            holder = node.parent
+            while holder is not None and not caption:
+                cap = holder.css_first("figcaption, caption")
+                if cap is not None:
+                    caption = cap.text(strip=True)
+                holder = holder.parent if holder.tag != "body" else None
+            tables.append({"id": f"tab_{len(tables) + 1}",
+                           "section": current_section,
+                           "caption": caption, "rows": rows})
     return {"meta": {"source": source, "title": doc.css_first("title").text()
                      if doc.css_first("title") else "",
                      "generated": datetime.date.today().isoformat()},
-            "extraction": {"path": "ar5iv", "equation_fidelity": "converted-mathml"},
-            "sections": sections, "equations": equations,
+            "extraction": {"path": "ar5iv",
+                           "equation_fidelity": "converted-mathml",
+                           "table_fidelity": "exact"},
+            "sections": sections, "equations": equations, "tables": tables,
             "references": [], "figures": []}
 
 
@@ -78,10 +100,18 @@ def _pack_from_pdf(path: str, source: str) -> dict:
     body = re.sub(r"^\s*\d+\s*$", "", body, flags=re.M)  # bare page numbers
     return {"meta": {"source": source, "title": Path(path).stem,
                      "generated": datetime.date.today().isoformat()},
-            "extraction": {"path": "pdf", "equation_fidelity": "absent"},
+            # PyMuPDF's find_tables was tried against a real 19-page paper: it
+            # reported a two-cell "table" made of ordinary sentences, and
+            # returned the genuine results grid with whole columns collapsed
+            # into one cell ("47.96 54.41 60.15 62.54" as a single value).
+            # Numbers that land against the wrong condition are a fabricated
+            # result, which is worse than having none, so this path reports
+            # that it did not try rather than guessing.
+            "extraction": {"path": "pdf", "equation_fidelity": "absent",
+                           "table_fidelity": "none"},
             "sections": [{"id": "sec_1", "title": "full-text", "level": 1,
                           "text": " ".join(body.split())}],
-            "equations": [], "references": [], "figures": []}
+            "equations": [], "tables": [], "references": [], "figures": []}
 
 
 _ARXIV_STAMP = re.compile(r"arXiv[:\s]\s*(\d{4}\.\d{4,5})", re.I)

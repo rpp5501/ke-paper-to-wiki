@@ -74,7 +74,9 @@ def test_ar5iv_fallback_anchors_equations_to_their_section():
         b"</body></html>"
     )
     pack = _pack_from_ar5iv(html, source="arXiv:1706.03762")
-    assert pack["extraction"] == {"path": "ar5iv", "equation_fidelity": "converted-mathml"}
+    assert pack["extraction"] == {"path": "ar5iv",
+                                  "equation_fidelity": "converted-mathml",
+                                  "table_fidelity": "exact"}
     sec_a = pack["sections"][0]["id"]
     sec_b = pack["sections"][1]["id"]
     eq_a = next(e for e in pack["equations"] if e["latex"] == "a=1")
@@ -113,7 +115,8 @@ def test_pdf_rung_extracts_text(tmp_path, monkeypatch):
     d.save(str(p))
     d.close()
     pack = build_pack(str(p))
-    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent"}
+    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent",
+                                  "table_fidelity": "none"}
     assert pack["sections"][0]["id"] == "sec_1"
     assert "Hello world sample body." in pack["sections"][0]["text"]
     assert pack["equations"] == []
@@ -153,7 +156,8 @@ def test_pdf_stays_rung4_when_no_sibling(tmp_path):
         return Resp(json.dumps({"results": []}).encode())
 
     pack = build_pack(str(p), get=get)
-    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent"}
+    assert pack["extraction"] == {"path": "pdf", "equation_fidelity": "absent",
+                                  "table_fidelity": "none"}
 
 
 # Measured on the real arXiv:1306.1043 PDF: the upgrade to rung 1 never fired,
