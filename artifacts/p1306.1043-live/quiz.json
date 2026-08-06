@@ -8,6 +8,9 @@
   {
    "id": "sid-vs-shd-what-is-counted",
    "nodeId": "structural-intervention-distance",
+   "chapterId": "what-sid-measures",
+   "kind": "application",
+   "placement": "after-mechanics",
    "prompt": "SHD and SID both score an estimated DAG against the true one. What does SID count that SHD does not?",
    "options": [
     {
@@ -34,6 +37,9 @@
   {
    "id": "sid-is-not-a-metric",
    "nodeId": "sid-properties",
+   "chapterId": "what-sid-measures",
+   "kind": "interpretation",
+   "placement": "chapter-end",
    "prompt": "Why is SID called a *pre-*distance rather than a metric?",
    "options": [
     {
@@ -58,8 +64,36 @@
    "sourceRef": "#mechanics"
   },
   {
+   "id": "running-dag-pair-count",
+   "nodeId": "structural-intervention-distance",
+   "chapterId": "what-sid-measures",
+   "kind": "application",
+   "placement": "after-intuition",
+   "prompt": "For the running graphs G: A→B, A→C, B→D, C→D and H=G+(B→C), which pairs are wrong when the arguments are swapped to SID(H,G)?",
+   "options": [
+    {
+     "text": "Exactly (C,B) and (C,D), so SID(H,G)=2",
+     "explain": "Correct — estimate G omits true H-parent B from C's adjustment set, leaving the direct back-door route to B and the fork through B to D unblocked."
+    },
+    {
+     "text": "No pairs, because G and H have the same skeleton",
+     "explain": "No — H has the extra B→C edge, and swapping the truth role turns its omission into two intervention errors."
+    },
+    {
+     "text": "All 12 ordered pairs",
+     "explain": "No — only source C has a mismatched parent set in this direction, and only targets B and D fail."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_3",
+   "sourceRef": "#intuition"
+  },
+  {
    "id": "equivalent-formulation-why",
    "nodeId": "equivalent-formulation",
+   "chapterId": "what-sid-measures",
+   "kind": "application",
+   "placement": "after-mechanics",
    "prompt": "What problem does the equivalent graphical formulation of SID solve?",
    "options": [
     {
@@ -86,6 +120,9 @@
   {
    "id": "adjustment-set-default-choice",
    "nodeId": "alternative-adjustment-sets",
+   "chapterId": "intervention-machinery",
+   "kind": "interpretation",
+   "placement": "after-mechanics",
    "prompt": "SID uses the parent set as the adjustment set by default. According to the paper, why that choice?",
    "options": [
     {
@@ -112,6 +149,9 @@
   {
    "id": "symmetrization-motivating-case",
    "nodeId": "symmetrization",
+   "chapterId": "what-sid-measures",
+   "kind": "prediction",
+   "placement": "after-intuition",
    "prompt": "What situation motivates a symmetrized SID?",
    "options": [
     {
@@ -138,6 +178,9 @@
   {
    "id": "shd-graph-class",
    "nodeId": "structural-hamming-distance",
+   "chapterId": "why-graph-distance-is-not-enough",
+   "kind": "interpretation",
+   "placement": "chapter-end",
    "prompt": "Over what class of graphs is SHD defined in this paper?",
    "options": [
     {
@@ -159,6 +202,56 @@
    ],
    "correct": 0,
    "source_ref": "sec_1_1",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "complexity-bound-vs-observation",
+   "nodeId": "sid-scalability",
+   "chapterId": "how-sid-is-computed",
+   "kind": "interpretation",
+   "placement": "chapter-end",
+   "prompt": "The paper reports roughly quadratic/cubic timing curves but gives a quartic dense worst-case bound. Which interpretation is correct?",
+   "options": [
+    {
+     "text": "The observations describe sampled graph families; the quartic result is a worst-case ceiling, so both can be true",
+     "explain": "Correct — empirical average behavior over finite graph families can remain below an asymptotic worst-case upper bound."
+    },
+    {
+     "text": "The timing experiment disproves the quartic worst-case bound",
+     "explain": "No — a finite average-case experiment cannot disprove a worst-case upper bound."
+    },
+    {
+     "text": "Sparse and dense SID have exactly quadratic and cubic complexity for every input",
+     "explain": "No — those are approximate observed trends, not universal complexity guarantees."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_4",
+   "sourceRef": "#mechanics"
+  },
+  {
+   "id": "cpdag-bound-interpretation",
+   "nodeId": "sid-dag-cpdag",
+   "chapterId": "guarantees-and-limits",
+   "kind": "application",
+   "placement": "chapter-end",
+   "prompt": "Why does SID against an estimated CPDAG return lower and upper bounds instead of one score?",
+   "options": [
+    {
+     "text": "Different DAGs in the represented equivalence class can imply different SID values",
+     "explain": "Correct — the bounds summarize the best and worst compatible DAG extensions."
+    },
+    {
+     "text": "The observational sample size is unknown",
+     "explain": "No — the bounds arise from orientation ambiguity in the equivalence class, not sampling uncertainty."
+    },
+    {
+     "text": "SHD must be averaged with SID",
+     "explain": "No — SHD is a separate comparison measure and is not part of these bounds."
+    }
+   ],
+   "correct": 0,
+   "source_ref": "sec_2_4_1",
    "sourceRef": "#mechanics"
   }
  ]

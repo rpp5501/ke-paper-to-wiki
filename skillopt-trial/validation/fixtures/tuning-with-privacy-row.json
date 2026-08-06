@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "reportKind": "candidate",
+  "stage": "tuning",
+  "skillArtifact": {
+    "path": "validation/fixtures/evidence/candidate-skill.md",
+    "sha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c"
+  },
+  "rows": [
+    {
+      "taskId": "test-privacy-risk-group",
+      "scores": {
+        "factual_evidence_accuracy": 90,
+        "conceptual_depth": 90,
+        "prerequisite_clarity": 90,
+        "worked_examples": 90,
+        "scanability": 90,
+        "checkpoint_quality": 90
+      },
+      "automaticRejectionFlags": [],
+      "rawOutput": {
+        "path": "validation/fixtures/evidence/final-risk-group.txt",
+        "sha256": "dd666055d1dcc7df2968dedb6691e12e50a59cdca34521da70dae1474e843534"
+      }
+    }
+  ],
+  "deterministicGates": {
+    "correctness": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "equation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "evidence_citation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "schema": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "component": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "accessibility": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}}
+  }
+}

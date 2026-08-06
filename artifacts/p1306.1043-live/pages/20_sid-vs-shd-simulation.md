@@ -1,20 +1,44 @@
 # SID versus SHD Simulation
 ## TL;DR {#tldr}
-This is the empirical check that justifies treating SID as a genuinely different — and more causally meaningful — error measure than SHD. Random pairs of DAGs are scored both ways, and the two scores turn out to be nearly uncorrelated: graphs that are almost identical edge-for-edge (SHD ≈ 1–2) can have wildly different SID. A second experiment then asks whether SID's abstract definition (does *some* distribution discriminate the two intervention distributions?) actually tracks something concrete — the number of wrongly estimated causal effects — and finds that it does, exactly.
+This simulation tests whether SID is a different, more causally meaningful error measure than SHD.
+
+The two scores are nearly uncorrelated: graphs with SHD about 1--2 can have very different SID.
+
+A second experiment shows that SID exactly matches the number of wrongly estimated causal effects.
 
 ## Intuition {#intuition}
-SHD counts edge mistakes; SID counts *consequence* mistakes. A single missing or reversed edge can silently break the adjustment set used to compute a causal effect for many downstream variable pairs, so one small structural slip can produce a large SID while barely moving SHD. Conversely, several edge errors that don't disturb any relevant adjustment set leave SID untouched. This gap is the whole motivation for SID as a companion metric within Structural Intervention Distance (SID): it's asking a different question than SHD, and this simulation is the evidence that the difference isn't cosmetic — it changes which graph looks "better."
+SHD counts edge mistakes; SID counts consequence mistakes.
 
-The second half of the experiment pushes further: SID is defined abstractly, via the *existence* of a discriminating distribution, not via a literal count of wrong effects. The simulation tests whether that abstract guarantee coincides with the intuitive one in practice — comparing causal inference methods should care about the latter, and it turns out the two coincide almost perfectly.
+One missing or reversed edge can break adjustment for many downstream pairs and yield large SID with little SHD. Several irrelevant edge errors can leave SID untouched.
+
+The simulation shows this difference changes which graph looks better.
+
+SID is abstractly defined through the existence of a discriminating distribution, not as a literal wrong-effect count.
+
+The simulation tests that practical count, which causal-method comparison needs. The two quantities coincide almost perfectly.
+
+**Prediction check:** hold SHD near one and increase the number of downstream targets behind a misoriented source. SID can spread across more ordered pairs even though SHD stays fixed; the simulation tests precisely that divergence [§sec_3_1].
 
 ## Mechanics {#mechanics}
-**Generating the comparison pairs.** For each of two regimes — small dense graphs and larger sparse graphs — random DAG pairs are drawn by sampling edges i.i.d. with probability $p$ (a low $p$ for the sparse setting, a higher $p$ for the dense one, each chosen to target a specific expected edge count) and by drawing the variable order from a uniform random permutation, which fixes which edge directions are even possible [§sec_3_1]. Both SID and SHD are computed on every sampled pair, and the results are binned into a 2D histogram of SID against SHD [§sec_3_1].
+**Generating comparison pairs:** two regimes use small dense and larger sparse random DAGs [§sec_3_1].
 
-**Why this design isolates the right thing.** Randomizing the topological order separately from the edge draws prevents the sampler from favoring graphs with a particular causal shape (e.g., all hubs near the source), so the SID/SHD divergence observed can't be explained by some artifact of how the DAGs were built [§sec_3_1]. The headline finding — that a fixed low SHD (one or two edge edits) maps to a spread of SID values, especially in the dense regime — is exactly what Proposition's bounds predict, since those bounds relate SID to SHD only loosely, not tightly [§sec_3_1].
+Edges are sampled i.i.d. with low or high $p$ to target expected edge counts. A uniform random variable order fixes the possible directions [§sec_3_1].
 
-**Attaching a distribution to test the causal-effect interpretation.** For every graph pair, a linear structural equation model is built on top of each DAG: coefficients drawn uniformly, noise terms independent $\mathcal{N}(0,1)$ [§sec_3_1]. Equal error variances make each DAG identifiable from its induced distribution — this isn't incidental, it's what lets the simulation know which graph is "true" in a way that can be checked against the estimated one [§sec_3_1]. Because the model is linear-Gaussian, each intervention distribution collapses to one number per variable pair: the total causal effect, the derivative of $\mathbb{E}[X_j]$ with respect to $do(X_i = x)$ [§sec_3_1].
+SID and SHD are computed for every pair and binned into a 2D histogram [§sec_3_1].
 
-**The counting comparison.** For every pair $(i,j)$, the true and estimated total causal effects are compared, treating them as different only if they disagree by more than a fixed numerical threshold ($10^{-3}$, to absorb floating-point noise) [§sec_3_1]. The count of disagreeing pairs is then plotted against SID, and across every setting tested, SID equals that count exactly [§sec_3_1].
+**Why this isolates the signal:** separately randomizing topological order prevents a favored causal shape from explaining the SID/SHD divergence [§sec_3_1].
+
+At fixed low SHD, especially in dense graphs, SID spans a wide range. That is consistent with Proposition's loose SID/SHD bounds [§sec_3_1].
+
+**Testing causal effects needs a distribution.** Each DAG receives a linear SEM with uniformly drawn coefficients and independent $\mathcal{N}(0,1)$ noise [§sec_3_1].
+
+Equal error variances identify each DAG from its distribution, making a true-versus-estimated test possible [§sec_3_1].
+
+In this linear-Gaussian model, each intervention distribution becomes one total-effect derivative [§sec_3_1].
+
+**The counting comparison:** effects for $(i,j)$ differ only beyond $10^{-3}$, absorbing floating-point noise [§sec_3_1].
+
+Across every tested setting, the resulting disagreeing-pair count equals SID exactly [§sec_3_1].
 
 ## The Math {#the-math}
 The identification-then-linearization step is what turns SID's abstract discrimination condition into a countable quantity, and it's worth walking through why each piece is necessary.
@@ -32,7 +56,9 @@ steps:
     why: "Thresholding turns floating-point-exact disagreement into a robust count, and this count is what the simulation shows equals SID(G,H) in every configuration tested [§sec_3_1]"
 ```
 
-That last line is the empirical surprise: Definition of SID only promises that *some* distribution can tell the two graphs' intervention behavior apart, not that the count of literally-wrong effects under *this* linear-Gaussian instance will match. The two failure modes that could break the equality are informative about why it holds anyway: a true difference smaller than the $10^{-3}$ threshold, or a coefficient that happens to vanish and thereby violates faithfulness — and the text notes both occur with small probability under i.i.d. uniform coefficient draws, since the set of coefficient values producing an exact cancellation has measure zero [§sec_3_1].
+The equality is surprising because SID promises only some discriminating distribution, not a matching count under this particular linear-Gaussian instance.
+
+It could fail through a true difference below $10^{-3}$ or a vanishing coefficient that violates faithfulness. Under i.i.d. uniform coefficients, exact cancellation has measure zero, so both are unlikely [§sec_3_1].
 
 | Setting | Graph size | Edge probability $p$ | Purpose |
 |---|---|---|---|

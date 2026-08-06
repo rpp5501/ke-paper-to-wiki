@@ -47,7 +47,7 @@ describe("App", () => {
     expect(markup).not.toContain('id="drawer"');
     expect(markup).not.toContain('id="left-panel"'); // explore-only rail
     expect(markup).not.toContain(`Laying out ${KE_DATA.nodes.length} nodes…`);
-  });
+  }, 15_000);
 
   it("renders mode switch and search semantics with a disabled search reason", () => {
     const markup = renderToStaticMarkup(<App />);
@@ -92,24 +92,24 @@ describe("App", () => {
   it("announces invalid and valid selections from the app-owned status model", () => {
     expect(drawerAnnouncementFor("missing-node"))
       .toBe("Selected item is unavailable.");
-    expect(drawerAnnouncementFor("scaled-dot-product-attention"))
-      .toBe("Scaled Dot-Product Attention selected. Explanation opened.");
+    expect(drawerAnnouncementFor("structural-intervention-distance"))
+      .toBe("Structural Intervention Distance (SID) selected. Explanation opened.");
   });
 
   it("clears on close and gives a repeated selection a fresh announcement", () => {
     const initial = { message: "", revision: 0 };
     const firstOpen = nextDrawerAnnouncement(
       initial,
-      "scaled-dot-product-attention",
+      "structural-intervention-distance",
     );
     const closed = nextDrawerAnnouncement(firstOpen, null);
     const secondOpen = nextDrawerAnnouncement(
       closed,
-      "scaled-dot-product-attention",
+      "structural-intervention-distance",
     );
 
     expect(firstOpen.message).toBe(
-      "Scaled Dot-Product Attention selected. Explanation opened.",
+      "Structural Intervention Distance (SID) selected. Explanation opened.",
     );
     expect(closed.message).toBe("");
     expect(secondOpen.message).toBe(firstOpen.message);

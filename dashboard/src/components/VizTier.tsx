@@ -113,7 +113,7 @@ export default function VizTier({ nodeId, entry }: VizTierProps) {
   const focused = vizFocus === nodeId;
 
   const onBetResolved = useCallback(
-    (correct: boolean) => recordMastery(nodeId, correct),
+    (correct: boolean) => recordMastery(nodeId, correct, `viz:${nodeId}`, "viz"),
     [nodeId, recordMastery],
   );
 

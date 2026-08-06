@@ -4,6 +4,7 @@ Everything deterministic; runs without internet access. No runtime fetch exists 
 dashboard, so this file IS the data path.
 """
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -252,6 +253,144 @@ def _source_dates(plan_graph, repo_dir):
 # How many source excerpts a bundle will carry. Spent on the top hotspots of a
 # whole-repo graph, or on every code node when there are few enough to fit.
 EXCERPT_BUDGET = 20
+CODE_PREVIEW_LINES = 40
+
+
+def _definition_spans(tree):
+    spans = []
+
+    def visit(parent, node):
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                start = child.lineno
+                decorators = getattr(child, "decorator_list", [])
+                if decorators:
+                    start = min(start, *(decorator.lineno for decorator in decorators))
+                kind = "class" if isinstance(child, ast.ClassDef) else (
+                    "method" if isinstance(parent, ast.ClassDef) else "function")
+                spans.append({"line": child.lineno, "start": start,
+                              "end": child.end_lineno, "kind": kind})
+            visit(child, child)
+
+    visit(None, tree)
+    return spans
+
+
+def _is_code_node(node):
+    return node.get("kind") in _CODE_KINDS | {"method"}
+
+
+def _unresolved_listing(node):
+    match = _SOURCE_LOCATION.fullmatch(node.get("source_ref") or "")
+    raw_path = match.group("path") if match else ""
+    suffix = Path(raw_path).suffix.lower()
+    kind = node.get("kind")
+    return {
+        "path": Path(raw_path).as_posix() if raw_path else "",
+        "language": "python" if suffix == ".py" else suffix.lstrip(".") or "text",
+        "symbolKind": kind if kind in {"file", "class", "function", "method"}
+        else "function",
+        "startLine": 0,
+        "endLine": 0,
+        "previewEndLine": 0,
+        "preview": "",
+        "full": "",
+        "rangeResolved": False,
+    }
+
+
+def _code_listings(plan_graph, repo_dir):
+    """Build disclosed previews plus complete source symbols.
+
+    Python's AST supplies inclusive end lines and correct class/method kinds.
+    Other languages still receive an honest range when the graph provides one;
+    a start-only location is marked unresolved instead of silently pretending
+    the preview is complete.
+    """
+    repo = None
+    if repo_dir:
+        try:
+            repo = Path(repo_dir).resolve()
+        except (OSError, RuntimeError):
+            pass
+    listings = {}
+    enriched = []
+    for original in plan_graph["nodes"]:
+        node = dict(original)
+        if not _is_code_node(node):
+            enriched.append(node)
+            continue
+        listing = _unresolved_listing(node)
+        match = _SOURCE_LOCATION.fullmatch(node.get("source_ref") or "")
+        if match and repo is not None:
+            try:
+                relative_path = Path(match.group("path"))
+                if relative_path.is_absolute():
+                    raise ValueError("absolute source path")
+                source_path = (repo / relative_path).resolve()
+                source_path.relative_to(repo)
+                if not source_path.is_file():
+                    raise ValueError("missing source path")
+                lines = source_path.read_text(
+                    encoding="utf-8", errors="replace").splitlines()
+                requested = int(match.group("line"))
+                explicit_end = (int(match.group("end"))
+                                if match.group("end") else None)
+                if explicit_end is not None and (
+                        explicit_end < requested or explicit_end > len(lines)):
+                    raise ValueError("invalid source range")
+
+                start = requested
+                end = explicit_end
+                symbol_kind = node.get("kind", "function")
+                resolved = explicit_end is not None
+                if source_path.suffix.lower() == ".py":
+                    try:
+                        spans = _definition_spans(ast.parse("\n".join(lines)))
+                    except SyntaxError:
+                        spans = []
+                    label_names_file = (
+                        Path(str(node.get("label", ""))).name == relative_path.name)
+                    if node.get("kind") == "file" or label_names_file:
+                        start, end, symbol_kind, resolved = 1, len(lines), "file", True
+                    else:
+                        exact = next(
+                            (span for span in spans if span["line"] == requested), None)
+                        if exact:
+                            start = exact["start"]
+                            end = max(explicit_end or 0, exact["end"])
+                            symbol_kind = exact["kind"]
+                            resolved = end is not None
+
+                if end is None:
+                    end = min(len(lines), start + CODE_PREVIEW_LINES - 1)
+                if start < 1 or start > len(lines) or end < start:
+                    raise ValueError("source range outside file")
+                end = min(end, len(lines))
+                preview_end = min(end, start + CODE_PREVIEW_LINES - 1)
+                path = relative_path.as_posix()
+                listing = {
+                    "path": path,
+                    "language": ("python" if source_path.suffix.lower() == ".py"
+                                 else source_path.suffix.lstrip(".") or "text"),
+                    "symbolKind": symbol_kind if symbol_kind in {
+                        "file", "class", "function", "method"} else "function",
+                    "startLine": start,
+                    "endLine": end,
+                    "previewEndLine": preview_end,
+                    "preview": "\n".join(lines[start - 1:preview_end]),
+                    "full": "\n".join(lines[start - 1:end]),
+                    "rangeResolved": resolved,
+                }
+            except (OSError, RuntimeError, ValueError, SyntaxError):
+                pass
+        listings[node["id"]] = listing
+        if listing["rangeResolved"]:
+            node["kind"] = listing["symbolKind"]
+            node["source_ref"] = (
+                f"{listing['path']}:L{listing['startLine']}-L{listing['endLine']}")
+        enriched.append(node)
+    return listings, enriched
 
 
 def _excerpts(plan_graph, hotspots, repo_dir):
@@ -318,6 +457,266 @@ def _excerpts(plan_graph, hotspots, repo_dir):
     return excerpts
 
 
+_CHAPTER_FIELDS = {
+    "id", "title", "question", "outcome", "conceptIds",
+    "foundationConceptIds", "advancedConceptIds", "checkpointIds",
+    "estimatedCoreMinutes", "estimatedFullMinutes",
+}
+
+
+def _authored_node_ids(plan_graph, pages):
+    return [node["id"] for node in plan_graph["nodes"]
+            if _page_for(node, pages)]
+
+
+def _fallback_learning_path(plan_graph, hotspots, pages):
+    chapters = []
+    for step in _tour(plan_graph, hotspots, pages):
+        node_id = step["nodeIds"][0]
+        chapters.append({
+            "id": node_id,
+            "title": step["title"],
+            "question": step["description"],
+            "outcome": f"Explain {step['title']}.",
+            "conceptIds": [node_id],
+            "foundationConceptIds": [],
+            "advancedConceptIds": [],
+            "checkpointIds": [],
+            "estimatedCoreMinutes": 0,
+            "estimatedFullMinutes": 0,
+        })
+    return {"version": 1, "reviewed": False, "chapters": chapters}
+
+
+def _load_learning_path(path, plan_graph, pages):
+    raw = (json.loads(Path(path).read_text(encoding="utf-8"))
+           if not isinstance(path, dict) else path)
+    if "reviewed" in raw and not isinstance(raw["reviewed"], bool):
+        raise ValueError("learning path reviewed must be a boolean")
+    reviewed = raw.get("reviewed", False)
+    chapters = raw.get("chapters") or []
+    if not chapters:
+        raise ValueError("learning path needs at least one chapter")
+    known = {node["id"] for node in plan_graph["nodes"]}
+    seen = set()
+    chapter_ids = set()
+    for chapter in chapters:
+        missing = sorted(_CHAPTER_FIELDS - set(chapter))
+        if missing:
+            raise ValueError(
+                f"learning chapter '{chapter.get('id', '?')}' missing: {', '.join(missing)}")
+        if chapter["id"] in chapter_ids:
+            raise ValueError(f"duplicate learning chapter id '{chapter['id']}'")
+        chapter_ids.add(chapter["id"])
+        for field in ("conceptIds", "foundationConceptIds", "advancedConceptIds"):
+            repeated = sorted({node_id for node_id in chapter[field]
+                               if chapter[field].count(node_id) > 1})
+            if repeated:
+                raise ValueError(
+                    f"learning chapter '{chapter['id']}' repeats {field}: "
+                    f"{', '.join(repeated)}")
+            unknown = sorted(set(chapter[field]) - known)
+            if unknown:
+                raise ValueError(
+                    f"learning chapter '{chapter['id']}' has unknown nodes: {', '.join(unknown)}")
+        members = set(chapter["conceptIds"])
+        for field in ("foundationConceptIds", "advancedConceptIds"):
+            outside_chapter = sorted(set(chapter[field]) - members)
+            if outside_chapter:
+                raise ValueError(
+                    f"learning chapter '{chapter['id']}' {field} must be included "
+                    f"in conceptIds: {', '.join(outside_chapter)}")
+        depth_overlap = sorted(
+            set(chapter["foundationConceptIds"])
+            & set(chapter["advancedConceptIds"]))
+        if depth_overlap:
+            raise ValueError(
+                f"learning chapter '{chapter['id']}' foundationConceptIds and "
+                f"advancedConceptIds overlap: {', '.join(depth_overlap)}")
+        duplicates = seen.intersection(chapter["conceptIds"])
+        if duplicates:
+            raise ValueError(f"concept appears in multiple chapters: {', '.join(sorted(duplicates))}")
+        seen.update(chapter["conceptIds"])
+
+    authored = _authored_node_ids(plan_graph, pages)
+    uncovered = [node_id for node_id in authored if node_id not in seen]
+    if uncovered:
+        raise ValueError(f"uncovered authored concepts: {', '.join(uncovered)}")
+
+    ordered = [node_id for chapter in chapters
+               for node_id in chapter["conceptIds"]]
+    position = {node_id: index for index, node_id in enumerate(ordered)}
+    for edge in plan_graph.get("edges", []):
+        kind = edge.get("kind")
+        if kind == "prerequisite":
+            prerequisite = edge.get("src")
+            dependent = edge.get("dst")
+        elif kind == "builds-on":
+            # Graph direction is dependent -> dependency for builds-on.
+            prerequisite = edge.get("dst")
+            dependent = edge.get("src")
+        else:
+            continue
+        if prerequisite in position and dependent in position \
+                and position[prerequisite] > position[dependent]:
+            relation = "prerequisite" if kind == "prerequisite" else "builds-on dependency"
+            raise ValueError(
+                f"{relation} '{prerequisite}' appears after '{dependent}'")
+    return {"version": raw.get("version", 1), "reviewed": reviewed,
+            "chapters": chapters}
+
+
+def _is_metadata_section(section):
+    title = re.sub(r"[^a-z]+", " ",
+                   str(section.get("title") or "").lower()).strip()
+    return (title.startswith("acknowledg")
+            or title.startswith("reference")
+            or title.startswith("bibliograph"))
+
+
+def _has_substantive_pack(pack):
+    sections = (pack or {}).get("sections", [])
+    equations = (pack or {}).get("equations", [])
+    return (any(str(section.get("text") or "").strip()
+                and not _is_metadata_section(section)
+                for section in sections)
+            or any(str(equation.get("latex") or "").strip()
+                   for equation in equations))
+
+
+def _section_coverage(plan_graph, pages, learning_path, pack):
+    sections = (pack or {}).get("sections", [])
+    included = {
+        node_id for chapter in learning_path["chapters"]
+        for node_id in chapter["conceptIds"]
+    }
+    covered_by_ref = defaultdict(set)
+    equation_sections = {
+        equation.get("id"): section_key(equation.get("section"))
+        for equation in (pack or {}).get("equations", [])
+        if equation.get("id")
+    }
+    for node in plan_graph["nodes"]:
+        if node.get("id") not in included:
+            continue
+        markdown = _page_for(node, pages)
+        if not markdown:
+            continue
+        refs = {section_key(node.get("source_ref"))}
+        for evidence in _EVIDENCE_REF.findall(markdown):
+            refs.add(equation_sections.get(evidence) or section_key(evidence))
+        for ref in refs - {""}:
+            covered_by_ref[ref].add(node["id"])
+
+    rows = []
+    for section in sections:
+        section_id = section.get("id")
+        key = section_key(section_id)
+        if not section_id or not key:
+            continue
+        rows.append({
+            "id": section_id,
+            "key": key,
+            "title": section.get("title", ""),
+            "level": section.get("level"),
+            "substantive": (bool(str(section.get("text") or "").strip())
+                            and not _is_metadata_section(section)),
+            "coveredByConceptIds": sorted(covered_by_ref.get(key, [])),
+        })
+
+    top_level = []
+    uncovered = []
+    for row in rows:
+        if row["substantive"] and not row["coveredByConceptIds"]:
+            uncovered.append(row["id"])
+        if row["level"] != 1:
+            continue
+        descendants = [candidate for candidate in rows
+                       if candidate["key"].startswith(row["key"] + ".")]
+        substantive = [candidate for candidate in descendants
+                       if candidate["substantive"]]
+        covered_by = sorted({
+            node_id for candidate in [row, *descendants]
+            for node_id in candidate["coveredByConceptIds"]
+        })
+        covered = bool(row["coveredByConceptIds"]) if row["substantive"] \
+            else all(candidate["coveredByConceptIds"] for candidate in substantive)
+        top_level.append({
+            "id": row["id"],
+            "title": row["title"],
+            "covered": covered,
+            "coveredByConceptIds": covered_by,
+            "subsections": [{
+                "id": candidate["id"],
+                "title": candidate["title"],
+                "covered": bool(candidate["coveredByConceptIds"]),
+                "coveredByConceptIds": candidate["coveredByConceptIds"],
+            } for candidate in substantive],
+        })
+    return {"topLevelSections": top_level,
+            "uncoveredSectionIds": sorted(uncovered)}
+
+
+def _coverage(plan_graph, pages, learning_path, pack=None):
+    authored = _authored_node_ids(plan_graph, pages)
+    covered = {node_id for chapter in learning_path["chapters"]
+               for node_id in chapter["conceptIds"]}
+    uncovered = [node_id for node_id in authored if node_id not in covered]
+    return {"authoredConcepts": len(authored),
+            "coveredConcepts": len(authored) - len(uncovered),
+            "uncoveredConceptIds": uncovered,
+            **_section_coverage(plan_graph, pages, learning_path, pack)}
+
+
+_CHECKPOINT_KINDS = {"prediction", "application", "debug", "interpretation"}
+_CHECKPOINT_PLACEMENTS = {
+    "after-intuition", "after-mechanics", "chapter-end",
+}
+
+
+def _validate_reviewed_checkpoints(learning_path, quiz_items):
+    by_id = {}
+    for item in quiz_items:
+        if item["id"] in by_id:
+            raise ValueError(f"duplicate quiz item id '{item['id']}'")
+        by_id[item["id"]] = item
+    claimed_by = {}
+    chapters = {chapter["id"]: chapter
+                for chapter in learning_path["chapters"]}
+    for chapter in learning_path["chapters"]:
+        members = set(chapter["conceptIds"])
+        for checkpoint_id in chapter["checkpointIds"]:
+            if checkpoint_id in claimed_by:
+                raise ValueError(f"duplicate checkpoint id '{checkpoint_id}'")
+            claimed_by[checkpoint_id] = chapter["id"]
+            item = by_id.get(checkpoint_id)
+            if item is None:
+                raise ValueError(
+                    f"learning chapter '{chapter['id']}' checkpoint "
+                    f"missing loaded quiz item '{checkpoint_id}'")
+            if item["chapterId"] != chapter["id"]:
+                raise ValueError(
+                    f"checkpoint '{checkpoint_id}' belongs to chapter "
+                    f"'{item['chapterId']}', not '{chapter['id']}'")
+            if item["kind"] not in _CHECKPOINT_KINDS:
+                raise ValueError(
+                    f"checkpoint '{checkpoint_id}' has invalid kind '{item['kind']}'")
+            if item["placement"] not in _CHECKPOINT_PLACEMENTS:
+                raise ValueError(
+                    f"checkpoint '{checkpoint_id}' has invalid placement "
+                    f"'{item['placement']}'")
+            if item["nodeId"] not in members:
+                raise ValueError(
+                    f"checkpoint '{checkpoint_id}' node '{item['nodeId']}' "
+                    f"is not a member of chapter '{chapter['id']}'")
+    for item in quiz_items:
+        chapter_id = item.get("chapterId")
+        if chapter_id in chapters and claimed_by.get(item["id"]) != chapter_id:
+            raise ValueError(
+                f"quiz item '{item['id']}' names reviewed chapter "
+                f"'{chapter_id}' but is not listed exactly once by that chapter")
+
+
 def _provenance_ref(raw, known_sections, label):
     """R16.C2 — keep a source_ref only when it resolves to an emitted section.
 
@@ -365,6 +764,9 @@ def _load_quiz(path, known_node_ids, known_sections=None):
         out.append({
             "id": item["id"],
             "nodeId": item["nodeId"],
+            "chapterId": item.get("chapterId", ""),
+            "kind": item.get("kind", "interpretation"),
+            "placement": item.get("placement", "chapter-end"),
             "prompt": item["prompt"],
             "options": [{"text": o["text"], "explain": o["explain"]}
                         for o in options],
@@ -463,18 +865,213 @@ def _load_viz(viz_dir, pages_dir, known_sections=None):
     return out
 
 
+_WORD = re.compile(r"[A-Za-z0-9]+(?:[-'][A-Za-z0-9]+)?")
+_LIST_ITEM = re.compile(r"^(?:[-+*]|\d+[.)])\s+(?P<content>.+)$")
+_WORKED_EVIDENCE = re.compile(
+    r"\b(?P<kind>worked\s+example|counterexample|prediction\s+check|"
+    r"boundary\s+(?:case|condition))\b", re.IGNORECASE)
+_EVIDENCE_REF = re.compile(r"\[(§[A-Za-z0-9_]+|eq_[A-Za-z0-9_]+|S\d+)\]")
+
+
+def _prose_paragraphs(markdown):
+    """Yield prose paragraphs; only blocks that are not reader prose are exempt."""
+    paragraphs, current = [], []
+    in_fence = False
+    in_equation = False
+
+    def flush():
+        if current:
+            paragraphs.append(" ".join(current).strip())
+            current.clear()
+
+    for raw_line in markdown.splitlines() + [""]:
+        line = raw_line.strip()
+        if line.startswith("```"):
+            flush()
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if line.startswith("$$") or (in_equation and "$$" in line):
+            flush()
+            if line.count("$$") == 1:
+                in_equation = not in_equation
+            continue
+        if in_equation:
+            continue
+        if not line:
+            flush()
+            continue
+        item = _LIST_ITEM.match(line)
+        if raw_line.startswith(("    ", "\t")) and not item:
+            flush()
+            continue
+        if line.startswith("#") or line.startswith("|"):
+            flush()
+            continue
+        if item:
+            flush()
+            paragraphs.append(item.group("content").strip())
+            continue
+        if line.startswith(">"):
+            line = re.sub(r"^(?:>\s?)+", "", line)
+        current.append(line)
+    return paragraphs
+
+
+def _content_quality_report(pages, coverage=None, known_refs=None,
+                            required_example_ids=None):
+    warnings, errors = [], []
+    paragraph_rows = []
+    duplicate_owners = defaultdict(list)
+    unresolved = []
+    equations_by_ref = defaultdict(set)
+    conflicting_complexity = []
+    known_refs = set(known_refs or [])
+    required_example_ids = sorted(set(required_example_ids or []))
+    example_evidence = []
+
+    for node_id, markdown in pages.items():
+        prose = _prose_paragraphs(markdown)
+        evidence = _WORKED_EVIDENCE.search("\n".join(prose))
+        if evidence:
+            example_evidence.append({
+                "nodeId": node_id,
+                "kind": evidence.group("kind").lower(),
+            })
+        for index, paragraph in enumerate(prose, start=1):
+            words = len(_WORD.findall(paragraph))
+            row = {"nodeId": node_id, "paragraph": index, "words": words}
+            paragraph_rows.append(row)
+            if words > 100:
+                errors.append(row)
+            elif words > 60:
+                warnings.append(row)
+            if words >= 15:
+                normalized = re.sub(r"\s+", " ", paragraph.lower()).strip()
+                duplicate_owners[normalized].append(node_id)
+
+        if known_refs:
+            for ref in _EVIDENCE_REF.findall(markdown):
+                normalized = ref[1:] if ref.startswith("§") else ref
+                if normalized not in known_refs:
+                    unresolved.append({"nodeId": node_id, "reference": ref})
+
+        for match in re.finditer(
+                r"\$\$(.*?)\$\$\s*\[(eq_[A-Za-z0-9_]+)\]",
+                markdown, flags=re.DOTALL):
+            formula, equation_ref = match.groups()
+            normalized_formula = re.sub(r"\s+", "", formula)
+            normalized_formula = re.sub(r"^\(\*\)", "", normalized_formula)
+            equations_by_ref[equation_ref].add(normalized_formula)
+
+        lower = markdown.lower()
+        scaling_terms = [term for term in ("quadratic", "cubic", "quartic")
+                         if term in lower]
+        if len(scaling_terms) >= 2 \
+                and not ("worst-case" in lower and "empirical" in lower):
+            conflicting_complexity.append({"nodeId": node_id,
+                                            "terms": scaling_terms})
+
+    duplicates = [
+        {"nodeIds": sorted(set(owners)), "words": text}
+        for text, owners in duplicate_owners.items()
+        if len(set(owners)) > 1
+    ]
+    contradictory = [
+        {"equationRef": equation_ref, "formulas": sorted(values)}
+        for equation_ref, values in equations_by_ref.items() if len(values) > 1
+    ]
+    long_count = len(warnings) + len(errors)
+    paragraph_count = len(paragraph_rows)
+    readability = {
+        "paragraphs": paragraph_count,
+        "warnings": warnings,
+        "errors": errors,
+        "longParagraphRatio": (long_count / paragraph_count
+                               if paragraph_count else 0.0),
+    }
+    uncovered_sections = (coverage or {}).get("uncoveredSectionIds", [])
+    example_covered_ids = sorted(
+        entry["nodeId"] for entry in example_evidence
+        if entry["nodeId"] in required_example_ids)
+    missing_example_ids = sorted(
+        set(required_example_ids) - set(example_covered_ids))
+    worked_example_coverage = {
+        "requiredConceptIds": required_example_ids,
+        "coveredConceptIds": example_covered_ids,
+        "missingConceptIds": missing_example_ids,
+        "evidence": sorted(example_evidence, key=lambda entry: entry["nodeId"]),
+    }
+    return {
+        "coverage": coverage or {},
+        "readability": readability,
+        "unresolvedReferences": unresolved,
+        "duplicatedExplanations": duplicates,
+        "contradictoryFormulas": contradictory,
+        "conflictingComplexityClaims": conflicting_complexity,
+        "workedExampleCoverage": worked_example_coverage,
+        "releasePass": (not errors
+                        and (not paragraph_count
+                             or long_count / paragraph_count <= 0.10)
+                        and not unresolved
+                        and not duplicates
+                        and not contradictory
+                        and not conflicting_complexity
+                        and not uncovered_sections
+                        and not missing_example_ids),
+    }
+
+
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None, viz_dir=None,
-                 next_steps=None, quiz=None):
+                 next_steps=None, quiz=None, learning_path=None, release=False):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir)
+    code_listings, enriched_nodes = _code_listings(plan_graph, repo_dir)
+    graph = {**plan_graph, "nodes": enriched_nodes}
+    if release and not learning_path:
+        raise ValueError("release build requires a reviewed --learning-path manifest")
+    sections = {
+        section_key(s["id"]): {"title": s.get("title", ""),
+                               "text": s.get("text", "")}
+        for s in (pack or {}).get("sections", []) if section_key(s["id"])
+    }
+    quiz_items = (_load_quiz(
+        quiz, {n["id"] for n in graph["nodes"]}, sections) if quiz else [])
+    learning = (_load_learning_path(learning_path, graph, pages)
+                if learning_path else
+                _fallback_learning_path(graph, hotspots, pages))
+    if release and not learning["reviewed"]:
+        raise ValueError("release build requires a reviewed learning-path manifest")
+    if release and not pages:
+        raise ValueError("release build requires a nonempty --pages-dir")
+    if release and not _has_substantive_pack(pack):
+        raise ValueError(
+            "release build requires --pack with substantive sections or equations")
+    if release or learning["reviewed"]:
+        _validate_reviewed_checkpoints(learning, quiz_items)
+    coverage = _coverage(graph, pages, learning, pack)
+    if release and (not coverage["authoredConcepts"]
+                    or not coverage["coveredConcepts"]):
+        raise ValueError(
+            "release build requires at least one authored and covered concept")
+    known_refs = {
+        item["id"] for group in ("sections", "equations")
+        for item in (pack or {}).get(group, []) if item.get("id")
+    }
+    quality_report = _content_quality_report(
+        pages, coverage=coverage, known_refs=known_refs,
+        required_example_ids=_authored_node_ids(graph, pages))
+    if release and not quality_report["releasePass"]:
+        raise ValueError("release build requires qualityReport.releasePass=true")
     notes, glossary, trace, shared_terms = _load_notes(
         wiki_dir, plan_graph["meta"].get("generated", ""))
     if shared_terms:
         # Paper-wide terms reach every concept; a concept that defines the same
         # term keeps its own, more precise sense.
         glossary = {node["id"]: {**shared_terms, **glossary.get(node["id"], {})}
-                    for node in plan_graph["nodes"]}
+                    for node in graph["nodes"]}
     page_owners = {
         _page_key(node["page"]): node["id"]
         for node in plan_graph["nodes"]
@@ -486,19 +1083,24 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                       "date": plan_graph["meta"].get("generated", "")})
     if stripped:
         print(f"stripped {stripped} image block(s) (rich media is v2)")
-    bundle = {"meta": plan_graph["meta"], "nodes": plan_graph["nodes"],
-              "edges": plan_graph["edges"], "pages": pages, "notes": notes,
-              "hotspots": hotspots, "clusters": _clusters(plan_graph),
-              "tour": _tour(plan_graph, hotspots, pages),
+    bundle = {"bundleVersion": 2,
+              "meta": graph["meta"], "nodes": graph["nodes"],
+              "edges": graph["edges"], "pages": pages, "notes": notes,
+              "hotspots": hotspots, "clusters": _clusters(graph),
+              "tour": _tour(graph, hotspots, pages),
+              "learningPath": learning,
+              "coverage": coverage,
+              "qualityReport": quality_report,
               "provenance": (pack or {}).get("extraction", {}),
-              "centrality": _centrality(plan_graph),
-              "eqIndex": _eq_index(plan_graph, pack),
+              "centrality": _centrality(graph),
+              "eqIndex": _eq_index(graph, pack),
               "trace": sorted(trace, key=lambda t: (t["nodeId"], t["phase"])),
               "glossary": glossary,
-              "excerpts": _excerpts(plan_graph, hotspots, repo_dir),
+              "excerpts": _excerpts(graph, hotspots, repo_dir),
+              "codeListings": code_listings,
               "dependentSide": _DEPENDENT_SIDE}
     if repo_dir:
-        bundle["mtimes"] = _source_dates(plan_graph, repo_dir)
+        bundle["mtimes"] = _source_dates(graph, repo_dir)
     # R16.C2 — sections are resolved before quiz and viz, which validate their
     # source_ref against these keys.
     sections = {
@@ -510,10 +1112,11 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
         bundle["viz"] = _load_viz(viz_dir, pages_dir, sections)
     if next_steps:  # R15.1: same opt-in discipline
         bundle["nextSteps"] = _load_next_steps(
-            next_steps, {n["id"] for n in plan_graph["nodes"]})
+            next_steps, {n["id"] for n in graph["nodes"]})
     if quiz:  # R15.2: same opt-in discipline
-        bundle["quiz"] = _load_quiz(
-            quiz, {n["id"] for n in plan_graph["nodes"]}, sections)
+        bundle["checkpoints"] = quiz_items
+        # One-cycle compatibility alias for pre-v2 dashboard consumers.
+        bundle["quiz"] = quiz_items
     if pack:  # R15.11: same opt-in discipline
         bundle["sections"] = sections
         # The paper's own \newcommand table. Equations are copied verbatim from
@@ -543,6 +1146,10 @@ def main(argv=None):
                                         "omit to leave the bundle untouched")
     p.add_argument("--quiz", help="R15.2 quiz.json; "
                                   "omit to leave the bundle untouched")
+    p.add_argument("--learning-path", help="reviewed learning-path.json; "
+                                           "omit for an unreviewed fallback")
+    p.add_argument("--release", action="store_true",
+                   help="fail closed on reviewed learning-path and quality checks")
     p.add_argument("--update", action="store_true",
                    help="patch opt-in sections (--viz-dir/--next-steps/--quiz)"
                         " into the existing --out without a full rebuild")
@@ -551,6 +1158,8 @@ def main(argv=None):
     load = lambda x: json.loads(Path(x).read_text(encoding="utf-8")) if x else None
 
     if a.update:
+        if a.release:
+            p.error("--release requires a full build, not --update")
         if not any([a.viz_dir, a.next_steps, a.quiz]):
             p.error("--update needs at least one of "
                     "--viz-dir / --next-steps / --quiz")
@@ -567,7 +1176,10 @@ def main(argv=None):
             bundle["nextSteps"] = _load_next_steps(a.next_steps, known)
             changed.append("nextSteps")
         if a.quiz:
-            bundle["quiz"] = _load_quiz(a.quiz, known, sections)
+            quiz_items = _load_quiz(a.quiz, known, sections)
+            bundle["checkpoints"] = quiz_items
+            # One-cycle compatibility alias for pre-v2 dashboard consumers.
+            bundle["quiz"] = quiz_items
             changed.append("quiz")
         Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
         print(f"{a.out}: updated sections: {', '.join(changed)}")
@@ -581,7 +1193,8 @@ def main(argv=None):
                           hotspots=(load(a.hotspots) or {}).get("hotspots")
                           if a.hotspots else None,
                           repo_dir=a.repo_dir, viz_dir=a.viz_dir,
-                          next_steps=a.next_steps, quiz=a.quiz)
+                          next_steps=a.next_steps, quiz=a.quiz,
+                          learning_path=a.learning_path, release=a.release)
     Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
     print(f"{a.out}: {len(bundle['nodes'])} nodes, {len(bundle['tour'])} tour steps")
     return 0

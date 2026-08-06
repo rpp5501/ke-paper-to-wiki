@@ -1,9 +1,6 @@
-// R16.A1 — the mastery ledger: evidence of understanding per node, gathered
-// from quiz answers and R13 viz bet outcomes (the two feed one ledger — that
-// is the R13 fold). Deliberately not a score: no points, no XP, no
-// leaderboard. Levels only ever climb, so a wrong answer never erases that
-// the learner engaged; the streak is the part that decays, and a zeroed
-// streak is what surfaces a node for review.
+// The mastery ledger records learner evidence per concept. It is deliberately
+// not a score: reading and assessment are separate, and a wrong answer revokes
+// mastery until two new, distinct application successes are recorded.
 import {
   browserStorage,
   readJSON,
@@ -11,25 +8,46 @@ import {
   type StorageLike,
 } from "./persist";
 
-export type MasteryLevel = "unseen" | "seen" | "quizzed" | "mastered";
+export type MasteryLevel =
+  | "unseen"
+  | "reading"
+  | "read"
+  | "practiced"
+  | "mastered";
+export type MasteryEvidenceKind =
+  | "prediction"
+  | "application"
+  | "debug"
+  | "interpretation"
+  | "viz";
 export type MasteryRecord = {
   level: MasteryLevel;
+  /** True only after the guided route's end-of-chapter sentinel. */
+  read: boolean;
   streak: number;
   lastAnswered: string | null;
+  /** Distinct, correct application checkpoints since the latest wrong answer. */
+  evidenceIds: string[];
 };
 export type MasteryLedger = Record<string, MasteryRecord>;
 
-export const MASTERY_STORAGE_KEY = "paper-dashboard.mastery.v1";
+// v1 could not distinguish application evidence from ordinary quiz answers.
+// Starting a new ledger avoids displaying unverified legacy mastery as proof.
+export const MASTERY_STORAGE_KEY = "paper-dashboard.mastery.v2";
 
-/** Consecutive correct answers that earn "mastered". */
+/** Distinct application-level successes required for mastery. */
 export const MASTERY_STREAK = 2;
 
-export const LEVELS: MasteryLevel[] = ["unseen", "seen", "quizzed", "mastered"];
+export const LEVELS: MasteryLevel[] = [
+  "unseen", "reading", "read", "practiced", "mastered",
+];
 
 export const EMPTY_RECORD: MasteryRecord = {
   level: "unseen",
+  read: false,
   streak: 0,
   lastAnswered: null,
+  evidenceIds: [],
 };
 
 function rank(level: MasteryLevel): number {
@@ -44,47 +62,79 @@ export function recordFor(ledger: MasteryLedger, nodeId: string): MasteryRecord 
   return ledger[nodeId] ?? EMPTY_RECORD;
 }
 
-/** Node was opened — the weakest evidence there is. Never lowers a level. */
-export function markSeen(ledger: MasteryLedger, nodeId: string): MasteryLedger {
+function promote(
+  ledger: MasteryLedger,
+  nodeId: string,
+  level: MasteryLevel,
+): MasteryLedger {
   const previous = recordFor(ledger, nodeId);
-  if (rank(previous.level) >= rank("seen")) return ledger;
-
-  return { ...ledger, [nodeId]: { ...previous, level: "seen" } };
+  if (rank(previous.level) >= rank(level)) return ledger;
+  return { ...ledger, [nodeId]: { ...previous, level } };
 }
 
-/** One graded answer: a quiz item or a resolved viz bet. */
+/** The learner has entered a concept; this is not evidence that it was read. */
+export function markReading(ledger: MasteryLedger, nodeId: string): MasteryLedger {
+  return promote(ledger, nodeId, "reading");
+}
+
+/** The guided route's end-of-chapter sentinel was reached. */
+export function markRead(ledger: MasteryLedger, nodeId: string): MasteryLedger {
+  const previous = recordFor(ledger, nodeId);
+  if (previous.read && rank(previous.level) >= rank("read")) return ledger;
+  return {
+    ...ledger,
+    [nodeId]: {
+      ...previous,
+      level: higherLevel(previous.level, "read"),
+      read: true,
+    },
+  };
+}
+
+/**
+ * One graded answer. Only `application` checkpoints can add mastery evidence;
+ * the other interactions still show meaningful practice without minting a
+ * mastery badge. Missing kinds deliberately behave as non-application legacy
+ * answers, so callers must classify new assessment content explicitly.
+ */
 export function recordAnswer(
   ledger: MasteryLedger,
   nodeId: string,
   correct: boolean,
   now: Date = new Date(),
+  evidenceId?: string,
+  kind: MasteryEvidenceKind = "prediction",
 ): MasteryLedger {
   const previous = recordFor(ledger, nodeId);
   const streak = correct ? previous.streak + 1 : 0;
-  const earned: MasteryLevel = streak >= MASTERY_STREAK ? "mastered" : "quizzed";
+  const evidenceIds = !correct
+    ? []
+    : kind === "application" && evidenceId
+      ? [...new Set([...previous.evidenceIds, evidenceId])]
+      : previous.evidenceIds;
+  const earned: MasteryLevel = evidenceIds.length >= MASTERY_STREAK
+    ? "mastered"
+    : "practiced";
 
   return {
     ...ledger,
     [nodeId]: {
-      level: higherLevel(previous.level, earned),
+      level: correct ? higherLevel(previous.level, earned) : "practiced",
+      read: previous.read,
       streak,
       lastAnswered: now.toISOString(),
+      evidenceIds,
     },
   };
 }
 
 export function masteredCount(ledger: MasteryLedger): number {
-  return Object.values(ledger).filter((r) => r.level === "mastered").length;
+  return Object.values(ledger).filter((record) => record.level === "mastered").length;
 }
 
 /** Days after which correct-but-old evidence is worth revisiting. */
 export const REVIEW_AFTER_DAYS = 14;
 
-// R16.A3 — nodes whose evidence just broke (streak reset) or has gone stale.
-// Only answered nodes qualify: an untouched node has streak 0 too, and
-// queueing the whole graph for "review" would be meaningless. Plain date
-// math, no scheduler and no notifications — Anki export stays the heavy-SRS
-// path.
 export function reviewQueue(
   ledger: MasteryLedger,
   now: Date = new Date(),
@@ -115,18 +165,22 @@ export function readLedger(
     if (!value || typeof value !== "object") continue;
 
     const record = value as Partial<MasteryRecord>;
-    // An unknown level means a ledger written by a future (or hand-edited)
-    // build — drop the entry rather than let it leak into level comparisons.
     if (!LEVELS.includes(record.level as MasteryLevel)) continue;
 
     ledger[nodeId] = {
       level: record.level as MasteryLevel,
+      read: record.read === true || record.level === "read",
       streak: typeof record.streak === "number" && Number.isFinite(record.streak)
         ? Math.max(0, Math.round(record.streak))
         : 0,
       lastAnswered: typeof record.lastAnswered === "string"
         ? record.lastAnswered
         : null,
+      evidenceIds: Array.isArray(record.evidenceIds)
+        ? [...new Set(record.evidenceIds.filter(
+          (value): value is string => typeof value === "string" && value.length > 0,
+        ))]
+        : [],
     };
   }
   return ledger;

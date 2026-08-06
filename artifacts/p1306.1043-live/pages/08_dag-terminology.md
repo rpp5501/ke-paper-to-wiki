@@ -1,22 +1,50 @@
 # DAG Terminology
 ## TL;DR {#tldr}
-Structural Intervention Distance compares a true DAG against an estimated graph, and the estimate is very often not a single DAG but an equivalence class of them — so before SID can be defined, the paper has to fix a shared vocabulary for graphs, orientations, and the "same independence structure" relation that groups DAGs into classes. This page collects that vocabulary: subgraphs, parents and skeletons, directed paths and ancestry, PDAGs and chain graphs, and the Markov-equivalence machinery that turns a set of indistinguishable DAGs into one CPDAG. Every later SID definition — what counts as an adjustment set, what it means to compare a DAG to a CPDAG — leans on these terms without re-deriving them.
+SID compares a true DAG with an estimate that may represent an entire equivalence class. The paper therefore fixes a vocabulary for graph structure, orientation, and shared independence structure before defining SID.
+
+This page covers subgraphs, parent sets, skeletons, paths, ancestry, PDAGs, chain graphs, and Markov equivalence. Later definitions of adjustment sets and DAG-to-CPDAG comparison rely on these terms.
 
 ## Intuition {#intuition}
-A graph carries two kinds of information that are worth separating: *which pairs of variables are connected at all* (the skeleton), and *which direction, if any, each connection points* (the orientation). SID needs both, because the skeleton alone doesn't tell you who can be used to adjust for confounding, and the orientation alone doesn't tell you two graphs are "close" as unlabeled structures.
+| Graph feature | What it records | Why SID needs it |
+|---|---|---|
+| Skeleton | Which variable pairs are connected | It captures structure without an orientation |
+| Orientation | Which way a connection points | It determines parent sets for adjustment |
 
-Directed paths encode a causal ordering — an ancestor can influence a descendant, never the reverse — and this is what makes a DAG acyclic in the first place: no descendant can loop back to be its own ancestor. Blocking a path is the graph-theoretic stand-in for "no information flows here": a **fork or chain** (a middle node with the arrows pointing away, or straight through) shuts the path down once you condition on the middle node, while a **collider** (a middle node with both arrows pointing in) does the opposite — it's closed by default and only opens once you condition on it or something downstream of it.
+Directed paths impose causal order: an ancestor can influence a descendant, never the reverse. A DAG is acyclic because no descendant can return to be its own ancestor.
 
-Markov equivalence is the idea that two differently-drawn DAGs can imply the exact same conditional-independence structure, so no amount of observational data could ever tell them apart. A CPDAG is the compressed representation of that whole equivalence class: an edge stays directed only if every DAG in the class agrees on its direction, and becomes undirected the moment the class disagrees. This is why SID has to define comparisons against CPDAGs, not just DAGs — it's the natural output of causal discovery from observational data.
+Path blocking has two opposite cases:
+
+- A fork or chain closes when conditioning on its middle node.
+- A collider is closed by default and opens when conditioning on it or one of its descendants.
+
+Markov-equivalent DAGs imply the same conditional independences, so observational data cannot distinguish them.
+
+A CPDAG compresses that class. An edge is directed only when every member agrees; otherwise it is undirected.
+
+SID must therefore compare against CPDAGs as well as DAGs. Observational causal discovery naturally returns this equivalence-class representation.
+
+**Worked example:** compare $A\to B\to C$ with $A\to B\leftarrow C$. Conditioning on $B$ blocks the chain but opens the collider, so the same three nodes encode opposite path-blocking behavior [§sec_7].
 
 ## Mechanics {#mechanics}
-**Subgraphs and skeletons separate structure from orientation.** $H$ is a subgraph of $G$ when its nodes and edges are subsets of $G$'s, and a proper subgraph when it is missing at least one edge; the skeleton discards direction entirely, treating $i \to j$, $i \leftarrow j$, and $i - j$ as the same undirected connection between $i$ and $j$ for the purpose of counting edges [§sec_7].
+**Subgraphs and skeletons separate structure from orientation.** $H$ is a subgraph of $G$ when its nodes and edges are subsets of $G$'s. It is proper when it misses at least one edge [§sec_7].
 
-**Adjacency and parenthood are the two vocabularies edges are read in.** Two nodes are adjacent if any edge connects them in either direction; $j$ is a parent of $k$ (and $k$ a child of $j$) specifically when the edge is directed $j \to k$, so "adjacent" is the skeleton-level notion and "parent/child" is the oriented one layered on top of it [§sec_7].
+The skeleton discards direction. It treats $i \to j$, $i \leftarrow j$, and $i-j$ as the same undirected connection for edge counting [§sec_7].
 
-**Directed paths generate the ancestor/descendant partition that acyclicity depends on.** A path is a sequence of distinct, pairwise-adjacent nodes; if every edge on it points the same way, it is a directed path, and its endpoint is a descendant of its start (equivalently the start is an ancestor of the endpoint) [§sec_7]. Every node not reachable this way is, by definition, a non-descendant — this partition is what "no directed cycle" is a statement about: a DAG forbids any pair where each node is a descendant of the other [§sec_7].
+**Adjacency and parenthood are two edge vocabularies.** Nodes are adjacent when any edge connects them [§sec_7].
 
-**A semi-directed cycle is what a PDAG must avoid, and a collider is what turns a path from open to closed.** A cycle back to the starting node counts as semi-directed once at least one of its edges is truly directed rather than undirected; a node in the middle of a path is a collider precisely when both of its neighboring edges point into it ($j \to k \leftarrow l$) [§sec_7]. PDAGs forbid directed cycles, chain graphs additionally forbid semi-directed cycles between any pair, and within a chain graph the nodes reachable from one another purely by undirected edges form an equivalence class called a chain component [§sec_7]. A DAG is the special case of a PDAG where every single edge is directed [§sec_7].
+$j$ is a parent of $k$ and $k$ a child of $j$ only for directed $j\to k$. Adjacency is skeleton-level; parenthood is its oriented counterpart [§sec_7].
+
+**Directed paths define ancestry.** A path is a sequence of distinct, pairwise-adjacent nodes. It is directed when every edge points the same way [§sec_7].
+
+The endpoint of a directed path is a descendant of its start; all other nodes are non-descendants. A DAG forbids two nodes from being descendants of each other [§sec_7].
+
+**A semi-directed cycle contains at least one directed edge.** A middle node is a collider when both neighboring edges point into it, $j \to k \leftarrow l$ [§sec_7].
+
+| Graph class | Restriction or feature |
+|---|---|
+| PDAG | Forbids directed cycles |
+| Chain graph | Also forbids semi-directed cycles; undirected-reachable nodes form a chain component |
+| DAG | A PDAG with every edge directed |
 
 ## The Math {#the-math}
 The paper states the blocking rule for a path given a conditioning set $S$ as a case split on the middle node $k$, and the two cases are structurally opposite — worth walking through side by side rather than just quoting.
@@ -34,7 +62,11 @@ steps:
     why: "This is the reverse condition of Case 1: conditioning on a collider (or its descendant) opens the path instead of closing it — the two cases cannot be merged into one rule [§sec_7]"
 ```
 
-A path between disjoint sets $X$ and $Y$ is $d$-separated by $S$ only when *every* path between them is blocked by this rule, and the joint distribution is Markov with respect to the graph when $d$-separation implies conditional independence, faithful when the converse holds too [§sec_7]. Two DAGs are Markov equivalent exactly when they entail the same set of $d$-separations — a purely graphical criterion that never has to touch the distribution itself [§sec_7].
+A path family between disjoint sets $X$ and $Y$ is $d$-separated by $S$ only when every path is blocked [§sec_7].
+
+The distribution is Markov when $d$-separation implies conditional independence, and faithful when the converse also holds [§sec_7].
+
+Two DAGs are Markov equivalent exactly when they entail the same $d$-separations. This is a graphical test, not a distributional one [§sec_7].
 
 That equivalence relation is what makes the CPDAG well-defined: it is the chain graph obtained by comparing every DAG in an equivalence class edge by edge.
 

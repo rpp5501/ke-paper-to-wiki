@@ -1,5 +1,5 @@
-// R15.2 — typed access to the optional KE_DATA.quiz list.
-// A build without --quiz has no key; every consumer goes through here.
+// V2 reads the checkpoint contract; `quiz` remains a one-cycle legacy alias.
+// A build without --quiz has neither key, so every consumer goes through here.
 import { KE_DATA } from "../data.gen";
 
 export type QuizOption = { text: string; explain: string };
@@ -7,6 +7,9 @@ export type QuizOption = { text: string; explain: string };
 export type QuizItem = {
   id: string;
   nodeId: string;
+  chapterId?: string;
+  kind?: "prediction" | "application" | "debug" | "interpretation";
+  placement?: "after-intuition" | "after-mechanics" | "chapter-end";
   prompt: string;
   options: QuizOption[];
   correct: number;
@@ -17,8 +20,8 @@ export type QuizItem = {
 };
 
 export function quizFrom(data: unknown): QuizItem[] {
-  const quiz = (data as { quiz?: QuizItem[] }).quiz;
-  return quiz ?? [];
+  const bundle = data as { checkpoints?: QuizItem[]; quiz?: QuizItem[] };
+  return bundle.checkpoints ?? bundle.quiz ?? [];
 }
 
 const QUIZ = quizFrom(KE_DATA);

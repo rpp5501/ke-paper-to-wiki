@@ -226,26 +226,23 @@ describe("Drawer", () => {
     const markup = renderToStaticMarkup(
       <DrawerPresentation
         {...drawerActions}
-        selected="scaled-dot-product-attention"
+        selected="structural-intervention-distance"
       />,
     );
 
-    expect(markup).toContain("Scaled Dot-Product Attention");
+    expect(markup).toContain("Structural Intervention Distance (SID)");
     expect(markup).toContain("The Math");
-    expect(markup).toContain("eq_1");
-    expect(markup).toContain("sqrt");
-    expect(markup).toContain("Query vectors used to request relevant information.");
-    expect(markup).toContain(
-      "concept · sec:3.2.1 · unlocks 2 concept(s) directly, 2 more downstream",
-    );
+    expect(markup).toContain("eq_4");
+    expect(markup).toContain("intervention");
+    expect(markup).toContain("drawer-meta");
   });
 
   it("orders plain-words lead before equations, with meta demoted to the end", () => {
     const markup = renderToStaticMarkup(
-      <DrawerPresentation {...drawerActions} selected="scaled-dot-product-attention" />,
+      <DrawerPresentation {...drawerActions} selected="structural-intervention-distance" />,
     );
     const lead = markup.indexOf("drawer-lead");
-    const eq = markup.indexOf("drawer-equations");
+    const eq = markup.indexOf("<summary>The Math</summary>");
     const meta = markup.indexOf("drawer-meta");
     expect(lead).toBeGreaterThanOrEqual(0);
     expect(lead).toBeLessThan(eq);
@@ -254,7 +251,7 @@ describe("Drawer", () => {
 
   it("renders TL;DR as an always-open lead, not a collapsible summary", () => {
     const markup = renderToStaticMarkup(
-      <DrawerPresentation {...drawerActions} selected="scaled-dot-product-attention" />,
+      <DrawerPresentation {...drawerActions} selected="structural-intervention-distance" />,
     );
     expect(markup).toContain("drawer-lead");
     expect(markup).not.toContain("<summary>TL;DR</summary>");
@@ -262,7 +259,7 @@ describe("Drawer", () => {
 
   it("keeps Intuition open and The Math collapsed", () => {
     const markup = renderToStaticMarkup(
-      <DrawerPresentation {...drawerActions} selected="scaled-dot-product-attention" />,
+      <DrawerPresentation {...drawerActions} selected="structural-intervention-distance" />,
     );
     const chunks = markup.split("<details");
     const intuition = chunks.find((chunk) => chunk.includes("<summary>Intuition</summary>"));
@@ -274,7 +271,7 @@ describe("Drawer", () => {
 
   it("does not render a code disclosure for a concept node with no code or bridge", () => {
     const markup = renderToStaticMarkup(
-      <DrawerPresentation {...drawerActions} selected="scaled-dot-product-attention" />,
+      <DrawerPresentation {...drawerActions} selected="graph-comparison-problem" />,
     );
     expect(markup).not.toContain("See it in code");
   });

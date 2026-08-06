@@ -1,22 +1,58 @@
 # Structural Intervention Distance (SID)
 ## TL;DR {#tldr}
-The Structural Intervention Distance (SID) is a pre-metric for comparing an estimated causal DAG against a true one, built specifically for settings where the graph will be used to predict the effect of interventions. Instead of counting edge edits like the Structural Hamming Distance (SHD), it counts how many pairwise intervention distributions the estimate would get wrong if you used it to compute do-effects via parent adjustment. Because two graphs can look equally "close" under an edit-distance yet differ enormously in how trustworthy their causal predictions are, SID is designed to separate structural mistakes that matter for intervention from those that don't. It extends beyond DAG-vs-DAG comparison to DAGs-vs-CPDAGs, has a symmetrized variant, and can be combined with an edge-count penalty when extra edges are unwanted.
+SID is a pre-metric for comparing an estimated causal DAG with a true one when the graph will predict intervention effects.
+
+Unlike SHD, SID counts pairwise intervention distributions that parent adjustment gets wrong. It distinguishes equally close-looking graphs whose causal predictions differ sharply.
+
+SID also supports DAG-to-CPDAG comparisons, symmetrization, and a penalty for unwanted extra edges.
 
 ## Intuition {#intuition}
-Picture a true causal graph and two flawed estimates that happen to have the exact same SHD to it — one estimate adds a single spurious edge, the other reverses a single edge. Edit-distance treats these mistakes as identical in severity. But they are not: adding a spurious edge among nodes that are already correctly connected barely disturbs the parent sets used for adjustment, so most intervention predictions still come out right. Reversing an edge, by contrast, can silently delete a confounder from the graph — the adjustment set computed from the flawed graph then misses a variable it needed, and several downstream intervention predictions become systematically wrong.
+Consider two estimates with the same SHD: one adds a spurious edge and one reverses an edge. Edit distance treats those mistakes as equally severe.
 
-SID is built to notice this asymmetry. Rather than asking "how many edges differ," it asks "for every ordered pair of variables, would this estimated graph tell me the correct answer if I asked it what happens when I intervene here?" A metric defined that way naturally counts the reversed-edge mistake as far more damaging than the added-edge mistake, even when both cost exactly one point of SHD.
+An added edge can leave the parent sets useful for adjustment, so most intervention predictions remain right. A reversal can remove a confounder and systematically corrupt downstream predictions.
+
+SID is built to notice that asymmetry. For every ordered pair, it asks whether the estimate gives the correct intervention answer.
+
+That can make one reversed edge much more costly than one added edge, even when both cost one unit of SHD.
+
+### Running four-node example: count the pairs
+
+Use $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$.
+
+For $\mathrm{SID}(G,H)$, the estimated parent sets are supersets of the true ones. All 12 ordered pairs pass, so the SID error matrix is empty and $\mathrm{SID}(G,H)=0$ [§sec_2_3; sid.py:L183-L253].
+
+Now swap the arguments. For $\mathrm{SID}(H,G)$, estimate $G$ omits true parent $B$ from $C$'s adjustment set. Exactly two ordered pairs fail: $(C,B)$ and $(C,D)$. Thus $\mathrm{SID}(H,G)=2$ [eq_7; sid.py:L183-L253].
+
+**Worked example:** this pair-by-pair result exposes all three ideas at once. SHD is one, SID is asymmetric, and one extra edge is free only in the truth-to-superset direction.
 
 ## Mechanics {#mechanics}
-**Correctness is defined per ordered pair, against every compatible distribution:** for nodes $i \neq j$, the intervention distribution from $i$ to $j$ computed in the estimate $H$ is called correctly estimated only if it matches the one computed in the true DAG $G$ for *every* observational distribution that is Markov with respect to $G$ — not just one. This is deliberate: a fully factorized (independent) distribution would trivially make almost any two DAGs agree on all interventions, which would make the distance blind to real structural error. Quantifying over the whole Markov-compatible family instead yields a distance that depends only on graph structure, never on which particular distribution happens to hold [§sec_2_1].
+**Correctness is defined per ordered pair over every compatible distribution.** For $i \neq j$, $H$ is correct only when its intervention distribution matches $G$'s for every observational distribution Markov to $G$ [§sec_2_1].
 
-**The count itself is a map into the naturals:** SID takes an ordered pair of DAGs and returns the number of ordered pairs $(i,j)$ for which $H$'s intervention prediction is false with respect to $G$. Because the roles of $G$ (truth) and $H$ (estimate) are not interchangeable, this count is not symmetric in its two arguments [§sec_2_1].
+A fully factorized distribution could make almost any two DAGs agree. Quantifying over the full Markov-compatible family prevents that accidental agreement from hiding a structural error [§sec_2_1].
 
-**Checking correctness graphically instead of distributionally:** the naïve definition above would require testing infinitely many distributions. A graphical adjustment-validity criterion collapses this to a single structural check: a set $\mathbf{Z}$ is a valid adjustment set for $(X,Y)$ in $G$ iff no $Z \in \mathbf{Z}$ is a descendant (in $G$) of any mediator on a directed path from $X$ to $Y$, and $\mathbf{Z}$ blocks every non-directed path between them [eq_6]. Because parent adjustment is used throughout, the object actually being tested at each pair $(i,j)$ is whether $\mathrm{PA}_H(i)$ satisfies this criterion for $(G,i,j)$ [§sec_2_2].
+The resulting distance depends on graph structure, not on one particular distribution [§sec_2_1].
 
-**This yields a purely graph-based reformulation of SID:** a pair $(i,j)$ counts as an error either when $j$ is claimed to be a child of $i$ in $H$ (i.e. $j \in \mathrm{PA}_H(i)$) while $j$ is actually a descendant of $i$ in $G$ — an outright reversal of causal direction that adjustment cannot repair — or, when $j \notin \mathrm{PA}_H(i)$, whenever $H$'s parent set fails the adjustment-validity criterion for that pair in $G$ [eq_7]. This is what makes SID computable without ever touching numerical data: both branches are graph queries [§sec_2_2].
+**SID maps an ordered DAG pair into the naturals.** It counts $(i,j)$ pairs whose intervention prediction under $H$ is false with respect to $G$ [§sec_2_1].
 
-**Extra edges are (structurally) free, missing or misdirected ones are not:** whenever the true DAG $G$ is a subgraph of the estimate $H$ (same or more edges, same orientations on shared edges), SID is exactly zero — parent adjustment in an over-connected $H$ still recovers the correct interventions, since the additional conditioning variables satisfy the criterion automatically. The converse failure mode — a missing edge or a reversed one — is what actually damages the count [§sec_2_3].
+The truth and estimate roles are not interchangeable, so SID is not symmetric [§sec_2_1].
+
+**A graphical criterion replaces infinitely many distribution checks.** Set $\mathbf{Z}$ is valid for $(X,Y)$ in $G$ exactly when it meets both conditions [eq_6]:
+
+- no member of $\mathbf{Z}$ descends from a mediator on a directed $X$-to-$Y$ path; and
+- $\mathbf{Z}$ blocks every non-directed path between $X$ and $Y$.
+
+SID tests whether $\mathrm{PA}_H(i)$ meets this criterion for $(G,i,j)$ [§sec_2_2].
+
+**SID therefore has a graph-only error test.** Pair $(i,j)$ is wrong in either case [eq_7]:
+
+- $j \in \mathrm{PA}_H(i)$ but $j$ is a descendant of $i$ in $G$; or
+- $j \notin \mathrm{PA}_H(i)$ and $H$'s parent set fails adjustment validity for that pair.
+
+Both branches are graph queries, so SID needs no numerical data [§sec_2_2].
+
+**Extra edges can be structurally free.** If true DAG $G$ is a subgraph of $H$, SID is exactly zero: parent adjustment in over-connected $H$ still recovers the correct interventions [§sec_2_3].
+
+Missing or reversed edges can instead damage the count [§sec_2_3].
 
 | Aspect | SHD | SID |
 |---|---|---|
@@ -26,7 +62,9 @@ SID is built to notice this asymmetry. Rather than asking "how many edges differ
 | Effect of reversing one edge | Costs exactly 1 | Can cost up to $\mathcal{O}(p)$ falsely-estimated pairs if a confounder is lost [§sec_2_1] |
 | Relationship when SHD = 0 | — | SID = 0 too, but the converse bound is loose and can be tight at the maximal possible SID for constant SHD [§sec_2_3] |
 
-**Extending beyond DAG-vs-DAG:** when the estimate is a CPDAG (as output by PC or GES), individual DAGs in its Markov equivalence class can disagree on intervention predictions for a pair $(i,j)$. Rather than enumerating the whole equivalence class — infeasible for large graphs — each chain component (guaranteed chordal in a valid CPDAG) is extended to DAGs *locally*, and a lower/upper bound on SID is assembled from the best- and worst-case extension per component [§sec_2_4_1]:
+**CPDAG estimates require bounds.** Member DAGs can disagree on a pair's intervention prediction, and enumerating the whole equivalence class is infeasible for large graphs [§sec_2_4_1].
+
+Instead, each chordal chain component is extended locally. Its best- and worst-case scores assemble SID's lower and upper bounds [§sec_2_4_1]:
 
 ```algorithm
 title: Lower/upper SID bounds for a DAG-vs-CPDAG comparison
@@ -43,9 +81,15 @@ lines:
     intent: "Summing per-component extremes over all components gives bounds that are each attained by some actual DAG member of the CPDAG's class [eq_8]"
 ```
 
-**What the bounds mean operationally:** the lower bound counts intervention distributions that are identifiable in $H$ with respect to $G$ and are inferred falsely, while $p(p-1)$ minus the upper bound counts those identifiable and inferred correctly — so a large gap between the two bounds signals that many pairs' correctness depends on which member of the equivalence class turns out to be true, not on a graphical fact you can settle from $H$ alone [eq_9].
+**Operational meaning of the bounds:** the lower bound counts identifiable intervention distributions inferred falsely [eq_9].
 
-**Three further extensions build on the same machinery:** penalizing additional edges adds a simple edge-count term on top of SID so that a graph with strictly more edges than $G$ no longer gets a free pass to zero distance [§sec_2_4_3]; symmetrization defines $\mathrm{SID}(G,H) + \mathrm{SID}(H,G)$ (or a stricter variant requiring agreement under distributions Markov to *both* graphs) for settings where neither graph is privileged as ground truth [§sec_2_4_4]; and swapping the parent set for a minimal adjustment set changes the conditioning-set size but empirically changes the resulting SID value on only a small fraction of randomly generated dense graphs [§sec_2_4_5].
+$p(p-1)$ minus the upper bound counts identifiable distributions inferred correctly. A large gap means many pairs depend on the unknown member DAG, not a fact settled by $H$ alone [eq_9].
+
+**Three extensions reuse the same machinery:**
+
+- Penalizing additional edges adds an edge-count term, so a dense estimate cannot receive zero for free [§sec_2_4_3].
+- Symmetrization uses $\big(\mathrm{SID}(G,H) + \mathrm{SID}(H,G)\big)/2$ when neither graph is truth [§sec_2_4_4].
+- Minimal adjustment sets change conditioning-set size but changed SID only modestly in the paper's dense-graph experiment [§sec_2_4_5].
 
 ## The Math {#the-math}
 The formal object being defined is a map from pairs of DAGs to a natural number, counting falsely-estimated ordered pairs, and its lead-in claim above is anchored here [eq_5]:
@@ -54,7 +98,8 @@ $$\begin{array}{rcl}
 \mathrm{SID}: \; \mathbb{G} \times \mathbb{G} &\rightarrow& \mathbb{N}\\
 (\G,\HH)& \mapsto &\# \{\,(i,j), i \neq j\;|\;\text{ the intervention distribution from } i \text{ to } j\\
 && \qquad \qquad \qquad \quad \text{ is falsely estimated by } \HH \text{ with respect to } \G \}
-\end{array}$$ [eq_5]
+\end{array}
+$$ [eq_5]
 
 ```annotated-eq
 latex: "\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{G} \\rightarrow \\mathbb{N}"
@@ -77,7 +122,8 @@ $$(*) \left \{
 \text{In } \G \text{, no } Z \in \B{Z} \text{ is a descendant of any } W \text{ which lies on a directed}\\
 \text{path from } X \text{ to } Y \text{ and } \B{Z} \text{ blocks all non-directed paths from } X \text{ to } Y.
 \end{array}
-\right.$$ [eq_6]
+\right.
+$$ [eq_6]
 
 Substituting parent sets for $\mathbf{Z}$ throughout turns the distributional definition of eq_5 into the purely graph-based formula actually used for computation [eq_7]:
 
@@ -86,9 +132,12 @@ $$\SID(\G,\HH) = \# \left\{\,(i,j), i \neq j\,|\,
 j \in \DE{\G}{i} & \text{if } j \in \PA{\HH}{i}\\
 \PA{\HH}{i} \text{ does not satisfy } (*) \text{ for } (\G,i,j) & \text{if } j \not \in \PA{\HH}{i}
 \end{array}
-\right\}$$ [eq_7]
+\right\}
+$$ [eq_7]
 
-**Why an extra parent doesn't break correctness — worked calculation:** the claim that $H \supseteq G$ implies zero SID rests on a concrete computation of what happens when the adjustment set gains one superfluous member. In the motivating example, $H_1$ adjusts for $\{X_1,X_2,Y_1\}$ where $G$ only needed $\{X_1,X_2\}$, and the extra variable $Y_1$ cancels out of the estimate exactly [eq_4]:
+**Why an extra parent does not break correctness:** $H \supseteq G$ implies zero SID because a superfluous adjustment variable can cancel exactly [eq_4].
+
+In the motivating example, $H_1$ adjusts for $\{X_1,X_2,Y_1\}$ while $G$ needs only $\{X_1,X_2\}$ [eq_4]:
 
 ```derivation
 shape: Show that adjusting for an unnecessary extra parent Y1 still recovers G's true intervention distribution.
@@ -106,9 +155,14 @@ steps:
 $$\begin{array}{rcl}
 \mathrm{SID}: \; \mathbb{G} \times \mathbb{C} &\rightarrow& \mathbb{N} \times \mathbb{N}\\
 (\G,\CC)& \mapsto & \big({\SID}_{\mathrm{lower}}(\G,\CC), {\SID}_{\mathrm{upper}}(\G,\CC)\big)
-\end{array}$$ [eq_8]
+\end{array}
+$$ [eq_8]
 
-These bounds have an exact identifiability-theoretic reading: the lower bound counts pairs that are identifiable in $\CC$ and inferred falsely, while $p(p-1)$ minus the upper bound counts pairs identifiable and inferred correctly, with the strictly-identifiable versions of both counts merely bounded rather than pinned down [eq_9]:
+These bounds have an exact identifiability-theoretic reading [eq_9].
+
+The lower bound counts pairs identifiable in $\CC$ and inferred falsely. $p(p-1)$ minus the upper bound counts pairs identifiable and inferred correctly.
+
+The strictly-identifiable versions are bounded rather than pinned down [eq_9]:
 
 $$\begin{aligned}
 \# \left\{ \text{interv. distr. that are } 
@@ -139,16 +193,22 @@ $$\begin{aligned}
 \end{array}
 \right\}
 &\;\leq \;p \cdot (p-1) - {\SID}_{\mathrm{upper}}(\G,\CC)\,.
-\end{aligned}$$ [eq_9]
+\end{aligned}
+$$ [eq_9]
 
-**Why identifiability is the load-bearing concept when the roles flip:** comparing an *estimated* structure against a *true* CPDAG (rather than a true DAG) requires restricting attention to pairs whose intervention effect is identifiable in $\CC$ at all — otherwise the comparison would be scoring $H$ against a quantity that isn't even well-defined — and the resulting map again lands in the naturals rather than a bound pair, since only one graph ($H$) is uncertain here [eq_10]:
+**Why identifiability matters when the roles flip:** comparing estimate $H$ with a true CPDAG considers only pairs identifiable in $\CC$ [eq_10].
+
+Otherwise SID would score $H$ against an undefined quantity. The map returns a natural-number count, rather than bounds, because only $H$ is uncertain [eq_10]:
 
 $$\begin{array}{rcl}
 \mathrm{SID}: \; \mathbb{C} \times \mathbb{G} &\rightarrow& \mathbb{N}\\
 (\CC,\HH)& \mapsto &\# \{\,(i,j), i \neq j\;|\;\text{the interv. distr from $i$ to $j$ is identif. in $\CC$}\\
 && \qquad \qquad \qquad \quad \text{and } \exists \lawX \text{ that is Markov wrt } \CC_1 \in \CC \text{ such that}\\
 && \qquad \qquad \qquad \quad p_{\CC_1}(x_j\given \doo(X_i = \hat x_i)) \neq p_{\HH}(x_j\given \doo(X_i = \hat x_i)) \}
-\end{array}$$ [eq_10]
+\end{array}
+$$ [eq_10]
+
+**Conclusion:** SID complements SHD by measuring causal-effect capacity, and the simulations warn that achieving a small SID may require more samples than SHD alone suggests [§sec_5].
 
 ## Go Deeper {#go-deeper}
 - **Motivation and Definition of SID** — the source of the reversed-edge-vs-extra-edge example that motivates the whole design; read it for the fully worked contrast this page's Intuition compresses.

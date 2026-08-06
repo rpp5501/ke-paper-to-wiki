@@ -1,14 +1,30 @@
 # Proof: SID for Superset Estimates
 ## TL;DR {#tldr}
-This proof pins down exactly when SID(G,H) collapses to zero: precisely when the estimated DAG H never *drops* a true parent — every parent set in H contains the corresponding parent set in the true DAG G. The argument has two halves. First, it shows that adding extra parents to an adjustment set never breaks its validity, so an estimate that only over-includes edges reproduces every true intervention distribution exactly. Second, it shows the condition is tight: leave out even one true parent, and an adversarial distribution can be built where the estimate's answer provably diverges from the truth, forcing SID above zero.
+This proof identifies exactly when SID$(G,H)$ is zero: every estimated parent set contains its true-DAG counterpart.
+
+Extra parents preserve adjustment validity, so over-including edges preserves every intervention distribution.
+
+Omit one true parent and an adversarial Markov distribution forces SID above zero.
 
 ## Intuition {#intuition}
-Adjustment sets have a built-in slack: in a DAG, conditioning on more of a node's ancestors than strictly necessary doesn't corrupt an intervention calculation, so long as you don't accidentally condition on something downstream of the intervention. That's why a "superset" estimate — one that keeps every real edge and is free to bolt on spurious extra ones — can still get every interventional distribution exactly right.
+Adjustment has slack: conditioning on extra ancestors need not corrupt an intervention calculation, provided no downstream variable is conditioned on.
 
-Missing a real parent is a different kind of error entirely. It isn't slack, it's a hole: the adjustment formula silently drops the one variable needed to block a real confounding path, and there is no amount of extra edges elsewhere that can patch that hole. This is the structural reason SID treats false negatives (omitted edges) as categorically worse than false positives (added edges) — a theme that recurs throughout SID's metric properties.
+A superset estimate keeps every real edge and may add spurious ones while still getting every intervention distribution right.
+
+Missing a real parent is a hole, not slack. The adjustment formula drops a variable needed to block genuine confounding.
+
+Extra edges elsewhere cannot repair it. SID therefore treats omitted edges more severely than added ones.
+
+### Running four-node example: theorem witness
+
+The shared pair makes both proof directions concrete. Let $G: A\to B, A\to C, B\to D, C\to D$ and $H=G+(B\to C)$.
+
+**Worked example:** every parent set in $H$ contains its counterpart in $G$, so the forward direction proves $\mathrm{SID}(G,H)=0$. When the arguments swap, estimate $G$ omits the true $H$-parent $B$ of $C$; the graphical check finds $(C,B)$ and $(C,D)$ [§sec_9; sid.py:L183-L253].
+
+The example is not the proof itself. It is a four-node witness showing why the containment hypothesis is directional and why zero SID does not imply graph equality.
 
 ## Mechanics {#mechanics}
-The proof assumes $\mathrm{pa}_H(i) \supseteq \mathrm{pa}_G(i)$ for every node $i$ — H's parent sets are supersets of G's — and shows this forces SID$(G,H)=0$ by checking that H's parent sets remain valid adjustment sets once evaluated against the true graph G [§sec_9].
+The proof assumes $\mathrm{pa}_H(i)\supseteq\mathrm{pa}_G(i)$ for every node. It verifies $H$'s parent sets remain valid under true graph $G$, forcing SID$(G,H)=0$ [§sec_9].
 
 ```algorithm
 title: Forward direction — why a superset estimate has SID zero
@@ -23,16 +39,22 @@ lines:
     intent: "Both conditions of the adjustment-set proposition transfer from H down to G, so the intervention distribution computed from H matches the true one for every pair, giving SID(G,H) = 0 [§sec_9]"
 ```
 
-**Why the transfer only runs one way:** the argument leans on H being *larger* than G — extra edges in H can only create more directed paths and more candidate blocking structure to satisfy, never fewer. Going from "condition holds in the bigger graph" to "condition holds in the smaller graph" works because a path that survives in the smaller graph is a literal subset of the bigger graph's structure, not a new path with new colliders [§sec_9].
+**Why transfer is one-way:** $H$ is larger, so its extra edges create more paths and blocking requirements, never fewer [§sec_9].
+
+A surviving path in smaller $G$ is already a path in $H$, not a new path with new colliders. Validity transfers downward [§sec_9].
 
 The converse direction shows the superset condition is necessary, not just sufficient: if H drops a true edge into some node $i$ that G has, the proof exhibits a concrete Markov distribution over G for which H's truncated adjustment set gives the wrong answer [§sec_9].
 
 ## The Math {#the-math}
 **Setting up the counterexample:** take a node $i$ where G contains a parent that H's parent set for $i$ omits, and construct an observational distribution that is Markov with respect to $G$ by assigning the exogenous variables and the remaining structural assignments so that the omitted parent has a real causal effect on $i$'s distribution [§sec_9].
 
-**Why the discrepancy is forced, not incidental:** because that parent is genuinely present in $G$, the true interventional distribution $p(x_j \mid \mathrm{do}(x_i))$ computed via $G$'s adjustment set depends on it; but the distribution computed via $H$'s adjustment set marginalizes it out entirely, since $\mathrm{pa}_H(i)$ never conditions on it. There is no cancellation available to make these two computations agree in general — the construction is free to choose the structural equations specifically so that the omitted variable's influence on $x_j$ is nonzero, which is exactly what a Markov-consistent distribution over $G$ permits [§sec_9].
+**Why discrepancy is forced:** true $G$'s intervention distribution depends on the omitted parent, but $H$ marginalizes it out [§sec_9].
 
-**What this buys the proof:** finding one pair $(i,j)$ where the two computed distributions differ is exactly the definition of a nonzero SID contribution, so a single dropped true edge is already enough to push SID$(G,H)$ above zero — there is no partial credit for "almost" containing the true parent set [§sec_9].
+The construction chooses graph-consistent structural equations where that parent's effect on $x_j$ is nonzero. No cancellation makes the two computations agree in general [§sec_9].
+
+**What this buys:** one $(i,j)$ with differing distributions contributes nonzero SID [§sec_9].
+
+One dropped true edge is therefore enough to make SID$(G,H)>0$; there is no partial credit for almost containing the parent set [§sec_9].
 
 ## Go Deeper {#go-deeper}
 - **Metric Properties of SID** — the parent proposition this proof serves; it's the broader argument (of which superset-estimate correctness is one case) establishing SID's behavior as a pre-metric, including why it is not symmetric under graph swap.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Paper Tutor"
+  short_description: "Write evidence-grounded paper learning pages"
+  default_prompt: "Use $write-paper-tutor to turn this paper concept into a rigorous, scannable learning page."

@@ -224,13 +224,14 @@ describe("mode & learn progress", () => {
     expect(useApp.getState().expandAllMath).toBe(false);
   });
 
-  it("markStepComplete is idempotent and does not mutate the previous set", () => {
+  it("marks a sentinel-complete chapter as read without mutating the previous set", () => {
     const before = useApp.getState().completedSteps;
     useApp.getState().markStepComplete("transformer");
     useApp.getState().markStepComplete("transformer");
     const after = useApp.getState().completedSteps;
     expect(after).toEqual(new Set(["transformer"]));
     expect(before.size).toBe(0); // immutability, matches hiddenKinds pattern
+    expect(recordFor(useApp.getState().mastery, "transformer").level).toBe("read");
   });
 });
 
@@ -239,16 +240,16 @@ describe("mastery ledger", () => {
     expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("unseen");
   });
 
-  it("marks a node seen when it is selected", () => {
+  it("marks a node reading when it is selected", () => {
     useApp.getState().setSelected("sdpa");
 
-    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("seen");
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("reading");
   });
 
-  it("marks a node seen when the gallery opens its visual", () => {
+  it("marks a node reading when the gallery opens its visual", () => {
     useApp.getState().openVisualization("sdpa");
 
-    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("seen");
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("reading");
   });
 
   it("does not invent a record when the selection is cleared", () => {
@@ -257,30 +258,38 @@ describe("mastery ledger", () => {
     expect(useApp.getState().mastery).toEqual({});
   });
 
-  it("raises seen to quizzed when a viz bet resolves", () => {
+  it("records a viz bet as practiced but not mastery evidence", () => {
     useApp.getState().setSelected("sdpa");
-    useApp.getState().recordMastery("sdpa", true);
+    useApp.getState().recordMastery("sdpa", true, "viz:sdpa", "viz");
 
     const record = recordFor(useApp.getState().mastery, "sdpa");
-    expect(record.level).toBe("quizzed");
+    expect(record.level).toBe("practiced");
     expect(record.streak).toBe(1);
     expect(record.lastAnswered).not.toBeNull();
+    expect(record.evidenceIds).toEqual([]);
   });
 
-  it("reaches mastered on a second correct answer from either source", () => {
-    useApp.getState().recordMastery("sdpa", true);
-    useApp.getState().recordMastery("sdpa", true);
+  it("reaches mastered on two distinct correct application checks", () => {
+    useApp.getState().recordMastery("sdpa", true, "quiz:one", "application");
+    useApp.getState().recordMastery("sdpa", true, "quiz:two", "application");
 
     expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("mastered");
   });
 
-  it("keeps the level but drops the streak on a wrong answer", () => {
-    useApp.getState().recordMastery("sdpa", true);
-    useApp.getState().recordMastery("sdpa", true);
-    useApp.getState().recordMastery("sdpa", false);
+  it("does not let two non-application checks award mastery", () => {
+    useApp.getState().recordMastery("sdpa", true, "quiz:one", "prediction");
+    useApp.getState().recordMastery("sdpa", true, "quiz:two", "debug");
+
+    expect(recordFor(useApp.getState().mastery, "sdpa").level).toBe("practiced");
+  });
+
+  it("drops mastery with the streak when a later answer is wrong", () => {
+    useApp.getState().recordMastery("sdpa", true, "quiz:one", "application");
+    useApp.getState().recordMastery("sdpa", true, "quiz:two", "application");
+    useApp.getState().recordMastery("sdpa", false, "quiz:three", "application");
 
     const record = recordFor(useApp.getState().mastery, "sdpa");
-    expect(record.level).toBe("mastered");
+    expect(record.level).toBe("practiced");
     expect(record.streak).toBe(0);
   });
 

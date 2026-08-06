@@ -115,6 +115,35 @@ def test_an_empty_extraction_is_an_error_not_an_empty_graph():
         build_code_graph("x", run=lambda _t: {"nodes": [], "links": []})
 
 
+def test_python_ast_emits_complete_ranges_and_symbol_kinds(tmp_path):
+    target = tmp_path / "m.py"
+    target.write_text(
+        "class SID:\n    def evaluate(self):\n        return 1\n",
+        encoding="utf-8",
+    )
+    native = {
+        "nodes": [
+            {"id": "m", "label": "m.py", "file_type": "code",
+             "source_file": "m.py", "source_location": "L1"},
+            {"id": "m::SID", "label": "SID", "file_type": "code",
+             "source_file": "m.py", "source_location": "L1"},
+            {"id": "m::SID.evaluate", "label": ".evaluate()", "file_type": "code",
+             "source_file": "m.py", "source_location": "L2"},
+        ],
+        "links": [],
+    }
+
+    graph = build_code_graph(target, run=lambda _target: native)
+    by_id = {node["id"]: node for node in graph["nodes"]}
+
+    assert by_id["m"]["kind"] == "file"
+    assert by_id["m"]["source_ref"] == "m.py:L1-L3"
+    assert by_id["m::SID"]["kind"] == "class"
+    assert by_id["m::SID"]["source_ref"] == "m.py:L1-L3"
+    assert by_id["m::SID.evaluate"]["kind"] == "method"
+    assert by_id["m::SID.evaluate"]["source_ref"] == "m.py:L2-L3"
+
+
 def test_main_writes_the_graph(tmp_path):
     out = tmp_path / "code-graph.json"
 

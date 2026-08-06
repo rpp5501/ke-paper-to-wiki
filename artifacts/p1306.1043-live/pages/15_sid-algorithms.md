@@ -1,33 +1,56 @@
 # SID Algorithms
 ## TL;DR {#tldr}
-Two algorithms turn the definition of SID from a pairwise check into something you can actually run. Algorithm 1 walks every ordered pair of variables once and decides whether the estimated graph's parent set is a valid adjustment set for that pair; Algorithm 2 (rondp) is the traversal it leans on to answer the hard half of that question — whether the adjustment set blocks every non-causal path — for an entire source node's targets in one pass instead of one target at a time. Together they implement the metric defined in SID and are what `_sid_matrix()` actually runs.
+Two algorithms make SID's pairwise definition executable. Algorithm 1 tests whether the estimated parent set is valid for each ordered pair.
+
+Algorithm 2, `rondp`, answers the hard path-blocking question for all targets of one source in one pass. Together they are what `_sid_matrix()` runs.
 
 ## Intuition {#intuition}
 Checking, for a single pair of variables, whether one graph's parent set is a valid adjustment set for another graph's causal effect is itself a small graph problem — you'd normally solve it by searching the graph fresh for that one pair. Naively repeating that search for every ordered pair scales badly.
 
-The move both algorithms make is to fix a *source* node and answer the question for every possible target at once, by computing reachability information a single time and reading off each target's verdict from it. That reachability computation is exactly Algorithm 2's job, and it in turn depends on the effect definitions from Causal Effects in Linear Gaussian SEMs: an effect is "real" only when a directed path exists, so blocking and reachability are checked against that same causal structure.
+Both algorithms fix one *source* and answer for every target from shared reachability information. Each target's verdict is then a lookup.
+
+Algorithm 2 provides that reachability. It uses the same causal structure as linear-Gaussian effects: a real effect requires a directed path.
 
 ## Mechanics {#mechanics}
 **Skip when the parent sets already match:** if the estimated graph gives a source node exactly the same parents as the true graph, that parent set is the true back-door set and is valid for *every* target — the whole source can be skipped without touching any target [sid.py:L183].
 
-**Removing conditioned tails before the second pass:** before checking paths, the algorithm deletes the outgoing edges of nodes in the estimated adjustment set from a copy of the true graph, then recomputes reachability on that pruned graph. This is what lets a later check distinguish a directed path that truly reaches the target from one that only appears to, because it leaves through a node the adjustment set already controls for [sid.py:L183].
+**Removing conditioned tails before the second pass:** the algorithm deletes outgoing edges of estimated-adjustment nodes from a copy of the true graph, then recomputes reachability [sid.py:L183].
 
-**One reachability call answers condition (b) for every target:** `_reachable_on_non_directed_path` — the `_sid_matrix()` counterpart of Algorithm 2's rondp — is invoked once per source and returns which nodes are reachable from it along paths that the adjustment set fails to block. Every target's condition-(b) verdict is then a lookup into that one result rather than a fresh traversal [§sec_12].
+This distinguishes a path that truly reaches the target from one leaving through a node already controlled by the adjustment set [sid.py:L183].
 
-**Per-target verdict splits on whether the target is itself in the adjustment set:** if the target is a parent of the source in the estimated graph, the estimated intervention distribution collapses to the marginal — correct only if the source truly has no causal effect on the target. Otherwise, with a causal path assumed to exist, the check falls to condition (a): the adjustment set is rejected if it contains a descendant of a child of the source that still reaches the target, since adjusting for a mediator or its descendant is the classic case that breaks an intervention estimate [sid.py:L183].
+**One reachability call answers condition (b) for every target.** `_reachable_on_non_directed_path`, Algorithm 2's `_sid_matrix()` counterpart, runs once per source [§sec_12].
 
-**rondp's traversal state carries how a node was reached:** the pseudocode tags each visited node with whether it was entered via an outgoing or an incoming edge, because whether a path is still "non-blocked" past that node depends on that direction — a node reached with an incoming edge propagates reachability to its parents only under different conditions than one reached with an outgoing edge [§sec_12].
+It returns nodes reachable on paths the adjustment set fails to block. Each target's condition-(b) verdict is a lookup rather than a new traversal [§sec_12].
 
-**The traversal has to patch itself:** the pseudocode notes that some directed, non-blocked paths get missed by the direction-tagged pass alone, and adds a correction step that uses the auxiliary path matrix (computed with conditioned tails removed) to find descendants reachable with no adjustment-set node in between, before folding those back into the reachable set [§sec_12].
+**Per-target verdict has two cases:**
+
+- If the target is in the estimated adjustment set, the estimate predicts the marginal; this is correct only when the true effect is null.
+- Otherwise, condition (a) rejects an adjustment set containing a descendant of a source child that still reaches the target [sid.py:L183].
+
+**`rondp` records arrival direction.** Each node is tagged as entered by an outgoing or incoming edge because non-blocking depends on that direction [§sec_12].
+
+A node reached through an incoming edge propagates to parents under different conditions than one reached through an outgoing edge [§sec_12].
+
+**The traversal needs a correction step.** Direction-tagged traversal can miss directed, non-blocked paths [§sec_12].
+
+The auxiliary tails-removed path matrix finds reachable descendants with no adjustment node between. They are added back to the reachable set [§sec_12].
 
 ## The Math {#the-math}
-No display equations are given for this concept, but the module's own worked example makes the counting rule concrete. For `true_dag = DAG([(1, 2)])` and `est_dag = DAG([(2, 1)])`, `SID()(true, est)` returns `2` [sid.py:L256].
+**A two-node boundary case makes the count concrete:** for `true_dag = DAG([(1, 2)])` and `est_dag = DAG([(2, 1)])`, `SID()(true, est)` returns `2` because both possible ordered intervention pairs are wrong [sid.py:L256-L308].
 
-**Why it's exactly 2, not 0 or 4:** there are two ordered pairs to check, (1→2) and (2→1). For source 1, the true graph gives node 1 no parents, but the estimated graph makes 2 a parent of 1 (since the estimated edge runs 2→1). Node 2 is the target, so `est_parents[target]` is true — the estimate says target 2 belongs to source 1's own adjustment set, collapsing the predicted effect to the marginal, i.e. "no effect." But the true graph has the real edge 1→2, so the true effect is *not* null: mismatch, one incorrect pair. For source 2, the true graph gives it no causal path to target 1 (`path_matrix[2,1]` is false, so the true effect is null), while the estimated graph's parent set for source 2 is empty, so the estimate predicts a nonzero effect: mismatch again. Both ordered pairs land on the wrong side, giving SID = 2 out of a maximum of 2 for a 2-node graph [sid.py:L183].
+**Why it is exactly 2:** the ordered pairs are $(1,2)$ and $(2,1)$.
 
-**Where the fourth-power cost comes from:** the path matrix that Algorithm 1 relies on is a transitive closure, computable in roughly O(n³) time over an n-node graph. That closure is recomputed once per source rather than once overall, because the conditioned-tail pruning depends on that source's estimated parent set. n sources times an O(n³) closure each gives the O(n⁴) total the implementation documents — cheap at 100 nodes (seconds), heavy by 200 (about a minute) [sid.py:L256].
+For source 1, the estimate places target 2 in its adjustment set and predicts no effect. The true edge $1\to2$ makes the effect non-null, so this pair is wrong [sid.py:L183].
 
-**Why the traversal in rondp is guaranteed to terminate:** each node is tagged with the direction it was entered from, giving at most two live states per node (entered via an outgoing edge, entered via an incoming edge). The reachable set only grows by adding new (node, direction) states and never revisits one already recorded, so the traversal is bounded by 2n additions regardless of how many paths actually exist in the graph [§sec_12].
+For source 2, `path_matrix[2,1]` is false, but the empty estimated parent set predicts a nonzero effect. This pair is also wrong, giving SID $=2$ out of 2 [sid.py:L183].
+
+**Where fourth-power cost comes from:** transitive closure costs roughly $O(n^3)$ on an $n$-node graph [sid.py:L256].
+
+Tails pruning depends on the source's estimated parent set, so closure is recomputed per source. $n$ sources times $O(n^3)$ gives $O(n^4)$: seconds at 100 nodes and about a minute at 200 [sid.py:L256].
+
+**Why `rondp` terminates:** each node has at most two live states, one per arrival direction [§sec_12].
+
+The reachable set adds each `(node, direction)` state once. Its at-most-$2n$ additions bound traversal regardless of the number of graph paths [§sec_12].
 
 ## Go Deeper {#go-deeper}
 - **Implementation of SID** — the parent page these two algorithms live under; this page is the pseudocode-to-code mapping for it.

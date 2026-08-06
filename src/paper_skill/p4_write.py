@@ -3,6 +3,7 @@ from pathlib import Path
 from research_mcp.inbox import inbox_add
 from research_mcp.wiki import wiki_get
 from .p4_context import assemble_context
+from .pedagogy import pedagogy_problems
 
 TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
 
@@ -12,7 +13,11 @@ TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}
 BLOCK_SYNTAX = (Path(__file__).resolve().parents[2] / "dashboard" / "src"
                 / "lib" / "contentBlocksExample.md").read_text(encoding="utf-8")
 
-PAGE_PROMPT = """Write the wiki page for ONE concept. Output ONLY markdown.
+WRITING_SKILL_PATH = (Path(__file__).resolve().parents[2] / "skills"
+                      / "write-paper-tutor" / "SKILL.md")
+WRITING_SKILL = WRITING_SKILL_PATH.read_text(encoding="utf-8")
+
+_LEGACY_PAGE_PROMPT = """Write the wiki page for ONE concept. Output ONLY markdown.
 
 Structure exactly:
 # <label>
@@ -92,6 +97,25 @@ LOCAL CONTEXT:
 {local_slice}
 """
 
+PAGE_PROMPT = WRITING_SKILL + """
+
+Use this exact structured-block syntax when a block is earned:
+__BLOCK_SYNTAX__
+
+GLOBAL CONTEXT:
+__GLOBAL_CONTEXT__
+
+LOCAL CONTEXT:
+__LOCAL_CONTEXT__
+"""
+
+
+def _render_page_prompt(context: dict) -> str:
+    return (PAGE_PROMPT
+            .replace("__BLOCK_SYNTAX__", BLOCK_SYNTAX)
+            .replace("__GLOBAL_CONTEXT__", context["global_slice"])
+            .replace("__LOCAL_CONTEXT__", context["local_slice"]))
+
 
 def _spawn_claude(prompt: str) -> str:
     from .llm_spawn import claude_spawn
@@ -99,7 +123,8 @@ def _spawn_claude(prompt: str) -> str:
 
 
 def _page_problems(page: str) -> list[str]:
-    return [f"missing tier {t}" for t in TIERS if t not in page]
+    return ([f"missing tier {t}" for t in TIERS if t not in page]
+            + pedagogy_problems(page))
 
 
 def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
@@ -129,7 +154,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
         page, problems = "", ["spawn failed"]
         for attempt in range(2):
             try:
-                page = spawn(PAGE_PROMPT.format(blocks=BLOCK_SYNTAX, **ctx))
+                page = spawn(_render_page_prompt(ctx))
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break

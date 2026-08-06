@@ -1,23 +1,39 @@
 # Proof: Equivalence of Definitions
 
 ## TL;DR {#tldr}
-This concept is the proof that closes the gap between how SID is originally defined and the graphical criterion actually used to compute it. The Definition asks a distributional question — does intervening on variable *i* in the true graph change the distribution of *j* in a way that graph *H*'s adjustment fails to reproduce? The Proposition replaces that with a purely graphical test that can be checked by looking at ancestors and parent sets, no probability calculus required. The proof shows these two tests never disagree: the set of pairs flagged as "mismatched" is exactly the same either way, which is what licenses computing SID graphically instead of by simulating interventions.
+This proof connects SID's distributional definition with its graphical computation criterion.
+
+The Definition asks whether an intervention distribution is reproduced. The Proposition tests ancestors and parent sets instead.
+
+The proof shows both flag exactly the same mismatched pairs, licensing graphical SID computation.
 
 ## Intuition {#intuition}
-The proof is a set-equality argument, and set equality always splits into two halves: everything the Definition flags must also be flagged by the Proposition, and vice versa. Rather than proving this in one sweep, the argument case-splits on a single fact — whether *j* is an ancestor of *i* — because that fact alone decides whether intervening on *i* can possibly move *j*'s distribution at all.
+The proof is double inclusion: every Definition pair is a Proposition pair, and conversely.
 
-When *j* isn't downstream of the intervened node, there's a clean reason the distributions can't differ: you can integrate away everything that isn't feeding into *j*, and what's left doesn't care whether *i* was intervened on. When *j* is downstream, the two definitions are shown to agree by producing an actual example — a concrete causal model — where the mismatch demonstrably occurs, rather than arguing it abstractly. That mix of "clean invariance" for one case and "explicit witness" for the other is what makes the proof work in both directions.
+Each direction splits on whether $j$ is an ancestor of $i$. That fact decides whether intervention on $i$ can move $j$'s distribution.
+
+If $j$ is not downstream, integrate away variables that do not feed into $j$; intervention on $i$ disappears from its distribution.
+
+For descendants, the proof uses an explicit causal-model witness with a mismatch. Invariance handles one case and a witness handles the other.
+
+**Worked example:** for $(C,D)$ in shared truth $H$, candidate set $\{A\}$ leaves $C\leftarrow B\to D$ open. The graphical criterion rejects the pair, and the proof guarantees a distribution Markov to $H$ on which the corresponding intervention formulas disagree [§sec_8; eq_6].
 
 ## Mechanics {#mechanics}
 **The proof strategy is double inclusion.** Writing the pair-set from the Definition and the pair-set from the Proposition, the proof shows each is a subset of the other, so they coincide as sets of index pairs $(i,j)$ [§sec_8].
 
-**Each direction case-splits on the ancestor relation between $i$ and $j$.** In the forward direction, taking a pair from the Definition's set: if $j$ is not an ancestor of $i$ (equivalently $i$ is upstream of $j$, since one of the two must hold), an invariance argument shows the interventional and observational distributions of $x_j$ coincide, which places the pair in the Proposition's set via eq_11 [eq_11]. If instead the ancestor relation goes the other way, a separate lemma is invoked directly to show the Proposition's criterion is violated, again placing the pair in the target set [§sec_8].
+**Each direction splits on ancestry.** In the forward direction, non-ancestry gives equality of interventional and observational $x_j$ distributions by eq. 11 [eq_11].
 
-**The invariance step relies on a closure property of ancestor sets.** The equality in eq_11 holds because parents of ancestors of $j$ are themselves ancestors of $j$ — the ancestor set of $j$ is closed under taking parents. This closure is exactly what licenses integrating out every non-ancestor variable one at a time, starting from the sink nodes and working inward, without ever needing to touch a variable inside the ancestor set [eq_11].
+The other ancestry case invokes a separate lemma to show the Proposition's criterion fails [§sec_8].
 
-**The reverse direction mirrors the structure but needs a constructive witness.** Taking a pair from the Proposition's set, the case where the ancestor relation matches again falls out of the same invariance fact. The other case is handled not by a general argument but by exhibiting a specific linear Gaussian structural equation model — unit error variances, linear structural equations matching the graph — for which the interventional distributions are shown explicitly to differ, which is what forces the pair into the Definition's set [§sec_8].
+**Invariance uses ancestor-set closure.** Parents of $j$'s ancestors are themselves ancestors of $j$ [eq_11].
 
-**Both halves land in the same place: "in both cases we have" membership in the target set.** Because each of the four cases (two per direction) independently establishes membership, and the two directions together give both inclusions, the two pair-sets are proven identical [§sec_8].
+That allows integration of non-ancestors from sink nodes inward without touching ancestor-set variables [eq_11].
+
+**The reverse direction needs a witness.** One case again follows from invariance.
+
+The other constructs a linear Gaussian SEM with unit error variances and graph-matching equations whose intervention distributions differ. This places the pair in the Definition's set [§sec_8].
+
+**Both halves reach the same target.** The four cases establish membership, and the two inclusions prove the pair-sets identical [§sec_8].
 
 ## The Math {#the-math}
 
@@ -41,11 +57,19 @@ p_{\G}(x_j \given \doo(X_i = \hat x_i)) &= \int_{\text{anc}(j)} \int_{\text{non-
 = p(x_j)
 \end{aligned}$$ [eq_11]
 
-**Why the $(\dagger)$ step is the load-bearing move:** it silently changes which variable the density is conditioned on — from "given $\hat x_i$" to an unconditional product over ancestors — and that swap is only valid because every ancestor's parents are already inside the integration domain, so no ancestor's conditional density secretly still depends on the clamped value of $x_i$ once its own upstream ancestors have been accounted for [eq_11].
+**Why $(\dagger)$ is load-bearing:** it changes conditioning on $\hat x_i$ to an unconditional product over ancestors [eq_11].
 
-**Where the proof needs more than the invariance identity:** eq_11 only handles the case where $j$ sits outside $i$'s downstream reach. When $j$ is a genuine descendant, no algebraic identity forces the distributions to differ in general — differing is a property of specific structural equations, not of the graph alone. That is why the reverse-direction case for descendants is closed with an explicit linear Gaussian SEM (unit error variances, equations linear in the parents, matching the graph's edge structure) rather than another identity: it is a minimal sufficient witness proving the mismatch is achievable, which is exactly what the direction of the proof needs to show membership in the Definition's pair set [§sec_8].
+That is valid because each ancestor's parents are already integrated. No remaining ancestor density depends on the clamped $x_i$ [eq_11].
 
-**The two remaining cases are handled by citation, not derivation:** whenever the ancestor relation fails to hold in the direction eq_11 needs, the proof falls back on a separate lemma to show the Proposition's graphical condition is violated. This is a genuine asymmetry in the proof's structure — one direction is closed algebraically, the other by an external result — worth noting if the surrounding claim in Proposition prop:main is being reused elsewhere [§sec_8].
+**Why descendants need more than invariance:** eq. 11 handles targets outside $i$'s downstream reach [eq_11].
+
+For descendants, distributional difference depends on structural equations, not graph shape alone. The proof therefore uses a linear Gaussian witness with unit error variances and graph-matching equations [§sec_8].
+
+The witness proves mismatch is achievable, which is sufficient for Definition-set membership [§sec_8].
+
+**Two cases are cited rather than derived.** When ancestry does not support eq. 11, a separate lemma shows the graphical condition fails [§sec_8].
+
+The proof is intentionally asymmetric: one direction is algebraic and the other relies on an external result.
 
 ## Go Deeper {#go-deeper}
 - **Equivalent Graphical Formulation** — the parent concept this proof discharges; it states Proposition prop:main, i.e., the graphical criterion whose equivalence to the original intervention-distribution Definition is exactly what this proof establishes.

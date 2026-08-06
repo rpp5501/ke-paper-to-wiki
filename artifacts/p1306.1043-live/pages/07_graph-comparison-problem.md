@@ -2,27 +2,59 @@
 
 ## TL;DR {#tldr}
 
-Given a true causal DAG and an estimate of it produced by some structure-learning procedure, how good is the estimate? The obvious answer — count the edges that differ — misses the point of learning a causal graph in the first place: what you actually care about is whether the estimate lets you predict the *effect of interventions* correctly, not whether it matches the true graph edge-for-edge. Comparing two DAGs for causal purposes therefore means asking, for each pair of variables, whether the estimated graph would get the interventional prediction right if you used it and were correct in every other respect. This reframing is what motivates the Structural Intervention Distance (SID), the prerequisite concept this page sits under.
+An estimated DAG is useful only if it predicts intervention effects correctly. Matching the true graph edge-for-edge is not the real goal.
+
+For each ordered variable pair, ask whether the estimate gives the same intervention prediction as the true graph. SID formalizes that question.
 
 ## Intuition {#intuition}
 
-Two estimated graphs can have the same number of wrong edges and yet be wildly different in how useful they are for causal reasoning — a wrong edge near a variable that acts as a confounder can corrupt many downstream intervention predictions, while a wrong edge elsewhere might change nothing about what you'd conclude from an intervention. A metric that only counts edges, like the Structural Hamming Distance, cannot tell these two situations apart. The idea behind comparing graphs by their causal capacity is to instead ask a "would this still work" question for every ordered pair of variables: if you used the estimated graph's parent structure to compute the effect of intervening on one variable and reading off another, would you get the same answer as the true graph gives? Counting how often the answer is yes turns "how wrong is my graph" into "how much of my graph's causal usefulness survived."
+Two estimates can have equally many wrong edges but very different causal consequences. An error near a confounder can corrupt many intervention predictions; another error may change none.
+
+| Metric | What it asks | What it can miss |
+|---|---|---|
+| Structural Hamming Distance | How many edges differ? | Whether those errors change intervention conclusions |
+| SID | Does each ordered intervention prediction still work? | The edge count itself |
+
+SID checks the estimated parent structure against the true intervention result for every ordered pair. Its score measures how much causal usefulness survived.
+
+### Running four-node example
+
+Keep this pair in view throughout the five chapters:
+
+- true graph $G$: $A\to B$, $A\to C$, $B\to D$, and $C\to D$;
+- estimate $H$: all edges in $G$, plus the extra edge $B\to C$.
+
+The two graphs differ by one insertion, so their SHD is one. Yet $G\subseteq H$, making every parent set in $H$ a safe superset adjustment set for truth $G$ [§sec_2_3].
+
+**Prediction check:** before calculating anything, decide whether that single structural error must create an intervention error. Chapter 3 will verify that $\mathrm{SID}(G,H)=0$, while swapping truth and estimate gives $\mathrm{SID}(H,G)=2$ [§sec_2_3; sid.py:L183-L253].
 
 ## Mechanics {#mechanics}
 
-The comparison is set up over a finite family of random variables indexed by a vertex set, with a joint distribution and (assumed-existing) densities with respect to Lebesgue or counting measure, plus the corresponding conditional densities; graphs are pairs of nodes and edges, and nodes are identified with the variables they represent [§sec_1]. This identification is what lets the same object serve two roles: a vertex in the DAG and a random variable whose distribution can be conditioned on or intervened upon [§sec_1].
+The setup distinguishes three objects [§sec_1]:
 
-The estimate is scored by counting, over pairs of vertices, how many pairs it gets right — where "right" means it correctly predicts the intervention distribution for that pair, evaluated within the class of distributions that are Markov with respect to the true graph [§sec_1]. Fixing the reference class to distributions Markov to the *true* graph (rather than the estimate) is what keeps the comparison well-defined: the ground truth being tested against does not itself depend on which graph you happen to be scoring [§sec_1].
+- a finite family of variables indexed by a vertex set;
+- a joint distribution, its densities, and conditional densities with respect to Lebesgue or counting measure; and
+- a graph of nodes and edges whose nodes are identified with those variables.
+
+The identification lets one object serve as both a DAG vertex and a variable whose distribution can be conditioned on or intervened upon [§sec_1].
+
+An estimate gets a vertex pair right when it predicts that pair's intervention distribution for every distribution Markov to the true graph [§sec_1].
+
+Using the true graph's Markov class keeps the target fixed. The meaning of correctness cannot change with the estimate being scored [§sec_1].
 
 This produces a genuinely new pre-distance between DAGs rather than a variant of SHD, and the paper is explicit that it is not aware of a directly related prior notion — it is meant to supplement SHD with information about causal-inference capacity, not replace it [§sec_1].
 
 ## The Math {#the-math}
 
-No display equation is introduced yet at this point in the paper — the formal apparatus below is the notation the rest of the SID definition builds on, not the metric itself [§sec_1].
+**The core object is an ordered intervention question:** for each $i \neq j$, ask whether an estimate preserves the distribution of target $X_j$ after intervening on source $X_i$. With $p$ variables there are $p(p-1)$ such questions, which is the comparison space SID formalizes later [§sec_1].
 
-**Why the formalism separates variables from their densities:** the family of random variables is indexed by the vertex set, its joint distribution is denoted separately from its densities, and conditional densities are denoted separately again [§sec_1]. Keeping these three objects distinct matters because the intervention distributions that SID compares are conditional/interventional densities of exactly this kind — the notation has to support writing "the density of one variable given an intervention on another" before any comparison of graphs can even be stated [§sec_1].
+**Why the formalism separates variables from densities:** the notation separately names the indexed variables, their joint distribution, and their conditional densities [§sec_1].
 
-**What breaks without the node–variable identification:** treating vertices and variables as literally the same object (with only "a slight abuse of notation" flagged) is what allows a graph edge to be read simultaneously as a structural claim and as a statement about conditional independence or intervention effects [§sec_1]. If nodes and variables were kept formally distinct, every downstream definition of an intervention distribution "with respect to a graph" would need an explicit translation step between the two; the abuse of notation is a deliberate simplification that removes that overhead [§sec_1].
+SID compares conditional and interventional densities. The notation must express the density of one variable after an intervention on another [§sec_1].
+
+**What the node-variable identification buys:** an edge can be read as both a structural claim and a claim about conditional independence or intervention effects [§sec_1].
+
+Without that convention, every graph-relative intervention definition would need an explicit map from vertices to variables [§sec_1].
 
 **Boundary condition worth noting:** existence of the densities is assumed rather than derived, which quietly restricts the results that follow to distributions absolutely continuous with respect to Lebesgue or counting measure — discrete or continuous, but not, e.g., distributions with a singular component [§sec_1].
 

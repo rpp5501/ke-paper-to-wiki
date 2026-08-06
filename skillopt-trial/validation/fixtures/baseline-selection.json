@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "reportKind": "baseline",
+  "stage": "selection",
+  "skillArtifact": {
+    "path": "validation/fixtures/evidence/baseline-skill.md",
+    "sha256": "bbb48443866468eb36e2e4acf76c9328850d637796623b3949934eb27587d513"
+  },
+  "rows": [
+    {
+      "taskId": "select-backdoor-margin",
+      "scores": {
+        "factual_evidence_accuracy": 80,
+        "conceptual_depth": 70,
+        "prerequisite_clarity": 70,
+        "worked_examples": 70,
+        "scanability": 80,
+        "checkpoint_quality": 70
+      },
+      "automaticRejectionFlags": [],
+      "rawOutput": {
+        "path": "validation/fixtures/evidence/baseline-margin.txt",
+        "sha256": "80a32fadcd4fa8d62bda55562307eb639e9c0aa16fcb946240dbdede103f3d47"
+      }
+    },
+    {
+      "taskId": "select-backdoor-threshold",
+      "scores": {
+        "factual_evidence_accuracy": 80,
+        "conceptual_depth": 70,
+        "prerequisite_clarity": 70,
+        "worked_examples": 70,
+        "scanability": 80,
+        "checkpoint_quality": 70
+      },
+      "automaticRejectionFlags": [],
+      "rawOutput": {
+        "path": "validation/fixtures/evidence/baseline-threshold.txt",
+        "sha256": "58c86eb4413575b58256bca23f489f05857f4fdcfb6aa802b07f649d280e5fc8"
+      }
+    }
+  ],
+  "deterministicGates": {
+    "correctness": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "equation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "evidence_citation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "schema": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "component": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "accessibility": {"green": true, "evidence": {"path": "validation/fixtures/evidence/baseline-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}}
+  }
+}

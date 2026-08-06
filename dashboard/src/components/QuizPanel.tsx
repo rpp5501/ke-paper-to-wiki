@@ -1,6 +1,6 @@
 // R15.2 — the Quiz panel: build-time authored items, graded offline in the
-// browser (no runtime LLM, ever). Answering all of a node's items correctly
-// marks that learn step complete. Renders nothing on a build without --quiz.
+// browser (no runtime LLM, ever). Read completion belongs only to the guided
+// route's end-of-chapter sentinel. Renders nothing on a build without --quiz.
 import { useState } from "react";
 
 import { getQuiz, type QuizItem } from "../lib/quiz";
@@ -80,7 +80,6 @@ export default function QuizPanel() {
   const open = useApp((state) => state.quizOpen);
   const setOpen = useApp((state) => state.setQuizOpen);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const markStepComplete = useApp((state) => state.markStepComplete);
   const recordMastery = useApp((state) => state.recordMastery);
   const goToNode = useNodeNavigation();
   const items = getQuiz();
@@ -95,11 +94,12 @@ export default function QuizPanel() {
   const onAnswer = (item: QuizItem, index: number) => {
     const next = { ...answers, [item.id]: index };
     setAnswers(next);
-    recordMastery(item.nodeId, index === item.correct);
-    const nodeItems = items.filter((i) => i.nodeId === item.nodeId);
-    if (nodeItems.every((i) => next[i.id] === i.correct)) {
-      markStepComplete(item.nodeId);
-    }
+    recordMastery(
+      item.nodeId,
+      index === item.correct,
+      item.id,
+      item.kind ?? "prediction",
+    );
   };
 
   return (

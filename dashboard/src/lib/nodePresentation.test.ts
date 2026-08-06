@@ -43,8 +43,9 @@ describe("nodeAccessibleName", () => {
 describe("masteryNote", () => {
   it.each([
     ["unseen", null],
-    ["seen", "seen"],
-    ["quizzed", "quizzed"],
+    ["reading", "reading"],
+    ["read", "read"],
+    ["practiced", "practiced"],
     ["mastered", "mastered"],
   ] as const)("%s → %s", (level, expected) => {
     expect(masteryNote(level)).toBe(expected);

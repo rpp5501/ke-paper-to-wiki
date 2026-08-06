@@ -1,25 +1,68 @@
-# R14 validation rubric — explain skill (held-out gate)
+# Paper-tutor weighted rubric
 
-Score each task 0–2 per dimension. Dimensions marked N/A for a task are
-excluded and the task score is renormalized to 10. Grade with the same
-keyless backend that runs the skill (claude_code_exec); the grader sees the
-task prompt, the skill's output, and this rubric — never the skill text.
+Score each dimension from 0 to 100, then apply its weight.
 
-| Dim | 2 | 1 | 0 |
-|---|---|---|---|
-| **A. Output contract** | All five sections (Role, Relationships, Blast radius, Mechanics, Evidence and gaps) present, in order | Sections present but disordered or one missing | Contract ignored |
-| **B. Evidence discipline** | Every factual claim cites a real path/anchor that exists in the fixture | Citations present but partly unverifiable or padded | Uncited claims presented as evidence |
-| **C. Bridge integrity** | implements edges only asserted when confirmed; direction (code→concept) explicit | Confirmed bridge used but direction muddled | Any invented or reversed bridge (automatic 0) |
-| **D. Gaps & staleness** | Missing pages/notes/edges surfaced plainly; not-found handled success-shaped | Gaps mentioned vaguely | Gaps papered over or fabricated content |
-| **E. Scope discipline** | Narrow traversal (literal id searches, anchored tiers); no graph dump, no filler | Some over-reading but bounded | Whole-graph/pages dump or bloated output |
+| Dimension | Weight | Full-credit behavior |
+|---|---:|---|
+| Factual and evidence accuracy | 30% | Every formula, result, assumption, citation, and code bridge is supported and resolves to the supplied paper or repository. |
+| Conceptual depth | 20% | Explains mechanisms, assumptions, failure modes, and consequences rather than restating the source. |
+| Prerequisite clarity | 15% | Introduces required ideas before first use and supplies concise novice refreshers without slowing expert readers. |
+| Worked examples | 15% | Uses a correct, useful worked example, counterexample, prediction, or boundary case tied to the concept. |
+| Scanability | 10% | One claim per paragraph; parallel cases use bullets; shared comparisons use tables; no prose paragraph exceeds 100 words and no more than 10% exceed 60. |
+| Checkpoint quality | 10% | Includes an application-level check with plausible distractors and targeted remediation grounded in a source passage. |
 
-**Aggregate** = mean of task scores (each /10).
+## Automatic rejection
 
-**Acceptance rule (validation gate):** a candidate SKILL.md edit is accepted
-only if (a) held-out aggregate strictly improves over the current skill's
-aggregate, AND (b) no individual task drops by more than 1 point. Rejected
-edits go to the buffer, never merged.
+Reject the complete candidate if any output contains an invented or altered formula, nonexistent source, fabricated implementation bridge, unsupported result, concealed missing evidence, or unresolved critical reference.
 
-**Baseline first:** before any sleep cycle, run all 10 tasks against the
-current `skills/explain/SKILL.md` and record scores in
-`skillopt-trial/results/baseline.json` — no baseline, no gate.
+## Acceptance gate
+
+Accept only when all conditions hold:
+
+- Weighted aggregate improves by at least 3 points over baseline.
+- No paper-level aggregate regresses by more than 2 points.
+- All deterministic correctness, equation, evidence/citation, schema, component, and accessibility gates remain green.
+- The final privacy split was untouched during training and selection.
+- A human approves the complete `SKILL.md` diff.
+
+Record raw outputs and per-dimension scores. Never grade from summaries alone.
+
+## Machine-readable policy
+
+`validate_skillopt.py` reads this block, so it intentionally duplicates the
+human-readable rubric above. Change it only through an explicit benchmark
+policy decision.
+
+```json
+{
+  "weights": {
+    "factual_evidence_accuracy": 30,
+    "conceptual_depth": 20,
+    "prerequisite_clarity": 15,
+    "worked_examples": 15,
+    "scanability": 10,
+    "checkpoint_quality": 10
+  },
+  "automaticRejectionFlags": [
+    "invented_formula",
+    "altered_formula",
+    "nonexistent_source",
+    "fabricated_implementation_bridge",
+    "unsupported_result",
+    "concealed_missing_evidence",
+    "unresolved_critical_reference"
+  ],
+  "minimumAggregateImprovement": 3,
+  "maximumPaperRegression": 2,
+  "deterministicGates": [
+    "correctness",
+    "equation",
+    "evidence_citation",
+    "schema",
+    "component",
+    "accessibility"
+  ],
+  "humanReviewRequired": true,
+  "finalTestExcludedFromTuning": true
+}
+```

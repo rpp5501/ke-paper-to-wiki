@@ -30,6 +30,10 @@ import {
   panelBounds,
   resolveExplorePanelWidths,
 } from "./lib/panelSizing";
+import {
+  readPanelVisibility,
+  writePanelVisibility,
+} from "./lib/panelVisibility";
 import { useApp, type LayoutPhase, type Mode } from "./store";
 import type { KENode } from "./types";
 
@@ -157,12 +161,24 @@ export function initialSidebarOpen(narrow: boolean) {
   return !narrow;
 }
 
+function panelStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const narrow = useNarrowViewport();
+  const [panelVisibility, setPanelVisibility] = useState(() => (
+    readPanelVisibility(panelStorage())
+  ));
   const [sidebarOpen, setSidebarOpen] = useState(() => initialSidebarOpen(
     typeof window !== "undefined"
       && window.matchMedia("(max-width: 899px)").matches,
-  ));
+  ) && readPanelVisibility(panelStorage()).exploreSidebar);
   const panels = usePanelWidths();
   const selected = useApp((state) => state.selected);
   const setSelected = useApp((state) => state.setSelected);
@@ -234,6 +250,14 @@ export default function App() {
     setDrawerOpen(false);
   }, [setDrawerOpen]);
 
+  const setGuidedRailOpen = useCallback((guidedRail: boolean) => {
+    setPanelVisibility((current) => {
+      const next = { ...current, guidedRail };
+      writePanelVisibility(panelStorage(), next);
+      return next;
+    });
+  }, []);
+
   // Note: the old learn-mode auto-start effect is gone — learn mode renders
   // ArticleView (no graph navigation); autoStartStep stays exported for its
   // unit tests until fully retired.
@@ -256,8 +280,20 @@ export default function App() {
   }, [closeSidebar, escapeLayer]);
 
   useEffect(() => {
-    if (narrow) setSidebarOpen(false);
+    setSidebarOpen(narrow
+      ? false
+      : readPanelVisibility(panelStorage()).exploreSidebar);
   }, [narrow]);
+
+  useEffect(() => {
+    if (narrow) return;
+    setPanelVisibility((current) => {
+      if (current.exploreSidebar === sidebarOpen) return current;
+      const next = { ...current, exploreSidebar: sidebarOpen };
+      writePanelVisibility(panelStorage(), next);
+      return next;
+    });
+  }, [narrow, sidebarOpen]);
 
   useEffect(() => {
     if (drawerModalOpen && sidebarOpen) setSidebarOpen(false);
@@ -435,9 +471,11 @@ export default function App() {
         >
           {mode === "learn" ? (
             <ArticleView
+              onRailOpenChange={setGuidedRailOpen}
               onRailReset={() => panels.resetWidth("guided-rail")}
               onRailResize={(width) => panels.setWidth("guided-rail", width)}
               railBounds={guidedBounds}
+              railOpen={panelVisibility.guidedRail}
               railWidth={guidedWidth}
               resizable={!narrow}
             />

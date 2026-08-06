@@ -1,13 +1,23 @@
 # SID between a DAG and a CPDAG
 
 ## TL;DR {#tldr}
-When an estimation method returns not a single DAG but a Markov equivalence class — a CPDAG, as produced by the PC-algorithm or Greedy Equivalence Search — there is no single "estimated graph" to compare against the truth. Structural Intervention Distance (SID) handles this by refusing to collapse the class to one representative: instead it returns an interval, a lower and an upper bound on the SID that any DAG in the equivalence class could have achieved. The interval's width is itself informative — a narrow interval means the equivalence class is nearly unanimous about which interventions the estimate gets right, a wide one means the class contains members that disagree sharply, from perfect to worst-case.
+A CPDAG is a Markov equivalence class, not one estimated DAG. PC and Greedy Equivalence Search can return this form.
+
+SID returns a lower and upper bound instead of choosing one representative. Any member DAG's SID lies in that interval.
+
+A narrow interval means near agreement about correct interventions. A wide interval means members disagree, potentially from perfect to worst-case.
 
 ## Intuition {#intuition}
-The naive fix would be to enumerate every DAG consistent with the CPDAG, compute the ordinary DAG-vs-DAG SID for each, and report the resulting spread of numbers. That is exactly right in spirit, but the equivalence class can be exponentially large, so exhaustive enumeration is only a fallback for small graphs. The extension used here instead reasons locally: it exploits the fact that within a CPDAG, only the chain components (the undirected blocks) carry the ambiguity, and works out the best- and worst-case orientation of each block separately before combining them. That local decomposition is what keeps the computation tractable on graphs where full enumeration would not finish.
+Enumerating every DAG in the CPDAG and reporting their SID range is conceptually right. Its exponential class size makes it feasible only for small graphs.
+
+The extension instead resolves each ambiguous chain component locally. It combines each block's best and worst orientation, which keeps the calculation tractable.
+
+**Boundary case:** if a CPDAG's class contains the true DAG, its SID lower bound is zero. The upper bound can still be positive because another member may orient the same skeleton differently [§sec_2_4_1].
 
 ## Mechanics {#mechanics}
-The starting point is the ideal but expensive procedure: enumerate every DAG in the Markov equivalence class the CPDAG represents, compute the SID against the true DAG for each, and read off the resulting vector of distances as lower and upper bounds. Because enumeration explodes with graph size, the method instead extends the CPDAG locally, one chain component at a time, which for sparse graphs is considerably cheaper [§sec_2_4_1].
+The ideal procedure enumerates member DAGs, computes SID against truth, and takes the minimum and maximum. Its graph-size explosion motivates local chain-component extension [§sec_2_4_1].
+
+For sparse graphs, local extension is considerably cheaper [§sec_2_4_1].
 
 ```algorithm
 title: Local extension procedure for SID(G, C)
@@ -26,9 +36,15 @@ lines:
 
 Both resulting bounds are therefore tight in the strong sense that each is attained by an actual DAG member of the equivalence class of the CPDAG, not just by an infeasible combination of per-component extremes [§sec_2_4_1].
 
-The interval can be wide. If the true DAG is a Markov chain, its equivalence class contains the correct DAG itself — giving a lower bound of zero — but also contains the fully reversed chain, which gets every intervention distribution wrong and pushes the upper bound toward the maximum possible value, on the scale of the total number of ordered vertex pairs the metric counts over [§sec_2_4_1].
+The interval can be wide. A true Markov chain's equivalence class contains the correct DAG, giving lower bound zero [§sec_2_4_1].
 
-The local-extension trick assumes the input actually is a valid CPDAG, i.e. that every chain component is chordal. That assumption can fail — for instance for PC-algorithm output learned from finite data or in the presence of hidden variables — in which case the procedure falls back to treating, for each vertex, every subset of its undirected neighbors as a candidate parent set and again reporting lower and upper bounds; the same fallback is used when a chain component is too large (more than eight nodes) for full local enumeration to be practical [§sec_2_4_1].
+It can also contain the fully reversed chain, which gets every intervention distribution wrong and drives the upper bound toward the ordered-pair maximum [§sec_2_4_1].
+
+Local extension assumes a valid CPDAG, so each chain component is chordal [§sec_2_4_1].
+
+Finite-data PC output and hidden variables can violate that assumption. The fallback tries every subset of a vertex's undirected neighbors as candidate parents and still returns bounds [§sec_2_4_1].
+
+The same fallback applies when a chain component exceeds eight nodes [§sec_2_4_1].
 
 ## The Math {#the-math}
 The comparison is redefined as a map into a pair of naturals rather than a single number, reflecting that a CPDAG stands for a whole class of DAGs rather than one fixed structure [eq_8]:
@@ -36,7 +52,8 @@ The comparison is redefined as a map into a pair of naturals rather than a singl
 $$\begin{array}{rcl}
 \mathrm{SID}: \; \mathbb{G} \times \mathbb{C} &\rightarrow& \mathbb{N} \times \mathbb{N}\\
 (\G,\CC)& \mapsto & \big({\SID}_{\mathrm{lower}}(\G,\CC), {\SID}_{\mathrm{upper}}(\G,\CC)\big)
-\end{array}$$ [eq_8]
+\end{array}
+$$ [eq_8]
 
 ```annotated-eq
 latex: "\\mathrm{SID}: \\; \\mathbb{G} \\times \\mathbb{C} \\rightarrow \\mathbb{N} \\times \\mathbb{N}, \\quad (\\G,\\CC) \\mapsto \\big({\\SID}_{\\mathrm{lower}}(\\G,\\CC), {\\SID}_{\\mathrm{upper}}(\\G,\\CC)\\big)"
@@ -55,7 +72,11 @@ terms:
     words: "Worst case over the equivalence class — attained by the member that gets the most identifiable interventions wrong [eq_8]"
 ```
 
-The bounds are not arbitrary summary statistics; they have an exact combinatorial reading in terms of which intervention distributions the CPDAG can even pin down. The lower bound counts distributions that are identifiable from the CPDAG and that it identifies incorrectly, while the upper bound's complement counts distributions identifiable and identified correctly — and both statements loosen to inequalities once "identifiable" is tightened to "strictly identifiable," since strict identifiability is the harder condition to satisfy [eq_9]:
+The bounds have an exact combinatorial meaning, not merely a summary-statistic role [eq_9].
+
+The lower bound counts identifiable distributions inferred incorrectly. The upper bound's complement counts identifiable distributions inferred correctly [eq_9].
+
+With the stricter notion of strict identifiability, both equalities become inequalities [eq_9]:
 
 $$\begin{aligned}
 \# \left\{ \text{interv. distr. that are } 
@@ -86,7 +107,8 @@ $$\begin{aligned}
 \end{array}
 \right\}
 &\;\leq \;p \cdot (p-1) - {\SID}_{\mathrm{upper}}(\G,\CC)\,.
-\end{aligned}$$ [eq_9]
+\end{aligned}
+$$ [eq_9]
 
 ```derivation
 shape: Why the bounds are pinned to identifiable-in-C rather than strictly-identifiable distributions.
@@ -99,7 +121,9 @@ steps:
     why: "Using the weaker, identifiable-in-C notion for the bound is deliberately conservative: if the CPDAG is meant to nominate candidate experiments worth running, discarding a distribution just because it fails the stricter test risks throwing away a genuinely good candidate [§sec_2_4_1]"
 ```
 
-Read together, eq_8 and eq_9 say the same thing at two levels: eq_8 fixes the *shape* of the answer (a pair, not a scalar), and eq_9 explains *why* that pair is meaningful — each bound is literally a count of correctly- or incorrectly-inferred intervention effects, not just an optimization artifact of the local-extension algorithm [eq_9].
+Eq. 8 fixes the answer's shape: a pair rather than a scalar. Eq. 9 gives that pair its interpretation [eq_9].
+
+Each bound is a count of correctly or incorrectly inferred intervention effects, not an optimization artifact [eq_9].
 
 ## Go Deeper {#go-deeper}
 - **Structural Intervention Distance (SID)** — the DAG-vs-DAG base metric this concept generalizes; understanding its single-number definition is the prerequisite for seeing why a CPDAG forces a pair of bounds instead.

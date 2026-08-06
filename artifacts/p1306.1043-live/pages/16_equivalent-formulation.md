@@ -1,22 +1,44 @@
 # Equivalent Graphical Formulation
 ## TL;DR {#tldr}
-SID starts out defined in terms of intervention distributions — asking whether a candidate adjustment set recovers the correct causal effect for every pair of variables. Checking that directly means reasoning about distributions, which is expensive and awkward to compute. This concept rewrites the same question as a purely graphical test: whether a candidate set blocks certain paths and avoids certain descendants in the true DAG. Nothing about *what* SID measures changes — only how you check it, which is what turns SID from a distributional definition into an algorithm you can actually run on graphs.
+SID initially asks whether a candidate adjustment set recovers the correct intervention distribution for every variable pair.
+
+This page replaces distributional reasoning with a graphical test: block certain paths and avoid certain descendants in the true DAG.
+
+SID's meaning does not change. Only its computation changes, making the definition executable on graphs.
 
 ## Intuition {#intuition}
-The original question was "does adjusting for this set give the right causal effect?" — which sounds like it requires comparing distributions under intervention versus observation. The insight here is that this question has a fixed, topological answer: whether a set is a valid adjustment set depends only on the shape of the graph — which nodes are descendants of which, and which paths get blocked — not on the particular numbers attached to the edges.
+The question "does this set give the right causal effect?" appears to require comparing intervention and observational distributions.
 
-This also loosens what people usually assume about adjustment. It is not "you must recover the true parent set" — several other sets work just as well. You can adjust for children of a cause, as long as they don't sit on the directed path to the effect, or skip parents whose only route to the outcome runs back through the cause itself anyway. The graphical criterion accepts anything topologically equivalent to blocking the confounding while leaving the causal channel open.
+Its answer is topological. Validity depends on descendants and blocked paths, not on numerical edge values.
+
+Adjustment need not recover the true parent set. Several other sets can work equally well.
+
+- A child of the treatment can work if it is not on the treatment-to-effect directed path.
+- A parent can be omitted if its only unblocked route to the outcome runs back through the treatment.
+
+The criterion accepts sets that block confounding while preserving the causal channel.
+
+**Worked example:** in the shared graph $H=G+(B\to C)$, estimate $G$ uses $\{A\}$ for source $C$. That set leaves $C\leftarrow B\to D$ open, so condition $(*)$ rejects it for $(C,D)$ without evaluating a density [eq_6].
 
 ## Mechanics {#mechanics}
-**From distributions to one candidate set:** for each ordered pair $(i,j)$, the question the SID needs answered stops being "search over adjustment sets" and becomes a single yes/no check — whether $\PA{\HH}{i}$, the parent set from the *estimated* graph, is a valid adjustment set for the intervention on $i$ with respect to $j$ in the *true* graph $\G$ [§sec_2_2].
+**From distributions to one candidate set:** for each ordered pair $(i,j)$, SID stops searching over adjustment sets [§sec_2_2].
 
-**Why one check suffices, and why it's tight:** a Lemma supplies a two-sided characterization built around a graphical condition, tagged (*). If a candidate set satisfies (*), it is guaranteed to be a valid adjustment set under every distribution Markov to $\G$; if it fails (*), there is always some Markov-compatible distribution for which it is *not* valid [§sec_2_2]. This two-sidedness is what licenses replacing "check across all distributions" with "check the graph once" — the graphical test isn't merely sufficient, it's exactly the boundary between valid and invalid.
+It checks whether estimated-graph parent set $\PA{\HH}{i}$ is valid for intervention on $i$ with respect to $j$ in true graph $\G$ [§sec_2_2].
+
+**Why one check is enough:** a Lemma gives a two-sided characterization using condition $(*)$ [§sec_2_2].
+
+If a candidate set satisfies $(*)$, it is valid for every distribution Markov to $\G$. If it fails, some Markov-compatible distribution makes it invalid [§sec_2_2].
+
+The test is therefore exact, not merely sufficient.
 
 **Consistency with the earlier definition:** when the candidate set is exactly the true parent set, $\B{Z} = \PA{\G}{i}$, condition (*) is satisfied automatically, and the Lemma collapses back to the earlier Proposition that parent-set adjustment always works [§sec_2_2].
 
 **Relation to the classic criterion:** condition (*) is recognizable as a slight loosening of the standard back-door criterion, extended to also license certain non-parent sets as valid adjustments [§sec_2_2].
 
-**Which non-parent sets qualify:** a child of the treatment can be a valid adjustment variable as long as it is not itself on the directed path from cause to effect, and a parent of the treatment can be dropped from the adjustment set if every unblocked path it would otherwise create is already forced through the treatment [§sec_2_2].
+**Which non-parent sets qualify:**
+
+- A treatment child may be included if it is not on the directed cause-to-effect path.
+- A treatment parent may be omitted if every unblocked path it would create goes through the treatment [§sec_2_2].
 
 ## The Math {#the-math}
 The graphical condition (*) that a candidate set $\B{Z}$ must satisfy for the pair $(X,Y)$ is stated in two parts — a descendant restriction and a path-blocking requirement [eq_6].
@@ -55,9 +77,13 @@ j \in \DE{\G}{i} & \text{if } j \in \PA{\HH}{i}\\
 \right\}
 $$ [eq_7]
 
-**Why the case split exists:** when $\HH$ already claims $j$ as a parent of $i$, condition (*) is vacuous — the estimated graph has already committed to a causal claim rather than an adjustment question — so the check degenerates to the simpler test of whether $j$ is even a descendant of $i$ in the true graph $\G$; get the direction wrong there and the mismatch is counted regardless of any adjustment reasoning [eq_7]. When $j$ is not a claimed parent, the pair is scored by whether $\PA{\HH}{i}$, taken as the candidate adjustment set, satisfies (*) in $\G$ [eq_7].
+**Why the case split exists:** if $\HH$ claims $j$ as a parent of $i$, condition $(*)$ is vacuous. The check becomes whether $j$ is a descendant of $i$ in true graph $\G$ [eq_7].
 
-**Where the tractability gain comes from:** the reformulation replaces a search over adjustment sets and a comparison of interventional distributions with a single descendant/blocking check per pair, against one fixed candidate set — $\PA{\HH}{i}$ — rather than an unbounded family of candidates [§sec_2_2].
+If $j$ is not a claimed parent, SID tests whether $\PA{\HH}{i}$ satisfies $(*)$ in $\G$ [eq_7].
+
+**Where tractability comes from:** each pair needs one descendant/blocking check against fixed candidate $\PA{\HH}{i}$ [§sec_2_2].
+
+The reformulation removes both an adjustment-set search and an interventional-distribution comparison.
 
 ## Go Deeper {#go-deeper}
 - **Motivation and Definition of SID** — the distributional definition this formulation replaces; read it first to see exactly which computation (*) is standing in for.

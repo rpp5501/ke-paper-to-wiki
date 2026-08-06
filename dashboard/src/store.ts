@@ -1,10 +1,12 @@
 import { create } from "zustand";
 
 import {
-  markSeen,
+  markRead,
+  markReading,
   readLedger,
   recordAnswer,
   writeLedger,
+  type MasteryEvidenceKind,
   type MasteryLedger,
 } from "./lib/mastery";
 
@@ -56,6 +58,7 @@ export interface AppState {
   mode: Mode;
   setMode: (mode: Mode) => void;
   completedSteps: Set<string>;
+  markReading: (nodeId: string) => void;
   markStepComplete: (nodeId: string) => void;
   expandAllMath: boolean;
   toggleExpandAllMath: () => void;
@@ -65,7 +68,12 @@ export interface AppState {
   layoutMode: "layered" | "radial";
   setLayoutMode: (layoutMode: "layered" | "radial") => void;
   mastery: MasteryLedger;
-  recordMastery: (nodeId: string, correct: boolean) => void;
+  recordMastery: (
+    nodeId: string,
+    correct: boolean,
+    evidenceId?: string,
+    kind?: MasteryEvidenceKind,
+  ) => void;
   // Shared so the review queue can send a learner straight into the quiz.
   quizOpen: boolean;
   setQuizOpen: (open: boolean) => void;
@@ -75,15 +83,21 @@ export interface AppState {
   setHoverNode: (nodeId: string | null) => void;
 }
 
-// Opening a node is the weakest mastery evidence there is. Both paths that
-// select a node route through here so "seen" cannot drift out of sync.
-function seenLedger(
+// Entering a node only establishes that it is being read; the chapter-end
+// sentinel is the sole route to the persisted "read" state.
+function readingLedger(
   mastery: MasteryLedger,
   nodeId: string | null,
 ): MasteryLedger {
   if (nodeId === null) return mastery;
 
-  const next = markSeen(mastery, nodeId);
+  const next = markReading(mastery, nodeId);
+  if (next !== mastery) writeLedger(next);
+  return next;
+}
+
+function readLedgerForStep(mastery: MasteryLedger, nodeId: string): MasteryLedger {
+  const next = markRead(mastery, nodeId);
   if (next !== mastery) writeLedger(next);
   return next;
 }
@@ -94,7 +108,7 @@ export const useApp = create<AppState>((set) => ({
     selected,
     drawerOpen: selected !== null,
     vizFocus: null,
-    mastery: seenLedger(state.mastery, selected),
+    mastery: readingLedger(state.mastery, selected),
   })),
   drawerOpen: false,
   setDrawerOpen: (drawerOpen) => set((state) => ({
@@ -158,12 +172,16 @@ export const useApp = create<AppState>((set) => ({
   mode: "learn",
   setMode: (mode) => set({ mode }),
   completedSteps: new Set(),
+  markReading: (nodeId) => set((state) => ({
+    mastery: readingLedger(state.mastery, nodeId),
+  })),
   markStepComplete: (nodeId) =>
     set((state) => {
-      if (state.completedSteps.has(nodeId)) return {};
+      const mastery = readLedgerForStep(state.mastery, nodeId);
+      if (state.completedSteps.has(nodeId)) return { mastery };
       const completedSteps = new Set(state.completedSteps);
       completedSteps.add(nodeId);
-      return { completedSteps };
+      return { completedSteps, mastery };
     }),
   expandAllMath: false,
   toggleExpandAllMath: () =>
@@ -175,7 +193,7 @@ export const useApp = create<AppState>((set) => ({
     selected: nodeId,
     drawerOpen: true,
     vizFocus: nodeId,
-    mastery: seenLedger(state.mastery, nodeId),
+    mastery: readingLedger(state.mastery, nodeId),
   })),
   layoutMode: "layered",
   setLayoutMode: (layoutMode) => set({ layoutMode }),
@@ -191,9 +209,11 @@ export const useApp = create<AppState>((set) => ({
       if (!collapsed.delete(nodeId)) collapsed.add(nodeId);
       return { collapsed };
     }),
-  recordMastery: (nodeId, correct) =>
+  recordMastery: (nodeId, correct, evidenceId, kind) =>
     set((state) => {
-      const mastery = recordAnswer(state.mastery, nodeId, correct);
+      const mastery = recordAnswer(
+        state.mastery, nodeId, correct, new Date(), evidenceId, kind,
+      );
       writeLedger(mastery);
       return { mastery };
     }),

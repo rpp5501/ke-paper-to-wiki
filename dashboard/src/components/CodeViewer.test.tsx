@@ -1,9 +1,25 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { CodeViewerPresentation, nodeHasCode } from "./CodeViewer";
+import {
+  CodeListingPresentation,
+  CodeViewerPresentation,
+  calledHelpers,
+  nodeHasCode,
+} from "./CodeViewer";
 
 describe("CodeViewer", () => {
+  it("resolves call edges to available helper nodes", () => {
+    expect(calledHelpers(
+      "caller",
+      [
+        { id: "caller", kind: "function", label: "caller" },
+        { id: "helper", kind: "function", label: "helper" },
+      ],
+      [{ src: "caller", dst: "helper", kind: "calls", weight: 1 }],
+    ).map((node) => node.id)).toEqual(["helper"]);
+  });
+
   it("renders local Prism tokens as class-based semantic code", () => {
     const markup = renderToStaticMarkup(
       <CodeViewerPresentation
@@ -62,5 +78,69 @@ describe("CodeViewer", () => {
     expect(nodeHasCode({ id: "c", kind: "concept", label: "c" }, "code")).toBe(false);
     expect(nodeHasCode({ id: "f", kind: "function", label: "f" }, "   ")).toBe(false);
     expect(nodeHasCode(undefined, "x")).toBe(false);
+  });
+
+  it("discloses the preview range and expands to the complete symbol", () => {
+    const listing = {
+      path: "sid.py",
+      language: "python",
+      symbolKind: "function" as const,
+      startLine: 29,
+      endLine: 81,
+      previewEndLine: 68,
+      preview: "def reachable():\n    first = True",
+      full: "def reachable():\n    first = True\n    return complete",
+      rangeResolved: true,
+    };
+
+    const preview = renderToStaticMarkup(
+      <CodeListingPresentation
+        expanded={false}
+        listing={listing}
+        nodeLabel="reachable"
+        onToggle={() => {}}
+      />,
+    );
+    expect(preview).toContain("lines 29–68 of 29–81");
+    expect(preview).toContain("Show complete function");
+    expect(preview).not.toContain("return complete");
+    expect(preview).toContain('data-line-number="29"');
+
+    const full = renderToStaticMarkup(
+      <CodeListingPresentation
+        expanded
+        listing={listing}
+        nodeLabel="reachable"
+        onToggle={() => {}}
+      />,
+    );
+    expect(full).toContain("Hide complete function");
+    expect(full).toContain(">return</span>");
+    expect(full).toContain(" complete");
+    expect(full).toContain('data-line-number="31"');
+  });
+
+  it("labels start-only listings as unresolved", () => {
+    const markup = renderToStaticMarkup(
+      <CodeListingPresentation
+        expanded={false}
+        listing={{
+          path: "unknown.rs",
+          language: "rust",
+          symbolKind: "function",
+          startLine: 10,
+          endLine: 49,
+          previewEndLine: 49,
+          preview: "fn unknown() {}",
+          full: "fn unknown() {}",
+          rangeResolved: false,
+        }}
+        nodeLabel="unknown"
+        onToggle={() => {}}
+      />,
+    );
+
+    expect(markup).toContain("range unresolved");
+    expect(markup).not.toContain("Show complete");
   });
 });

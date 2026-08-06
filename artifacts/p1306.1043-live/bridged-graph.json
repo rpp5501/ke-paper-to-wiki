@@ -200,39 +200,39 @@
   },
   {
    "id": "sid",
-   "kind": "function",
+   "kind": "file",
    "label": "sid.py",
-   "source_ref": "sid.py:L1"
+   "source_ref": "sid.py:L1-L308"
   },
   {
    "id": "sid_compute_path_matrix",
    "kind": "function",
    "label": "_compute_path_matrix()",
-   "source_ref": "sid.py:L10"
+   "source_ref": "sid.py:L10-L26"
   },
   {
    "id": "sid_reachable_on_non_directed_path",
    "kind": "function",
    "label": "_reachable_on_non_directed_path()",
-   "source_ref": "sid.py:L29"
+   "source_ref": "sid.py:L29-L180"
   },
   {
    "id": "sid_sid_matrix",
    "kind": "function",
    "label": "_sid_matrix()",
-   "source_ref": "sid.py:L183"
+   "source_ref": "sid.py:L183-L253"
   },
   {
    "id": "sid_sid",
-   "kind": "function",
+   "kind": "class",
    "label": "SID",
-   "source_ref": "sid.py:L256"
+   "source_ref": "sid.py:L256-L308"
   },
   {
    "id": "sid_sid_evaluate",
-   "kind": "function",
+   "kind": "method",
    "label": "._evaluate()",
-   "source_ref": "sid.py:L300"
+   "source_ref": "sid.py:L300-L308"
   }
  ],
  "edges": [

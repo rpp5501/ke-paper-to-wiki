@@ -7,6 +7,37 @@ export type KENode = {
   community?: number;
 };
 
+export type LearningChapter = {
+  id: string;
+  title: string;
+  question: string;
+  outcome: string;
+  conceptIds: string[];
+  foundationConceptIds: string[];
+  advancedConceptIds: string[];
+  checkpointIds: string[];
+  estimatedCoreMinutes: number;
+  estimatedFullMinutes: number;
+};
+
+export type LearningPath = {
+  version: number;
+  reviewed: boolean;
+  chapters: LearningChapter[];
+};
+
+export type CodeListing = {
+  path: string;
+  language: string;
+  symbolKind: "file" | "class" | "function" | "method";
+  startLine: number;
+  endLine: number;
+  previewEndLine: number;
+  preview: string;
+  full: string;
+  rangeResolved: boolean;
+};
+
 export type KEEdge = {
   src: string;
   dst: string;

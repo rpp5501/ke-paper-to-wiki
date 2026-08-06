@@ -1,0 +1,2 @@
+validation/fixtures/evidence/* -text
+validation/fixtures/*.json -text

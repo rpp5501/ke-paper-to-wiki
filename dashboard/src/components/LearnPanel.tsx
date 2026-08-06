@@ -107,15 +107,13 @@ export function switchToExplore() {
 }
 
 export default function LearnPanel({ onCloseSheet }: { onCloseSheet: () => void }) {
-  const { learnIdx, setLearnIdx, completedSteps, markStepComplete, layoutPhase } =
-    useApp();
+  const { learnIdx, setLearnIdx, completedSteps, layoutPhase } = useApp();
   const navigateToNode = useNodeNavigation();
 
   const goTo = (index: number) => {
     const target = stepActivation(LEARN_STEPS, index, layoutPhase);
     if (!target) return;
     setLearnIdx(target.index);
-    markStepComplete(target.nodeId);
     navigateToNode(target.nodeId);
   };
 

@@ -1,5 +1,12 @@
 from pathlib import Path
-from paper_skill.p4_write import annotate_graph, write_pages, PAGE_PROMPT
+from paper_skill.p4_write import (
+    PAGE_PROMPT,
+    WRITING_SKILL,
+    WRITING_SKILL_PATH,
+    annotate_graph,
+    write_pages,
+)
+from paper_skill.pedagogy import prose_word_counts
 
 # fixtures repeated verbatim (tasks may execute out of order — no cross-test imports)
 PACK = {"meta": {"source": "arXiv:1706.03762", "title": "AIAYN", "generated": "x"},
@@ -68,6 +75,47 @@ def test_spawn_exception_fails_immediately_no_retry(tmp_path):
     assert len(calls) == 1
 
 
+def test_dense_prose_triggers_one_bounded_regeneration(tmp_path):
+    calls = []
+    dense = GOOD_PAGE.replace(
+        "Scores are divided by sqrt(d_k) [eq_1].",
+        " ".join(["dense"] * 101) + " [eq_1].",
+    )
+
+    def improve(_prompt):
+        calls.append(1)
+        return dense if len(calls) == 1 else GOOD_PAGE
+
+    result = write_pages(
+        PACK, GRAPH, ROWS, spawn=improve,
+        home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path,
+    )
+
+    assert result["done"] == ["sdpa"]
+    assert len(calls) == 2
+
+
+def test_pedagogy_counts_each_list_item_as_prose():
+    bullet = " ".join(["bullet"] * 61)
+    ordered = " ".join(["ordered"] * 101)
+
+    assert prose_word_counts(f"- {bullet}\n\n1. {ordered}") == [61, 101]
+
+
+def test_pedagogy_exempts_indented_code_but_keeps_nested_list_prose():
+    code = " ".join(["code"] * 140)
+    bullet = " ".join(["bullet"] * 61)
+
+    assert prose_word_counts(f"    {code}\n\n    - {bullet}") == [61]
+
+
+def test_pedagogy_resumes_after_a_display_equation_with_an_anchor():
+    prose = " ".join(["word"] * 61)
+
+    assert prose_word_counts(
+        f"$$\nx = 1\n\\end{{aligned}}$$ [eq_1]\n\n{prose}") == [61]
+
+
 # The graph node's `page` field is the only record of which file belongs to
 # which concept. write_pages is the one stage that knows the mapping, and
 # viz.propose hard-requires the field (no page -> zero candidates, silently).
@@ -115,3 +163,23 @@ def test_prompt_requires_verbatim_equations_and_paragraph_anchors():
 
 def test_prompt_encodes_anchor_rule_and_tiers():
     assert "{#tldr}" in PAGE_PROMPT and "[§" in PAGE_PROMPT
+
+
+def test_page_prompt_is_loaded_from_versioned_writing_skill():
+    assert WRITING_SKILL_PATH.name == "SKILL.md"
+    assert WRITING_SKILL_PATH.parent.name == "write-paper-tutor"
+    assert WRITING_SKILL == WRITING_SKILL_PATH.read_text(encoding="utf-8")
+    assert WRITING_SKILL in PAGE_PROMPT
+
+
+def test_spawn_receives_rendered_context_without_formatting_skill_braces(tmp_path):
+    prompts = []
+
+    write_pages(
+        PACK, GRAPH, ROWS, spawn=lambda prompt: prompts.append(prompt) or GOOD_PAGE,
+        home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path,
+    )
+
+    assert "GLOBAL CONTEXT:" in prompts[0]
+    assert "\\frac{QK^T}{\\sqrt{d_k}}" in prompts[0]
+    assert "__GLOBAL_CONTEXT__" not in prompts[0]

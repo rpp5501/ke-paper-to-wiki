@@ -1,20 +1,38 @@
 # SID between a CPDAG and a DAG or CPDAG
 ## TL;DR {#tldr}
-Some estimation procedures never recover a single causal DAG — only the Markov equivalence class it belongs to, represented as a CPDAG. SID between a DAG and a CPDAG already lets you score an estimated CPDAG against a known true DAG; this concept flips that around and extends it further, so the *true* structure can also be a CPDAG on either side of the comparison. The score now has to account for the fact that a CPDAG bundles many DAGs together, some of which disagree with each other about a given intervention effect.
+Some estimators recover only a CPDAG: a Markov equivalence class rather than one causal DAG.
+
+Earlier SID scores an estimated CPDAG against known DAG truth. This extension also allows the true structure, or both structures, to be CPDAGs.
+
+The score must account for member DAGs that disagree about an intervention effect.
 
 ## Intuition {#intuition}
-If the ground truth itself is only identifiable up to an equivalence class, it's not meaningful to grade an estimate against one arbitrarily chosen DAG from that class — different members would give different, equally "correct," verdicts. The natural fix is to score against the whole class at once, but only on the questions the class can actually answer.
+When truth is only an equivalence class, grading against one arbitrary member DAG is meaningless. Different members can give different yet equally valid verdicts.
 
-That means restricting attention to intervention effects that are identifiable from the CPDAG itself, regardless of which member DAG happens to be the true one. Effects that aren't identifiable are simply not counted as either right or wrong, since the true CPDAG makes no unambiguous claim about them.
+SID instead scores the whole class, but only on questions it can answer.
+
+SID considers intervention effects identifiable from the CPDAG, regardless of which member DAG is true.
+
+Non-identifiable effects are neither right nor wrong because the CPDAG makes no unambiguous claim about them.
+
+**Worked example:** in CPDAG $A-B-C$, the possibly directed path from $A$ to $C$ begins with an undirected edge. The effect is therefore excluded as non-identifiable rather than automatically counted wrong [§sec_2_4_2].
 
 ## Mechanics {#mechanics}
-**Why a CPDAG can be the correct target at all:** simulating from a linear Gaussian SEM with different error variances is a case where the joint distribution can't pin down the true DAG, but under a faithfulness assumption it can still pin down the correct Markov equivalence class. In that situation the natural comparison is between the estimated structure and the true CPDAG, not a true DAG that isn't even identifiable [§sec_2_4_2].
+**Why a CPDAG can be the target:** a linear Gaussian SEM with different error variances need not identify its true DAG [§sec_2_4_2].
 
-**The restriction that makes this well-defined:** a CPDAG $\mathcal{C}$ represents an equivalence class of DAGs $\mathcal{C}_1, \mathcal{C}_2, \dots$, and these different DAGs can disagree on the intervention distribution from $i$ to $j$. Rather than pick one, SID only ever asks about pairs $(i,j)$ whose intervention distribution is identifiable in $\mathcal{C}$ — i.e., every DAG consistent with $\mathcal{C}$ agrees on it — using a generalized backdoor criterion to characterize identifiability [§sec_2_4_2].
+Under faithfulness, its joint distribution can still identify the correct Markov equivalence class. The natural target is therefore the true CPDAG [§sec_2_4_2].
 
-**The graphical shortcut for identifiability:** a path in a partially directed graph is called *possibly directed* if none of its edges points backward against the direction of travel from $i$ to $j$. The identifiability criterion is then purely graphical: the intervention distribution from $i$ to $j$ is *not* identifiable in $\mathcal{C}$ exactly when there is a possibly directed path from $i$ to $j$ that starts with an undirected edge — an unresolved edge right at the source is enough to let different member DAGs send the effect through different routes [§sec_2_4_2].
+**The well-defined restriction:** member DAGs $\mathcal{C}_1,\mathcal{C}_2,\dots$ can disagree on the $i$-to-$j$ intervention distribution [§sec_2_4_2].
 
-**Why the DAG case falls out for free:** when $\mathcal{C}$ is itself a DAG, it has only one member, so every intervention distribution is trivially identifiable and the possibly-directed-path condition never triggers. The CPDAG definitions then collapse exactly onto the earlier DAG-to-DAG and DAG-to-CPDAG definitions, so this is a genuine generalization rather than a parallel, incompatible definition [§sec_2_4_2].
+SID scores only pairs identifiable in $\mathcal{C}$: every consistent DAG agrees on their effect. A generalized backdoor criterion characterizes that property [§sec_2_4_2].
+
+**The graphical shortcut:** a path is *possibly directed* when no edge points backward while traveling from $i$ to $j$ [§sec_2_4_2].
+
+The effect is not identifiable exactly when a possibly directed $i$-to-$j$ path begins with an undirected edge. That unresolved source edge lets member DAGs route the effect differently [§sec_2_4_2].
+
+**Why the DAG case falls out for free:** a DAG-valued $\mathcal{C}$ has one member, so every intervention distribution is identifiable [§sec_2_4_2].
+
+The possibly-directed-path condition never triggers. These definitions collapse to earlier DAG-to-DAG and DAG-to-CPDAG SID [§sec_2_4_2].
 
 ## The Math {#the-math}
 The full definition scores a pair $(i,j)$ only when it is identifiable in $\mathcal{C}$, and then counts it as an error if *some* DAG $\mathcal{C}_1$ consistent with $\mathcal{C}$ disagrees with the estimate $\mathcal{H}$ on that intervention distribution [eq_10]:
@@ -45,7 +63,9 @@ terms:
     words: "The actual mismatch being counted: the true interventional distribution under the equivalence class versus the one implied by the estimate [eq_10]."
 ```
 
-**Why bounds reappear for the CPDAG-vs-CPDAG case:** when the estimate $\mathcal{H}$ is itself a CPDAG rather than a DAG, the extension is completely analogous, but now both sides bundle multiple DAGs, so a single count is no longer well-defined; the result is reported as lower and upper bounds over all DAGs consistent with the estimated equivalence class, mirroring how the DAG-vs-CPDAG case was already handled [§sec_2_4_2].
+**Why CPDAG-vs-CPDAG needs bounds:** both sides now bundle multiple DAGs, so one count is not well-defined [§sec_2_4_2].
+
+SID reports lower and upper bounds over DAGs consistent with the estimate, as in the DAG-to-CPDAG case [§sec_2_4_2].
 
 ## Go Deeper {#go-deeper}
 - **SID between a DAG and a CPDAG** — the direct prerequisite: this concept only generalizes that definition by letting the *true* side also be a CPDAG, so its identifiability machinery and bound structure carry over unchanged.

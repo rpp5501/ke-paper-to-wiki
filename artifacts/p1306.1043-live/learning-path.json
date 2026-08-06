@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "reviewed": true,
+  "chapters": [
+    {
+      "id": "why-graph-distance-is-not-enough",
+      "title": "Why graph distance is not enough",
+      "question": "Why can two equally small graph-edit errors have radically different causal consequences?",
+      "outcome": "Explain what SHD misses and predict which graph error will damage intervention estimates more.",
+      "conceptIds": [
+        "graph-comparison-problem",
+        "structural-hamming-distance",
+        "motivation-and-definition"
+      ],
+      "foundationConceptIds": [],
+      "advancedConceptIds": [],
+      "checkpointIds": [
+        "shd-graph-class"
+      ],
+      "estimatedCoreMinutes": 7,
+      "estimatedFullMinutes": 11
+    },
+    {
+      "id": "intervention-machinery",
+      "title": "The intervention machinery",
+      "question": "What must be true for an observational adjustment to reproduce an intervention distribution?",
+      "outcome": "Use DAG terminology, factorization, and adjustment sets to reason about one ordered intervention pair.",
+      "conceptIds": [
+        "dag-terminology",
+        "intervention-distributions",
+        "linear-gaussian-sem-effects",
+        "alternative-adjustment-sets"
+      ],
+      "foundationConceptIds": [
+        "dag-terminology",
+        "linear-gaussian-sem-effects"
+      ],
+      "advancedConceptIds": [],
+      "checkpointIds": [
+        "adjustment-set-default-choice"
+      ],
+      "estimatedCoreMinutes": 8,
+      "estimatedFullMinutes": 15
+    },
+    {
+      "id": "what-sid-measures",
+      "title": "What SID actually measures",
+      "question": "Exactly when does one ordered source-target pair contribute one unit to SID?",
+      "outcome": "Calculate SID pair by pair, explain its asymmetry, and normalize its symmetric variant correctly.",
+      "conceptIds": [
+        "structural-intervention-distance",
+        "equivalent-formulation",
+        "sid-properties",
+        "symmetrization",
+        "penalizing-additional-edges",
+        "proof-main-proposition"
+      ],
+      "foundationConceptIds": [],
+      "advancedConceptIds": [
+        "proof-main-proposition"
+      ],
+      "checkpointIds": [
+        "sid-vs-shd-what-is-counted",
+        "running-dag-pair-count",
+        "equivalent-formulation-why",
+        "sid-is-not-a-metric",
+        "symmetrization-motivating-case"
+      ],
+      "estimatedCoreMinutes": 8,
+      "estimatedFullMinutes": 18
+    },
+    {
+      "id": "how-sid-is-computed",
+      "title": "How SID is computed",
+      "question": "How does the graphical definition become a matrix-and-reachability algorithm and then executable code?",
+      "outcome": "Trace the paper algorithm into sid.py and distinguish its worst-case bound from observed scaling.",
+      "conceptIds": [
+        "sid-algorithms",
+        "sid-implementation",
+        "sid-scalability"
+      ],
+      "foundationConceptIds": [],
+      "advancedConceptIds": [
+        "sid-algorithms"
+      ],
+      "checkpointIds": [
+        "complexity-bound-vs-observation"
+      ],
+      "estimatedCoreMinutes": 7,
+      "estimatedFullMinutes": 14
+    },
+    {
+      "id": "guarantees-and-limits",
+      "title": "What SID guarantees—and where it stops",
+      "question": "Which results justify SID, how does it extend beyond DAGs, and which claims remain limitations or open problems?",
+      "outcome": "Inspect the guarantees, evaluate the simulations, and state SID's assumptions and boundaries without overclaiming.",
+      "conceptIds": [
+        "proof-sidshd",
+        "proof-sidsuper",
+        "sid-dag-cpdag",
+        "sid-cpdag-dag-cpdag",
+        "sid-vs-shd-simulation",
+        "comparing-causal-inference-methods",
+        "hidden-variables-extension",
+        "multiple-interventions-extension"
+      ],
+      "foundationConceptIds": [],
+      "advancedConceptIds": [
+        "proof-sidshd",
+        "proof-sidsuper",
+        "sid-dag-cpdag",
+        "sid-cpdag-dag-cpdag",
+        "hidden-variables-extension",
+        "multiple-interventions-extension"
+      ],
+      "checkpointIds": [
+        "cpdag-bound-interpretation"
+      ],
+      "estimatedCoreMinutes": 7,
+      "estimatedFullMinutes": 17
+    }
+  ],
+  "supplementaryConceptIds": []
+}

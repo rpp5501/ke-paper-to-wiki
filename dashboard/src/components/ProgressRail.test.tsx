@@ -6,8 +6,8 @@ import type { MasteryLedger } from "../lib/mastery";
 import { ProgressRailPresentation } from "./ProgressRail";
 
 const chapters: Chapter[] = [
-  { nodeId: "sdpa", title: "Scaled dot-product attention", tiers: [] },
-  { nodeId: "softmax", title: "Softmax", tiers: [] },
+  { nodeId: "sdpa", title: "Scaled dot-product attention", tiers: [], sections: [], checkpointIds: [] },
+  { nodeId: "softmax", title: "Softmax", tiers: [], sections: [], checkpointIds: [] },
 ];
 
 function render(mastery: MasteryLedger) {
@@ -29,14 +29,16 @@ function ledger(level: string): MasteryLedger {
   return {
     sdpa: {
       level: level as MasteryLedger[string]["level"],
+      read: false,
       streak: 0,
       lastAnswered: null,
+      evidenceIds: [],
     },
   };
 }
 
 describe("ProgressRailPresentation mastery ring", () => {
-  it.each(["seen", "quizzed", "mastered"])(
+  it.each(["reading", "read", "practiced", "mastered"])(
     "marks a %s step so the ring can grow with the evidence",
     (level) => {
       const markup = render(ledger(level));
@@ -66,5 +68,15 @@ describe("ProgressRailPresentation mastery ring", () => {
     expect(markup).toContain("0 of 2 read");
     expect(markup).toContain("Scaled dot-product attention");
     expect(markup).toContain("Softmax");
+  });
+
+  it("restores sentinel-backed read progress independently of practice", () => {
+    const persisted = ledger("practiced");
+    persisted.sdpa.read = true;
+
+    const markup = render(persisted);
+
+    expect(markup).toContain("1 of 2 read");
+    expect(markup).toContain('class="rail-status">Practiced');
   });
 });

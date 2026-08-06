@@ -55,7 +55,7 @@ describe("PlayerBar", () => {
     const markup = renderToStaticMarkup(
       <PlayerBarPresentation
         {...actions}
-        firstStep="transformer"
+        firstStep="graph-comparison-problem"
         isConcept
         layoutPhase="loading"
         player={null}

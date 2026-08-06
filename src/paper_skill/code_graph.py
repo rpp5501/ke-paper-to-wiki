@@ -9,12 +9,15 @@ Extraction is keyless: graphify's AST path needs no model for code corpora.
 
 Usage: python -m paper_skill.code_graph <path> [-o code-graph.json] [--source X]
 """
+import ast
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 _GRAPHIFY_PKG = Path(__file__).resolve().parents[3] / "Forked repos" / "graphify"
+_PYTHON_LOCATION = re.compile(r"^(?P<path>.+):L(?P<line>[1-9]\d*)")
 
 
 def _to_plan_schema(native: dict, source: str) -> dict:
@@ -45,6 +48,59 @@ def _source_file(node: dict) -> str:
     return str(node.get("source_ref", "")).split(":L", 1)[0].replace("\\", "/")
 
 
+def _python_spans(path: Path) -> dict[int, tuple[int, int, str]]:
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, UnicodeError):
+        return {}
+    spans: dict[int, tuple[int, int, str]] = {}
+
+    def visit(parent, node) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                start = child.lineno
+                if child.decorator_list:
+                    start = min(start, *(item.lineno for item in child.decorator_list))
+                kind = "class" if isinstance(child, ast.ClassDef) else (
+                    "method" if isinstance(parent, ast.ClassDef) else "function")
+                spans[child.lineno] = (start, child.end_lineno or child.lineno, kind)
+            visit(child, child)
+
+    visit(None, tree)
+    return spans
+
+
+def _enrich_python_nodes(graph: dict, scan_dir: Path) -> dict:
+    cache: dict[Path, tuple[list[str], dict[int, tuple[int, int, str]]]] = {}
+    nodes = []
+    for original in graph["nodes"]:
+        node = dict(original)
+        match = _PYTHON_LOCATION.match(str(node.get("source_ref", "")))
+        if not match or not match.group("path").lower().endswith(".py"):
+            nodes.append(node)
+            continue
+        source_path = scan_dir / match.group("path")
+        if source_path not in cache:
+            try:
+                lines = source_path.read_text(encoding="utf-8").splitlines()
+            except (OSError, UnicodeError):
+                nodes.append(node)
+                continue
+            cache[source_path] = (lines, _python_spans(source_path))
+        lines, spans = cache[source_path]
+        line = int(match.group("line"))
+        path = match.group("path").replace("\\", "/")
+        if Path(str(node.get("label", ""))).name == Path(path).name:
+            node["kind"] = "file"
+            node["source_ref"] = f"{path}:L1-L{len(lines)}"
+        elif line in spans:
+            start, end, kind = spans[line]
+            node["kind"] = kind
+            node["source_ref"] = f"{path}:L{start}-L{end}"
+        nodes.append(node)
+    return {**graph, "nodes": nodes}
+
+
 def build_code_graph(target, source: str | None = None, run=run_graphify) -> dict:
     """Build a §5.1 code graph for ``target`` (a file or a directory)."""
     target = Path(target)
@@ -69,6 +125,7 @@ def build_code_graph(target, source: str | None = None, run=run_graphify) -> dic
                             if e["source"] not in prose and e["target"] not in prose]}
 
     graph = _to_plan_schema(native, source or f"repo:{Path(target).name}")
+    graph = _enrich_python_nodes(graph, scan_dir)
 
     if target.is_file():
         # graphify only walks directories, so narrowing to one module happens

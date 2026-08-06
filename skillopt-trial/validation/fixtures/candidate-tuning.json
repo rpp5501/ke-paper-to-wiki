@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "reportKind": "candidate",
+  "stage": "tuning",
+  "skillArtifact": {
+    "path": "validation/fixtures/evidence/candidate-skill.md",
+    "sha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c"
+  },
+  "rows": [
+    {
+      "taskId": "train-sid-symmetrization",
+      "scores": {"factual_evidence_accuracy": 75, "conceptual_depth": 75, "prerequisite_clarity": 75, "worked_examples": 75, "scanability": 75, "checkpoint_quality": 75},
+      "automaticRejectionFlags": [],
+      "rawOutput": {"path": "validation/fixtures/evidence/tuning-sid-symmetrization.txt", "sha256": "fdbb83f2c3de2e37195d9819f040253679c99112968cf5d56ad3e33b047c75ea"}
+    },
+    {
+      "taskId": "train-sid-complexity",
+      "scores": {"factual_evidence_accuracy": 75, "conceptual_depth": 75, "prerequisite_clarity": 75, "worked_examples": 75, "scanability": 75, "checkpoint_quality": 75},
+      "automaticRejectionFlags": [],
+      "rawOutput": {"path": "validation/fixtures/evidence/tuning-sid-complexity.txt", "sha256": "37aed2bd31baf4783a22f9337a1e414da81340350490b8ce50d59a747025d9d1"}
+    },
+    {
+      "taskId": "train-transformer-attention",
+      "scores": {"factual_evidence_accuracy": 75, "conceptual_depth": 75, "prerequisite_clarity": 75, "worked_examples": 75, "scanability": 75, "checkpoint_quality": 75},
+      "automaticRejectionFlags": [],
+      "rawOutput": {"path": "validation/fixtures/evidence/tuning-transformer-attention.txt", "sha256": "329e1a484f2c1de3166918ca2b4bc4473c8ec4ed5697f643e97771c410479e62"}
+    },
+    {
+      "taskId": "train-transformer-position",
+      "scores": {"factual_evidence_accuracy": 75, "conceptual_depth": 75, "prerequisite_clarity": 75, "worked_examples": 75, "scanability": 75, "checkpoint_quality": 75},
+      "automaticRejectionFlags": [],
+      "rawOutput": {"path": "validation/fixtures/evidence/tuning-transformer-position.txt", "sha256": "ae229dacdf1cb0d2df661c5a2f098c23b0d5e4dff93dbb7f805456fdc3c8eaa2"}
+    }
+  ],
+  "deterministicGates": {
+    "correctness": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "equation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "evidence_citation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "schema": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "component": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "accessibility": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}}
+  }
+}

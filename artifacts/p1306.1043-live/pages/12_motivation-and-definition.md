@@ -1,17 +1,31 @@
 # Motivation and Definition of SID
 
 ## TL;DR {#tldr}
-The Structural Intervention Distance (SID) is a pre-metric for comparing two DAGs that scores them by whether they support the *same interventional predictions*, not by how many edges differ. Where the Structural Hamming Distance (SHD) counts edge mismatches and treats every mismatch as equally bad, SID counts the ordered pairs of variables for which the estimated graph would compute the wrong interventional distribution $p(y \mid do(x))$ if the true graph is the one actually generating the data. A single missing or extra edge can leave every intervention prediction intact, while a single reversed edge can corrupt many of them — SHD cannot tell these apart, which is the entire reason SID exists.
+SID is a pre-metric for two DAGs that asks whether they make the same intervention predictions, not whether they have the same edges.
+
+SHD treats every edge mismatch alike. SID counts ordered pairs for which an estimate computes the wrong $p(y \mid do(x))$ under the true graph.
+
+One missing or extra edge can preserve every prediction, while one reversal can corrupt many. SHD cannot distinguish those cases.
 
 ## Intuition {#intuition}
-Think of the estimated graph not as a picture to be graded for resemblance, but as a *recipe*: for each variable, its parents in the estimate tell you which other variables to condition on if you want to simulate "what happens to some other variable if I intervene here." SHD grades the picture. SID grades the recipe by checking, for every ordered pair of variables, whether following that recipe on the true underlying distribution gives the right answer.
+Treat the estimate as a recipe, not a picture. Its parents specify which variables to condition on when simulating an intervention.
 
-Because interventions are directional — intervening on X and asking about Y is a different question from intervening on Y and asking about X — SID has to examine ordered pairs $(i,j)$ with $i \neq j$, not unordered edges. That directionality is also why SID itself ends up asymmetric: an estimate can get "X causes Y" right while getting "Y causes X" wrong, so swapping the arguments to SID changes the count. This is the property that lets it separate two estimates that look equally wrong to SHD but are not equally wrong for the purpose the graph is actually used for.
+SHD grades resemblance. SID checks whether the recipe gives the right answer for every ordered pair on the true distribution.
+
+Interventions are directional: asking about $Y$ after intervening on $X$ differs from the reverse question. SID therefore examines ordered pairs $(i,j)$ with $i \neq j$.
+
+Directionality also makes SID asymmetric. Swapping truth and estimate can change the count, which lets SID distinguish estimates that appear equally wrong to SHD.
+
+**Prediction check:** two estimates can each have SHD one while only the reversal damages intervention predictions. Predict which parent set loses a needed confounder before reading the paper's comparison below [§sec_2_1].
 
 ## Mechanics {#mechanics}
-SID fixes a specific procedure for turning graph structure into a predicted intervention distribution: **parent adjustment**, i.e. adjusting for the direct parents of the intervened-on node. This is a deliberate simplification — other adjustment sets are possible and are treated separately as a refinement of this same idea — but fixing it is what makes SID computable directly from graph structure, with no distributional assumptions beyond Markovianity to the true DAG [§sec_2_1].
+SID fixes one procedure for predicting an intervention distribution: **parent adjustment**, using the direct parents of the intervened-on node [§sec_2_1].
 
-Given that choice, a pair $(i,j)$ is **correctly estimated** if the parent-adjustment formula built from the estimate's parent sets returns the same interventional distribution as the one built from the true graph, for *every* distribution Markov to the true DAG — not just one convenient distribution, since a single factorized (fully independent) distribution would trivially make any two graphs agree [§sec_2_1]. Otherwise the pair is **falsely estimated**, and SID is the count of falsely estimated ordered pairs [§sec_2_1].
+Other adjustment sets are possible and treated separately. Fixing parent adjustment makes SID computable from graph structure under Markovianity to the true DAG [§sec_2_1].
+
+A pair $(i,j)$ is **correctly estimated** only when the estimate's parent adjustment matches the true graph's intervention distribution for every distribution Markov to that graph [§sec_2_1].
+
+One factorized distribution could make arbitrary graphs agree, so it is not enough. Every other pair is **falsely estimated**, and SID counts them [§sec_2_1].
 
 The paper's own worked comparison shows why edge-counting and intervention-counting diverge:
 
@@ -75,9 +89,13 @@ steps:
     why: "Summing out y1 collapses the expression back to the true graph's own parent-adjustment formula, so the two intervention distributions coincide exactly, not approximately [eq_4]"
 ```
 
-**Why this generalizes, and why the reversed edge doesn't get the same escape:** the algebra above only closes because the true DAG's edges are a subset of the estimate's — every path the extra adjustment could open is already accounted for by the true parent set, so summing it out is free. A reversed edge instead *deletes* a true parent (the confounder) from the adjustment set rather than adding a superfluous one, and there is no symmetric cancellation available: the missing conditioning variable stays missing throughout the sum, so the two distributions generally disagree [§sec_2_1].
+**Why this generalizes:** the algebra closes because the true DAG's edges are a subset of the estimate's. The true parent set already accounts for every path the extra adjustment could open [§sec_2_1].
 
-**Cost of computing it:** because the implementation reruns a transitive-closure reachability computation for every source node, the running time scales roughly with the fourth power of the number of variables — practical for on the order of 100 nodes (seconds) but already reaching a minute around 200 nodes, which matters when SID is used to score simulation studies over many DAGs [sid.py:L256].
+A reversal instead deletes a true confounder from the adjustment set. No cancellation restores that missing variable, so the distributions generally disagree [§sec_2_1].
+
+**Cost of computing it:** per-source transitive-closure reachability gives roughly quartic scaling in the number of variables [sid.py:L256].
+
+The implementation is practical around 100 nodes but reaches roughly a minute around 200. That cost matters when simulation studies score many DAGs [sid.py:L256].
 
 ## Go Deeper {#go-deeper}
 - **Equivalent Graphical Formulation** — turns the distributional definition above into a condition checkable purely from graph structure (the generalized adjustment criterion), which is what the `_sid_matrix` implementation actually runs instead of manipulating distributions directly.

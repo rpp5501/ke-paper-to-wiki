@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "reportKind": "candidate",
+  "stage": "selection",
+  "skillArtifact": {
+    "path": "validation/fixtures/evidence/candidate-skill.md",
+    "sha256": "22ade27bdae4031e5e0515b4522afa7a8a449acb2aed23275519da5b29ccc10c"
+  },
+  "rows": [
+    {
+      "taskId": "select-backdoor-margin",
+      "scores": {
+        "factual_evidence_accuracy": 83,
+        "conceptual_depth": 73,
+        "prerequisite_clarity": 73,
+        "worked_examples": 73,
+        "scanability": 83,
+        "checkpoint_quality": 73
+      },
+      "automaticRejectionFlags": [],
+      "rawOutput": {
+        "path": "validation/fixtures/evidence/candidate-margin.txt",
+        "sha256": "ca20a81256ba8399af4c62e42097f4b65db08506e8a96f8659bdf8b576d6364d"
+      }
+    },
+    {
+      "taskId": "select-backdoor-threshold",
+      "scores": {
+        "factual_evidence_accuracy": 83,
+        "conceptual_depth": 73,
+        "prerequisite_clarity": 73,
+        "worked_examples": 73,
+        "scanability": 83,
+        "checkpoint_quality": 73
+      },
+      "automaticRejectionFlags": [],
+      "rawOutput": {
+        "path": "validation/fixtures/evidence/candidate-threshold.txt",
+        "sha256": "f6de7a01b6a35c53c427569af9a001695fccb321669b7fc4d714bddbb8daa520"
+      }
+    }
+  ],
+  "deterministicGates": {
+    "correctness": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "equation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "evidence_citation": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "schema": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "component": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}},
+    "accessibility": {"green": true, "evidence": {"path": "validation/fixtures/evidence/candidate-gates.txt", "sha256": "0824d604c20fab9dc47a7809c2a33c716ddb2fa3d7b36284b2f539eee92df2bd"}}
+  }
+}

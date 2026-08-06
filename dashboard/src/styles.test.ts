@@ -95,6 +95,16 @@ describe("reader v2 design tokens", () => {
 });
 
 describe("learn mode styling", () => {
+  it("distinguishes chapter questions, depth disclosures, checkpoints, and code ranges", () => {
+    for (const selector of [
+      ".chapter-question", ".concept-section-foundation",
+      ".concept-section-advanced", ".inline-checkpoint",
+      ".chapter-end", ".code-listing-toolbar", ".code-line-number",
+    ]) {
+      expect(styles).toContain(selector);
+    }
+  });
+
   it("styles learn mode with only locked palette colors", () => {
     const start = styles.indexOf("/* ── Learn mode");
     expect(start).toBeGreaterThan(-1);
@@ -112,6 +122,17 @@ describe("learn mode styling", () => {
     const start = styles.indexOf("/* ── Learn mode");
     const learnCss = styles.slice(start);
     expect(learnCss).not.toContain("transition: all");
+  });
+
+  it("contains long source labels without creating an article-wide scrollbar", () => {
+    expect(styles).toMatch(/\.article-scroll\s*\{[^}]*overflow-x:\s*hidden/s);
+    expect(styles).toMatch(/\.article-title\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+  });
+
+  it("keeps new learner controls at least 44px tall", () => {
+    expect(styles).toMatch(/\.rail-close\s*\{[^}]*height:\s*44px/s);
+    expect(styles).toMatch(/\.rail-close\s*\{[^}]*width:\s*44px/s);
+    expect(styles).toMatch(/\.code-helper-links button\s*\{[^}]*min-height:\s*44px/s);
   });
 });
 

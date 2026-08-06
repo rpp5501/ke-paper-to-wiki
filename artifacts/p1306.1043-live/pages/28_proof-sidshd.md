@@ -1,27 +1,49 @@
 # Proof: SID and SHD Relationship
 ## TL;DR {#tldr}
-This proof pins down how the Structural Intervention Distance (SID) and the Structural Hamming Distance (SHD) constrain one another, as part of establishing SID's metric-like properties. It shows that agreement in edge structure (SHD = 0) forces agreement in interventional behavior (SID = 0), and that a single edge disagreement can only move SID by a bounded amount — a bound the proof also shows cannot be improved.
+This proof relates SID and SHD as part of SID's metric-like properties.
+
+SHD zero forces SID zero. One edge disagreement moves SID by a bounded, sharp amount.
 
 ## Intuition {#intuition}
-SHD counts local edits — how many single-edge insertions, deletions, or reversals separate two graphs. SID counts a more global consequence — for how many ordered node pairs the adjustment-set logic derived from one graph fails to give the correct interventional distribution in the other. These live on different scales, so a relationship between them is not automatic.
+SHD counts local insertions, deletions, and reversals. SID counts global consequences: ordered pairs with wrong intervention distributions.
 
-The bridge is locality: a single edge only touches two nodes' parent sets. Everything else in the graph is untouched, so whatever damage that edit does to SID's pairwise correctness has to be attributable to those two nodes and nothing else. That's the whole proof in miniature — zero edits means zero damage, one edit means damage confined to two nodes, and the sharpness argument just shows this confinement is the worst case, not a loose estimate.
+They live on different scales, so their relationship is not automatic.
+
+A single edge changes at most two parent sets. Every other node's adjustment logic is untouched.
+
+Zero edits therefore yield zero damage. One edit confines damage to two nodes, and sharpness shows this is worst-case rather than loose.
+
+**Counterexample:** a one-edge reversal can keep SHD at one while changing a treatment row for every other target. Small structural edit distance therefore does not imply small intervention error [§sec_10].
 
 ## Mechanics {#mechanics}
-**The zero case is immediate from definitions, not computation.** If SHD(G, H) = 0, the two graphs have identical edge sets, so every node has exactly the same parent set in G as in H. Since SID's adjustment sets are built from parent sets, every adjustment set is simultaneously valid for both graphs, and there is no ordered pair for which the intervention distributions can disagree — so SID(G, H) = 0 as well [§sec_10].
+**The zero case follows from definitions.** SHD$(G,H)=0$ gives identical edge and parent sets [§sec_10].
 
-**The one-edit case is bounded by counting affected nodes, not affected pairs.** A single unit of SHD is one edge operation — an addition, deletion, or reversal — and any such operation changes the parent set of at most two nodes: the endpoints of that edge. Every other node in the graph keeps exactly the parent set it had before, so the adjustment-set logic for those nodes is untouched and cannot contribute new SID errors. The bound therefore "clearly holds" because it only has to account for the fallout from two nodes' worth of changed parent sets, not the whole graph [§sec_10].
+Every SID adjustment set is valid in both graphs, so no intervention pair differs and SID$(G,H)=0$ [§sec_10].
 
-**Sharpness is shown by construction, not by tightening the counting argument.** Proving a bound holds is not the same as proving it is the best possible bound. The proof reuses the earlier worked example (Figure/Example referenced in the text) that already demonstrates one edge flip forcing the maximum possible SID increase, and repeats that same construction on disjoint pairs of nodes. Since each repetition acts on nodes untouched by the others, the maximal per-edit damage adds up without interference, so the bound stays tight as SHD grows rather than becoming loose [§sec_10].
+**The one-edit bound counts affected nodes.** An SHD unit changes parent sets only at an edge's two endpoints [§sec_10].
 
-**The extremal pair for the general relationship is the empty graph against a fully connected one.** To exhibit equality in the overall SID–SHD relationship (not just the single-edit case), the proof picks G as the graph with no edges and H as any fully connected DAG on the same nodes. This pairing simultaneously maximizes SHD — every possible edge is a disagreement — and maximizes SID, since the empty graph's trivial (empty) adjustment sets are valid nowhere in a fully connected H's structure. Because both quantities hit their extremes together, the general bound is achieved with equality rather than merely approached [§sec_10].
+All other adjustment logic is unchanged. SID can gain errors only from two treatment rows, not the whole graph [§sec_10].
+
+**Sharpness is constructive.** An earlier example shows one edge flip forcing maximal SID increase [§sec_10].
+
+Repeating it on disjoint node pairs adds maximal damage without interference. The bound remains tight as SHD grows [§sec_10].
+
+**The extremal pair is empty versus fully connected.** Every possible edge disagrees, maximizing SHD [§sec_10].
+
+Empty-graph adjustment sets are valid nowhere in the fully connected structure, maximizing SID too. The general bound is attained with equality [§sec_10].
 
 ## The Math {#the-math}
-No display equation is given for this proposition in the source material, but the counting argument behind the one-edit bound can be made concrete. Let p be the number of nodes. SID sums correctness over every ordered pair (i, j) with i ≠ j — for each choice of treatment node i, there are p − 1 possible targets j. When a single edge flips, only the two endpoint nodes have their parent sets altered, so only the rows of the pairwise comparison indexed by those two nodes as treatment can change; every row indexed by an untouched node is guaranteed to still agree between G and H [§sec_10].
+**The one-edit bound is row counting.** With $p$ nodes, SID checks each $(i,j)$ with $i\neq j$, so every treatment node has $p-1$ targets [§sec_10].
 
-That gives a worked bound: at most 2(p − 1) ordered pairs can flip from correct to incorrect per unit of SHD, since each of the two affected nodes can spoil at most p − 1 rows. This is exactly the quantity the sharpness example is built to saturate — by placing each new edge edit on a disjoint pair of nodes, every edit independently spoils its own full share of p − 1 rows with no overlap, so the additive bound over multiple SHD units is not an overestimate [§sec_10].
+An edge edit alters parent sets only at its endpoints. Only those treatment rows can change; all others agree between $G$ and $H$ [§sec_10].
 
-The empty-versus-fully-connected construction is the boundary case of this same counting argument taken to its extreme: instead of one edge disagreeing, every one of the up to p(p−1)/2 possible edges disagrees, and instead of two nodes losing valid adjustment sets, every node does — since the empty graph gives every node an empty parent set, none of which are valid adjustment sets against a fully connected H's dense parent structure. This confirms the per-edit bound derived above is not an artifact of a small example but the true worst case at any scale [§sec_10].
+At most $2(p-1)$ ordered pairs can flip per SHD unit because each affected node contributes at most $p-1$ targets [§sec_10].
+
+Disjoint edits each spoil their full $p-1$ rows without overlap, so the additive bound is sharp [§sec_10].
+
+Empty versus fully connected is the extreme count: up to $p(p-1)/2$ edges disagree and every node loses a valid adjustment set [§sec_10].
+
+The empty graph's parent sets are all empty, none valid against dense $H$. The per-edit bound is a true worst case at any scale [§sec_10].
 
 ## Go Deeper {#go-deeper}
 - **Metric Properties of SID** — the parent concept this proof supports; read it for why establishing SID(G,H)=0 ⇔ SHD(G,H)=0 and a bounded-growth relationship matters for treating SID as a well-behaved comparison measure between causal graphs, not just a heuristic score.
