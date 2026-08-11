@@ -204,6 +204,11 @@ function decorateChildren(
       isValidElement<{ children?: ReactNode }>(child)
       && child.props.children !== undefined
       && child.type !== "code"
+      // A glossary term is a focusable tooltip. Inside a link that nests one
+      // interactive control in another and makes the whole definition the
+      // link's accessible name -- which is what resolving [[Concept Name]]
+      // into real links started producing.
+      && child.type !== "a"
       && !hasKatexClass(child)
     ) {
       return cloneElement(

@@ -328,3 +328,35 @@ describe("Drawer", () => {
     expect(markup).toContain("Graph layout is still loading.");
   });
 });
+
+describe("RichMarkdown and links", () => {
+  /* Resolving [[Concept Name]] created links in prose where there were none,
+     and the glossary decorator walked straight into them: a focusable
+     tabindex="0" tooltip ended up inside an <a>, which nests one interactive
+     control in another and makes the whole definition the link's accessible
+     name. code and KaTeX were already excluded for the same reason. */
+  it("does not decorate glossary terms inside a link", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown
+        glossary={{ SID: "Structural Intervention Distance: a metric." }}
+        markdown="see [Structural Intervention Distance (SID)](#sid-node) for more"
+      />,
+    );
+
+    const link = markup.slice(markup.indexOf("<a "), markup.indexOf("</a>"));
+    expect(link).not.toContain("tooltip");
+    expect(link).not.toContain("tabindex");
+    expect(link).toContain("Structural Intervention Distance (SID)");
+  });
+
+  it("still decorates the same term outside a link", () => {
+    const markup = renderToStaticMarkup(
+      <RichMarkdown
+        glossary={{ SID: "Structural Intervention Distance: a metric." }}
+        markdown="SID is the metric."
+      />,
+    );
+
+    expect(markup).toContain("tooltip");
+  });
+});

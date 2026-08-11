@@ -59,6 +59,39 @@ def strip_images(md: str):
     return _IMG.sub("", md), n
 
 
+_WIKI_LINK = re.compile(r"\[\[([^\[\]]+)\]\]")
+# Fenced blocks and display math can hold anything -- pseudocode, a nested
+# index, LaTeX subscripts -- and rewriting inside them corrupts what the reader
+# is shown. Split on them and only touch the prose between.
+_UNTOUCHABLE = re.compile(r"(```.*?```|\$\$.*?\$\$)", re.S)
+
+
+def resolve_wiki_links(markdown: str, nodes: list) -> str:
+    """Turn [[Concept Name]] into a real link, or into plain words.
+
+    The writing contract never asks for wiki links; the model writes them out
+    of habit, as a label in one build and as an id in another, and they reached
+    the reader as literal brackets. Rewritten to ordinary markdown so no
+    component has to learn a second link syntax. A name that matches no concept
+    keeps its words and loses its markup -- a link that scrolls nowhere is
+    worse than no link.
+    """
+    by_name = {}
+    for node in nodes or []:
+        label = node.get("label") or node["id"]
+        by_name.setdefault(node["id"].strip().lower(), (label, node["id"]))
+        by_name.setdefault(label.strip().lower(), (label, node["id"]))
+
+    def replace(match):
+        found = by_name.get(match.group(1).strip().lower())
+        return f"[{found[0]}](#{found[1]})" if found else match.group(1).strip()
+
+    return "".join(
+        piece if _UNTOUCHABLE.fullmatch(piece) else _WIKI_LINK.sub(replace, piece)
+        for piece in _UNTOUCHABLE.split(markdown or "")
+    )
+
+
 # Only the relations that mean "the reader needs that first". part-of is
 # containment, which the concept map already draws and which would otherwise
 # tell a reader the Encoder and Decoder Stacks must be understood before the
@@ -254,7 +287,7 @@ def _page_key(value):
     return stem.split("_", 1)[1] if "_" in stem else stem
 
 
-def _load_pages(pages_dir):
+def _load_pages(pages_dir, nodes=None):
     pages = {}
     if not pages_dir:
         return pages, 0
@@ -263,7 +296,9 @@ def _load_pages(pages_dir):
         cid = _page_key(f)
         text, n = strip_images(f.read_text(encoding="utf-8"))
         stripped += n
-        pages[cid] = text
+        # Before anything downstream reads the prose: the article, the tour
+        # blurb and the glossary all see the resolved form.
+        pages[cid] = resolve_wiki_links(text, nodes or [])
     return pages, stripped
 
 
@@ -1147,7 +1182,7 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None, viz_dir=None,
                  next_steps=None, quiz=None, learning_path=None, release=False):
     hotspots = hotspots or []
-    pages, stripped = _load_pages(pages_dir)
+    pages, stripped = _load_pages(pages_dir, plan_graph.get("nodes"))
     code_listings, enriched_nodes = _code_listings(plan_graph, repo_dir)
     graph = {**plan_graph, "nodes": enriched_nodes}
     if release and not learning_path:
