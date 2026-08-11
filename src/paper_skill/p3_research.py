@@ -7,6 +7,7 @@ from research_mcp.inbox import inbox_add
 from research_mcp.validate import lint_note
 from research_mcp.wiki import wiki_get, wiki_put
 from .briefs import build_brief
+from .candidates import candidate_block, find_candidates, paper_topic
 from .resources import verify_resources
 from .toc import load_approved_toc
 
@@ -36,12 +37,22 @@ BRIEF:
 """
 
 
-def _render_research_prompt(brief: dict, rejected_for: list[str] | None = None) -> str:
+def _render_research_prompt(brief: dict, rejected_for: list[str] | None = None,
+                            candidates: list[dict] | None = None) -> str:
     """Same correction the page writer gets: a retry that re-sends the identical
     prompt is a re-roll, not a fix. lint_note already says exactly which key is
     wrong -- withholding that from the one retry wastes it."""
     prompt = RESEARCH_PROMPT.format(
         brief_yaml=yaml.safe_dump(brief, allow_unicode=True, sort_keys=False))
+    block = candidate_block(candidates or [])
+    if block:
+        prompt += (
+            "\n\nVERIFIED CANDIDATES — these came back from a live search of "
+            "arXiv, Semantic Scholar, OpenAlex and Crossref, so each title and "
+            "url below is known to belong together. Prefer them. You may cite "
+            "something else when it genuinely serves the reader better (a "
+            "visual explainer or a lecture will not appear here), but only if "
+            "it is real and you are sure of the url:\n" + block)
     if not rejected_for:
         return prompt
     return prompt + (
@@ -77,7 +88,8 @@ def _parse_note(raw: str) -> dict | None:
 
 
 def run_research(toc_path, graph: dict, spawn=_spawn_claude,
-                 home=None, workdir=None, verify=verify_resources) -> dict:
+                 home=None, workdir=None, verify=verify_resources,
+                 search=None) -> dict:
     toc = load_approved_toc(toc_path)
     if toc["status"] != "ok":
         return {"status": "not_approved", "hint": toc["hint"],
@@ -85,6 +97,7 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
     done_dir = Path(workdir or ".") / "p3_done"
     done_dir.mkdir(parents=True, exist_ok=True)
     done, failed, skipped = [], [], []
+    topic = paper_topic(graph)
     for row in toc["rows"]:
         if not row.get("research"):
             continue
@@ -93,11 +106,14 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
             skipped.append(cid)
             continue
         brief = build_brief(row, graph)
+        # Once per concept, not once per attempt: the retry is a correction to
+        # the same brief, and the candidates cannot have changed.
+        found = find_candidates(brief, search=search, topic=topic)
         note, problems = None, ["spawn failed"]
         for attempt in range(2):                       # one retry max
             try:
-                note = _parse_note(
-                    spawn(_render_research_prompt(brief, problems if attempt else None)))
+                note = _parse_note(spawn(_render_research_prompt(
+                    brief, problems if attempt else None, found)))
             except Exception as exc:
                 # A spawn EXCEPTION is a crash, not schema-invalid output —
                 # fail immediately, do not retry.
