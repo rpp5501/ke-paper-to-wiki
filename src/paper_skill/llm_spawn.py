@@ -65,8 +65,16 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
         # The prompt goes on stdin, not in argv: Windows caps a command line at
         # ~32,767 characters, so a large prompt died with WinError 206 "The
         # filename or extension is too long" before the model was ever reached.
+        # --tools "" because every stage here is a pure text transform: the
+        # context is inlined in the prompt and the answer comes back on stdout.
+        # Left with the default toolset, the page writer explored the repo and
+        # read finished sibling pages (so a page could be built from other
+        # pages instead of the supplied evidence), then called Write on the
+        # real artifact -- bypassing write_pages and the pedagogy gate, which
+        # only ever inspects the returned string. The turn ceiling it hit
+        # afterwards was the symptom, not the cause.
         proc = subprocess.run(
-            ["claude", "-p", "--max-turns", str(max_turns)],
+            ["claude", "-p", "--max-turns", str(max_turns), "--tools", ""],
             input=prompt,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=timeout,

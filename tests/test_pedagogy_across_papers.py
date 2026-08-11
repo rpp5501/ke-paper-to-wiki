@@ -105,3 +105,39 @@ def test_figures_inside_code_blocks_do_not_count():
     fenced = "Results were strong.\n\n```python\nx = 3.14159\ny = 2.71828\nz = 1.41421\n```\n"
 
     assert figure_count(fenced) == 0
+
+
+def test_an_over_long_paragraph_is_quoted_not_just_numbered():
+    """The retry loop feeds these strings straight back to the writer as its
+    only correction. "prose paragraph 8 exceeds 100 words" tells it that it
+    failed but not which text to cut -- the writer does not index paragraphs
+    the way prose_word_counts does, so it has to guess, and on
+    attention-visualization it guessed wrong three times in a row and the page
+    was abandoned. Quoting the opening words makes the target unambiguous.
+    """
+    from paper_skill.pedagogy import pedagogy_problems
+
+    page = ("## Mechanics {#mechanics}\n\nShort one [eq_1].\n\n"
+            + "The attention heads resolve anaphora across long distances "
+            + " ".join(["filler"] * 100) + " [§sec_8].\n")
+
+    problem = next(p for p in pedagogy_problems(page) if "exceeds 100" in p)
+
+    assert "The attention heads resolve anaphora" in problem
+
+
+def test_the_60_word_ratio_names_which_paragraphs():
+    """Half-fixing the feedback left the same hole one threshold down. With the
+    100-word problems quoted, attention-visualization stopped tripping them and
+    landed on "4/19 prose paragraphs exceed 60 words" -- which again names no
+    paragraph, so the writer split the page into 19 and still left 4 long.
+    """
+    from paper_skill.pedagogy import pedagogy_problems
+
+    long_one = "Anaphora resolution spans the whole sentence " + " ".join(
+        ["filler"] * 60)
+    page = "## Mechanics {#mechanics}\n\n" + "Short [eq_1].\n\n" * 3 + long_one
+
+    problem = next(p for p in pedagogy_problems(page) if "exceed 60" in p)
+
+    assert "Anaphora resolution spans the whole sentence" in problem

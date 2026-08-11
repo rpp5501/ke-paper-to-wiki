@@ -62,14 +62,24 @@ RESULTS_FIGURE_FLOOR = 6
 
 
 def prose_word_counts(markdown: str) -> list[int]:
-    counts: list[int] = []
+    return [words for _text, words in _prose_paragraphs(markdown)]
+
+
+def _prose_paragraphs(markdown: str) -> list[tuple[str, int]]:
+    """Each prose paragraph with its word count.
+
+    The text is carried alongside the count so a problem can quote the
+    paragraph it is about; see pedagogy_problems.
+    """
+    counts: list[tuple[str, int]] = []
     current: list[str] = []
     in_fence = False
     in_equation = False
 
     def flush() -> None:
         if current:
-            counts.append(len(_WORD.findall(" ".join(current))))
+            joined = " ".join(current)
+            counts.append((joined, len(_WORD.findall(joined))))
             current.clear()
 
     for raw_line in markdown.splitlines() + [""]:
@@ -133,16 +143,26 @@ def figure_count(markdown: str) -> int:
     return len(_FIGURE.findall(_FENCE_BLOCK.sub(" ", markdown)))
 
 
+def _opening(text: str, words: int = 8) -> str:
+    return " ".join(text.split()[:words])
+
+
 def pedagogy_problems(markdown: str, page_id: str = "") -> list[str]:
-    counts = prose_word_counts(markdown)
+    paragraphs = _prose_paragraphs(markdown)
+    counts = [words for _text, words in paragraphs]
+    # Quoted, not just numbered: these strings are the writer's only
+    # correction on a retry, and it does not index paragraphs the way this
+    # function does. Given a bare ordinal it has to guess which one to cut.
     problems = [
-        f"prose paragraph {index} exceeds 100 words ({words})"
-        for index, words in enumerate(counts, start=1) if words > 100
+        f"prose paragraph {index} exceeds 100 words ({words}), "
+        f"starting {_opening(text)!r}"
+        for index, (text, words) in enumerate(paragraphs, start=1) if words > 100
     ]
-    long_count = sum(words > 60 for words in counts)
-    if counts and long_count / len(counts) > 0.10:
+    over_60 = [text for text, words in paragraphs if words > 60]
+    if counts and len(over_60) / len(counts) > 0.10:
         problems.append(
-            f"{long_count}/{len(counts)} prose paragraphs exceed 60 words")
+            f"{len(over_60)}/{len(counts)} prose paragraphs exceed 60 words, "
+            "starting: " + "; ".join(repr(_opening(t)) for t in over_60))
     signals = structural_signals(markdown)
     if signals >= DIAGRAM_SIGNAL_FLOOR and not has_diagram(markdown):
         problems.append(

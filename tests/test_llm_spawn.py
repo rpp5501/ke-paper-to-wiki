@@ -186,3 +186,28 @@ def test_a_prompt_far_over_the_windows_argv_limit_is_fine(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda name: "claude")
 
     assert claude_spawn("y" * 200_000) == "ok"
+
+
+def test_the_spawned_model_gets_no_tools(monkeypatch):
+    """Every stage here is a pure text transform: the whole context is already
+    inlined in the prompt and the answer comes back on stdout.
+
+    With the default toolset the aiayn attention-visualization page did all
+    three things that breaks. It explored the repo (git status, Glob) and read
+    finished sibling pages -- so the page could be built from other pages
+    rather than the supplied evidence, which is exactly what the contract
+    forbids. It then called Write on the real pages/21_*.md, bypassing
+    write_pages and therefore the pedagogy gate, which only ever sees the
+    returned string. Only after all that did it hit the turn ceiling.
+
+    Raising max_turns 3 -> 6 previously "fixed" the same failure by giving it
+    more rope. The budget was never the cause.
+    """
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    claude_spawn("write me a page")
+
+    assert "--tools" in fake.argv
+    assert fake.argv[fake.argv.index("--tools") + 1] == ""

@@ -1,20 +1,61 @@
 # Attention Visualizations
-
 ## TL;DR {#tldr}
-Attention visualizations are diagnostic plots that show, for a given word, how strongly each attention head attends to every other word in the sequence. They provide qualitative evidence that Multi-Head Attention learns interpretable structure — such as long-distance syntactic dependencies and coreference — rather than acting as an opaque black box.
+
+The paper's appendix shows what individual encoder self-attention heads actually latch onto in real sentences — not benchmark numbers, but qualitative pictures of learned behavior. Heads track long-distance grammatical dependencies, resolve pronouns back to their antecedents, and specialize toward different syntactic roles, all from layer 5 of 6 [§sec_8][S1].
 
 ## Intuition {#intuition}
-Because each attention head produces a distribution of weights over all positions in a sentence, that distribution can be drawn directly as colored lines or highlights connecting a query word to the words it "looks at." Different heads, shown in different colors, often specialize: one head might consistently jump across a long clause to link a verb with its dependent phrase, while another head sharpens its focus on pronouns to resolve what they refer to. This turns the abstract claim that attention "learns relationships" into something that can be inspected by eye, head by head.
+
+Think of each attention head as a different reader skimming the same sentence with a different question in mind. One reader is hunting for "what does this verb eventually connect to, even many words later?" Another is asking "what does this pronoun refer back to?" A third is tracking looser structural patterns tied to how the sentence is built. The paper's visualizations make this concrete by drawing colored lines from a chosen word to whatever tokens that word's attention weight lands on, one color per head [§sec_8].
+
+This matters because it's independent evidence that [[Multi-Head Attention]] isn't just a bigger matrix multiply — different heads are doing recognizably different linguistic jobs on the same input, without being told to.
 
 ## Mechanics {#mechanics}
-One visualization example examines encoder self-attention at layer 5 of 6, focusing on attentions from the word "making." Many attention heads are shown attending to a distant dependency of "making," completing the phrase "making...more difficult" — demonstrating that the model captures long-distance dependencies rather than only local, nearby-word relationships [§sec_8].
 
-A second example, also from layer 5 of 6, isolates two attention heads (heads 5 and 6) whose behavior appears related to anaphora resolution. The figure contrasts the full attention pattern of head 5 with the isolated attentions from just the word "its" for heads 5 and 6, noting that these attentions are very sharp for that word — i.e., concentrated on a small number of positions rather than spread diffusely [§sec_8].
+**Long-distance dependency tracking:** Figure 3 isolates the attention distribution for the word "making" in layer-5 encoder self-attention. Many heads assign substantial weight not to nearby words but to the distant tokens completing the phrase "making...more difficult," spanning most of the sentence rather than staying local [fig_3][S1].
 
-Across both examples, the broader observation is that many attention heads exhibit behavior tied to the syntactic and semantic structure of the sentence, and that different heads from the same encoder self-attention layer clearly learn to perform different tasks [§sec_8].
+```mermaid
+graph TD
+  subgraph "Layer 5 encoder self-attention (Fig. 3)"
+    making["making"] -->|head A| difficult["...more difficult"]
+    making -->|head B| difficult
+    making -->|head C| difficult
+  end
+```
+
+```figure
+id: fig_3
+caption: A single word's attention weights, color-coded by head, reaching across the sentence to the phrase it grammatically completes — evidence that self-attention isn't a local window operation.
+```
+
+**Anaphora resolution:** Figure 4 isolates two heads (5 and 6), also from layer 5 of 6, attending from the pronoun "its" back toward its antecedent. The attention mass for this word is described as "very sharp," meaning the distribution concentrates on a small number of tokens rather than spreading diffusely [fig_4][S1].
+
+```figure
+id: fig_4
+caption: Two heads' attention from the word 'its', shown both in full and isolated — the sharp concentration is the head effectively pointing at the antecedent.
+```
+
+**Structure-sensitive heads:** Figure 5 gives two more layer-5 heads whose attention patterns track sentence structure rather than raw position or lexical overlap, and the two heads visibly perform different tasks from each other [fig_5][S1].
+
+```figure
+id: fig_5
+caption: Two different heads from the same layer, attending along different structural patterns — direct evidence that heads specialize rather than converge on one strategy.
+```
+
+Every example the paper shows comes from the same depth — layer 5 of 6 — so these are not claims about what shallow or deep layers do differently, only about what mid-to-late encoder self-attention has learned [§sec_8][S1].
 
 ## The Math {#the-math}
-The local context for this concept describes qualitative visualization examples and contains no equations; the underlying attention-weight computation these visualizations plot belongs to the Multi-Head Attention concept rather than to this note. [§sec_8]
+
+No display equation is supplied for this concept — it's a qualitative appendix, not a derivation. The evidence does give a useful contrast worth reasoning through: the *sharpness* of an attention distribution.
+
+Every attention head still outputs a softmax over the value positions it can attend to (see [[Scaled Dot-Product Attention]]), so its weights always sum to 1 across the sequence. What differs between the figures is how that mass is distributed:
+
+- **Diffuse case (Figure 3):** the weight for "making" is spread thin but consistently across the distant phrase it depends on — the head hasn't collapsed to a single token, it's tracking a multi-token span [fig_3].
+- **Peaked case (Figure 4):** the weight for "its" concentrates almost entirely on its antecedent — the softmax output is close to a one-hot vector, the extreme boundary case of the same distribution [fig_4].
+
+Both are the same mechanism (a normalized weighted sum over values) producing qualitatively different shapes depending on what the sentence demands: a peaked distribution when there's one clear referent to point at, a broader one when the dependency itself spans a phrase rather than a single word [S1].
 
 ## Go Deeper {#go-deeper}
-- No research note is available for this concept — the local context above (Section sec_8, the paper's attention visualization figures) is the only source material provided.
+
+- [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/) — walks through self-attention with per-head weight diagrams in the same style as Figures 3–5, on different example sentences [S2].
+- [BertViz](https://github.com/jessevig/bertviz) — interactive head-by-head attention inspection on arbitrary input text, letting you reproduce this kind of visualization yourself rather than trusting only the paper's fixed examples [S3].
+- [The Annotated Transformer](https://nlp.seas.harvard.edu/annotated-transformer/) — line-by-line implementation, useful for seeing exactly where the attention weights being visualized here are computed before they're rendered.
