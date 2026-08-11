@@ -227,3 +227,45 @@ def test_spawn_receives_rendered_context_without_formatting_skill_braces(tmp_pat
     assert "GLOBAL CONTEXT:" in prompts[0]
     assert "\\frac{QK^T}{\\sqrt{d_k}}" in prompts[0]
     assert "__GLOBAL_CONTEXT__" not in prompts[0]
+
+
+def test_retry_tells_the_writer_what_was_rejected():
+    """A retry that re-sends the identical prompt is a re-roll, not a fix."""
+    from paper_skill.p4_write import _render_page_prompt
+
+    ctx = {"global_slice": "G", "local_slice": "L"}
+    first = _render_page_prompt(ctx)
+    retry = _render_page_prompt(ctx, ["prose paragraph 14 exceeds 100 words (105)"])
+
+    assert "REJECTED" not in first
+    assert "prose paragraph 14 exceeds 100 words (105)" in retry
+    assert retry.startswith(first)
+
+
+def test_regeneration_is_capped_and_the_page_is_not_written(tmp_path):
+    """Feedback makes a retry worth taking, but a writer that never complies
+    must still stop: an uncapped loop bills forever on one bad page."""
+    from paper_skill.p4_write import MAX_WRITE_ATTEMPTS
+
+    calls = []
+    dense = GOOD_PAGE.replace(
+        "Scores are divided by sqrt(d_k) [eq_1].",
+        " ".join(["dense"] * 101) + " [eq_1].",
+    )
+
+    result = write_pages(
+        PACK, GRAPH, ROWS, spawn=lambda _p: calls.append(1) or dense,
+        home=tmp_path, out_dir=tmp_path / "pages", workdir=tmp_path,
+    )
+
+    assert len(calls) == MAX_WRITE_ATTEMPTS
+    assert result["failed"] == ["sdpa"]
+    assert not list((tmp_path / "pages").glob("*_sdpa.md"))
+
+
+def test_empty_problem_list_leaves_the_prompt_alone():
+    from paper_skill.p4_write import _render_page_prompt
+
+    ctx = {"global_slice": "G", "local_slice": "L"}
+
+    assert _render_page_prompt(ctx, []) == _render_page_prompt(ctx)

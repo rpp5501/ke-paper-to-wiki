@@ -7,6 +7,13 @@ from .pedagogy import pedagogy_problems
 
 TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
 
+# Two was the right budget while a "retry" re-sent the identical prompt: extra
+# re-rolls of the same dice only cost money. Now that the rejection is fed back
+# (see _render_page_prompt), an attempt is a correction and the third one earns
+# its keep -- shortening paragraphs can itself push a page over the diagram
+# floor, which is a problem the writer only learns about on the round after.
+MAX_WRITE_ATTEMPTS = 3
+
 # The dashboard's contentBlocks parser is pinned to this same file by
 # contentBlocks.promptFixture.test.ts, so the syntax the writer is shown and the
 # syntax the reader's renderer accepts cannot drift apart.
@@ -110,16 +117,34 @@ __LOCAL_CONTEXT__
 """
 
 
-def _render_page_prompt(context: dict) -> str:
-    return (PAGE_PROMPT
-            .replace("__BLOCK_SYNTAX__", BLOCK_SYNTAX)
-            .replace("__GLOBAL_CONTEXT__", context["global_slice"])
-            .replace("__LOCAL_CONTEXT__", context["local_slice"]))
+def _render_page_prompt(context: dict, rejected_for: list[str] | None = None) -> str:
+    prompt = (PAGE_PROMPT
+              .replace("__BLOCK_SYNTAX__", BLOCK_SYNTAX)
+              .replace("__GLOBAL_CONTEXT__", context["global_slice"])
+              .replace("__LOCAL_CONTEXT__", context["local_slice"]))
+    if not rejected_for:
+        return prompt
+    # The retry used to re-send the identical prompt, which made it a re-roll
+    # rather than a correction: six Transformer pages failed twice on the same
+    # paragraph-length rule without ever being told. concepts.py already feeds
+    # its validation errors back; this does the same.
+    return prompt + (
+        "\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED. A deterministic check found:\n"
+        + "\n".join(f"- {p}" for p in rejected_for)
+        + "\nReturn the whole page again with exactly these problems fixed, "
+          "changing nothing else. Splitting a long paragraph means finding the "
+          "seam between its claims, not cutting it at a word count.")
 
 
 def _spawn_claude(prompt: str) -> str:
     from .llm_spawn import claude_spawn
-    return claude_spawn(prompt, max_turns=3, timeout=600)
+    # Roomier than the other stages on purpose. Once latex_pack started
+    # recovering tables, a results page's LOCAL context grew by a 112-cell
+    # grid; at max_turns=3/timeout=600 two Transformer pages died on the
+    # ceiling rather than on their content ("Reached max turns", then a
+    # timeout). The write stage gets one big prompt and owes a whole page,
+    # so it is the stage that needs the headroom.
+    return claude_spawn(prompt, max_turns=6, timeout=1800)
 
 
 def _page_problems(page: str, cid: str = "") -> list[str]:
@@ -152,9 +177,9 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
                                note["note"] if note["status"] == "ok" else None,
                                repo_dir=repo_dir)
         page, problems = "", ["spawn failed"]
-        for attempt in range(2):
+        for attempt in range(MAX_WRITE_ATTEMPTS):
             try:
-                page = spawn(_render_page_prompt(ctx))
+                page = spawn(_render_page_prompt(ctx, problems if attempt else None))
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break

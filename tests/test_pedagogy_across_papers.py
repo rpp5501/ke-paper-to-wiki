@@ -72,6 +72,12 @@ def test_an_empirical_paper_is_not_asked_for_diagrams():
     ("dag-terminology", False),
     ("graph-comparison-problem", False),   # "comparison" in prose, not results
     ("attention-mechanism", False),
+    # Substring matching made theory and method pages owe six numbers. None of
+    # the four builds on disk contains one, so only a paper outside them --
+    # a diffusion or variational-inference paper -- would ever have shown it.
+    ("variational-lower-bound", False),    # "variation" inside "variational"
+    ("variational-inference", False),
+    ("simulation-based-inference", False),  # a method, not a simulation study
 ])
 def test_results_pages_are_identified_by_their_own_title(page_id, expected):
     assert is_results_page(page_id) is expected

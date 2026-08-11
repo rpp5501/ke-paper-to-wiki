@@ -1,19 +1,78 @@
 # Applications of Attention in the Model
 ## TL;DR {#tldr}
-The Transformer doesn't use just one attention mechanism — it reuses multi-head attention in three distinct roles throughout the architecture: encoder-decoder attention, encoder self-attention, and decoder self-attention. Each role governs a different kind of information flow, and together they replace the recurrence and convolution used in prior sequence models.
+
+The Transformer uses multi-head attention in three distinct roles, distinguished only by where the queries, keys, and values come from and which positions are allowed to see which:
+
+- **Encoder-decoder attention** — decoder queries attend over the full encoder output.
+- **Encoder self-attention** — every encoder position attends to every other encoder position.
+- **Decoder self-attention** — every decoder position attends only to itself and earlier positions, enforced by masking.
 
 ## Intuition {#intuition}
-Think of attention as a general-purpose "lookup and blend" operation, and the model as reusing that same operation in three different contexts depending on who is asking (the queries) and who is being consulted (the keys and values). When the decoder needs to consult the source sentence, it uses encoder-decoder attention. When any layer needs to relate different positions within its own sequence to build contextual representations, it uses self-attention. The decoder's version of self-attention has an extra constraint: since it generates output one token at a time, it must not be allowed to "peek" at future tokens it hasn't produced yet.
+
+Attention lets a position gather information from other positions by computing a weighted combination of their values, where the weights come from how well queries match keys. The three uses in this section differ only in one design choice: which positions belong to the query set and which positions belong to the key/value set [§sec_3_2_3].
+
+Encoder-decoder attention lets the decoder look at the encoder. Encoder self-attention lets the source look at itself. Decoder self-attention lets the target look at itself, but only at what has already been generated [§sec_3_2_3].
 
 ## Mechanics {#mechanics}
-In encoder-decoder attention layers, the queries come from the previous decoder layer, while the keys and values come from the output of the encoder, letting every decoder position attend over all positions of the input sequence — this mirrors the typical encoder-decoder attention mechanisms found in earlier sequence-to-sequence models [§sec_3_2_3].
 
-The encoder uses self-attention layers where the queries, keys, and values all originate from the same place: the output of the previous encoder layer. This means each position in the encoder can attend to all positions in the previous encoder layer, allowing full bidirectional context within the source sequence [§sec_3_2_3].
+| Attention type | Queries from | Keys & values from | Attention pattern |
+|---|---|---|---|
+| Encoder-decoder attention | Previous decoder layer | Encoder output | Every decoder position attends over all input positions [§sec_3_2_3] |
+| Encoder self-attention | Output of previous encoder layer | Same (previous encoder layer) | Every encoder position attends to all positions in the previous encoder layer [§sec_3_2_3] |
+| Decoder self-attention | Previous decoder layer | Same (previous decoder layer) | Each decoder position attends only to positions up to and including itself [§sec_3_2_3] |
 
-The decoder also uses self-attention, but restricted so that each position can only attend to positions up to and including itself, preventing leftward information flow to preserve the auto-regressive property needed for generation [§sec_3_2_3].
+```mermaid
+graph TD
+  subgraph Encoder self-attention
+    E1((x1)) --- E2((x2))
+    E2 --- E3((x3))
+    E1 --- E3
+  end
+  subgraph Decoder self-attention causal
+    D1((y1)) --> D2((y2))
+    D1 --> D3((y3))
+    D2 --> D3
+  end
+  subgraph Encoder-decoder attention
+    F1((x1)) --> G1((y1))
+    F2((x2)) --> G1
+    F3((x3)) --> G1
+  end
+```
+
+This encoder-decoder pattern mirrors the attention mechanisms used in earlier sequence-to-sequence models, where a decoder query searches over encoder states rather than being restricted to its own sequence [§sec_3_2_3].
+
+The decoder must stay auto-regressive: predicting position i must not use information from positions after i. Scaled dot-product attention enforces this by masking every illegal connection before the softmax, setting those score entries to −∞ before normalization so they receive zero attention weight [§sec_3_2_3].
 
 ## The Math {#the-math}
-The masking that enforces the decoder's auto-regressive constraint is implemented inside scaled dot-product attention itself, by setting all values in the softmax input that correspond to illegal (future) connections to negative infinity before the softmax is applied, so those positions receive zero attention weight [§sec_3_2_3].
+
+No display equation was supplied specifically for this concept — the routing rules above are structural, not formulas. What follows is a worked trace of the masking mechanism the paper describes for decoder self-attention.
+
+```algorithm
+title: Masking illegal connections in decoder self-attention
+lines:
+  - code: "scores = Q @ K.T / sqrt(d_k)"
+    intent: "Compute raw compatibility between every query position and every key position, as in scaled dot-product attention [§sec_3_2_3]"
+  - code: "scores[i, j] = -inf for all j > i"
+    intent: "Zero out the softmax weight for any key position j that comes after query position i, since the decoder must not see future tokens [§sec_3_2_3]"
+  - code: "weights = softmax(scores, axis=-1)"
+    intent: "Normalizing after masking sends the probability of every illegal connection to exactly zero, leaving weight only on positions up to and including i [§sec_3_2_3]"
+  - code: "output = weights @ V"
+    intent: "The masked, normalized weights combine only legal value vectors, preserving the auto-regressive property position by position [§sec_3_2_3]"
+```
+
+For a 3-token target sequence, the legal key set grows by one position at a time:
+
+| Query position | Can attend to | Masked out |
+|---|---|---|
+| 1 | {1} | {2, 3} |
+| 2 | {1, 2} | {3} |
+| 3 | {1, 2, 3} | {} |
+
+Setting an illegal score to −∞ before the softmax is what forces its weight to zero, because raising e to a very large negative power drives the result toward zero no matter how large the original dot-product was. Any masked position therefore contributes nothing to the output [§sec_3_2_3].
 
 ## Go Deeper {#go-deeper}
-No research note is available for this concept — the section above (sec_3_2_3) is the only local source used for this page.
+
+The paper points readers to a figure illustrating this masking pattern; that figure was not supplied as evidence here, so it is not reproduced [§sec_3_2_3].
+
+This section only specifies the routing of queries, keys, and values; it relies on the scaled dot-product attention and multi-head attention formulas defined earlier in the paper, which are not reproduced here because no equation evidence was supplied for this concept [§sec_3_2_3].

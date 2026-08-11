@@ -82,10 +82,17 @@ def _clean(text: str) -> str:
     return " ".join(text.split())
 
 
+# ICML's style file defines \icmltitle and the paper never calls \title, so
+# every ICML submission came back with an empty title. Named explicitly rather
+# than matched on a "*title" suffix, which would also catch \subtitle and
+# \runningtitle and prefer whichever came first.
+_TITLE_MACROS = {"title", "icmltitle"}
+
+
 def _find_title(nodelist) -> str:
     """First \\title{...} anywhere in the document, including inside groups."""
     for n in nodelist or []:
-        if isinstance(n, LatexMacroNode) and n.macroname == "title":
+        if isinstance(n, LatexMacroNode) and n.macroname in _TITLE_MACROS:
             if n.nodeargd and n.nodeargd.argnlist:
                 return _clean(_group_text(n.nodeargd.argnlist[-1]))
         if isinstance(n, (LatexEnvironmentNode, LatexGroupNode)):
@@ -226,6 +233,22 @@ def normalize_math(latex: str) -> str:
     return latex
 
 
+def _title_from_source(tex: str) -> str:
+    """Read a title macro straight out of the source.
+
+    pylatexenc only fills ``nodeargd`` for macros it has a spec for. \\icmltitle
+    is declared in ICML's style file, so the walker hands back a bare macro with
+    an empty argnlist and treats its braces as an unrelated group -- _find_title
+    sees nothing to return. A title that is itself a macro (\\icmltitle{\\titl})
+    stays empty rather than becoming the literal string "\\titl".
+    """
+    m = re.search(r"\\(?:" + "|".join(sorted(_TITLE_MACROS)) + r")\s*\{", tex)
+    if not m:
+        return ""
+    found = _clean(_read_group(tex, m.end() - 1)[0])
+    return "" if found.startswith("\\") else found
+
+
 def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                   title: str = "") -> dict:
     tex = _strip_comments(_flatten_inputs(main_tex, resolve_input))
@@ -288,7 +311,8 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
 
     walk(nodes)
     flush()
-    return {"meta": {"source": source, "title": title or _find_title(nodes),
+    return {"meta": {"source": source,
+                     "title": title or _find_title(nodes) or _title_from_source(tex),
                      "generated": datetime.date.today().isoformat()},
             "extraction": {"path": "latex", "equation_fidelity": "exact",
                            "table_fidelity": "exact"},

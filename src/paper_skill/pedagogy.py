@@ -41,9 +41,17 @@ DIAGRAM_SIGNAL_FLOOR = 8
 # Matched on the page identity and never on prose: "comparison" and "evaluate"
 # are ordinary words, and matching them in body text flagged the SID
 # terminology page as an experiment.
+# Whole words, because the substring form quietly turned method and theory
+# pages into results pages: "variation" fired on variational-lower-bound and
+# variational-inference, and "simulation" fired on simulation-based-inference.
+# Demanding six numbers from a page whose job is to derive a bound is the same
+# causal-paper-shaped error the diagram floor made, in the other direction --
+# and none of the four builds on disk happens to contain such a page, which is
+# exactly why it survived.
 _RESULTS_PAGE = re.compile(
-    r"result|experiment|evaluation|simulation|performance|benchmark|"
-    r"ablation|variation", re.I)
+    r"\bresults?\b|\bexperiments?\b|\bexperimental\b|\bablations?\b"
+    r"|\bevaluations?\b|\bperformance\b|\bbenchmarks?\b"
+    r"|\bsimulations?\b(?!\s*based)|\bvariations\b", re.I)
 _FIGURE = re.compile(r"\b\d+(?:\.\d+)?\s*%|\b\d+\.\d+\b|\b\d{2,}\b")
 
 # ponytail: counts figures, does not check they are the right ones -- that is

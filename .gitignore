@@ -8,3 +8,6 @@ __pycache__/
 tmp_dashboards/
 tmp_user_dashboards/
 graphify-out/
+
+# Per-run orchestration failure reports, not artifact content.
+artifacts/*/research_home/_inbox/

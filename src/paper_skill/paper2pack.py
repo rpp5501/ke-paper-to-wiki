@@ -28,8 +28,19 @@ def _pack_from_tarball(blob: bytes, source: str) -> dict:
     tf = tarfile.open(fileobj=io.BytesIO(blob), mode="r:*")
     files = {m.name: tf.extractfile(m).read().decode("utf-8", "replace")
              for m in tf.getmembers() if m.isfile()}
-    main = next((t for t in files.values() if "\\documentclass" in t),
-                next(iter(files.values()), ""))
+    # A .sty is not the paper. Conference style files mention \documentclass
+    # (ICLR's and CVPR's both do), and taking the first file that merely
+    # CONTAINS the string handed the parser cvpr.sty in place of ResNet and
+    # iclr2021_conference.sty in place of DDIM -- 2 and 3 sections, no
+    # equations, and "equation_fidelity: exact" stamped on a pack with none of
+    # the paper in it. \begin{document} is the discriminator: a class or style
+    # file never carries one. _require_content cannot catch this on its own,
+    # since a style file does parse to a few sections.
+    tex = {n: t for n, t in files.items() if n.lower().endswith(".tex")}
+    main = next((t for t in tex.values() if r"\begin{document}" in t),
+                next((t for t in tex.values() if "\\documentclass" in t),
+                     next((t for t in files.values() if "\\documentclass" in t),
+                          next(iter(files.values()), ""))))
     def resolve(name):
         return files.get(name) or files.get(name + ".tex") or ""
     pack = latex_to_pack(main, resolve_input=resolve, source=source)
