@@ -36,7 +36,10 @@ export default function SelectionLookup({
   const [anchor, setAnchor] = useState<Anchor | null>(null);
 
   useEffect(() => {
-    function onSelectionChange() {
+    function offerLookup(event: Event) {
+      // A click inside the popover is not a new selection: without this,
+      // dismissing it re-opened it on the same still-selected phrase.
+      if ((event.target as Element | null)?.closest?.(".lookup-popover")) return;
       const selection = window.getSelection();
       const phrase = selection?.toString() ?? "";
       if (!phrase.trim() || selection?.isCollapsed) {
@@ -53,10 +56,18 @@ export default function SelectionLookup({
         nodes: NODES.map((n) => ({ id: n.id, label: n.label, tldr: tldrOf(n.id) })),
         sections: getSections(),
       };
+      const result = lookup(phrase, data);
+      // Nothing to say, so say nothing. The anchor used to be set even when
+      // the cascade returned null, which put a "No entry for …" dialog on
+      // screen every time anyone highlighted a word to copy it.
+      if (result === null) {
+        setAnchor(null);
+        return;
+      }
       const box = selection?.getRangeAt(0).getBoundingClientRect();
       setAnchor({
         phrase: phrase.trim(),
-        result: lookup(phrase, data),
+        result,
         x: box?.left ?? 0,
         y: (box?.bottom ?? 0) + window.scrollY,
       });
@@ -66,10 +77,25 @@ export default function SelectionLookup({
       if (event.key === "Escape") setAnchor(null);
     }
 
-    document.addEventListener("selectionchange", onSelectionChange);
+    // selectionchange fires on every mousemove of a drag, so the popover used
+    // to appear and chase the cursor while the reader was still choosing what
+    // to highlight. It now only clears here; the offer waits for the gesture
+    // to finish.
+    function clearWhenSelectionGoes() {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+        setAnchor(null);
+      }
+    }
+
+    document.addEventListener("selectionchange", clearWhenSelectionGoes);
+    document.addEventListener("mouseup", offerLookup);
+    document.addEventListener("keyup", offerLookup);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("selectionchange", onSelectionChange);
+      document.removeEventListener("selectionchange", clearWhenSelectionGoes);
+      document.removeEventListener("mouseup", offerLookup);
+      document.removeEventListener("keyup", offerLookup);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [glossary]);
