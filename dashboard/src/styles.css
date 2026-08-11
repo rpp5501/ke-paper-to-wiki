@@ -1588,6 +1588,37 @@ input:focus-visible,
   font-style: italic;
 }
 
+/* Where this chapter sits in the paper's argument. Sits under the outcome as
+   a quiet rail, not a card: it is navigation, not content, and should not
+   compete with the chapter it closes. */
+.concept-threads {
+  margin: 10px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+.concept-thread-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+.concept-thread-arrow { color: var(--accent); }
+.concept-thread-label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.82em;
+}
+.concept-thread-links a {
+  color: var(--ink);
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.concept-thread-links a:hover { text-decoration-color: var(--accent); }
+
 /* The paper's own figure. Bordered like a diagram rather than dashed like the
    placeholder: this one is real content, not a promise. */
 .paper-figure {

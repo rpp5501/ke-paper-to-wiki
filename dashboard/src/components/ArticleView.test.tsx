@@ -92,4 +92,38 @@ describe("ProgressRailPresentation", () => {
     expect(markup).not.toContain("You can now");
     expect(markup).toContain("Full concept map");
   });
+
+  it("hangs threads off each concept, not off the chapter", () => {
+    /* A learning-path chapter groups several concepts and has no node of its
+       own, so keying threads by chapter.nodeId rendered nothing at all on a
+       real build while every unit test still passed. */
+    const markup = renderToStaticMarkup(
+      <ArticleView
+        onRailReset={() => {}}
+        onRailResize={() => {}}
+        railBounds={{ min: 220, max: 420 }}
+        railWidth={288}
+      />,
+    );
+
+    expect(markup).toContain('class="concept-threads"');
+    expect(markup).toContain("Builds on");
+    expect(markup).toContain("Sets up");
+  }, 15_000);
+
+  it("never renders a thread link that scrolls nowhere", () => {
+    const markup = renderToStaticMarkup(
+      <ArticleView
+        onRailReset={() => {}}
+        onRailResize={() => {}}
+        railBounds={{ min: 220, max: 420 }}
+        railWidth={288}
+      />,
+    );
+
+    const targets = [...markup.matchAll(/class="concept-thread-links"[\s\S]*?<\/p>/g)]
+      .flatMap((row) => [...row[0].matchAll(/href="#([^"]+)"/g)].map((m) => m[1]));
+    expect(targets.length).toBeGreaterThan(0);
+    for (const id of targets) expect(markup).toContain(`id="${id}"`);
+  }, 15_000);
 });

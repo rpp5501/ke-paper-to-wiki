@@ -59,6 +59,46 @@ def strip_images(md: str):
     return _IMG.sub("", md), n
 
 
+# Only the relations that mean "the reader needs that first". part-of is
+# containment, which the concept map already draws and which would otherwise
+# tell a reader the Encoder and Decoder Stacks must be understood before the
+# Transformer they are part of. contrasts-with is a comparison, not an order.
+#
+# The two run opposite ways, exactly as reading_path reads them: builds-on
+# points from the later concept to the earlier one (Multi-Head Attention
+# builds-on Scaled Dot-Product Attention), while prerequisite points from the
+# earlier to the later (Training is a prerequisite OF the results).
+_DEPENDS_ON = {"builds-on": ("src", "dst"), "prerequisite": ("dst", "src")}
+
+
+def threads(plan_graph: dict) -> dict:
+    """For each concept: what it builds on, and what it sets up.
+
+    A paper is a dependency graph, not a list, and these edges have been in
+    every build from the start without a single page showing them. Derived
+    rather than authored, so no model is involved and the threads on a page
+    cannot contradict the map beside it.
+    """
+    labels = {n["id"]: n.get("label", n["id"]) for n in plan_graph.get("nodes", [])}
+    out = {i: {"buildsOn": [], "setsUp": []} for i in labels}
+    for edge in plan_graph.get("edges", []):
+        sides = _DEPENDS_ON.get(edge.get("kind"))
+        if not sides:
+            continue
+        later, earlier = (edge.get(side) for side in sides)
+        # A bridged graph carries code nodes; a thread must never point at
+        # something the reader cannot open.
+        if later not in labels or earlier not in labels:
+            continue
+        out[later]["buildsOn"].append({"id": earlier, "label": labels[earlier]})
+        out[earlier]["setsUp"].append({"id": later, "label": labels[later]})
+    for entry in out.values():
+        for key in entry:
+            # Stable bytes across rebuilds, and the order a reader scans.
+            entry[key].sort(key=lambda t: t["label"])
+    return out
+
+
 def figure_urls(pack: dict, base: str) -> dict:
     """Each figure in the pack, keyed by id, with its images as served urls.
 
@@ -1166,6 +1206,9 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
     if stripped:
         print(f"stripped {stripped} image block(s) (rich media is v2)")
     bundle = {"bundleVersion": 2,
+              # Derived from the edges, never authored: a page cannot
+              # disagree with the concept map beside it.
+              "threads": threads(plan_graph),
               "meta": graph["meta"], "nodes": graph["nodes"],
               "edges": graph["edges"], "pages": pages, "notes": notes,
               "hotspots": hotspots, "clusters": _clusters(graph),

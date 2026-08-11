@@ -15,6 +15,7 @@ import { getQuiz, type QuizItem } from "../lib/quiz";
 import { useApp } from "../store";
 import type { KENode, LearningPath } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
+import ConceptThreads, { type ConceptThreadSet } from "./ConceptThreads";
 import InlineCheckpoint from "./InlineCheckpoint";
 import MathReveal from "./blocks/MathReveal";
 import { RichMarkdown } from "./Drawer";
@@ -26,6 +27,9 @@ import SelectionLookup from "./SelectionLookup";
 const NODES = KE_DATA.nodes as KENode[];
 const PAGES = KE_DATA.pages as Record<string, string>;
 const GLOSSARY = KE_DATA.glossary as Record<string, Record<string, string>>;
+// Derived from the graph in build_data, so a page cannot contradict the map.
+const THREADS = ((KE_DATA as { threads?: Record<string, ConceptThreadSet> })
+  .threads ?? {}) as Record<string, ConceptThreadSet>;
 const SOURCE = (KE_DATA.meta as { source?: string }).source ?? "this paper";
 
 const LEARNING_PATH = (
@@ -35,6 +39,12 @@ export const CHAPTERS = LEARNING_PATH
   ? buildLearningChapters(LEARNING_PATH, NODES, PAGES)
   : buildChapters(LEARN_STEPS, NODES, PAGES);
 const CHECKPOINTS = getQuiz();
+// Every anchor the article actually renders: a chapter and each of its
+// sections. A thread pointing outside this set is named but not linked --
+// the guided path covers a subset of the graph, so most threads leave it.
+const ANCHORED = new Set(CHAPTERS.flatMap(
+  (chapter) => [chapter.nodeId, ...chapter.sections.map((s) => s.nodeId)],
+).filter(Boolean));
 // The article scrolls through every chapter at once, so a selection can land on
 // a term belonging to any of them. Per-node maps already carry the paper-wide
 // terms merged in, so flattening them is the whole article's vocabulary.
@@ -159,7 +169,12 @@ function ConceptSectionView({
   section: ChapterSection;
 }) {
   const body = (
-    <SectionTiers chapter={chapter} expandAll={expandAll} section={section} />
+    <>
+      <SectionTiers chapter={chapter} expandAll={expandAll} section={section} />
+      {/* Threads hang off the concept, not the chapter: a learning-path
+          chapter groups several concepts and has no node of its own. */}
+      <ConceptThreads reachable={ANCHORED} threads={THREADS[section.nodeId]} />
+    </>
   );
   if (section.depth === "core" && section.nodeId === chapter.nodeId) return body;
   if (section.depth === "core") {
