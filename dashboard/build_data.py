@@ -59,6 +59,43 @@ def strip_images(md: str):
     return _IMG.sub("", md), n
 
 
+def figure_urls(pack: dict, base: str) -> dict:
+    """Each figure in the pack, keyed by id, with its images as served urls.
+
+    A ```figure block in a page carries only an id, so the caption the paper
+    actually wrote and the file it resolved to both have to come from here. A
+    figure with no image (TikZ draws itself) is still listed: telling the
+    reader it exists beats showing them a broken image.
+    """
+    return {f["id"]: {"caption": f.get("caption", ""),
+                      "section": f.get("section", ""),
+                      "images": [f"{base}/{name}" for name in f.get("assets", [])]}
+            for f in (pack or {}).get("figures", [])}
+
+
+def copy_figure_assets(pack: dict, assets_dir, public_dir, base: str) -> int:
+    """Copy the figures' images to where Vite serves static files.
+
+    Not inlined: build_data writes the whole bundle into src/data.gen.ts, and
+    DDIM's 12.8 MB of figures would become roughly 17 MB of base64 JavaScript
+    parsed on every page load. As files under public/ the browser fetches them
+    lazily and caches them.
+    """
+    if not assets_dir:
+        return 0
+    src, copied = Path(assets_dir), 0
+    for figure in (pack or {}).get("figures", []):
+        for name in figure.get("assets", []):
+            origin = src / name
+            if not origin.is_file():
+                continue
+            out = Path(public_dir) / base / name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_bytes(origin.read_bytes())
+            copied += 1
+    return copied
+
+
 def _clusters(plan_graph):
     nodes = {n["id"]: n for n in plan_graph["nodes"]}
     if any("community" in n for n in plan_graph["nodes"]):
@@ -1168,7 +1205,18 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
         # the source, so their notation is the paper's, not KaTeX's defaults.
         # An older pack predates the field and yields {} rather than KeyError.
         bundle["macros"] = pack.get("macros") or {}
+        # A figure block in a page carries only an id; the caption and the file
+        # it resolved to live here. Urls only -- the bytes are served from
+        # public/, never inlined into data.gen.ts.
+        bundle["figures"] = figure_urls(pack, figure_base(pack))
     return bundle
+
+
+def figure_base(pack: dict) -> str:
+    """Where this paper's figures live under public/, keyed by its own source
+    so two dashboards built side by side cannot overwrite each other."""
+    source = ((pack or {}).get("meta") or {}).get("source") or "paper"
+    return "figures/" + re.sub(r"[^A-Za-z0-9._-]+", "-", source).strip("-")
 
 
 def to_data_ts(bundle) -> str:
@@ -1198,6 +1246,8 @@ def main(argv=None):
     p.add_argument("--update", action="store_true",
                    help="patch opt-in sections (--viz-dir/--next-steps/--quiz)"
                         " into the existing --out without a full rebuild")
+    p.add_argument("--assets-dir", help="P1 figure images "
+                   "(paper2pack --assets-dir); omit for a figure-free build")
     p.add_argument("--out", default="src/data.gen.ts")
     a = p.parse_args(argv)
     load = lambda x: json.loads(Path(x).read_text(encoding="utf-8")) if x else None
@@ -1241,7 +1291,12 @@ def main(argv=None):
                           next_steps=a.next_steps, quiz=a.quiz,
                           learning_path=a.learning_path, release=a.release)
     Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
-    print(f"{a.out}: {len(bundle['nodes'])} nodes, {len(bundle['tour'])} tour steps")
+    # public/ sits beside src/, which is where --out points by default.
+    copied = copy_figure_assets(load(a.pack), a.assets_dir,
+                                Path(a.out).resolve().parent.parent / "public",
+                                figure_base(load(a.pack)))
+    print(f"{a.out}: {len(bundle['nodes'])} nodes, "
+          f"{len(bundle['tour'])} tour steps, {copied} figure image(s)")
     return 0
 
 

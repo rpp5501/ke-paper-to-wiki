@@ -1588,6 +1588,41 @@ input:focus-visible,
   font-style: italic;
 }
 
+/* The paper's own figure. Bordered like a diagram rather than dashed like the
+   placeholder: this one is real content, not a promise. */
+.paper-figure {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+/* Side-by-side panels are one figure in the paper (Scaled Dot-Product beside
+   Multi-Head), so they wrap together rather than stacking as separate images. */
+.paper-figure-panels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+}
+.paper-figure-panels img {
+  max-width: 100%;
+  height: auto;
+  /* Figures are line art on white; on a dark theme an unpadded PNG reads as a
+     hole in the page. */
+  background: #fff;
+  border-radius: 6px;
+  padding: 6px;
+}
+.paper-figure figcaption {
+  margin-top: 12px;
+  color: var(--ink-muted);
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+
 .mermaid-diagram {
   margin: 20px 0;
   padding: 16px;
