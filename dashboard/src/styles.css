@@ -2283,6 +2283,34 @@ button.source-chip:hover { border-color: var(--accent); }
 
 /* select-to-look-up */
 .lookup-anchor { z-index: 40; }
+/* The offer. Deliberately small and quiet — it appears beside a selection the
+   reader made for their own reasons, and most of the time they will ignore it. */
+.lookup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  padding: 4px 11px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: calc(var(--fs-small) * 0.94);
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.lookup-chip:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+.lookup-chip-icon { color: var(--accent); }
+.lookup-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .lookup-popover {
   position: relative;
   width: 320px;

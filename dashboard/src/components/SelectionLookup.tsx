@@ -1,16 +1,21 @@
-// Select-to-look-up: highlight a phrase, get what the bundle knows about it.
-// The hover glossary only fires on terms someone wrote a note for, so this is
-// the answer for the ones it missed.
+// Select-to-look-up: highlight a phrase, and if the bundle knows it, a chip
+// offers the explanation. The hover glossary only fires on terms someone wrote
+// a note for, so this is the answer for the ones it missed.
+//
+// Two steps on purpose. Opening a dialog the moment a selection appears
+// interrupts whatever the reader was doing — copying a sentence, dragging
+// across a heading — so the chip asks first and costs one click to ignore.
 //
 // Behavioural shell only. The cascade is lib/lookup.ts and the markup is
-// LookupPopover, both pure and tested; what lives here is the DOM wiring that
-// vitest's `environment: "node"` cannot exercise.
+// LookupChip and LookupPopover, all pure and tested; what lives here is the
+// DOM wiring that vitest's `environment: "node"` cannot exercise.
 import { useEffect, useState } from "react";
 
 import { KE_DATA } from "../data.gen";
 import { insideKnownTerm, lookup, type LookupData, type LookupResult } from "../lib/lookup";
 import { getSections } from "../lib/source";
 import type { KENode } from "../types";
+import LookupChip from "./LookupChip";
 import LookupPopover from "./LookupPopover";
 
 const NODES = KE_DATA.nodes as KENode[];
@@ -34,12 +39,17 @@ export default function SelectionLookup({
   onOpenConcept?: (nodeId: string) => void;
 }) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  // The chip is the offer; this is whether the reader accepted it.
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     function offerLookup(event: Event) {
-      // A click inside the popover is not a new selection: without this,
-      // dismissing it re-opened it on the same still-selected phrase.
-      if ((event.target as Element | null)?.closest?.(".lookup-popover")) return;
+      // A click on our own UI is not a new selection. Without this, dismissing
+      // the popover reopened it on the same still-selected phrase, and the
+      // chip's own mouseup — which lands before its click — reset the very
+      // state that click was about to set.
+      if ((event.target as Element | null)
+        ?.closest?.(".lookup-popover, .lookup-chip")) return;
       const selection = window.getSelection();
       const phrase = selection?.toString() ?? "";
       if (!phrase.trim() || selection?.isCollapsed) {
@@ -65,6 +75,8 @@ export default function SelectionLookup({
         return;
       }
       const box = selection?.getRangeAt(0).getBoundingClientRect();
+      // A fresh selection is a fresh question: never inherit the last answer.
+      setOpen(false);
       setAnchor({
         phrase: phrase.trim(),
         result,
@@ -107,12 +119,16 @@ export default function SelectionLookup({
       className="lookup-anchor"
       style={{ left: anchor.x, position: "absolute", top: anchor.y }}
     >
-      <LookupPopover
-        onDismiss={() => setAnchor(null)}
-        onOpenConcept={onOpenConcept}
-        phrase={anchor.phrase}
-        result={anchor.result}
-      />
+      {open
+        ? (
+          <LookupPopover
+            onDismiss={() => setOpen(false)}
+            onOpenConcept={onOpenConcept}
+            phrase={anchor.phrase}
+            result={anchor.result}
+          />
+        )
+        : <LookupChip onOpen={() => setOpen(true)} phrase={anchor.phrase} />}
     </div>
   );
 }
