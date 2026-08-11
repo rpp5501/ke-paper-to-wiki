@@ -1,6 +1,8 @@
 """P3 asks the model to recall resources. Search hands it real ones instead."""
-from paper_skill.candidates import (candidate_block, find_candidates, paper_topic,
-                                 relevant, research_query)
+from paper_skill.candidates import (PROVIDER_TIMEOUT, candidate_block,
+                                    find_candidates, paper_topic, patient_get,
+                                    relevant,
+                                    research_query)
 
 BRIEF = {"concept": "ba-mitigation-algorithm",
          "definition": "Removing a planted backdoor from a trained classifier",
@@ -67,40 +69,7 @@ def test_disabled_apis_yield_no_candidates():
     assert find_candidates(BRIEF, search=search) == []
 
 
-# A concept slug carries paper-internal shorthand ("nc", "tabor", "ba") and no
-# field. Searched bare, "lagrangian optimization" returns pure optimization
-# theory and "baseline detectors nc tabor" returned 1950s biochemistry. The
-# paper's own top-level concepts are its subject vocabulary.
-BACKDOOR_GRAPH = {"nodes": [
-    {"id": "ba", "label": "Backdoor Attack (BA)", "level": 1},
-    {"id": "bd", "label": "Backdoor Defense", "level": 1},
-    {"id": "ptd", "label": "Post-Training Detection Scenario", "level": 1},
-    {"id": "mm", "label": "Maximum Margin (MM) Statistic", "level": 1},
-    {"id": "deep", "label": "Backdoor pattern estimation", "level": 2},
-], "edges": []}
 
-
-def test_topic_is_the_word_recurring_across_top_level_concepts():
-    topic = paper_topic(BACKDOOR_GRAPH)
-
-    assert "backdoor" in topic
-    # Level 2 is a leaf, not the paper's subject.
-    assert "estimation" not in topic
-
-
-def test_a_graph_with_no_repeated_theme_yields_no_topic():
-    """Inventing a topic from one-off labels would poison every query."""
-    graph = {"nodes": [{"id": "a", "label": "Alpha", "level": 1},
-                       {"id": "b", "label": "Beta", "level": 1}], "edges": []}
-
-    assert paper_topic(graph) == ""
-
-
-def test_query_carries_the_paper_topic():
-    query = research_query(BRIEF, topic="backdoor detection")
-
-    assert "backdoor detection" in query
-    assert "ba mitigation algorithm" in query
 
 
 # Every title below came back from a live search for a backdoor-detection
@@ -155,22 +124,10 @@ def test_find_candidates_filters_what_search_returns():
 
     kept = find_candidates({"concept": "baseline-detectors-nc-tabor",
                             "definition": "post-training backdoor detection "
-                                          "methods including Neural Cleanse"},
-                           search=search, topic="backdoor detection")
+                                          "methods including Neural Cleanse"}, search=search)
 
     assert [r["url"] for r in kept] == ["https://doi.org/nc", "https://doi.org/gnn"]
 
-
-def test_find_candidates_searches_with_the_topic_included():
-    seen = {}
-
-    def search(query, **_kw):
-        seen["query"] = query
-        return {"status": "ok", "results": []}
-
-    find_candidates(BRIEF, search=search, topic="backdoor detection")
-
-    assert seen["query"].startswith("backdoor detection")
 
 
 def test_word_forms_count_as_the_same_term():
@@ -208,3 +165,112 @@ def test_supplementary_material_records_are_not_papers():
         "backdoor attack detection online distillation")
 
     assert [r["url"] for r in kept] == ["https://doi.org/10.1109/tdsc.2024.3369751"]
+
+
+def test_slow_providers_get_a_longer_timeout_than_they_ask_for():
+    """research_mcp.search_arxiv hardcodes timeout=30. Three consecutive
+    searches failed at exactly 30.5s, then the same queries answered in 2.9s,
+    1.0s and 0.9s at 60 -- so the most CS-relevant provider was dropping out of
+    every search on a slow minute, leaving the field to the two that index all
+    of science and rank amine oxidases above backdoor detection."""
+    seen = {}
+
+    def fake_requests_get(url, **kwargs):
+        seen.update(kwargs, url=url)
+
+    patient_get("http://export.arxiv.org/api/query", timeout=30,
+                params={"q": "x"}, _get=fake_requests_get)
+
+    assert seen["timeout"] == PROVIDER_TIMEOUT
+    assert seen["params"] == {"q": "x"}
+
+
+def test_a_caller_asking_for_longer_is_not_cut_short():
+    seen = {}
+    patient_get("https://x.test", timeout=300,
+                _get=lambda url, **kw: seen.update(kw))
+
+    assert seen["timeout"] == 300
+
+
+def test_the_default_search_hands_providers_the_patient_get(monkeypatch):
+    """The timeout floor is worthless if find_candidates does not actually use
+    it when it builds the real search."""
+    import research_mcp.fetch_academic as fa
+    seen = {}
+
+    def fake_academic_search(query, limit=5, get=None, **_kw):
+        seen["get"] = get
+        return {"status": "ok", "results": []}
+
+    monkeypatch.setattr(fa, "academic_search", fake_academic_search)
+    find_candidates(BRIEF)
+
+    assert seen["get"] is patient_get
+
+
+# Measured on both sides. For "baseline-detectors-nc-tabor" the bare query is
+# what surfaced TABOR, the detector the concept is named after; prefixing
+# "backdoor attack detection" buried it under generic security papers. For
+# "lagrangian-optimization" the bare query returned the Steiner ratio and strip
+# packing -- correct for the words, useless to a reader of a backdoor paper --
+# and the prefix is what keeps it in the field. Neither query wins twice, so
+# both are asked and the answers merged.
+def test_both_the_bare_and_the_topic_query_are_asked():
+    asked = []
+
+    def search(query, **_kw):
+        asked.append(query)
+        return {"status": "ok", "results": []}
+
+    find_candidates(BRIEF, search=search, topic="backdoor attack detection")
+
+    assert len(asked) == 2
+    assert not asked[0].startswith("backdoor attack detection")
+    assert asked[1].startswith("backdoor attack detection")
+
+
+def test_one_paper_found_by_both_queries_is_listed_once():
+    def search(_query, **_kw):
+        return {"status": "ok", "results": [
+            {"title": "TABOR: Inspecting and Restoring Trojan Backdoors in "
+                      "mitigation of a planted classifier",
+             "url": "https://arxiv.org/abs/1908.01763"}]}
+
+    kept = find_candidates(BRIEF, search=search, topic="backdoor detection")
+
+    assert [r["url"] for r in kept] == ["https://arxiv.org/abs/1908.01763"]
+
+
+def test_no_topic_means_one_search_as_before():
+    asked = []
+
+    find_candidates(BRIEF, search=lambda q, **_kw: asked.append(q) or
+                    {"status": "ok", "results": []})
+
+    assert len(asked) == 1
+
+
+BACKDOOR_GRAPH = {"nodes": [
+    {"id": "ba", "label": "Backdoor Attack (BA)", "level": 1},
+    {"id": "bd", "label": "Backdoor Defense", "level": 1},
+    {"id": "ptd", "label": "Post-Training Detection Scenario", "level": 1},
+    {"id": "mm", "label": "Maximum Margin (MM) Statistic", "level": 1},
+    {"id": "deep", "label": "Backdoor pattern estimation", "level": 2},
+], "edges": []}
+
+
+def test_topic_is_the_word_recurring_across_top_level_concepts():
+    topic = paper_topic(BACKDOOR_GRAPH)
+
+    assert "backdoor" in topic
+    assert "estimation" not in topic   # level 2 is a leaf, not the subject
+
+
+def test_a_graph_with_no_repeated_theme_yields_no_topic():
+    """No topic means one search rather than two -- better than searching
+    twice for a subject invented out of one-off labels."""
+    graph = {"nodes": [{"id": "a", "label": "Alpha", "level": 1},
+                       {"id": "b", "label": "Beta", "level": 1}], "edges": []}
+
+    assert paper_topic(graph) == ""

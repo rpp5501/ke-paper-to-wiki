@@ -193,19 +193,22 @@ def test_no_search_results_leave_the_prompt_as_it_was(tmp_path):
     assert "VERIFIED CANDIDATES" not in prompts[0]
 
 
-def test_the_search_query_carries_the_papers_own_subject(tmp_path):
-    """A concept slug names no field. Searched bare, a backdoor-detection
-    concept came back with 1950s biochemistry ranked top."""
+
+
+def test_both_queries_are_asked_when_the_graph_has_a_subject(tmp_path):
+    """run_research is the only place that holds the graph, so it is the only
+    place that can supply the topic for the second query."""
     p = _approved_toc(tmp_path)
     themed = {"nodes": [{"id": "a", "label": "Backdoor Attack (BA)", "level": 1},
                         {"id": "b", "label": "Backdoor Defense", "level": 1}],
               "edges": []}
-    seen = []
+    asked = []
 
     run_research(p, themed,
                  spawn=lambda pr: NOTE.format(cid="c1" if "c1" in pr else "c2"),
                  home=tmp_path, workdir=tmp_path, verify=_no_verify,
-                 search=lambda q, **_kw: seen.append(q) or {"status": "ok",
-                                                            "results": []})
+                 search=lambda q, **_kw: asked.append(q) or {"status": "ok",
+                                                             "results": []})
 
-    assert seen and seen[0].startswith("backdoor")
+    assert any(q.startswith("backdoor") for q in asked)
+    assert any(not q.startswith("backdoor") for q in asked)

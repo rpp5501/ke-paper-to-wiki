@@ -10,9 +10,26 @@ anything cited from outside this list.
 import re
 from collections import Counter
 
+import requests
+
 DEFAULT_LIMIT = 6
 
-# Ordinary words carry no field, so they must not count as a recurring theme.
+# research_mcp.search_arxiv hardcodes timeout=30, and arXiv's full-text
+# endpoint drifts past that under load: three consecutive searches failed at
+# exactly 30.5s, then the same queries answered in 2.9s, 1.0s and 0.9s at 60.
+# Losing the most CS-relevant provider on a slow minute is what left the field
+# to Crossref and OpenAlex, which index every science and rank 1955 papers on
+# amine oxidases above backdoor detection.
+PROVIDER_TIMEOUT = 60
+
+
+def patient_get(url, _get=None, **kwargs):
+    """requests.get with a floor under the timeout, for slow-but-working APIs."""
+    kwargs["timeout"] = max(kwargs.get("timeout") or 0, PROVIDER_TIMEOUT)
+    return (_get or requests.get)(url, **kwargs)
+
+
+# Ordinary words carry no subject, so they must not count toward relevance.
 _STOPWORDS = frozenset("""a an the and or of for to in on with without via from
 by as at is are be its it this that these those using use used approach method
 methods model models problem scenario setting general new novel towards toward
@@ -25,19 +42,19 @@ procedure statistic function functions type types form forms part parts""".split
 def paper_topic(graph: dict, floor: int = 2) -> str:
     """The words that recur across the paper's top-level concepts.
 
-    A concept slug is paper-internal shorthand -- "nc", "tabor", "ba" -- and
-    names no field, so searching it bare returned 1950s biochemistry for a
-    backdoor-detection concept. What the top-level concepts keep repeating is
-    what the paper is about. Nothing is returned when nothing recurs: inventing
-    a topic out of one-off labels would poison every query for that paper.
+    Used to build the second of find_candidates' two queries, never to replace
+    the first: as a prefix it outweighs the concept in every provider's
+    ranking. Nothing is returned when nothing recurs, which costs only the
+    second search -- better than searching twice for a subject invented out of
+    one-off labels.
     """
     words = Counter()
     for node in graph.get("nodes", []):
         if node.get("level") != 1:
             continue
-        seen = {w for w in re.findall(r"[a-z]{3,}", (node.get("label") or "").lower())
-                if w not in _STOPWORDS}
-        words.update(seen)
+        words.update({w for w in re.findall(r"[a-z]{3,}",
+                                            (node.get("label") or "").lower())
+                      if w not in _STOPWORDS})
     return " ".join(w for w, n in words.most_common(3) if n >= floor)
 
 
@@ -103,21 +120,50 @@ def relevant(records: list[dict], query: str,
 
 def find_candidates(brief: dict, search=None, limit: int = DEFAULT_LIMIT,
                     topic: str = "") -> list[dict]:
+    """Candidates for one concept, asked for both ways and merged.
+
+    Measured on both sides. The bare query is what surfaced TABOR for
+    "baseline-detectors-nc-tabor" -- the detector the concept is named after --
+    while prefixing the paper's subject buried it under generic security
+    surveys. For "lagrangian-optimization" the bare query returned the Steiner
+    ratio and online strip packing, correct for the words and useless to a
+    reader of a backdoor paper, and the prefix is what holds it in the field.
+    Neither wins twice, so both are asked; each result set is filtered against
+    the query that produced it, and the union is deduplicated by url.
+    """
     if search is None:
-        from research_mcp.fetch_academic import academic_search
-        search = academic_search
-    query = research_query(brief, topic)
-    try:
-        found = search(query, limit=limit)
-    except Exception:
-        # Opportunistic: providers being down must not cost the reader a note.
-        return []
-    return relevant((found or {}).get("results") or [], query)
+        from research_mcp import fetch_academic
+
+        def search(q, **kwargs):
+            return fetch_academic.academic_search(q, get=patient_get, **kwargs)
+
+    bare = research_query(brief)
+    queries = [bare] + ([f"{topic} {bare}"] if topic else [])
+    merged: dict[str, dict] = {}
+    for query in queries:
+        try:
+            found = search(query, limit=limit)
+        except Exception:
+            # Opportunistic: providers being down must not cost a reader a note.
+            continue
+        for record in relevant((found or {}).get("results") or [], query):
+            merged.setdefault(record.get("url") or record.get("title", ""), record)
+    return list(merged.values())
 
 
-def research_query(brief: dict, topic: str = "") -> str:
+def research_query(brief: dict) -> str:
+    """The concept and its definition, and deliberately nothing else.
+
+    Prefixing the paper's own subject was tried and measured worse: for
+    "lagrangian optimization" a bare query returned Lipschitz bounds and
+    large-scale optimization methods, while prefixing "backdoor attack
+    detection" drowned it in generic security surveys. Three strong field
+    terms outweigh the concept in every provider's ranking. relevant() is
+    where field noise gets removed, and it does that job without narrowing
+    what was asked for.
+    """
     concept = (brief.get("concept") or "").replace("-", " ").replace("_", " ")
-    return " ".join(f"{topic} {concept} {brief.get('definition', '')}".split())
+    return " ".join(f"{concept} {brief.get('definition', '')}".split())
 
 
 def candidate_block(records: list[dict]) -> str:
