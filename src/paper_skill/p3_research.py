@@ -35,6 +35,21 @@ BRIEF:
 """
 
 
+def _render_research_prompt(brief: dict, rejected_for: list[str] | None = None) -> str:
+    """Same correction the page writer gets: a retry that re-sends the identical
+    prompt is a re-roll, not a fix. lint_note already says exactly which key is
+    wrong -- withholding that from the one retry wastes it."""
+    prompt = RESEARCH_PROMPT.format(
+        brief_yaml=yaml.safe_dump(brief, allow_unicode=True, sort_keys=False))
+    if not rejected_for:
+        return prompt
+    return prompt + (
+        "\n\nYOUR PREVIOUS NOTE WAS REJECTED. A deterministic check found:\n"
+        + "\n".join(f"- {p}" for p in rejected_for)
+        + "\nReturn the whole note again with exactly these problems fixed, "
+          "changing nothing else.")
+
+
 def _spawn_claude(prompt: str) -> str:
     from .llm_spawn import claude_spawn
     return claude_spawn(prompt, max_turns=15, timeout=900)
@@ -77,12 +92,11 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
             skipped.append(cid)
             continue
         brief = build_brief(row, graph)
-        prompt = RESEARCH_PROMPT.format(
-            brief_yaml=yaml.safe_dump(brief, allow_unicode=True, sort_keys=False))
         note, problems = None, ["spawn failed"]
         for attempt in range(2):                       # one retry max
             try:
-                note = _parse_note(spawn(prompt))
+                note = _parse_note(
+                    spawn(_render_research_prompt(brief, problems if attempt else None)))
             except Exception as exc:
                 # A spawn EXCEPTION is a crash, not schema-invalid output —
                 # fail immediately, do not retry.

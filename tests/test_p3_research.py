@@ -82,3 +82,25 @@ def test_accepts_yaml_wrapped_in_a_markdown_fence(tmp_path):
     result = run_research(p, GRAPH, spawn=spawn, home=tmp_path, workdir=tmp_path)
 
     assert result["done"] == ["c1", "c2"]
+
+
+def test_retry_tells_the_researcher_what_lint_rejected():
+    """The one retry re-sent the identical prompt, so a note with a bad key was
+    re-rolled rather than corrected -- the same defect the page writer had."""
+    from paper_skill.p3_research import _render_research_prompt
+
+    brief = {"concept": "sdpa", "questions": ["why scale?"]}
+    first = _render_research_prompt(brief)
+    retry = _render_research_prompt(brief, ["sources_consulted must be a map"])
+
+    assert "REJECTED" not in first
+    assert "sources_consulted must be a map" in retry
+    assert retry.startswith(first)
+
+
+def test_no_problems_leaves_the_research_prompt_alone():
+    from paper_skill.p3_research import _render_research_prompt
+
+    brief = {"concept": "sdpa"}
+
+    assert _render_research_prompt(brief, []) == _render_research_prompt(brief)
