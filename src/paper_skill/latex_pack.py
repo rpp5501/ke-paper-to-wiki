@@ -8,6 +8,10 @@ from pylatexenc.latexwalker import (LatexWalker, LatexEnvironmentNode,
 _SECTION_MACROS = {"section": 1, "subsection": 2, "subsubsection": 3}
 _EQ_ENVS = {"equation", "equation*", "align", "align*", "eqnarray", "displaymath"}
 _TABLE_ENVS = {"table", "table*"}
+# figure* is the two-column span, and one environment can hold several
+# includegraphics when the paper puts subfigures side by side.
+_FIGURE_ENVS = {"figure", "figure*"}
+_INCLUDEGRAPHICS = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\s*\{([^{}]+)\}")
 
 # A results table is where an empirical paper keeps its evidence. Walking into
 # the environment the way every other environment is walked poured the cells
@@ -249,12 +253,39 @@ def _title_from_source(tex: str) -> str:
     return "" if found.startswith("\\") else found
 
 
+# \captionof{figure}{Real caption} shares its first eight characters with
+# \caption, so searching for the prefix and taking the next group returned the
+# literal string "figure" -- DDIM shipped exactly that. The optional bracket
+# group is \caption[short]{long}, whose short form is only for the list of
+# figures. Matching \{ at the end is also what rejects \captionsetup.
+_CAPTION = re.compile(r"\\caption(of)?\*?\s*(?:\[[^\]]*\])?\s*\{")
+
+
+def _caption_of(raw: str) -> str:
+    """The \\caption text of a float, brace-balanced and unwrapped.
+
+    Shared by the table and figure branches, which read captions identically:
+    a non-greedy regex stops at the first } and truncates any caption
+    containing a group, and \\textit / \\% must not survive into the text.
+    """
+    found = _CAPTION.search(raw)
+    if not found:
+        return ""
+    brace = found.end() - 1
+    if found.group(1):                      # \captionof{TYPE}{text}: skip TYPE
+        _, after_type = _read_group(raw, brace)
+        brace = raw.find("{", after_type)
+        if brace == -1:
+            return ""
+    return _unescape(_CELL_WRAPPER.sub(r"\1", _clean(_read_group(raw, brace)[0])))
+
+
 def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                   title: str = "") -> dict:
     tex = _strip_comments(_flatten_inputs(main_tex, resolve_input))
     optional_args = _optional_arg_macros(tex)
     nodes, _, _ = LatexWalker(tex).get_latex_nodes()
-    sections, equations, tables = [], [], []
+    sections, equations, tables, figures = [], [], [], []
     counters = [0, 0, 0]
     cur_id, buf = None, []
 
@@ -290,20 +321,23 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                 raw = tex[n.pos:n.pos + n.len]
                 rows = [row for m in _TABULAR.finditer(raw)
                         for row in _tabular_rows(m.group(1))]
-                caption = ""
-                at = raw.find("\\caption")
-                if at != -1:
-                    brace = raw.find("{", at)
-                    if brace != -1:
-                        caption = _unescape(_CELL_WRAPPER.sub(
-                            r"\1", _clean(_read_group(raw, brace)[0])))
                 # Emitted even when the body is a graphic rather than a
                 # tabular: the caption alone tells the writer the table exists.
                 tables.append({"id": f"tab_{len(tables) + 1}",
                                "section": cur_id or "sec_0",
-                               "caption": caption, "rows": rows})
+                               "caption": _caption_of(raw), "rows": rows})
                 # Deliberately not walked -- that is what smeared the cells
                 # across the section prose.
+            elif (isinstance(n, LatexEnvironmentNode)
+                    and n.environmentname in _FIGURE_ENVS):
+                raw = tex[n.pos:n.pos + n.len]
+                # A TikZ figure draws itself and names no file, so graphics can
+                # be empty. The caption still tells the writer it exists, which
+                # is the same call tables already make.
+                figures.append({"id": f"fig_{len(figures) + 1}",
+                                "section": cur_id or "sec_0",
+                                "caption": _caption_of(raw),
+                                "graphics": _INCLUDEGRAPHICS.findall(raw)})
             elif isinstance(n, LatexCharsNode):
                 buf.append(n.chars)
             elif isinstance(n, (LatexEnvironmentNode, LatexGroupNode)):
@@ -319,4 +353,4 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
             "sections": sections, "equations": equations,
             "tables": tables,
             "macros": extract_macros(tex),
-            "references": [], "figures": []}
+            "references": [], "figures": figures}

@@ -24,6 +24,71 @@ def detect(target: str) -> str:
     return "unknown"
 
 
+# LaTeX writes \includegraphics{Figures/ModalNet-21} without an extension and
+# lets the driver pick the file. Ordered by what a reader can be shown without
+# conversion, so a paper shipping both a .png and a .pdf gives up the .png.
+_GRAPHIC_SUFFIXES = ("", ".png", ".jpg", ".jpeg", ".pdf", ".eps", ".svg")
+
+
+def _relative(path: str) -> str:
+    """Drop a leading ./ so a reference and a tarball member can be compared."""
+    return path[2:] if path.startswith("./") else path
+
+
+# 150 DPI is legible for a figure at page width without turning a 34 KB vector
+# into megabytes. block.pdf went the other way entirely: 399.7 KB -> 11.9 KB.
+RASTER_DPI = 150
+
+
+def _rasterise(name: str, data: bytes) -> tuple[str, bytes]:
+    """A PDF figure as a PNG, or unchanged if it will not open.
+
+    LaTeX figures are very often PDF -- all 7 of ResNet's and all 13 of DDIM's
+    are -- and no browser renders a PDF in an <img>. A figure that cannot be
+    rasterised is kept rather than dropped: it is still evidence the figure
+    exists, and the dashboard can skip what it cannot show.
+    """
+    if not name.lower().endswith(".pdf"):
+        return name, data
+    try:
+        import fitz
+
+        with fitz.open(stream=data, filetype="pdf") as doc:
+            png = doc[0].get_pixmap(dpi=RASTER_DPI).tobytes("png")
+        return name[:-4] + ".png", png
+    except Exception:
+        return name, data
+
+
+def extract_assets(blob: bytes, figures: list[dict]) -> dict[str, bytes]:
+    """The image bytes each figure's graphics resolve to, keyed by tarball name.
+
+    A caption without its picture is a promise the reader cannot cash, and the
+    pictures are already inside the e-print tarball -- 12 for AIAYN, 45 for
+    MM-BD -- which the pack builder downloads and then discarded.
+    """
+    tf = tarfile.open(fileobj=io.BytesIO(blob), mode="r:*")
+    members = {_relative(m.name): m for m in tf.getmembers() if m.isfile()}
+    assets: dict[str, bytes] = {}
+    for figure in figures:
+        resolved = []
+        for graphic in figure.get("graphics", []):
+            # Both sides need normalising, not just the member: AIAYN writes
+            # \includegraphics{./vis/anaphora_resolution_new.pdf} against a
+            # member stored as vis/anaphora_resolution_new.pdf, and its
+            # attention visualisations resolved to nothing.
+            ref = _relative(graphic)
+            name = next((ref + s for s in _GRAPHIC_SUFFIXES
+                         if (ref + s) in members), None)
+            if name is None:
+                continue
+            shown, data = _rasterise(name, tf.extractfile(members[name]).read())
+            assets.setdefault(shown, data)
+            resolved.append(shown)
+        figure["assets"] = resolved
+    return assets
+
+
 def _pack_from_tarball(blob: bytes, source: str) -> dict:
     tf = tarfile.open(fileobj=io.BytesIO(blob), mode="r:*")
     files = {m.name: tf.extractfile(m).read().decode("utf-8", "replace")
@@ -49,6 +114,9 @@ def _pack_from_tarball(blob: bytes, source: str) -> dict:
         bbl = next((t for t in files.values() if r"\begin{thebibliography}" in t), "")
     if bbl:
         pack["references"] = parse_bbl(bbl)
+    # Mutates each figure to record the file it resolved to; the bytes go back
+    # to the caller, which owns where they are written.
+    pack["assets"] = extract_assets(blob, pack.get("figures", []))
     return pack
 
 
@@ -185,7 +253,27 @@ def _require_content(pack: dict) -> dict:
     return pack
 
 
-def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
+def _write_assets(pack: dict, assets_dir) -> dict:
+    """Take the image bytes out of the pack, writing them if asked.
+
+    pack.json is a JSON document, so bytes cannot be allowed to survive in it
+    -- they would raise at json.dump, at the very end of a long run. The
+    figures keep the resolved filenames either way, so a pack inspected
+    without an assets_dir still says what it would have written.
+    """
+    assets = pack.pop("assets", None) or {}
+    if not assets_dir:
+        return pack
+    root = Path(assets_dir)
+    for name, blob in assets.items():
+        out = root / name
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(blob)
+    return pack
+
+
+def build_pack(target: str, get=requests.get, cache_dir=None,
+               assets_dir=None) -> dict:
     kind = detect(target)
     if kind == "tex":
         return latex_to_pack(Path(target).read_text(encoding="utf-8"),
@@ -218,7 +306,9 @@ def build_pack(target: str, get=requests.get, cache_dir=None) -> dict:
             resp = get(f"https://arxiv.org/e-print/{arxiv_id}",
                        timeout=60, headers=UA)
             resp.raise_for_status()
-            return _require_content(_pack_from_tarball(resp.content, source))
+            return _write_assets(
+                _require_content(_pack_from_tarball(resp.content, source)),
+                assets_dir)
         except Exception:
             try:
                 resp = get(f"https://ar5iv.labs.arxiv.org/html/{arxiv_id}",
