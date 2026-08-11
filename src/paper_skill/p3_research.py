@@ -7,6 +7,7 @@ from research_mcp.inbox import inbox_add
 from research_mcp.validate import lint_note
 from research_mcp.wiki import wiki_get, wiki_put
 from .briefs import build_brief
+from .resources import verify_resources
 from .toc import load_approved_toc
 
 RESEARCH_PROMPT = """Follow the research playbook loop for this brief, using
@@ -76,7 +77,7 @@ def _parse_note(raw: str) -> dict | None:
 
 
 def run_research(toc_path, graph: dict, spawn=_spawn_claude,
-                 home=None, workdir=None) -> dict:
+                 home=None, workdir=None, verify=verify_resources) -> dict:
     toc = load_approved_toc(toc_path)
     if toc["status"] != "ok":
         return {"status": "not_approved", "hint": toc["hint"],
@@ -103,6 +104,11 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
                 note, problems = None, [f"spawn error: {exc}"]
                 break
             problems = lint_note(note) if note else ["not parseable YAML"]
+            # Only once the shape is valid: resources on a note that failed the
+            # schema may not even be a list, and one fault per round is what
+            # the retry can actually act on.
+            if note and not problems:
+                problems = verify(note)
             if not problems:
                 break
         if problems:
