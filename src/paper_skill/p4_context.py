@@ -106,6 +106,18 @@ def assemble_context(pack: dict, graph: dict, concept_id: str,
         local_parts.append(f'[{t["id"]}] Table: {t.get("caption", "")}'.rstrip())
         for row in t["rows"]:
             local_parts.append("  | " + " | ".join(row) + " |")
+    # The paper's own figures, on the same scope rule. Whether the image
+    # survived extraction is stated rather than implied: a figure without one
+    # renders as a placeholder, so citing it promises the reader a picture that
+    # never arrives.
+    for f in pack.get("figures", []):
+        if f.get("section") not in section_ids:
+            continue
+        shown = ("can be shown to the reader"
+                 if f.get("assets") else "NO image available — describe it, do "
+                                         "not promise a picture")
+        local_parts.append(
+            f'[{f["id"]}] Figure ({shown}): {f.get("caption", "")}'.rstrip())
     # Bridged source. This is where an algorithm's real detail lives -- loop
     # bounds, invariants, why a step terminates -- i.e. exactly the material a
     # paper states in words and a page is asked to go deeper on. Opt-in: with

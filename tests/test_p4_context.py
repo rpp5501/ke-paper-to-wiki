@@ -149,3 +149,46 @@ def test_a_section_with_its_own_text_is_unchanged():
     ctx = assemble_context(PACK, GRAPH, "sdpa", NOTE)
 
     assert ctx["local_slice"].count("dot products of queries") == 1
+
+
+# The figures were extracted, the dashboard renders them, and nothing told the
+# writer they exist -- so no page ever cites one. The LOCAL slice is where a
+# page learns what it has to work with, and it already carries the tables for
+# exactly this reason.
+FIGURED_PACK = {**PACK, "figures": [
+    {"id": "fig_1", "section": "sec_3", "caption": "The Transformer.",
+     "graphics": ["Figures/ModalNet-21"], "assets": ["Figures/ModalNet-21.png"]},
+    {"id": "fig_9", "section": "sec_9", "caption": "An unrelated section.",
+     "graphics": [], "assets": []},
+]}
+
+
+def test_a_figure_in_this_section_is_offered_to_the_writer():
+    ctx = assemble_context(FIGURED_PACK, GRAPH, "sdpa", NOTE)
+
+    assert "[fig_1]" in ctx["local_slice"]
+    assert "The Transformer." in ctx["local_slice"]
+
+
+def test_a_figure_from_another_section_is_not():
+    """Same scope rule the equations and tables already follow: a page is not
+    handed material belonging to a section it does not cover."""
+    ctx = assemble_context(FIGURED_PACK, GRAPH, "sdpa", NOTE)
+
+    assert "fig_9" not in ctx["local_slice"]
+
+
+def test_the_writer_is_told_the_figure_can_actually_be_shown():
+    """A figure with no image renders as a placeholder, so the two are not
+    interchangeable -- citing one the reader cannot see promises a picture that
+    never arrives."""
+    ctx = assemble_context(FIGURED_PACK, GRAPH, "sdpa", NOTE)
+
+    line = next(l for l in ctx["local_slice"].splitlines() if "[fig_1]" in l)
+    assert "shown" in line.lower() or "image" in line.lower()
+
+
+def test_a_pack_with_no_figures_changes_nothing():
+    """Every build before this one has figures: []; their slices must not move."""
+    assert (assemble_context(PACK, GRAPH, "sdpa", NOTE)["local_slice"]
+            == assemble_context({**PACK, "figures": []}, GRAPH, "sdpa", NOTE)["local_slice"])

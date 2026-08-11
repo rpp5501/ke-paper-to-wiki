@@ -12,7 +12,7 @@ describe("the block syntax PAGE_PROMPT teaches", () => {
 
   it("parses as blocks, not as markdown", () => {
     expect(segments.map((s) => s.type)).toEqual([
-      "algorithm", "derivation", "annotated-eq",
+      "algorithm", "derivation", "annotated-eq", "figure",
     ]);
   });
 

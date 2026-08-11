@@ -31,3 +31,8 @@ terms:
     role: 3
     words: "The estimated graph, whose parent sets are used as adjustment sets [§sec_3]"
 ```
+
+```figure
+id: fig_1
+caption: How the encoder and decoder stacks sit either side of the attention that joins them [§sec_3]
+```

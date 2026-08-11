@@ -269,3 +269,13 @@ def test_empty_problem_list_leaves_the_prompt_alone():
     ctx = {"global_slice": "G", "local_slice": "L"}
 
     assert _render_page_prompt(ctx, []) == _render_page_prompt(ctx)
+
+
+def test_the_live_prompt_offers_the_papers_own_figures():
+    """The figures were extracted and the dashboard renders them, but until the
+    contract mentioned them no page had any reason to cite one. The rule has to
+    reach the prompt the writer actually gets, and the block syntax has to come
+    with it or the writer has to guess the shape."""
+    assert "## The paper's own figures" in WRITING_SKILL
+    assert "```figure" in PAGE_PROMPT
+    assert "NO image available" in WRITING_SKILL

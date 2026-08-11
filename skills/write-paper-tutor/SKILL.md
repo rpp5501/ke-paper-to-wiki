@@ -60,6 +60,29 @@ Prose that walks the reader along edges makes them rebuild a shape in their head
 - No diagram when the structure already lives inside a display equation or an `algorithm` block; those show it already.
 - The diagram supplements the anchored prose, it does not replace it. Claims still carry their anchors.
 
+## The paper's own figures
+
+Where the LOCAL CONTEXT lists a `[fig_N] Figure`, the paper drew a picture of
+this material and the reader can be shown it. Nothing you can draw competes
+with the authors' own diagram of their architecture.
+
+- Cite it with a ` ```figure ` block carrying that exact `id`. Write your own
+  `caption` for the point this page is making; the paper's caption is written
+  for a reader who has the whole paper and often will not stand alone.
+- Only ids the LOCAL CONTEXT actually lists. An invented `fig_N` renders as an
+  empty placeholder.
+- A figure marked **NO image available** cannot be shown. Describe what it
+  contains if the page needs it, but do not cite it — a `figure` block for it
+  promises a picture that never arrives.
+- It supplements the prose, it does not replace it. A figure with no
+  explanation is decoration, and claims still carry their anchors.
+- A ` ```mermaid ` diagram is still right for a shape the paper never drew, or
+  for the reduced version of one it drew in full. Prefer the paper's figure
+  when it covers the point.
+
+(In the section below, "figures" means numbers. Here it means the paper's
+pictures — the two are unrelated.)
+
 ## Results pages
 
 A page whose subject is what the paper measured — results, experiments, an evaluation, a simulation, an ablation, a benchmark — owes the reader the numbers.
