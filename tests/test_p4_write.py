@@ -279,3 +279,50 @@ def test_the_live_prompt_offers_the_papers_own_figures():
     assert "## The paper's own figures" in WRITING_SKILL
     assert "```figure" in PAGE_PROMPT
     assert "NO image available" in WRITING_SKILL
+
+
+def test_an_unanchored_claim_is_caught_at_write_time_not_only_in_p5(tmp_path):
+    """Evidence discipline is the contract's central rule, and until now only
+    p5_lint checked it -- after the page was already on disk, into a report
+    that blocks nothing. The three aman.ai DDIM run shipped 21 pages carrying
+    38 unanchored claims and 7 no-content fillers, every one of which had
+    PASSED p4, because p4's gate was tiers + pedagogy and never looked at
+    anchors. The writer was never told, so it never had a chance to fix them.
+
+    Only the deterministic half of lint_page belongs here: dead-link and
+    mermaid checks make network calls, and the retry loop runs up to three
+    times per page.
+    """
+    from paper_skill.p4_write import _page_problems
+
+    unanchored = GOOD_PAGE.replace(
+        "Scores are divided by sqrt(d_k) [eq_1].",
+        "Scores are divided by the square root of the key dimension.")
+
+    problems = _page_problems(unanchored, "sdpa", PACK)
+
+    assert any("unanchored" in p for p in problems), problems
+
+
+def test_the_write_gate_makes_no_network_calls(tmp_path):
+    """p5_lint's default link check does an HTTP HEAD per link. Pulled into a
+    loop that runs up to 3x per page across ~22 pages, that is both slow and a
+    way for a flaky network to fail a page on its content."""
+    import paper_skill.p5_lint as p5
+
+    def explode(*a, **k):
+        raise AssertionError("write-time gate hit the network")
+
+    original = p5._head_ok
+    p5._head_ok = explode
+    try:
+        from paper_skill.p4_write import _page_problems
+        _page_problems(GOOD_PAGE + "\nSee https://example.com/x\n", "sdpa", PACK)
+    finally:
+        p5._head_ok = original
+
+
+def test_a_clean_page_still_passes_the_widened_gate():
+    from paper_skill.p4_write import _page_problems
+
+    assert _page_problems(GOOD_PAGE, "sdpa", PACK) == []

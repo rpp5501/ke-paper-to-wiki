@@ -147,9 +147,24 @@ def _spawn_claude(prompt: str) -> str:
     return claude_spawn(prompt, max_turns=6, timeout=1800)
 
 
-def _page_problems(page: str, cid: str = "") -> list[str]:
-    return ([f"missing tier {t}" for t in TIERS if t not in page]
-            + pedagogy_problems(page, cid))
+def _page_problems(page: str, cid: str = "", pack: dict | None = None) -> list[str]:
+    problems = ([f"missing tier {t}" for t in TIERS if t not in page]
+                + pedagogy_problems(page, cid))
+    # Evidence discipline is the contract's central rule, and it used to be
+    # checked only by p5_lint -- after the page was on disk, into a report that
+    # blocks nothing. The DDIM run shipped 21 pages carrying 38 unanchored
+    # claims and 7 no-content fillers, all of which had passed p4, because the
+    # writer was never told. Checked here, a retry can actually fix them.
+    #
+    # Deterministic half only: lint_page's default link and mermaid checks make
+    # network calls, and this runs up to MAX_WRITE_ATTEMPTS times per page.
+    if pack is not None:
+        from .p5_lint import lint_page
+        problems += [p for p in lint_page(page, pack,
+                                          check_links=lambda _url: True,
+                                          check_mermaid=lambda _b: None)
+                     if p not in problems]
+    return problems
 
 
 def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
@@ -183,7 +198,7 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break
-            problems = _page_problems(page, cid)
+            problems = _page_problems(page, cid, pack)
             if not problems:
                 break
         if problems:
