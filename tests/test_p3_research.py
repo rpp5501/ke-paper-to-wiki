@@ -212,3 +212,58 @@ def test_both_queries_are_asked_when_the_graph_has_a_subject(tmp_path):
 
     assert any(q.startswith("backdoor") for q in asked)
     assert any(not q.startswith("backdoor") for q in asked)
+
+
+def test_a_citation_with_a_quoted_title_survives_parsing():
+    """The one research concept in the chain-of-thought run failed both
+    attempts with "not parseable YAML" on a citation the model had every
+    reason to write:
+
+      S1: "Emergent Abilities of Large Language Models," Wei et al., arXiv:...
+
+    YAML reads the quoted title as a complete scalar and then chokes on the
+    author that follows. A title in quotes followed by the author is simply how
+    citations are written, and the prompt asks for "citation or URL string", so
+    this recurs on any paper whose notes cite titled works.
+
+    concepts and next_steps already ask for JSON and share one tolerant reader;
+    p3 was the last stage on YAML and the only one with this failure mode.
+    """
+    from paper_skill.p3_research import _parse_note
+
+    reply = ('{"concept": "emergent-abilities", "status": "complete",'
+             ' "synthesis": "Gains appear past a scale threshold [S1].",'
+             ' "resources": [], "unresolved": [],'
+             ' "sources_consulted": {"S1": "\\"Emergent Abilities of Large '
+             'Language Models,\\" Wei et al., arXiv:2206.07682 (2022)"}}')
+
+    note = _parse_note(reply)
+
+    assert note is not None, "quoted-title citation still unparseable"
+    assert "Wei et al." in note["sources_consulted"]["S1"]
+
+
+def test_a_fenced_json_note_still_parses():
+    """Models fence structured output some fraction of the time; the shared
+    reader already tolerates it, which is half the reason to reuse it."""
+    from paper_skill.p3_research import _parse_note
+
+    assert _parse_note('```json\n{"concept": "x", "status": "complete"}\n```'
+                       )["concept"] == "x"
+
+
+def test_the_prompt_asks_for_json_not_yaml():
+    """The two tests above passed the moment they were written, because
+    yaml.safe_load already accepts JSON -- so the parser was never the defect.
+    What produced the unparseable note is the prompt asking for YAML, which
+    cannot hold `S1: "Quoted Title," Author` without escaping the model has no
+    reason to add.
+
+    Asking for JSON while keeping yaml.safe_load is the tolerant combination:
+    the requested format is unambiguous, and a model that answers in YAML
+    anyway still parses.
+    """
+    from paper_skill.p3_research import RESEARCH_PROMPT
+
+    assert "JSON" in RESEARCH_PROMPT
+    assert "as YAML" not in RESEARCH_PROMPT

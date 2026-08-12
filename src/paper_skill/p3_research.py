@@ -11,26 +11,28 @@ from .candidates import candidate_block, find_candidates, paper_topic
 from .resources import verify_resources
 from .toc import load_approved_toc
 
+# JSON, not YAML: a citation is normally written `"Quoted Title," Author, arXiv:...`
+# and YAML reads the quoted title as a complete scalar, then fails on the author
+# that follows. That killed the one research note in the chain-of-thought run,
+# twice. The parser stays yaml.safe_load, which accepts JSON as a subset -- so a
+# model that answers in YAML anyway still parses.
 RESEARCH_PROMPT = """Follow the research playbook loop for this brief, using
 your own knowledge of well-known, real, reachable resources for this concept.
-Output ONLY the finished note as YAML — no prose, no markdown code fences.
+Output ONLY the finished note as a JSON object — no prose, no markdown fences.
 
 Use EXACTLY this shape and these key names:
-concept: <the brief's concept slug>
-status: complete | partial | insufficient-sources
-synthesis: >
-  2-6 sentences, at most 200 words. Tag each factual claim with [S1], [S2], ...
-  where each tag matches a key in sources_consulted below.
-resources:            # 1-4 items, each a real canonical URL for this concept
-  - url: https://...
-    title: ...
-    type: visual | lecture | reference-impl | follow-up-paper | derivation
-    why: one line on why it helps
-unresolved:           # list of open questions (may be empty)
-  - ...
-sources_consulted:    # a MAP (not a list); keys are S1, S2, ...
-  S1: citation or URL string
-  S2: citation or URL string
+{{"concept": "<the brief's concept slug>",
+  "status": "complete | partial | insufficient-sources",
+  "synthesis": "2-6 sentences, at most 200 words. Tag each factual claim with
+    [S1], [S2], ... where each tag matches a key in sources_consulted below.",
+  "resources": [          // 1-4 items, each a real canonical URL
+    {{"url": "https://...", "title": "...",
+      "type": "visual | lecture | reference-impl | follow-up-paper | derivation",
+      "why": "one line on why it helps"}}],
+  "unresolved": ["open questions, may be empty"],
+  "sources_consulted": {{  // an OBJECT (not a list); keys are S1, S2, ...
+    "S1": "citation or URL string",
+    "S2": "citation or URL string"}}}}
 
 BRIEF:
 {brief_yaml}
