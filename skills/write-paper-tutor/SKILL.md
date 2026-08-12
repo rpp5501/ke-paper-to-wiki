@@ -37,6 +37,10 @@ Do work the paper leaves implicit. Explain why a step is correct, what each quan
 
 If no display equation is relevant, The Math must still carry real content: use a worked numerical example, boundary case, counterexample, complexity argument, termination argument, or loop invariant supported by the evidence. Never fill a tier with “no content was supplied.”
 
+**Papers with no equations at all are normal, and The Math is not optional on them.** An empirical paper may supply zero `[eq_N]` entries; that is a fact about the paper, not a gap in the evidence, and reporting it to the reader is not content. Do not open the tier with “no equation is supplied”, “no display equation is relevant here”, or any variation — the reader cannot act on it, and it is a checked failure.
+
+Write the quantitative reasoning the paper leaves implicit instead. On a results-driven paper that means the arithmetic of its own numbers: what the reported gain is as a ratio and as a difference, what the baseline implies about the ceiling, how the error breakdown adds up, what a per-example count works out to, which comparison is confounded and what would separate it. Start from a concrete case with real values from the evidence and follow it through.
+
 For each major concept, include at least one worked example, counterexample, prediction, or boundary case. Reuse the dashboard's running example where one is supplied.
 
 ## Scanability
@@ -69,6 +73,9 @@ with the authors' own diagram of their architecture.
 - Cite it with a ` ```figure ` block carrying that exact `id`. Write your own
   `caption` for the point this page is making; the paper's caption is written
   for a reader who has the whole paper and often will not stand alone.
+- End the `caption` with an anchor, the same as any other block explanation:
+  `caption: The two stacks this page describes [§sec_3]`. A caption is a claim
+  about the paper, so it carries evidence like every other claim.
 - Only ids the LOCAL CONTEXT actually lists. An invented `fig_N` renders as an
   empty placeholder.
 - A figure marked **NO image available** cannot be shown. Describe what it

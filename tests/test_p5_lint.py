@@ -138,3 +138,24 @@ def test_mermaid_ok_treats_missing_package_as_skipped_not_failed(monkeypatch):
     import subprocess as sp
     monkeypatch.setattr(sp, "run", lambda *a, **kw: FakeCompleted())
     assert _mermaid_ok("graph TD; A-->B;") is None
+
+
+def test_no_content_filler_catches_the_relevance_phrasing():
+    """The contract names "no display equation is relevant here" as a checked
+    failure, so the check has to actually catch it -- otherwise the rule is
+    advice the writer can ignore without consequence. The zero-equation
+    chain-of-thought pages reached for this exact wording."""
+    from paper_skill.p5_lint import lint_page
+
+    pack = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+            "equations": [], "figures": [], "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\n"
+            "No display equation is relevant for this concept [§sec_1].\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    problems = lint_page(page, pack, check_links=lambda _u: True,
+                         check_mermaid=lambda _b: None)
+
+    assert any("no-content filler" in p for p in problems), problems

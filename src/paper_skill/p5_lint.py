@@ -27,8 +27,12 @@ _FENCED_BLOCK = re.compile(
 # an absence word ("no", "not", "lacks", "cannot") next to a context/equation
 # word, so ordinary maths prose that merely mentions an equation is untouched.
 _NO_CONTENT = (
+    # "relevant" belongs here with the rest: a zero-equation paper is normal,
+    # and the contract names "no display equation is relevant here" as a
+    # checked failure, so the check has to catch it or the rule is advice.
     re.compile(r"\bno\b[^.]{0,60}\bequations?\b[^.]{0,60}"
-               r"\b(suppl|present|available|provid|includ|given|tagged)", re.I),
+               r"\b(suppl|present|available|provid|includ|given|tagged|relevan)",
+               re.I),
     re.compile(r"\blocal context\b[^.]{0,60}"
                r"\b(does not|lacks|has no|contains no|no )", re.I),
     re.compile(r"\b(cannot|can not|could not|no)\b[^.]{0,60}"

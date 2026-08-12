@@ -326,3 +326,21 @@ def test_a_clean_page_still_passes_the_widened_gate():
     from paper_skill.p4_write import _page_problems
 
     assert _page_problems(GOOD_PAGE, "sdpa", PACK) == []
+
+
+def test_the_contract_covers_the_two_gaps_the_aman_run_exposed():
+    """Both were contract-clarity gaps, not code bugs, and both only showed up
+    on a paper unlike AIAYN.
+
+    chain-of-thought supplies zero equations, and the writer opened The Math
+    with "No equation in the supplied evidence..." on three separate pages --
+    the tier's ban on that existed but was one clause inside a paragraph and
+    never said what to write instead when there genuinely is no equation.
+
+    Its figure blocks came back unanchored. Evidence discipline already
+    requires an anchor on "every block explanation", but the figures section
+    never said the caption is where it goes. AIAYN's writer did it by
+    instinct; this one did not.
+    """
+    assert "no equations at all are normal" in WRITING_SKILL
+    assert "End the `caption` with an anchor" in WRITING_SKILL
