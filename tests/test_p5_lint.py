@@ -225,3 +225,46 @@ def test_a_pack_with_no_tables_or_figures_still_lints():
 
     assert lint_page(page, old, check_links=lambda _u: True,
                      check_mermaid=lambda _b: None) == []
+
+
+def test_a_colon_lead_in_is_carried_by_the_block_it_introduces():
+    """"The identity-shortcut form of the block is:" followed by an anchored
+    display equation is not an unanchored claim -- the lead-in and the block
+    are one thought, and the evidence sits on the block. Splitting on blank
+    lines tore them apart, which was the single largest cause of failure in the
+    resnet run (25 of 53 recorded problems) and hit every "here are the
+    numbers:" lead-in before a table too.
+    """
+    from paper_skill.p5_lint import lint_page
+
+    pack = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+            "equations": [{"id": "eq_1", "latex": "y", "section": "sec_1"}],
+            "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\n"
+            "The identity-shortcut form of the block is:\n\n"
+            "$$y = F(x) + x$$ [eq_1]\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert not [p for p in lint_page(page, pack, check_links=lambda _u: True,
+                                     check_mermaid=lambda _b: None)
+                if "unanchored" in p]
+
+
+def test_a_lead_in_to_an_unanchored_block_is_still_caught():
+    """Merging must not become a way to launder a claim that cites nothing."""
+    from paper_skill.p5_lint import lint_page
+
+    pack = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+            "equations": [], "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\n"
+            "The three cases the proof considers are:\n\n"
+            "Something asserted with no evidence at all here.\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert [p for p in lint_page(page, pack, check_links=lambda _u: True,
+                                 check_mermaid=lambda _b: None)
+            if "unanchored" in p]

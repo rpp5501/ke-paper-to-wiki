@@ -57,9 +57,35 @@ def _fold_multiline(body: str) -> str:
 
     Fenced YAML content blocks carry blank lines for exactly the same reason
     and tear the same way.
+
+    A colon lead-in tears the same way from the other side. "The
+    identity-shortcut form of the block is:" followed by an anchored equation
+    is one thought whose evidence sits on the block, but the blank line between
+    them made the lead-in its own anchor-less paragraph. That was the largest
+    single cause of failure in the resnet run, and it hit every "here are the
+    numbers:" introducing a table too. A lead-in whose block cites nothing is
+    still caught, because the merged paragraph then has no anchor either.
     """
     collapse = lambda m: re.sub(r"\n\s*\n", "\n", m.group(0))
     return _FENCED_BLOCK.sub(collapse, _DISPLAY_MATH.sub(collapse, body))
+
+
+def _paragraphs(body: str) -> list[str]:
+    """Tier body split into claim-bearing paragraphs.
+
+    A paragraph ending in a colon introduces the block after it, and the two
+    are one thought whose evidence sits on the block -- so they are joined.
+    Only when the lead-in carries no anchor itself: the join exists to rescue a
+    lead-in with no evidence of its own, and merging one that is already
+    anchored would instead hide an unanchored block behind it.
+    """
+    out: list[str] = []
+    for para in (p.strip() for p in body.split("\n\n") if p.strip()):
+        if out and out[-1].rstrip("*").endswith(":") and not _ANCHOR.search(out[-1]):
+            out[-1] = f"{out[-1]} {para}"
+        else:
+            out.append(para)
+    return out
 
 
 def _head_ok(url: str) -> bool:
@@ -105,7 +131,7 @@ def lint_page(page_md: str, pack: dict, check_links=None,
         if tier not in page_md:
             continue
         body = _fold_multiline(page_md.split(tier, 1)[1].split("## ", 1)[0])
-        for para in (p.strip() for p in body.split("\n\n") if p.strip()):
+        for para in _paragraphs(body):
             if (len(para.split()) >= 4 and not _ANCHOR.search(para)
                     and not _CODE_REF.search(para)):
                 probs.append(f"unanchored claim in {tier}: {para[:60]}…")
