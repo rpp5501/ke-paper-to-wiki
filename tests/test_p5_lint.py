@@ -159,3 +159,69 @@ def test_no_content_filler_catches_the_relevance_phrasing():
                          check_mermaid=lambda _b: None)
 
     assert any("no-content filler" in p for p in problems), problems
+
+
+_TAB_FIG_PACK = {
+    "sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+    "equations": [],
+    "tables": [{"id": "tab_1", "section": "sec_1", "caption": "c", "rows": [["a"]]}],
+    "figures": [{"id": "fig_1", "section": "sec_1", "caption": "c"}],
+    "references": [],
+}
+
+
+def _lint(page):
+    from paper_skill.p5_lint import lint_page
+    return lint_page(page, _TAB_FIG_PACK, check_links=lambda _u: True,
+                     check_mermaid=lambda _b: None)
+
+
+def test_a_table_citation_counts_as_an_anchor():
+    """p4_context offers the writer [tab_N] as evidence and the contract asks
+    results pages to reproduce the paper's numbers, but _ANCHOR only ever
+    matched sections, equations and [S1]. So a paragraph citing a table read as
+    an unanchored claim. Harmless while lint only wrote a report; blocking the
+    moment the write gate started running it, and it accounted for most of the
+    DDIM regeneration failures."""
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\n"
+            "Doubling S cuts the error from 0.0140 to 0.0065 [tab_1].\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert not [p for p in _lint(page) if "unanchored" in p]
+
+
+def test_a_figure_citation_counts_as_an_anchor():
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\n"
+            "The experiment shown uses fifty steps [fig_1].\n"
+            "## The Math {#the-math}\nSee the table [§sec_1].\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert not [p for p in _lint(page) if "unanchored" in p]
+
+
+def test_an_invented_table_id_is_still_caught():
+    """Accepting the namespace must not mean accepting any id in it."""
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\nNumbers come from nowhere [tab_99].\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert any("dangling anchor: tab_99" in p for p in _lint(page))
+
+
+def test_a_pack_with_no_tables_or_figures_still_lints():
+    """packs predating table/figure extraction have no such keys at all."""
+    from paper_skill.p5_lint import lint_page
+
+    old = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+           "equations": [], "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\nc [§sec_1]\n"
+            "## The Math {#the-math}\nd [§sec_1]\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert lint_page(page, old, check_links=lambda _u: True,
+                     check_mermaid=lambda _b: None) == []

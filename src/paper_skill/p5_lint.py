@@ -4,7 +4,12 @@ from pathlib import Path
 import requests
 
 _TIERS = ("{#tldr}", "{#intuition}", "{#mechanics}", "{#the-math}", "{#go-deeper}")
-_ANCHOR = re.compile(r"\[(§(sec_[\w]+)|(eq_\d+)|S\d+)\]")
+# tab_N and fig_N belong here with the rest: p4_context offers both to the
+# writer as evidence and the contract asks results pages to reproduce the
+# paper's numbers and to cite its figures. Without them a paragraph citing a
+# table read as an unanchored claim -- noise while lint only wrote a report,
+# blocking once the write gate started running it.
+_ANCHOR = re.compile(r"\[(§(sec_[\w]+)|((?:eq|tab|fig)_\d+)|S\d+)\]")
 # A page written with repo_dir cites the implementation as well as the paper.
 # The anchor rule is about traceability, and [sid.py:L24] is traceable; it is
 # simply not a pack id, so it satisfies "is anchored" without being subject to
@@ -87,7 +92,11 @@ def lint_page(page_md: str, pack: dict, check_links=None,
         if t not in page_md:
             probs.append(f"missing tier {t}")
     valid_ids = ({s["id"] for s in pack["sections"]}
-                 | {e["id"] for e in pack["equations"]})
+                 | {e["id"] for e in pack["equations"]}
+                 # .get: packs built before table/figure extraction have
+                 # neither key, and an old pack must still lint.
+                 | {t["id"] for t in pack.get("tables", [])}
+                 | {f["id"] for f in pack.get("figures", [])})
     for m in _ANCHOR.finditer(page_md):
         ref = m.group(2) or m.group(3)
         if ref and ref not in valid_ids:
