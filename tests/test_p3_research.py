@@ -267,3 +267,75 @@ def test_the_prompt_asks_for_json_not_yaml():
 
     assert "JSON" in RESEARCH_PROMPT
     assert "as YAML" not in RESEARCH_PROMPT
+
+
+# --- educational composition floor -------------------------------------------
+_NO_TEACHING = {
+    "concept": "sdpa", "status": "complete",
+    "synthesis": "Scaling keeps softmax gradients usable [S1].",
+    "resources": [{"url": "https://arxiv.org/abs/1706.03762",
+                   "title": "Attention Is All You Need",
+                   "type": "follow-up-paper", "why": "the paper"}],
+    "unresolved": [], "sources_consulted": {"S1": "arXiv:1706.03762"},
+}
+
+
+def _run(tmp_path, spawn, graph=GRAPH):
+    from paper_skill.p3_research import run_research
+    p = tmp_path / "toc.yaml"
+    write_toc([{**ROWS[0], "research": True}], p)
+    p.write_text(p.read_text(encoding="utf-8").replace(
+        "approved: false", "approved: true"), encoding="utf-8")
+    return run_research(p, graph, spawn=spawn, home=tmp_path, workdir=tmp_path,
+                        verify=lambda _n: [], search=lambda *a, **k: {"results": []})
+
+
+def test_a_note_with_no_explainer_is_kept_not_thrown_away(tmp_path):
+    """The floor drives a retry; it must not disqualify the note. A P3 failure
+    means the page gets written with no research context at all, so discarding
+    a note of three good papers because it lacks a lecture makes the page
+    worse, which is the opposite of the point."""
+    import json
+    from research_mcp.wiki import wiki_get
+
+    cid = ROWS[0]["id"]
+    result = _run(tmp_path, lambda _p: json.dumps(_NO_TEACHING))
+
+    assert result["done"] == [cid] and result["failed"] == [], result
+    assert wiki_get(cid, home=tmp_path)["status"] == "ok"
+
+
+def test_the_retry_asks_for_the_missing_explainer(tmp_path):
+    import json
+
+    prompts = []
+
+    def spawn(prompt):
+        prompts.append(prompt)
+        return json.dumps(_NO_TEACHING)
+
+    _run(tmp_path, spawn)
+
+    assert len(prompts) == 2, "a satisfiable gap should cost the retry"
+    assert "visual" in prompts[1] and "REJECTED" in prompts[1]
+
+
+def test_a_note_that_already_teaches_costs_no_retry(tmp_path):
+    import json
+
+    good = {**_NO_TEACHING,
+            "resources": _NO_TEACHING["resources"]
+            + [{"url": "https://distill.pub/x", "title": "Explainer",
+                "type": "visual", "why": "shows it"}]}
+    calls = []
+
+    _run(tmp_path, lambda _p: calls.append(1) or json.dumps(good))
+
+    assert len(calls) == 1
+
+
+def test_the_prompt_asks_for_a_visual_or_lecture():
+    from paper_skill.p3_research import RESEARCH_PROMPT
+
+    assert "visual" in RESEARCH_PROMPT and "lecture" in RESEARCH_PROMPT
+    assert "at least one" in RESEARCH_PROMPT.lower()

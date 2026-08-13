@@ -33,6 +33,33 @@ TITLE_MATCH_FLOOR = 0.6
 _DEAD_STATUS = {404, 410}
 
 
+# The three aman.ai papers produced 7 resources between them: papers and code,
+# zero `visual`, zero `lecture`, though the type vocabulary offers both. Left to
+# itself the model reaches for what a researcher cites, not what a learner
+# watches -- and these pages are for learners. The sources were never bad; a
+# whole category was simply missing, so the check is on composition rather than
+# quality.
+EDUCATIONAL_TYPES = frozenset({"visual", "lecture"})
+
+
+def educational_gap(note: dict | None) -> list[str]:
+    """Advisory: does this note give the reader anything to learn *from*?
+
+    Deliberately not part of ``verify_resources``. That one is silent offline
+    and blocks a note when it fires; this is deterministic, always applies, and
+    must never disqualify a note -- see run_research.
+    """
+    items = [r for r in (note or {}).get("resources") or [] if isinstance(r, dict)]
+    if not items:
+        return []                # a note with no resources at all is lint_note's fault to report
+    if any(r.get("type") in EDUCATIONAL_TYPES for r in items):
+        return []
+    return ["every resource here is a paper or an implementation — include at "
+            "least one `visual` or `lecture` a learner can actually learn "
+            "from (an explainer, an animation, a recorded lecture), only if "
+            "you are sure it is real and the url is right"]
+
+
 def _no_apis() -> bool:
     return os.environ.get("RESEARCH_MCP_NO_APIS", "") == "1"
 

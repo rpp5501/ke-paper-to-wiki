@@ -8,7 +8,7 @@ from research_mcp.validate import lint_note
 from research_mcp.wiki import wiki_get, wiki_put
 from .briefs import build_brief
 from .candidates import candidate_block, find_candidates, paper_topic
-from .resources import verify_resources
+from .resources import educational_gap, verify_resources
 from .toc import load_approved_toc
 
 # JSON, not YAML: a citation is normally written `"Quoted Title," Author, arXiv:...`
@@ -33,6 +33,13 @@ Use EXACTLY this shape and these key names:
   "sources_consulted": {{  // an OBJECT (not a list); keys are S1, S2, ...
     "S1": "citation or URL string",
     "S2": "citation or URL string"}}}}
+
+These notes feed pages someone is trying to LEARN from, so include
+at least one `visual` or `lecture` — an explainer, an animation, a recorded course
+lecture, a well-known blog post that draws the thing. A list of papers and
+repositories is what a researcher cites, not what a learner watches. Cite it
+only if it is real and you are sure of the url; a plausible guess is worse
+than leaving it out.
 
 BRIEF:
 {brief_yaml}
@@ -111,29 +118,37 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
         # Once per concept, not once per attempt: the retry is a correction to
         # the same brief, and the candidates cannot have changed.
         found = find_candidates(brief, search=search, topic=topic)
-        note, problems = None, ["spawn failed"]
+        note, problems, gap = None, ["spawn failed"], []
         for attempt in range(2):                       # one retry max
             try:
                 note = _parse_note(spawn(_render_research_prompt(
-                    brief, problems if attempt else None, found)))
+                    brief, (problems + gap) if attempt else None, found)))
             except Exception as exc:
                 # A spawn EXCEPTION is a crash, not schema-invalid output —
                 # fail immediately, do not retry.
-                note, problems = None, [f"spawn error: {exc}"]
+                note, problems, gap = None, [f"spawn error: {exc}"], []
                 break
-            problems = lint_note(note) if note else ["not parseable YAML"]
+            problems = lint_note(note) if note else ["not parseable JSON"]
             # Only once the shape is valid: resources on a note that failed the
             # schema may not even be a list, and one fault per round is what
             # the retry can actually act on.
             if note and not problems:
                 problems = verify(note)
-            if not problems:
+            gap = educational_gap(note) if note and not problems else []
+            if not problems and not gap:
                 break
         if problems:
             inbox_add("failed-orchestration",
                       {"concept": cid, "problems": problems}, home=home)
             failed.append(cid)
             continue
+        # The gap costs the retry but never the note. P3 failing means the page
+        # is written with no research context at all, so throwing away three
+        # good papers for want of an explainer makes the page worse. Recorded
+        # as a quality signal instead.
+        if gap:
+            inbox_add("resource-composition",
+                      {"concept": cid, "problems": gap}, home=home)
         wiki_put(cid, note, home=home)
         (done_dir / cid).write_text("done", encoding="utf-8")
         done.append(cid)

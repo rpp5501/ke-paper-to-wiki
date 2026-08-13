@@ -172,3 +172,44 @@ def test_a_broken_verifier_does_not_read_as_a_broken_note():
 
     assert len(problems) == 1
     assert "could not reach arXiv" in problems[0]
+
+
+# --- educational composition -------------------------------------------------
+# Across every note the three aman.ai papers produced, the model chose only
+# papers and code: 7 resources, zero `visual`, zero `lecture`. The type
+# vocabulary offered both. Verified, relevant, and still not what a learner
+# wants -- the sources are not bad, a whole category is simply missing.
+
+def _typed_note(*types):
+    return {"concept": "c", "status": "complete",
+            "resources": [{"url": f"https://x/{i}", "title": f"t{i}",
+                           "type": t, "why": "w"} for i, t in enumerate(types)]}
+
+
+def test_a_note_of_only_papers_and_code_reports_the_gap():
+    from paper_skill.resources import educational_gap
+
+    problems = educational_gap(_typed_note("follow-up-paper", "reference-impl"))
+
+    assert problems and "visual" in problems[0] and "lecture" in problems[0]
+
+
+def test_one_visual_satisfies_the_floor():
+    from paper_skill.resources import educational_gap
+
+    assert educational_gap(_typed_note("follow-up-paper", "visual")) == []
+
+
+def test_one_lecture_satisfies_the_floor():
+    from paper_skill.resources import educational_gap
+
+    assert educational_gap(_typed_note("lecture", "reference-impl")) == []
+
+
+def test_a_note_with_no_resources_is_lint_notes_business_not_ours():
+    """Reporting a missing explainer on a note that has no resources at all
+    buries the real fault under a second one."""
+    from paper_skill.resources import educational_gap
+
+    assert educational_gap({"concept": "c", "resources": []}) == []
+    assert educational_gap(None) == []
