@@ -1,0 +1,55 @@
+concept: emergent-abilities-with-scale
+status: complete
+synthesis: Chain-of-thought prompting was shown to produce large accuracy gains on
+  arithmetic, commonsense, and symbolic reasoning tasks only for models around 100B+
+  parameters (e.g., PaLM 540B, LaMDA 137B, GPT-3 175B), while smaller models saw flat
+  or even negative gains [S1]. This fits a broader class of 'emergent abilities' --
+  capabilities absent in smaller models that appear abruptly once scale crosses a
+  threshold, showing up as a sharp jump rather than a smooth curve on standard benchmarks
+  [S2][S4]. One proposed mechanism is that small models can generate fluent-sounding
+  reasoning chains that are logically inconsistent or disconnected from the final
+  answer, so the chain doesn't causally help the model reason even though it reads
+  plausibly [S1]; related work finds that the logical validity of a chain is not tightly
+  coupled to whether it improves the answer, suggesting the benefit partly comes from
+  invoking a 'reasoning mode' rather than strict correctness of each step [S5]. A
+  major open debate is whether this emergence reflects a real discontinuity in model
+  competence or is largely an artifact of discontinuous metrics like exact-match accuracy
+  -- when researchers substitute smoother, partial-credit metrics, many 'emergent'
+  jumps become gradual, predictable improvements instead [S3].
+resources:
+- url: https://www.jasonwei.net/blog/emergence
+  title: 127 Emergent Abilities of Large Language Models (Jason Wei)
+  type: visual
+  why: Shows the actual phase-transition-style charts (accuracy vs. scale) that define
+    what 'emergent' means for CoT and other tasks
+- url: https://arxiv.org/abs/2201.11903
+  title: Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
+  type: follow-up-paper
+  why: The primary source establishing that CoT gains only appear at ~100B+ parameters,
+    with the original scale-vs-accuracy plots
+- url: https://arxiv.org/abs/2304.15004
+  title: Are Emergent Abilities of Large Language Models a Mirage?
+  type: follow-up-paper
+  why: Directly answers whether emergence is a model property or a metric artifact,
+    with reanalysis using continuous metrics
+- url: https://arxiv.org/abs/2307.10573v2
+  title: 'Invalid Logic, Equivalent Gains: The Bizarreness of Reasoning in Language
+    Model Prompting'
+  type: follow-up-paper
+  why: Investigates whether the logical coherence of a chain of thought actually matters
+    for the performance gain it produces
+unresolved:
+- Whether emergence reflects a genuine discontinuity in internal model computation
+  or is mostly an artifact of discrete evaluation metrics remains actively contested.
+- No mechanistic interpretability study has pinpointed why CoT-following behavior
+  requires roughly 100B+ parameters to activate.
+sources_consulted:
+  S1: Wei et al., 'Chain-of-Thought Prompting Elicits Reasoning in Large Language
+    Models,' arXiv:2201.11903 (2022)
+  S2: Wei et al., 'Emergent Abilities of Large Language Models,' arXiv:2206.07682
+    (2022)
+  S3: Schaeffer, Miranda, Koyejo, 'Are Emergent Abilities of Large Language Models
+    a Mirage?,' arXiv:2304.15004 (2023)
+  S4: Jason Wei, '127 Emergent Abilities of Large Language Models,' https://www.jasonwei.net/blog/emergence
+  S5: '''Invalid Logic, Equivalent Gains: The Bizarreness of Reasoning in Language
+    Model Prompting,'' arXiv:2307.10573 (2023)'
