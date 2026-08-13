@@ -20,6 +20,14 @@ _LINK = re.compile(r"\((https?://[^)]+)\)")
 _DISPLAY_MATH = re.compile(r"\$\$.*?\$\$", re.S)
 _FENCED_BLOCK = re.compile(
     r"^```(?:annotated-eq|derivation|algorithm|figure)\n.*?\n```$", re.S | re.M)
+# mermaid is dropped from the claim scan rather than folded into a paragraph
+# like the blocks above. Those carry prose fields that can end with an anchor;
+# a mermaid block cannot -- `[§sec_3]` inside a graph definition is a syntax
+# error, not a citation. Without this the contract required a diagram on
+# structural pages and the linter then failed the page for having one, which
+# is why resnet (an architecture paper, diagrams everywhere) came in at 7/12
+# while chain-of-thought reached 16/17.
+_MERMAID_BLOCK = re.compile(r"^```mermaid\n.*?\n```$", re.S | re.M)
 
 # No formatting check lives here, on purpose. A paragraph ceiling was tried and
 # removed: every lint problem is blocking (scripts/gate_slice7.py gates on "all
@@ -130,7 +138,8 @@ def lint_page(page_md: str, pack: dict, check_links=None,
     for tier in ("{#mechanics}", "{#the-math}"):
         if tier not in page_md:
             continue
-        body = _fold_multiline(page_md.split(tier, 1)[1].split("## ", 1)[0])
+        tier_body = _MERMAID_BLOCK.sub("", page_md.split(tier, 1)[1].split("## ", 1)[0])
+        body = _fold_multiline(tier_body)
         for para in _paragraphs(body):
             if (len(para.split()) >= 4 and not _ANCHOR.search(para)
                     and not _CODE_REF.search(para)):

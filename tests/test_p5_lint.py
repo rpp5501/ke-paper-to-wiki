@@ -268,3 +268,48 @@ def test_a_lead_in_to_an_unanchored_block_is_still_caught():
     assert [p for p in lint_page(page, pack, check_links=lambda _u: True,
                                  check_mermaid=lambda _b: None)
             if "unanchored" in p]
+
+
+def test_a_mermaid_diagram_is_not_an_unanchored_claim():
+    """The contract *requires* a diagram on structural pages, and the linter
+    then failed the page for having one: _FENCED_BLOCK covered annotated-eq,
+    derivation, algorithm and figure, but not mermaid. resnet is an
+    architecture paper full of diagrams, which is why it dropped to 7/12 while
+    chain-of-thought hit 16/17.
+
+    Unlike the YAML blocks, a mermaid block cannot carry an anchor at all --
+    `[§sec_3]` inside a graph definition is a syntax error, not a citation. So
+    it is excluded from the claim scan rather than folded into one paragraph.
+    """
+    from paper_skill.p5_lint import lint_page
+
+    pack = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+            "equations": [], "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\n"
+            "The shortcut skips two layers [§sec_1].\n\n"
+            "```mermaid\ngraph TD\n  subgraph S[\"Same dims\"]\n    A-->B\n  end\n```\n\n"
+            "## The Math {#the-math}\nd [§sec_1]\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert not [p for p in lint_page(page, pack, check_links=lambda _u: True,
+                                     check_mermaid=lambda _b: None)
+                if "unanchored" in p]
+
+
+def test_prose_around_a_diagram_still_needs_its_anchor():
+    """Excluding the diagram must not exempt the paragraphs beside it."""
+    from paper_skill.p5_lint import lint_page
+
+    pack = {"sections": [{"id": "sec_1", "title": "T", "text": "x"}],
+            "equations": [], "references": []}
+    page = ("# X\n## TL;DR {#tldr}\na\n## Intuition {#intuition}\nb\n"
+            "## Mechanics {#mechanics}\n"
+            "```mermaid\ngraph TD\n  A-->B\n```\n\n"
+            "This claim cites absolutely nothing at all.\n"
+            "## The Math {#the-math}\nd [§sec_1]\n"
+            "## Go Deeper {#go-deeper}\n- x\n")
+
+    assert [p for p in lint_page(page, pack, check_links=lambda _u: True,
+                                 check_mermaid=lambda _b: None)
+            if "unanchored" in p]
