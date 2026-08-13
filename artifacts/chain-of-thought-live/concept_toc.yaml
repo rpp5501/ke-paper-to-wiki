@@ -1,0 +1,210 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 21 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: chain-of-thought-prompting
+  label: Chain-of-Thought Prompting
+  level: 0
+  include: true
+  definition: A series of intermediate reasoning steps that significantly improves
+    the ability of large language models to perform complex reasoning.
+  sub_questions:
+  - How does chain-of-thought prompting differ from standard few-shot prompting?
+  - Why does providing intermediate reasoning steps improve final-answer accuracy?
+  - At what model scale do chain-of-thought gains emerge?
+  - Which reasoning tasks benefit most from chain-of-thought prompting?
+  research: false
+- id: standard-prompting
+  label: Standard Prompting
+  level: 1
+  include: true
+  definition: Directly mapping an input question to an output answer via few-shot
+    exemplars, without any intermediate reasoning steps.
+  sub_questions:
+  - Why does standard prompting fail on multi-step reasoning tasks?
+  - How does standard prompting scale with model size compared to CoT?
+  research: false
+- id: few-shot-in-context-learning
+  label: Few-Shot In-Context Learning
+  level: 1
+  include: true
+  definition: Providing a language model with a few input-output exemplars in the
+    prompt to demonstrate a task, without updating model weights.
+  sub_questions:
+  - How do exemplar demonstrations shape model behavior at inference time?
+  - What are the limits of few-shot learning for tasks requiring multi-step computation?
+  research: false
+- id: emergent-abilities-with-scale
+  label: Emergent Abilities with Model Scale
+  level: 1
+  include: true
+  definition: Chain-of-thought reasoning predictably yields performance gains only
+    when used with models of sufficient scale (roughly 100B+ parameters).
+  sub_questions:
+  - What mechanism causes chain-of-thought benefits to emerge only at large scale?
+  - Do smaller models produce fluent but illogical chains of thought?
+  - Is emergence a property of the model or of the evaluation metric?
+  research: true
+- id: arithmetic-reasoning
+  label: Arithmetic Reasoning
+  level: 1
+  include: true
+  definition: Math word problems whose solutions require multi-step numerical computation,
+    used to test chain-of-thought prompting.
+  sub_questions:
+  - Which arithmetic benchmarks show the largest chain-of-thought gains?
+  - How does performance vary with model scale on arithmetic tasks?
+  research: false
+- id: commonsense-reasoning
+  label: Commonsense Reasoning
+  level: 1
+  include: true
+  definition: Tasks requiring reasoning about physical and human interactions under
+    the presumption of general background knowledge.
+  sub_questions:
+  - Does chain-of-thought prompting generalize beyond math to commonsense tasks?
+  - Which commonsense benchmarks benefit most from CoT?
+  research: false
+- id: symbolic-reasoning
+  label: Symbolic Reasoning
+  level: 1
+  include: true
+  definition: Tasks that are simple for humans but potentially challenging for language
+    models, involving manipulation of symbols via simple rules.
+  sub_questions:
+  - Does chain-of-thought enable length generalization on symbolic tasks?
+  - How does symbolic reasoning performance scale with model size?
+  research: false
+- id: experimental-setup
+  label: Arithmetic Experimental Setup
+  level: 2
+  include: true
+  definition: The five large language models and multiple benchmarks used to explore
+    chain-of-thought prompting.
+  sub_questions:
+  - Which models and benchmarks were selected and why?
+  research: false
+- id: arithmetic-results
+  label: Arithmetic Reasoning Results
+  level: 2
+  include: true
+  definition: The strongest empirical results showing chain-of-thought prompting improves
+    arithmetic reasoning performance across models.
+  sub_questions:
+  - On which datasets does chain-of-thought produce the largest accuracy gains?
+  - How do results compare against prior state-of-the-art?
+  research: false
+- id: ablation-study
+  label: Ablation Study
+  level: 2
+  include: true
+  definition: An analysis testing whether chain-of-thought's benefits could be achieved
+    through simpler prompting variations.
+  sub_questions:
+  - What alternative prompting variants were tested?
+  - Do these variants match chain-of-thought's performance gains?
+  research: false
+- id: robustness-to-exemplars
+  label: Robustness to Exemplars
+  level: 2
+  include: true
+  definition: Analysis of chain-of-thought's sensitivity to exemplar order, annotator,
+    and exemplar set.
+  sub_questions:
+  - How much does exemplar permutation affect chain-of-thought accuracy?
+  - Does chain-of-thought remain effective across different annotators?
+  research: false
+- id: prompt-engineering-sensitivity
+  label: Prompt Engineering Sensitivity
+  level: 2
+  include: true
+  definition: Discussion of how sensitive chain-of-thought prompting is to the exact
+    wording of the prompt.
+  sub_questions:
+  - How much does prompt wording affect chain-of-thought performance?
+  - What prompt engineering practices improve robustness?
+  research: false
+- id: task-applicability
+  label: Task Applicability
+  level: 2
+  include: true
+  definition: Discussion of which tasks chain-of-thought prompting is most and least
+    helpful for.
+  sub_questions:
+  - What task properties predict chain-of-thought benefit?
+  - For which tasks does chain-of-thought provide little or no gain?
+  research: false
+- id: equation-only-prompting
+  label: Equation-Only Prompting
+  level: 3
+  include: true
+  definition: A prompting variant that provides only the mathematical equation as
+    the intermediate step, without full chain-of-thought reasoning.
+  sub_questions:
+  - Why is equation-only prompting insufficient for some datasets?
+  - Which datasets require more than an equation to solve correctly?
+  research: false
+- id: related-work-prompting
+  label: Prompting (Related Work)
+  level: 1
+  include: true
+  definition: Prior research on improving large language models' capability to perform
+    tasks via prompting.
+  sub_questions:
+  - How does chain-of-thought relate to prior prompting research?
+  research: false
+- id: natural-language-explanations
+  label: Natural Language Explanations
+  level: 2
+  include: true
+  definition: Prior work using natural language explanations (NLEs), often with the
+    goal of improving model interpretability or performance.
+  sub_questions:
+  - How do natural language explanations differ from chain-of-thought steps?
+  research: false
+- id: program-synthesis-execution
+  label: Program Synthesis and Execution
+  level: 2
+  include: true
+  definition: Prior work using intermediate reasoning steps in program synthesis and
+    execution.
+  sub_questions:
+  - How do intermediate steps in program synthesis relate to chain-of-thought?
+  research: false
+- id: intermediate-computation-steps
+  label: Intermediate Language Steps
+  level: 2
+  include: true
+  definition: Extensive prior work showing the benefits of endowing neural networks
+    with the ability to produce intermediate steps.
+  sub_questions:
+  - What earlier neural architectures used intermediate computation steps?
+  research: false
+- id: correct-cot-error-analysis
+  label: Correct Chain of Thought Analysis
+  level: 2
+  include: true
+  definition: Manual analysis of 50 chains of thought from a 137B model that led to
+    correct answers on GSM8K.
+  sub_questions:
+  - What patterns characterize correct chains of thought?
+  research: false
+- id: incorrect-cot-error-analysis
+  label: Incorrect Chain of Thought Analysis
+  level: 2
+  include: true
+  definition: Manual analysis of 50 randomly sampled incorrect model outputs on GSM8K
+    for a 137B model.
+  sub_questions:
+  - What are the common failure modes in incorrect chains of thought?
+  - Are errors due to reasoning mistakes or calculation mistakes?
+  research: false
+- id: discussion-limitations
+  label: Discussion and Limitations
+  level: 1
+  include: true
+  definition: Discussion of chain-of-thought prompting as a simple mechanism for eliciting
+    multi-step reasoning behavior, along with its limitations.
+  sub_questions:
+  - What are the key limitations of chain-of-thought prompting?
+  - What open questions remain about why chain-of-thought works?
+  research: false

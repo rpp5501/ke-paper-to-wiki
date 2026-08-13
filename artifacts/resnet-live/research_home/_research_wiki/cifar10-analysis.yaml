@@ -1,0 +1,40 @@
+concept: cifar10-analysis
+status: complete
+synthesis: 'On CIFAR-10, plain networks with 20/32/44/56/110 layers reproduce the
+  same degradation problem seen on ImageNet: deeper plain nets get higher training
+  error than shallower ones, while residual networks of matching depths train well
+  and improve with depth [S1]. The authors push further and train an extremely deep
+  1202-layer ResNet (n=200); it reaches training error similar to the 110-layer model
+  (<0.1%) [S1]. Despite this, its test error is worse (7.93% vs 6.43% for the 110-layer
+  net) [S1]. The paper attributes this gap to overfitting, since a model of that capacity
+  is large relative to CIFAR-10''s 50k training images, and no strong regularization
+  such as maxout or dropout was applied — only deep, thin residual units [S1]. A follow-up
+  study on pre-activation residual units shows that reordering batch norm and ReLU
+  before the convolutions substantially eases optimization of 1001-layer ResNets on
+  CIFAR-10/100 and narrows this train/test gap, suggesting part of the extreme-depth
+  degradation is also an optimization difficulty, not overfitting alone [S2].'
+resources:
+- url: https://arxiv.org/abs/1512.03385
+  title: Deep Residual Learning for Image Recognition
+  type: reference-impl
+  why: Section 4.2 is the primary source for the CIFAR-10 plain-vs-residual degradation
+    experiments and the 1202-layer overfitting result
+- url: https://arxiv.org/abs/1603.05027
+  title: Identity Mappings in Deep Residual Networks
+  type: follow-up-paper
+  why: Directly follows up on the >1000-layer CIFAR-10 result, showing pre-activation
+    units ease training and generalization at extreme depth
+- url: https://github.com/akamaster/pytorch_resnet_cifar10
+  title: pytorch_resnet_cifar10
+  type: reference-impl
+  why: Widely-used reproduction of the paper's exact CIFAR-10 ResNet configurations
+    (including deep variants) for hands-on inspection
+unresolved:
+- Whether the worse test accuracy of the 1202-layer ResNet is purely overfitting,
+  as the original paper claims, or partly an optimization artifact fixed by pre-activation,
+  as the follow-up paper's results suggest, is not fully disentangled in either paper.
+sources_consulted:
+  S1: He, K., Zhang, X., Ren, S., Sun, J. (2015). Deep Residual Learning for Image
+    Recognition. arXiv:1512.03385, Section 4.2 CIFAR-10 and Analysis
+  S2: He, K., Zhang, X., Ren, S., Sun, J. (2016). Identity Mappings in Deep Residual
+    Networks. arXiv:1603.05027

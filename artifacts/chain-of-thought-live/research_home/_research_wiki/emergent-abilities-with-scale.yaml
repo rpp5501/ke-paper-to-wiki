@@ -1,0 +1,56 @@
+concept: emergent-abilities-with-scale
+status: complete
+synthesis: Wei et al. showed that chain-of-thought (CoT) prompting produces negligible
+  or even negative gains on arithmetic, symbolic, and commonsense reasoning benchmarks
+  for models below roughly 100B parameters, then yields sharp, disproportionate accuracy
+  jumps once models cross that scale, a pattern they term an 'emergent ability' [S1][S2].
+  The proposed mechanism is that multi-step reasoning requires a minimum level of
+  compositional/computational capacity that only larger models possess; below threshold,
+  models still generate fluent-looking intermediate steps, but these steps are frequently
+  logically inconsistent or non-causal, so they fail to improve (and can hurt) final-answer
+  accuracy [S1]. Suzgun et al.'s BIG-Bench Hard results reinforce this, showing CoT
+  closes or reverses the gap to human performance specifically on large models where
+  standard prompting still underperforms [S4]. Schaeffer et al. complicate the 'emergent'
+  framing, arguing that at least part of the sharp jump is an artifact of using discontinuous,
+  all-or-nothing metrics (e.g., exact-match accuracy); switching to smoother, continuous
+  metrics reveals gradual, predictable improvement with scale on the same tasks, suggesting
+  emergence is partly a property of the chosen evaluation metric rather than a discontinuous
+  property of the model itself [S3].
+resources:
+- url: https://www.jasonwei.net/blog/emergence
+  title: Emergent Abilities of Large Language Models (Jason Wei's blog, with scaling-curve
+    figures)
+  type: visual
+  why: Plots the characteristic flat-then-sharp-rise curves across benchmarks that
+    define the emergence pattern discussed in the source paper.
+- url: https://arxiv.org/abs/2201.11903
+  title: Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
+  type: derivation
+  why: Original empirical demonstration that CoT gains only appear past ~100B parameters,
+    including qualitative analysis of incoherent small-model chains.
+- url: https://arxiv.org/abs/2206.07682
+  title: Emergent Abilities of Large Language Models
+  type: follow-up-paper
+  why: Generalizes the scale-threshold phenomenon beyond CoT to many prompted tasks
+    and formalizes the definition of emergence used in the field.
+- url: https://arxiv.org/abs/2304.15004
+  title: Are Emergent Abilities of Large Language Models a Mirage?
+  type: follow-up-paper
+  why: Directly answers whether emergence is a model property or a metric artifact,
+    the paper's central counterpoint.
+unresolved:
+- Whether the ~100B threshold is a property of a specific model family/era or shifts
+  with newer, more compute-efficient architectures and training recipes.
+- No mechanistic (weights/circuits-level) account exists yet for why multi-step reasoning
+  capacity turns on around that scale, only behavioral/statistical evidence.
+- Schaeffer et al.'s metric-artifact argument is contested; it is unresolved whether
+  it fully explains CoT's scale-dependence or only some benchmarks.
+sources_consulted:
+  S1: Wei, J. et al. (2022). Chain-of-Thought Prompting Elicits Reasoning in Large
+    Language Models. arXiv:2201.11903
+  S2: Wei, J. et al. (2022). Emergent Abilities of Large Language Models. arXiv:2206.07682
+    (TMLR)
+  S3: Schaeffer, R., Miranda, B., Koyejo, S. (2023). Are Emergent Abilities of Large
+    Language Models a Mirage? arXiv:2304.15004
+  S4: Suzgun, M. et al. (2022). Challenging BIG-Bench Tasks and Whether Chain-of-Thought
+    Can Solve Them. arXiv:2210.09261

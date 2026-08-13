@@ -1,0 +1,392 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:1512.03385",
+  "generated": "2026-08-13",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "deep-residual-learning",
+   "kind": "concept",
+   "label": "Deep Residual Learning",
+   "level": 0,
+   "source_ref": "sec_1"
+  },
+  {
+   "id": "degradation-problem",
+   "kind": "concept",
+   "label": "Degradation Problem",
+   "level": 1,
+   "source_ref": "sec_1",
+   "page": "01_degradation-problem.md"
+  },
+  {
+   "id": "vanishing-exploding-gradients",
+   "kind": "concept",
+   "label": "Vanishing/Exploding Gradients",
+   "level": 2,
+   "source_ref": "sec_1",
+   "page": "21_vanishing-exploding-gradients.md"
+  },
+  {
+   "id": "residual-learning-framework",
+   "kind": "concept",
+   "label": "Residual Learning",
+   "level": 1,
+   "source_ref": "sec_3_1"
+  },
+  {
+   "id": "residual-mapping-equation",
+   "kind": "equation",
+   "label": "F(x) := H(x) - x",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "page": "14_residual-mapping-equation.md"
+  },
+  {
+   "id": "identity-shortcut-connections",
+   "kind": "concept",
+   "label": "Identity Mapping by Shortcuts",
+   "level": 1,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "building-block-formula",
+   "kind": "equation",
+   "label": "y = F(x,{Wi}) + x",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "building-block-figure",
+   "kind": "figure",
+   "label": "Building Block Diagram",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "projection-shortcuts",
+   "kind": "concept",
+   "label": "Projection Shortcuts",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "19_projection-shortcuts.md"
+  },
+  {
+   "id": "network-architectures",
+   "kind": "concept",
+   "label": "Network Architectures",
+   "level": 1,
+   "source_ref": "sec_3_3",
+   "page": "05_network-architectures.md"
+  },
+  {
+   "id": "plain-network",
+   "kind": "concept",
+   "label": "Plain Network",
+   "level": 2,
+   "source_ref": "sec_3_3"
+  },
+  {
+   "id": "residual-network",
+   "kind": "concept",
+   "label": "Residual Network",
+   "level": 2,
+   "source_ref": "sec_3_3"
+  },
+  {
+   "id": "bottleneck-architecture",
+   "kind": "concept",
+   "label": "Bottleneck Design",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "11_bottleneck-architecture.md"
+  },
+  {
+   "id": "implementation-details",
+   "kind": "concept",
+   "label": "Implementation Details",
+   "level": 2,
+   "source_ref": "sec_3_4"
+  },
+  {
+   "id": "imagenet-classification-results",
+   "kind": "concept",
+   "label": "ImageNet Classification Results",
+   "level": 1,
+   "source_ref": "sec_4_1",
+   "page": "06_imagenet-classification-results.md"
+  },
+  {
+   "id": "ensemble-results",
+   "kind": "concept",
+   "label": "Ensemble Results",
+   "level": 2,
+   "source_ref": "sec_4_1"
+  },
+  {
+   "id": "cifar10-analysis",
+   "kind": "concept",
+   "label": "CIFAR-10 Depth Analysis",
+   "level": 1,
+   "source_ref": "sec_4_2"
+  },
+  {
+   "id": "object-detection-generalization",
+   "kind": "concept",
+   "label": "Object Detection Generalization",
+   "level": 1,
+   "source_ref": "sec_4_3"
+  },
+  {
+   "id": "faster-rcnn-baseline",
+   "kind": "concept",
+   "label": "Faster R-CNN Baseline",
+   "level": 2,
+   "source_ref": "sec_5",
+   "page": "15_faster-rcnn-baseline.md"
+  },
+  {
+   "id": "detection-improvements",
+   "kind": "concept",
+   "label": "Detection Improvements",
+   "level": 2,
+   "source_ref": "sec_6"
+  },
+  {
+   "id": "imagenet-localization",
+   "kind": "concept",
+   "label": "ImageNet Localization",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "07_imagenet-localization.md"
+  },
+  {
+   "id": "related-work-context",
+   "kind": "concept",
+   "label": "Related Work: Residual Representations & Shortcuts",
+   "level": 1,
+   "source_ref": "sec_2",
+   "page": "09_related-work-context.md"
+  }
+ ],
+ "edges": [
+  {
+   "src": "degradation-problem",
+   "dst": "deep-residual-learning",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "vanishing-exploding-gradients",
+   "dst": "degradation-problem",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "residual-learning-framework",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "residual-mapping-equation",
+   "dst": "residual-learning-framework",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "identity-shortcut-connections",
+   "dst": "residual-learning-framework",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "building-block-formula",
+   "dst": "identity-shortcut-connections",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "building-block-figure",
+   "dst": "identity-shortcut-connections",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "projection-shortcuts",
+   "dst": "identity-shortcut-connections",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "network-architectures",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "plain-network",
+   "dst": "network-architectures",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "residual-network",
+   "dst": "network-architectures",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "residual-network",
+   "dst": "identity-shortcut-connections",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "plain-network",
+   "dst": "residual-network",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "bottleneck-architecture",
+   "dst": "residual-network",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "implementation-details",
+   "dst": "network-architectures",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "imagenet-classification-results",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "imagenet-classification-results",
+   "dst": "network-architectures",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ensemble-results",
+   "dst": "imagenet-classification-results",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cifar10-analysis",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cifar10-analysis",
+   "dst": "degradation-problem",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "object-detection-generalization",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "faster-rcnn-baseline",
+   "dst": "object-detection-generalization",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "detection-improvements",
+   "dst": "faster-rcnn-baseline",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "imagenet-localization",
+   "dst": "deep-residual-learning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "imagenet-localization",
+   "dst": "imagenet-classification-results",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-work-context",
+   "dst": "residual-learning-framework",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-work-context",
+   "dst": "identity-shortcut-connections",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

@@ -1,0 +1,229 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 22 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: ddim
+  label: Denoising Diffusion Implicit Models (DDIM)
+  level: 0
+  include: true
+  definition: An implicit generative model whose deterministic generative process
+    samples via a non-Markovian diffusion process sharing DDPM's training objective,
+    enabling fewer, faster sampling steps.
+  sub_questions:
+  - How does removing the Markovian assumption enable deterministic sampling?
+  - Why can DDIMs reuse DDPM-trained models without retraining?
+  - How much does DDIM improve sampling efficiency over DDPM?
+  - What is the relationship between DDIM and neural ODEs?
+  research: false
+- id: ddpm-background
+  label: DDPM Background
+  level: 1
+  include: true
+  definition: A model distribution learned by matching a fixed Markovian forward (inference)
+    process that gradually adds Gaussian noise to data, and a learned reverse (generative)
+    process that denoises it.
+  sub_questions:
+  - What makes the forward process Markovian?
+  - Why does DDPM sampling require many iterative steps?
+  - How is the variational lower bound derived for DDPM?
+  research: false
+- id: non-markovian-forward-process
+  label: Non-Markovian Forward Processes
+  level: 1
+  include: true
+  definition: A family of inference distributions q_sigma(x_1:T|x_0) indexed by sigma
+    that need not be Markovian, yet share the same marginals as the DDPM forward process.
+  sub_questions:
+  - How can a non-Markovian process share the same marginal q(x_t|x_0) as DDPM?
+  - What role does sigma play in controlling the process?
+  - Why does non-Markovian design allow deterministic generation?
+  research: false
+- id: unified-variational-objective
+  label: Unified Variational Inference Objective
+  level: 1
+  include: true
+  definition: A variational objective J_sigma that, for all choices of sigma, is equivalent
+    (up to a constant) to the same surrogate loss used to train DDPM.
+  sub_questions:
+  - Why is J_sigma invariant to the choice of sigma?
+  - How does this unification allow reusing pretrained DDPM models?
+  research: false
+- id: generalized-generative-process
+  label: Generalized Generative Processes
+  level: 1
+  include: true
+  definition: A family of generative processes parameterized by sigma, learned via
+    the unified objective, from which many non-Markovian sampling schemes—including
+    DDIM—can be derived.
+  sub_questions:
+  - What sampling behaviors emerge for different sigma settings?
+  - How does sigma interpolate between DDPM and DDIM?
+  research: false
+- id: accelerated-generation
+  label: Accelerated Generation Processes
+  level: 1
+  include: true
+  definition: A sampling procedure that runs the generative process over a chosen
+    sub-sequence of the original T steps to trade off computation for sample quality.
+  sub_questions:
+  - How is the sub-sequence of timesteps chosen?
+  - How much speedup is achieved without retraining?
+  research: false
+- id: neural-ode-relevance
+  label: Relevance to Neural ODEs
+  level: 1
+  include: true
+  definition: The DDIM update rule can be rewritten to resemble Euler integration
+    of an ordinary differential equation, linking DDIM to neural ODE solvers.
+  sub_questions:
+  - What ODE does the DDIM iterate approximate?
+  - What does this connection imply about reversibility of the generative process?
+  research: false
+- id: sample-quality-efficiency
+  label: Sample Quality and Efficiency
+  level: 1
+  include: true
+  definition: Empirical comparison showing DDIMs produce higher-quality samples (lower
+    FID) than DDPMs when using fewer reverse-process iterations.
+  sub_questions:
+  - How does FID scale with number of sampling steps for DDIM vs DDPM?
+  - On which datasets is the advantage most pronounced?
+  research: false
+- id: sample-consistency
+  label: Sample Consistency in DDIMs
+  level: 1
+  include: true
+  definition: Because the DDIM generative process is deterministic, samples generated
+    from the same initial latent x_T share high-level features across different numbers
+    of sampling steps.
+  sub_questions:
+  - What visual features remain stable as step count changes?
+  - Why does determinism produce this consistency?
+  research: false
+- id: latent-interpolation
+  label: Interpolation in Latent Space
+  level: 1
+  include: true
+  definition: Since DDIM's high-level image features are encoded in the initial latent
+    x_T, interpolating between latents produces semantically smooth interpolations,
+    similar to other implicit generative models.
+  sub_questions:
+  - What interpolation scheme is used in latent space?
+  - How does interpolation quality compare to GANs?
+  research: false
+- id: latent-reconstruction
+  label: Reconstruction from Latent Space
+  level: 1
+  include: true
+  definition: Because DDIM approximates the Euler integration of an ODE, it can encode
+    an image into its latent x_T and later reconstruct it, testing the model's invertibility.
+  sub_questions:
+  - How accurate is reconstruction as a function of step count?
+  - What does reconstruction accuracy reveal about the ODE approximation error?
+  research: false
+- id: related-work
+  label: Related Work
+  level: 1
+  include: true
+  definition: DDIM is situated within a broader family of Markov-chain-based generative
+    models and connects to other non-Markovian and score-based approaches.
+  sub_questions:
+  - How does DDIM differ from prior non-Markovian generative models?
+  - What score-matching methods share theoretical foundations with DDIM?
+  research: false
+- id: discussion
+  label: Discussion
+  level: 1
+  include: true
+  definition: DDIM is an implicit generative model trained with the denoising auto-encoding/score-matching
+    objective from DDPMs, offering deterministic, efficient generation.
+  sub_questions:
+  - What are the limitations of DDIM discussed by the authors?
+  - What future directions do the authors propose?
+  research: false
+- id: ddim-sampling-equation
+  label: DDIM Sampling Update Equation
+  level: 2
+  include: true
+  definition: The update rule x_{t-1} = sqrt(alpha_{t-1})·predicted_x0 + direction
+    pointing to x_t + sigma_t·noise, with sigma_t=0 giving the deterministic DDIM
+    case.
+  sub_questions:
+  - How does setting sigma_t=0 remove stochasticity?
+  - How is predicted_x0 computed from the noise-prediction network?
+  research: false
+- id: objective-l-gamma
+  label: Objective L_gamma
+  level: 2
+  include: true
+  definition: A variational objective L_gamma that generalizes the DDPM training loss
+    with weights gamma, shown to be equivalent to the DDPM surrogate objective for
+    any sigma.
+  sub_questions:
+  - Why is L_gamma independent of the specific sigma chosen?
+  - How does this connect to score matching?
+  research: false
+- id: non-markovian-inference-distribution
+  label: q_sigma(x_1:T|x_0) Construction
+  level: 2
+  include: true
+  definition: q_sigma(x_1:T|x_0) := q_sigma(x_T|x_0) · prod q_sigma(x_{t-1}|x_t,x_0),
+    constructed to preserve the q(x_t|x_0) marginals of DDPM.
+  sub_questions:
+  - How is q_sigma(x_{t-1}|x_t,x_0) derived via Bayes' rule?
+  research: false
+- id: euler-integration-ode
+  label: Euler Integration / ODE Connection
+  level: 2
+  include: true
+  definition: The DDIM update, rewritten in terms of rescaled variables, matches Euler's
+    method for integrating a specific ordinary differential equation.
+  sub_questions:
+  - What ODE governs the continuous-time limit of DDIM?
+  - How does step size affect integration error?
+  research: false
+- id: subsequence-selection
+  label: Sub-sequence Selection Procedure
+  level: 2
+  include: true
+  definition: A selection procedure choosing a length-S sub-sequence of the original
+    T diffusion timesteps to define an accelerated inference/generative process.
+  sub_questions:
+  - What selection heuristics (linear vs quadratic) are used?
+  research: false
+- id: discrete-case-forward-process
+  label: Non-Markovian Forward Process (Discrete Case)
+  level: 3
+  include: true
+  definition: An extension of the non-Markovian forward process construction to discrete
+    data with a corresponding variational objective.
+  sub_questions:
+  - How does the discrete case differ from the continuous Gaussian case?
+  research: false
+- id: proofs-lemma1
+  label: Proofs of q_sigma Properties
+  level: 3
+  include: true
+  definition: Formal proofs, via induction, establishing the marginal properties of
+    q_sigma(x_t|x_0) defined in the non-Markovian construction.
+  sub_questions:
+  - What induction step establishes the marginal equivalence?
+  research: false
+- id: closed-form-sampling-equations
+  label: Closed-Form Sampling Step Equations
+  level: 3
+  include: true
+  definition: Explicit closed-form update equations for each sampling step derived
+    from the general sampling equation, including the DDPM-with-larger-variance special
+    case.
+  sub_questions:
+  - How does the closed form specialize for sigma_t equal to DDPM's variance?
+  research: false
+- id: experimental-details-datasets
+  label: Datasets and Architectures
+  level: 3
+  include: true
+  definition: 'Four image datasets and architectures used for experiments: CIFAR10,
+    CelebA, LSUN Bedroom, and LSUN Church.'
+  sub_questions:
+  - What architecture choices were shared across datasets?
+  research: false

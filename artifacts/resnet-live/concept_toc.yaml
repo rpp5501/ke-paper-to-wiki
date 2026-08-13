@@ -1,0 +1,242 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 22 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: deep-residual-learning
+  label: Deep Residual Learning
+  level: 0
+  include: true
+  definition: A framework that reformulates layers as learning residual functions
+    with reference to the layer inputs instead of learning unreferenced functions,
+    easing the training of substantially deeper networks.
+  sub_questions:
+  - Why does increasing depth in plain networks lead to higher training error?
+  - Can residual functions be easier to optimize than unreferenced ones?
+  - Do residual networks generalize across recognition tasks beyond classification?
+  - How deep can residual networks be trained effectively?
+  research: false
+- id: degradation-problem
+  label: Degradation Problem
+  level: 1
+  include: true
+  definition: With network depth increasing, accuracy gets saturated and then degrades
+    rapidly, and such degradation is not caused by overfitting.
+  sub_questions:
+  - Why can't deeper plain networks at least match shallower counterparts by construction?
+  - Is the degradation caused by vanishing/exploding gradients?
+  - Does adding more layers to a suitably deep model increase training error?
+  research: false
+- id: vanishing-exploding-gradients
+  label: Vanishing/Exploding Gradients
+  level: 2
+  include: true
+  definition: Notoriously known problems from the beginning of training deep networks
+    that hamper convergence, largely addressed by normalized initialization and intermediate
+    normalization layers.
+  sub_questions:
+  - Do normalization techniques fully solve the degradation problem?
+  - What role does batch normalization play in enabling SGD convergence for deep nets?
+  research: false
+- id: residual-learning-framework
+  label: Residual Learning
+  level: 1
+  include: true
+  definition: Instead of hoping stacked layers directly fit a desired underlying mapping
+    H(x), explicitly let these layers fit a residual mapping F(x):=H(x)-x.
+  sub_questions:
+  - Is it easier to optimize the residual mapping than the original unreferenced mapping?
+  - Does the identity mapping serve as a reasonable preconditioning?
+  - How does this reformulation address the degradation problem?
+  research: false
+- id: residual-mapping-equation
+  label: F(x) := H(x) - x
+  level: 2
+  include: true
+  definition: The residual function is defined as the difference between the desired
+    underlying mapping and the identity, so the original function becomes F(x)+x.
+  sub_questions:
+  - Why is fitting F(x) hypothesized to be easier than fitting H(x)?
+  - What happens if the optimal mapping is closer to identity than to zero?
+  research: false
+- id: identity-shortcut-connections
+  label: Identity Mapping by Shortcuts
+  level: 1
+  include: true
+  definition: Shortcut connections perform identity mapping, and their outputs are
+    added to the outputs of the stacked layers, adding neither extra parameter nor
+    computational complexity.
+  sub_questions:
+  - Do identity shortcuts introduce any extra parameters?
+  - How does this formulation compare to gated shortcut connections in highway networks?
+  - Can this be realized by feedforward networks with shortcut connections?
+  research: false
+- id: building-block-formula
+  label: y = F(x,{Wi}) + x
+  level: 2
+  include: true
+  definition: x and y are the input/output vectors of a building block, and F represents
+    the residual mapping to be learned.
+  sub_questions:
+  - What happens when dimensions of x and F do not match?
+  - How is the operation F+x performed via shortcut connections and element-wise addition?
+  research: false
+- id: building-block-figure
+  label: Building Block Diagram
+  level: 2
+  include: true
+  definition: 'A building block showing residual learning: a stack of layers with
+    a shortcut connection performing identity mapping added to the output.'
+  sub_questions:
+  - How many stacked layers are used in a typical building block?
+  - What nonlinearity is applied after the addition?
+  research: false
+- id: projection-shortcuts
+  label: Projection Shortcuts
+  level: 2
+  include: true
+  definition: A linear projection Ws by the shortcut connection is used to match dimensions
+    when x and F have different dimensions.
+  sub_questions:
+  - Are projection shortcuts necessary or can zero-padding achieve similar performance?
+  - Does using projection shortcuts everywhere improve accuracy enough to justify
+    extra parameters?
+  research: false
+- id: network-architectures
+  label: Network Architectures
+  level: 1
+  include: true
+  definition: Plain and residual networks constructed for ImageNet, following the
+    philosophy of VGG nets, with shortcut connections inserted into the plain network.
+  sub_questions:
+  - How do plain and residual networks compare when they have the same depth and complexity?
+  - What design rules govern the filter numbers and feature map sizes across stages?
+  research: false
+- id: plain-network
+  label: Plain Network
+  level: 2
+  include: true
+  definition: Baseline network mainly inspired by VGG nets, with convolutional layers
+    mostly using 3x3 filters and no shortcut connections.
+  sub_questions:
+  - Does the 34-layer plain network have higher training error than the 18-layer plain
+    network?
+  - Is this degradation caused by vanishing gradients despite using batch normalization?
+  research: false
+- id: residual-network
+  label: Residual Network
+  level: 2
+  include: true
+  definition: Based on the plain network, shortcut connections are inserted which
+    turn the network into its residual counterpart.
+  sub_questions:
+  - Does the deeper residual network outperform the shallower one, unlike the plain
+    network case?
+  - How much does the residual network reduce top-1 error compared to its plain counterpart?
+  research: false
+- id: bottleneck-architecture
+  label: Bottleneck Design
+  level: 2
+  include: true
+  definition: For deeper nets, a bottleneck design uses a stack of three layers (1x1,
+    3x3, 1x1 convolutions) instead of two, to reduce computational cost.
+  sub_questions:
+  - How does the bottleneck design keep time complexity similar to the two-layer block?
+  - Why are 1x1 layers used to reduce and then restore dimensions?
+  research: false
+- id: implementation-details
+  label: Implementation Details
+  level: 2
+  include: true
+  definition: Training practice including image resizing, random cropping, per-pixel
+    mean subtraction, standard color augmentation, batch normalization, and SGD with
+    a specific learning rate schedule.
+  sub_questions:
+  - How does batch normalization placement affect training stability?
+  - What learning rate schedule and mini-batch size are used?
+  research: false
+- id: imagenet-classification-results
+  label: ImageNet Classification Results
+  level: 1
+  include: true
+  definition: Evaluation on the ImageNet 2012 classification dataset with 1000 classes,
+    comparing plain and residual networks of various depths.
+  sub_questions:
+  - Do deeper residual networks (ResNet-152) achieve lower error than shallower ones
+    and than plain networks?
+  - How do the results compare against state-of-the-art models such as VGG and GoogLeNet?
+  research: false
+- id: ensemble-results
+  label: Ensemble Results
+  level: 2
+  include: true
+  definition: Combining multiple residual network models into an ensemble to achieve
+    the top result in the ILSVRC 2015 classification task.
+  sub_questions:
+  - How much does ensembling reduce the top-5 error compared to a single model?
+  - How many models are combined in the winning ensemble?
+  research: false
+- id: cifar10-analysis
+  label: CIFAR-10 Depth Analysis
+  level: 1
+  include: true
+  definition: Additional experiments on the CIFAR-10 dataset with 50k training and
+    10k testing images, exploring extremely deep networks up to over 1000 layers.
+  sub_questions:
+  - Does the degradation problem also appear in CIFAR-10 plain networks?
+  - What happens to accuracy when depth is pushed beyond 1000 layers?
+  - Why might overly deep residual networks (>1000 layers) show worse test results
+    despite similar training error?
+  research: true
+- id: object-detection-generalization
+  label: Object Detection Generalization
+  level: 1
+  include: true
+  definition: Residual networks show good generalization performance on recognition
+    tasks beyond classification, including object detection on PASCAL VOC and MS COCO.
+  sub_questions:
+  - How much improvement does replacing VGG-16 with ResNet-101 bring to detection
+    mAP?
+  - Does the generalization benefit hold across different datasets?
+  research: false
+- id: faster-rcnn-baseline
+  label: Faster R-CNN Baseline
+  level: 2
+  include: true
+  definition: Detection method based on the baseline Faster R-CNN system, with models
+    initialized by ImageNet-pretrained residual networks.
+  sub_questions:
+  - How is Faster R-CNN adapted to use ResNet as the backbone feature extractor?
+  - Which layers of ResNet are used for region proposal versus classification?
+  research: false
+- id: detection-improvements
+  label: Detection Improvements
+  level: 2
+  include: true
+  definition: Improvements made for the competitions based on deep features, including
+    box refinement, global context, and multi-scale testing.
+  sub_questions:
+  - Which specific techniques contribute most to the improved detection results?
+  - How do these improvements combine to win the ILSVRC & COCO 2015 competitions?
+  research: false
+- id: imagenet-localization
+  label: ImageNet Localization
+  level: 1
+  include: true
+  definition: The ImageNet Localization task requires classifying and localizing objects,
+    tackled following the per-class regression (PCR) strategy.
+  sub_questions:
+  - How does the localization approach build on the classification networks?
+  - What accuracy is achieved on the localization task compared to prior winners?
+  research: false
+- id: related-work-context
+  label: 'Related Work: Residual Representations & Shortcuts'
+  level: 1
+  include: true
+  definition: Prior work on residual representations (VLAD, Fisher Vector) and shortcut
+    connections (including gated highway networks) that contextualizes the proposed
+    approach.
+  sub_questions:
+  - How do highway networks' gated shortcuts differ from the parameter-free identity
+    shortcuts in this paper?
+  - Has any prior work trained extremely deep networks (>100 layers) successfully
+    before this one?
+  research: false

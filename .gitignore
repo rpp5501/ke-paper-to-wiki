@@ -16,3 +16,4 @@ artifacts/*/research_home/_inbox/
 dashboard/public/figures/
 artifacts/*/assets/
 run.log
+artifacts/*/*_explorer.html

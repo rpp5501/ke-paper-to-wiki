@@ -1,0 +1,428 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2010.02502",
+  "generated": "2026-08-11",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "ddim",
+   "kind": "concept",
+   "label": "Denoising Diffusion Implicit Models (DDIM)",
+   "level": 0,
+   "source_ref": "sec_4_1",
+   "page": "02_ddim.md"
+  },
+  {
+   "id": "ddpm-background",
+   "kind": "concept",
+   "label": "DDPM Background",
+   "level": 1,
+   "source_ref": "sec_2",
+   "page": "01_ddpm-background.md"
+  },
+  {
+   "id": "non-markovian-forward-process",
+   "kind": "concept",
+   "label": "Non-Markovian Forward Processes",
+   "level": 1,
+   "source_ref": "sec_3_1",
+   "page": "04_non-markovian-forward-process.md"
+  },
+  {
+   "id": "unified-variational-objective",
+   "kind": "concept",
+   "label": "Unified Variational Inference Objective",
+   "level": 1,
+   "source_ref": "sec_3_2",
+   "page": "07_unified-variational-objective.md"
+  },
+  {
+   "id": "generalized-generative-process",
+   "kind": "concept",
+   "label": "Generalized Generative Processes",
+   "level": 1,
+   "source_ref": "sec_4",
+   "page": "08_generalized-generative-process.md"
+  },
+  {
+   "id": "accelerated-generation",
+   "kind": "concept",
+   "label": "Accelerated Generation Processes",
+   "level": 1,
+   "source_ref": "sec_4_2",
+   "page": "09_accelerated-generation.md"
+  },
+  {
+   "id": "neural-ode-relevance",
+   "kind": "concept",
+   "label": "Relevance to Neural ODEs",
+   "level": 1,
+   "source_ref": "sec_4_3",
+   "page": "10_neural-ode-relevance.md"
+  },
+  {
+   "id": "sample-quality-efficiency",
+   "kind": "concept",
+   "label": "Sample Quality and Efficiency",
+   "level": 1,
+   "source_ref": "sec_5_1",
+   "page": "06_sample-quality-efficiency.md"
+  },
+  {
+   "id": "sample-consistency",
+   "kind": "concept",
+   "label": "Sample Consistency in DDIMs",
+   "level": 1,
+   "source_ref": "sec_5_2",
+   "page": "14_sample-consistency.md"
+  },
+  {
+   "id": "latent-interpolation",
+   "kind": "concept",
+   "label": "Interpolation in Latent Space",
+   "level": 1,
+   "source_ref": "sec_5_3",
+   "page": "15_latent-interpolation.md"
+  },
+  {
+   "id": "latent-reconstruction",
+   "kind": "concept",
+   "label": "Reconstruction from Latent Space",
+   "level": 1,
+   "source_ref": "sec_5_4",
+   "page": "12_latent-reconstruction.md"
+  },
+  {
+   "id": "related-work",
+   "kind": "concept",
+   "label": "Related Work",
+   "level": 1,
+   "source_ref": "sec_6",
+   "page": "05_related-work.md"
+  },
+  {
+   "id": "discussion",
+   "kind": "concept",
+   "label": "Discussion",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "03_discussion.md"
+  },
+  {
+   "id": "ddim-sampling-equation",
+   "kind": "equation",
+   "label": "DDIM Sampling Update Equation",
+   "level": 2,
+   "source_ref": "sec_4_1",
+   "page": "13_ddim-sampling-equation.md"
+  },
+  {
+   "id": "objective-l-gamma",
+   "kind": "equation",
+   "label": "Objective L_gamma",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "page": "16_objective-l-gamma.md"
+  },
+  {
+   "id": "non-markovian-inference-distribution",
+   "kind": "equation",
+   "label": "q_sigma(x_1:T|x_0) Construction",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "page": "18_non-markovian-inference-distribution.md"
+  },
+  {
+   "id": "euler-integration-ode",
+   "kind": "concept",
+   "label": "Euler Integration / ODE Connection",
+   "level": 2,
+   "source_ref": "sec_4_3",
+   "page": "11_euler-integration-ode.md"
+  },
+  {
+   "id": "subsequence-selection",
+   "kind": "concept",
+   "label": "Sub-sequence Selection Procedure",
+   "level": 2,
+   "source_ref": "sec_4_2",
+   "page": "17_subsequence-selection.md"
+  },
+  {
+   "id": "discrete-case-forward-process",
+   "kind": "concept",
+   "label": "Non-Markovian Forward Process (Discrete Case)",
+   "level": 3,
+   "source_ref": "sec_9",
+   "page": "21_discrete-case-forward-process.md"
+  },
+  {
+   "id": "proofs-lemma1",
+   "kind": "concept",
+   "label": "Proofs of q_sigma Properties",
+   "level": 3,
+   "source_ref": "sec_10",
+   "page": "22_proofs-lemma1.md"
+  },
+  {
+   "id": "closed-form-sampling-equations",
+   "kind": "equation",
+   "label": "Closed-Form Sampling Step Equations",
+   "level": 3,
+   "source_ref": "sec_12_3",
+   "page": "19_closed-form-sampling-equations.md"
+  },
+  {
+   "id": "experimental-details-datasets",
+   "kind": "concept",
+   "label": "Datasets and Architectures",
+   "level": 3,
+   "source_ref": "sec_12_1",
+   "page": "20_experimental-details-datasets.md"
+  }
+ ],
+ "edges": [
+  {
+   "src": "ddpm-background",
+   "dst": "ddim",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "non-markovian-forward-process",
+   "dst": "ddim",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "unified-variational-objective",
+   "dst": "ddim",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "generalized-generative-process",
+   "dst": "ddim",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "accelerated-generation",
+   "dst": "ddim",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "neural-ode-relevance",
+   "dst": "ddim",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sample-quality-efficiency",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sample-consistency",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "latent-interpolation",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "latent-reconstruction",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-work",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "discussion",
+   "dst": "ddim",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ddim",
+   "dst": "ddpm-background",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "non-markovian-forward-process",
+   "dst": "unified-variational-objective",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "unified-variational-objective",
+   "dst": "generalized-generative-process",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "generalized-generative-process",
+   "dst": "accelerated-generation",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "generalized-generative-process",
+   "dst": "neural-ode-relevance",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "non-markovian-inference-distribution",
+   "dst": "non-markovian-forward-process",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "objective-l-gamma",
+   "dst": "unified-variational-objective",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ddim-sampling-equation",
+   "dst": "generalized-generative-process",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "euler-integration-ode",
+   "dst": "neural-ode-relevance",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "subsequence-selection",
+   "dst": "accelerated-generation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ddim-sampling-equation",
+   "dst": "euler-integration-ode",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "sample-consistency",
+   "dst": "ddim-sampling-equation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "latent-interpolation",
+   "dst": "sample-consistency",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "latent-reconstruction",
+   "dst": "euler-integration-ode",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "discrete-case-forward-process",
+   "dst": "non-markovian-forward-process",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "proofs-lemma1",
+   "dst": "non-markovian-inference-distribution",
+   "kind": "defined-in",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "closed-form-sampling-equations",
+   "dst": "ddim-sampling-equation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experimental-details-datasets",
+   "dst": "sample-quality-efficiency",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

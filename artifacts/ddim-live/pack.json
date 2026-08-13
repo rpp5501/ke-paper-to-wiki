@@ -1,0 +1,1060 @@
+{
+ "meta": {
+  "source": "arXiv:2010.02502",
+  "title": "Denoising Diffusion Implicit Models",
+  "generated": "2026-08-11"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "Deep generative models have demonstrated the ability to produce high quality samples in many domains. In terms of image generation, generative adversarial networks (GANs, ) currently exhibits higher sample quality than likelihood-based methods such as variational autoencoders, autoregressive models and normalizing flows. However, GANs require very specific choices in optimization and architectures in order to stabilize training, and could fail to cover modes of the data distribution. Recent works on iterative generative models, such as denoising diffusion probabilistic models (DDPM, ) and noise conditional score networks (NCSN, ) have demonstrated the ability to produce samples comparable to that of GANs, without having to perform adversarial training. To achieve this, many denoising autoencoding models are trained to denoise samples corrupted by various levels of Gaussian noise. Samples are then produced by a Markov chain which, starting from white noise, progressively denoises it into an image. This generative Markov Chain process is either based on Langevin dynamics or obtained by reversing a forward that progressively turns an image into noise. A critical drawback of these models is that they require many iterations to produce a high quality sample. For DDPMs, this is because that the generative process (from noise to data) approximates the reverse of the forward (from data to noise), which could have thousands of steps; iterating over all the steps is required to produce a single sample, which is much slower compared to GANs, which only needs one pass through a network. For example, it takes around 20 hours to sample 50k images of size from a DDPM, but less than a minute to do so from https://github.com/ajbrock/BigGAN-PyTorch on a Nvidia 2080 Ti GPU. This becomes more problematic for larger images as sampling 50k images of size could take nearly hours on the same GPU. To close this efficiency gap between DDPMs and GANs, we present denoising diffusion implicit models (DDIMs). DDIMs are implicit probabilistic models and are closely related to DDPMs, in the sense that they are trained with the same objective function. In Section, we generalize the forward used by DDPMs, which is Markovian, to ones, for which we are still able to design suitable reverse generative Markov chains. We show that the resulting variational training objectives have a shared surrogate objective, which is the objective used to train DDPM. Therefore, we can freely choose from a large family of generative models using the same neural network simply by choosing a different, diffusion process (Section ) and the corresponding reverse generative Markov Chain. In particular, we are able to use diffusion processes which lead to \"short\" generative Markov chains (Section ) that can be simulated in a small number of steps. This can massively increase sample efficiency only at a minor cost in sample quality. In Section, we demonstrate several empirical benefits of DDIMs over DDPMs. , DDIMs have superior sample generation quality compared to DDPMs, when we accelerate sampling by to using our proposed method. , DDIM samples have the following consistency property, which does not hold for DDPMs: if we start with the same initial latent variable and generate several samples with Markov chains of various lengths, these samples would have similar high-level features. , because of consistency in DDIMs, we can perform semantically meaningful image interpolation by manipulating the initial latent variable in DDIMs, unlike DDPMs which interpolates near the image space due to the stochastic generative process."
+  },
+  {
+   "id": "sec_2",
+   "title": "Background",
+   "level": 1,
+   "text": "Given samples from a data distribution , we are interested in learning a model distribution that approximates and is easy to sample from. Denoising diffusion probabilistic models (DDPMs,) are latent variable models of the form where are latent variables in the same sample space as (denoted as ). The parameters are learned to fit the data distribution by maximizing a variational lower bound: where is some inference distribution over the latent variables. Unlike typical latent variable models (such as the variational autoencoder), DDPMs are learned with a fixed (rather than trainable) inference procedure , and latent variables are relatively high dimensional. For example, considered the following Markov chain with Gaussian transitions parameterized by a decreasing sequence : where the covariance matrix is ensured to have positive terms on its diagonal. This is called the due to the autoregressive nature of the sampling procedure (from to ). We call the latent variable model , which is a Markov chain that samples from to , the , since it approximates the intractable . Intuitively, the forward process progressively adds noise to the observation , whereas the generative process progressively denoises a noisy observation (fig:diffusion, left). A special property of the forward process is that so we can express as a linear combination of and a noise variable : When we set sufficiently close to , converges to a standard Gaussian for all , so it is natural to set . If all the conditionals are modeled as Gaussians with trainable mean functions and fixed variances, the objective in can be simplified to: where is a set of functions, each (indexed by ) is a function with trainable parameters , and is a vector of positive coefficients in the objective that depends on . In , the objective with is optimized instead to maximize generation performance of the trained model; this is also the same objective used in noise conditional score networks based on score matching. From a trained model, is sampled by first sampling from the prior , and then sampling from the generative processes iteratively. The length of the forward process is an important hyperparameter in DDPMs. From a variational perspective, a large allows the reverse process to be close to a Gaussian, so that the generative process modeled with Gaussian conditional distributions becomes a good approximation; this motivates the choice of large values, such as in . However, as all iterations have to be performed sequentially, instead of in parallel, to obtain a sample , sampling from DDPMs is much slower than sampling from other deep generative models, which makes them impractical for tasks where compute is limited and latency is critical."
+  },
+  {
+   "id": "sec_3",
+   "title": "Variational Inference for non-Markovian Forward Processes",
+   "level": 1,
+   "text": "Because the generative model approximates the reverse of the inference process, we need to rethink the inference process in order to reduce the number of iterations required by the generative model. Our key observation is that the DDPM objective in the form of only depends on the marginals , but not directly on the joint . Since there are many inference distributions (joints) with the same marginals, we explore alternative inference processes that are non-Markovian, which leads to new generative processes (fig:diffusion, right). These non-Markovian inference process lead to the same surrogate objective function as DDPM, as we will show below. In Appendix, we show that the non-Markovian perspective also applies beyond the Gaussian case."
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Non-Markovian forward processes",
+   "level": 2,
+   "text": "Let us consider a family of inference distributions, indexed by a real vector : q_(_1:T | _0) := q_(_T | _0) _t=2^T q_(_t-1 | _t, _0) where and for all , q_(_t-1 | _t, _0) = ( _0 + , _t^2 ). The mean function is chosen to order to ensure that for all (see Lemma of Appendix), so that it defines a joint inference distribution that matches the marginals as desired. The forward process can be derived from Bayes' rule: which is also Gaussian (although we do not use this fact for the remainder of this paper). Unlike the diffusion process in , the forward process here is no longer Markovian, since each could depend on both and . The magnitude of controls the how stochastic the forward process is; when , we reach an extreme case where as long as we observe and for some , then become known and fixed."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Generative process and unified variational inference objective",
+   "level": 2,
+   "text": "Next, we define a trainable generative process where each leverages knowledge of . Intuitively, given a noisy observation , we first make a prediction of the corresponding , and then use it to obtain a sample through the reverse conditional distribution , which we have defined. For some and , can be obtained using . The model then attempts to predict from , without knowledge of . By rewriting , one can then predict the , which is a prediction of given : We can then define the generative process with a fixed prior and where is defined as in with replaced by . We add some Gaussian noise (with covariance ) for the case of to ensure that the generative process is supported everywhere. We optimize via the following variational inference objective (which is a functional over ): where we factorize according to and according to . From the definition of , it would appear that a different model has to be trained for every choice of , since it corresponds to a different variational objective (and a different generative process). However, is equivalent to for certain weights , as we show below. theoremunifiedklobj For all , there exists and , such that . The variational objective is special in the sense that if parameters of the models are not shared across different , then the optimal solution for will not depend on the weights (as global optimum is achieved by separately maximizing each term in the sum). This property of has two implications. On the one hand, this justified the use of as a surrogate objective function for the variational lower bound in DDPMs; on the other hand, since is equivalent to some from Theorem, the optimal solution of is also the same as that of . Therefore, if parameters are not shared across in the model , then the objective used by can be used as a surrogate objective for the variational objective as well."
+  },
+  {
+   "id": "sec_4",
+   "title": "Sampling from Generalized Generative Processes",
+   "level": 1,
+   "text": "With as the objective, we are not only learning a generative process for the Markovian inference process considered in and , but also generative processes for many non-Markovian forward processes parametrized by that we have described. Therefore, we can essentially use pretrained DDPM models as the solutions to the new objectives, and focus on finding a generative process that is better at producing samples subject to our needs by changing ."
+  },
+  {
+   "id": "sec_4_1",
+   "title": "Denoising Diffusion Implicit Models",
+   "level": 2,
+   "text": "From in , one can generate a sample from a sample via: where is standard Gaussian noise independent of , and we define . Different choices of values results in different generative processes, all while using the same model , so re-training the model is unnecessary. When for all , the forward process becomes Markovian, and the generative process becomes a DDPM. We note another special case when for all ; the forward process becomes deterministic given and , except for ; in the generative process, the coefficient before the random noise becomes zero. The resulting model becomes an implicit probabilistic model, where samples are generated from latent variables with a fixed procedure (from to ). We name this the (DDIM, pronounced /d:Im/), because it is an implicit probabilistic model trained with the DDPM objective (despite the forward process no longer being a diffusion)."
+  },
+  {
+   "id": "sec_4_2",
+   "title": "Accelerated generation processes",
+   "level": 2,
+   "text": "In the previous sections, the generative process is considered as the approximation to the reverse process; since of the forward process has steps, the generative process is also forced to sample steps. However, as the denoising objective does not depend on the specific forward procedure as long as is fixed, we may also consider forward processes with lengths smaller than , which accelerates the corresponding generative processes without having to train a different model. Let us consider the forward process as defined not on all the latent variables , but on a subset , where is an increasing sub-sequence of of length . In particular, we define the sequential forward process over such that matches the marginals (see fig:diffusion-figure-acc for an illustration). The generative process now samples latent variables according to , which we term . When the length of the sampling trajectory is much smaller than , we may achieve significant increases in computational efficiency due to the iterative nature of the sampling process. Using a similar argument as in Section, we can justify using the model trained with the objective, so no changes are needed in training. We show that only slight changes to the updates in are needed to obtain the new, faster generative processes, which applies to DDPM, DDIM, as well as all generative processes considered in . We include these details in Appendix. In principle, this means that we can train a model with an arbitrary number of forward steps but only sample from some of them in the generative process. Therefore, the trained model could consider many more steps than what is considered in or even a continuous time variable . We leave empirical investigations of this aspect as future work."
+  },
+  {
+   "id": "sec_4_3",
+   "title": "Relevance to Neural ODEs",
+   "level": 2,
+   "text": "Moreover, we can rewrite the DDIM iterate according to , and its similarity to Euler integration for solving ordinary differential equations (ODEs) becomes more apparent: To derive the corresponding ODE, we can reparameterize with and with . In the continuous case, and are functions of , where is continous, increasing with . eq:ddim-euler with can be treated as a Euler method over the following ODE: where the initial conditions is for a very large (which corresponds to the case of ). This suggests that with enough discretization steps, the we can also reverse the generation process (going from to ), which encodes to and simulates the reverse of the ODE in . This suggests that unlike DDPM, we can use DDIM to obtain encodings of the observations (as the form of ), which might be useful for other downstream applications that requires latent representations of a model. In a concurrent work, proposed a probability flow ODE that aims to recover the marginal densities of a stochastic differential equation (SDE) based on scores, from which a similar sampling schedule can be obtained. Here, we state that the our ODE is equivalent to a special case of theirs (which corresponds to a continuous-time analog of DDPM). propositionequivalence The ODE in with the optimal model has an equivalent probability flow ODE corresponding to the Variance-Exploding SDE in . We include the proof in Appendix. While the ODEs are equivalent, the sampling procedures are not, since the Euler method for the probability flow ODE will make the following update: which is equivalent to ours if and are close enough. In fewer sampling steps, however, these choices will make a difference; we take Euler steps with respect to (which depends less directly on the scaling of time ) whereas take Euler steps with respect to ."
+  },
+  {
+   "id": "sec_5",
+   "title": "Experiments",
+   "level": 1,
+   "text": "In this section, we show that DDIMs outperform DDPMs in terms of image generation when fewer iterations are considered, giving speed ups of to over the original DDPM generation process. Moreover, unlike DDPMs, once the initial latent variables are fixed, DDIMs retain high-level image features regardless of the generation trajectory, so they are able to perform interpolation directly from the latent space. DDIMs can also be used to encode samples that reconstruct them from the latent code, which DDPMs cannot do due to the stochastic sampling process. For each dataset, we use the with and the objective being from with ; as we argued in Section, no changes are needed with regards to the training procedure. The only changes that we make is ; we achieve this by controlling (which controls how fast the samples are obtained) and (which interpolates between the deterministic DDIM and the stochastic DDPM). We consider different sub-sequences of and different variance hyperparameters indexed by elements of . To simplify comparisons, we consider with the form: where is a hyperparameter that we can directly control. This includes an original DDPM generative process when and DDIM when . We also consider DDPM where the random noise has a larger standard deviation than , which we denote as : . This is used by https://github.com/hojonathanho/diffusion/blob/master/scripts/run_cifar.py#L136 in , but not samples of the other datasets. We include more details in Appendix."
+  },
+  {
+   "id": "sec_5_1",
+   "title": "Sample quality and efficiency",
+   "level": 2,
+   "text": "In Table, we report the quality of the generated samples with models trained on CIFAR10 and CelebA, as measured by Frechet Inception Distance (FID), where we vary the number of timesteps used to generate a sample () and the stochasticity of the process (). As expected, the sample quality becomes higher as we increase , presenting a trade-off between sample quality and computational costs. We observe that DDIM () achieves the best sample quality when is small, and DDPM ( and ) typically has worse sample quality compared to its less stochastic counterparts with the same , except for the case for and reported by where DDIM is marginally worse. However, the sample quality of becomes much worse for smaller , which suggests that it is ill-suited for shorter trajectories. DDIM, on the other hand, achieves high sample quality much more consistently. In fig:cifar10-tvh, we show CIFAR10 and CelebA samples with the same number of sampling steps and varying . For the DDPM, the sample quality deteriorates rapidly when the sampling trajectory has 10 steps. For the case of , the generated images seem to have more noisy perturbations under short trajectories; this explains why the FID scores are much worse than other methods, as FID is very sensitive to such perturbations (as discussed in ). In fig:time, we show that the amount of time needed to produce a sample scales linearly with the length of the sample trajectory. This suggests that DDIM is useful for producing samples more efficiently, as samples can be generated in much fewer steps. Notably, DDIM is able to produce samples with quality comparable to 1000 step models within to steps, which is a to speed up compared to the original DDPM. Even though DDPM could also achieve reasonable sample quality with steps, DDIM requires much fewer steps to achieve this; on CelebA, the FID score of the 100 step DDPM is similar to that of the 20 step DDIM. G>b0.065 C>b0.065"
+  },
+  {
+   "id": "sec_5_2",
+   "title": "Sample consistency in DDIMs",
+   "level": 2,
+   "text": "For DDIM, the generative process is deterministic, and would depend only on the initial state . In fig:consistency, we observe the generated images under different generative trajectories (i.e. different ) while starting with the same initial . Interestingly, for the generated images with the same initial , most high-level features are similar, regardless of the generative trajectory. In many cases, samples generated with only 20 steps are already very similar to ones generated with 1000 steps in terms of high-level features, with only minor differences in details. Therefore, it would appear that alone would be an informative latent encoding of the image; and minor details that affects sample quality are encoded in the parameters, as longer sample trajectories gives better quality samples but do not significantly affect the high-level features. We show more samples in Appendix."
+  },
+  {
+   "id": "sec_5_3",
+   "title": "Interpolation in deterministic generative processes",
+   "level": 2,
+   "text": "Since the high level features of the DDIM sample is encoded by , we are interested to see whether it would exhibit the semantic interpolation effect similar to that observed in other implicit probabilistic models, such as GANs. This is different from the interpolation procedure in, since in DDPM the same would lead to highly diverse due to the stochastic generative process. In fig:interp-line, we show that simple interpolations in can lead to semantically meaningful interpolations between two samples. We include more details and samples in Appendix. This allows DDIM to control the generated images on a high level directly through the latent variables, which DDPMs cannot."
+  },
+  {
+   "id": "sec_5_4",
+   "title": "Reconstruction from Latent Space",
+   "level": 2,
+   "text": "As DDIM is the Euler integration for a particular ODE, it would be interesting to see whether it can encode from to (reverse of ) and reconstruct from the resulting (forward of ). We consider encoding and decoding on the CIFAR-10 test set with the CIFAR-10 model with steps for both encoding and decoding; we report the per-dimension mean squared error (scaled to ) in Table. Our results show that DDIMs have lower reconstruction error for larger values and have properties similar to Neural ODEs and normalizing flows. The same cannot be said for DDPMs due to their stochastic nature."
+  },
+  {
+   "id": "sec_6",
+   "title": "Related Work",
+   "level": 1,
+   "text": "Our work is based on a large family of existing methods on learning generative models as transition operators of Markov chains. Among them, denoising diffusion probabilistic models (DDPMs, ) and noise conditional score networks (NCSN, ) have recently achieved high sample quality comparable to GANs. DDPMs optimize a variational lower bound to the log-likelihood, whereas NCSNs optimize the score matching objective over a nonparametric Parzen density estimator of the data. Despite their different motivations, DDPMs and NCSNs are closely related. Both use a denoising autoencoder objective for many noise levels, and both use a procedure similar to Langevin dynamics to produce samples. Since Langevin dynamics is a discretization of a gradient flow, both DDPM and NCSN require many steps to achieve good sample quality. This aligns with the observation that DDPM and existing NCSN methods have trouble generating high-quality samples in a few iterations. DDIM, on the other hand, is an implicit generative model where samples are uniquely determined from the latent variables. Hence, DDIM has certain properties that resemble GANs and invertible flows, such as the ability to produce semantically meaningful interpolations. We derive DDIM from a purely variational perspective, where the restrictions of Langevin dynamics are not relevant; this could partially explain why we are able to observe superior sample quality compared to DDPM under fewer iterations. The sampling procedure of DDIM is also reminiscent of neural networks with continuous depth, since the samples it produces from the same latent variable have similar high-level visual features, regardless of the specific sample trajectory."
+  },
+  {
+   "id": "sec_7",
+   "title": "Discussion",
+   "level": 1,
+   "text": "We have presented DDIMs an implicit generative model trained with denoising auto-encoding / score matching objectives from a purely variational perspective. DDIM is able to generate high-quality samples much more efficiently than existing DDPMs and NCSNs, with the ability to perform meaningful interpolations from the latent space. The non-Markovian forward process presented here seems to suggest continuous forward processes other than Gaussian (which cannot be done in the original diffusion framework, since Gaussian is the only stable distribution with finite variance). We also demonstrated a discrete case with a multinomial forward process in Appendix, and it would be interesting to investigate similar alternatives for other combinatorial structures. Moreover, since the sampling procedure of DDIMs is similar to that of an neural ODE, it would be interesting to see if methods that decrease the discretization error in ODEs, including multi-step methods such as Adams-Bashforth, could be helpful for further improving sample quality in fewer steps. It is also relevant to investigate whether DDIMs exhibit other properties of existing implicit models."
+  },
+  {
+   "id": "sec_8",
+   "title": "Acknowledgements",
+   "level": 1,
+   "text": "The authors would like to thank Yang Song and Shengjia Zhao for helpful discussions over the ideas, Kuno Kim for reviewing an earlier draft of the paper, and Sharvil Nanavati and Sophie Liu for identifying typos. This research was supported by NSF (1651565, 1522054, 1733686), ONR (N00014-19-1-2145), AFOSR (FA9550-19-1-0024), and Amazon AWS. iclr2021_conference"
+  },
+  {
+   "id": "sec_9",
+   "title": "Non-Markovian Forward Processes for a Discrete Case",
+   "level": 1,
+   "text": "In this section, we describe a non-Markovian forward processes for discrete data and corresponding variational objectives. Since the focus of this paper is to accelerate reverse models corresponding to the Gaussian diffusion, we leave empirical evaluations as future work. For a categorical observation that is a one-hot vector with possible values, we define the forward process as follows. First, we have as the following categorical distribution: where is a vector with all entries being , and decreasing from for to for . Then we define as the following mixture distribution: or equivalently: which is consistent with how we have defined . Similarly, we can define our reverse process as: where maps to a -dimensional vector. As , the sampling process will become less stochastic, in the sense that it will either choose or the predicted with high probability. The KL divergence is well-defined, and is simply the KL divergence between two categoricals. Therefore, the resulting variational objective function should be easy to optimize as well. Moreover, as KL divergence is convex, we have this upper bound (which is tight when the right hand side goes to zero): The right hand side is simply a multi-class classification loss (up to constants), so we can arrive at similar arguments regarding how changes in do not affect the objective (up to re-weighting)."
+  },
+  {
+   "id": "sec_10",
+   "title": "Proofs",
+   "level": 1,
+   "text": "For defined in and defined in , we have: Assume for any , holds, if: then we can prove the statement with an induction argument for from to , since the base case () already holds. First, we have that and q_(_t | _0) = ( _0, (1 - _t) ) q_(_t-1 | _t, _0) = ( _0 + , _t^2 ). From (2.115), we have that is Gaussian, denoted as where and Therefore, , which allows us to apply the induction argument. * From the definition of : where we use to denote equal up to a value that does not depend on (but may depend on ). For : where is the dimension of . For : Therefore, when for all , we have for all . From the definition of , we have that . * In the context of the proof, we consider as a continous, independent time variable and and as functions of . First, let us consider a reparametrization between DDIM and the VE-SDE by introducing the variables and : for and an increasing continuous function where . We can then define and corresponding to DDIM case as: (t) = (t) = . This also means that: (t) = (t) = , which establishes an bijection between and . From eq:reparam_xt we have (note that ): which can be reparametrized into a form that is consistent with VE-SDE: Now, we derive the ODE forms for both DDIM and VE-SDE and show that they are equivalent. ODE form for DDIM We repeat eq:ddim-euler here: which is equivalent to: Divide both sides by and as , we have: which is exactly what we have in eq:ddim-ode. We note that for the optimal model, is a minimizer: where . ODE form for VE-SDE Define as the data distribution perturbed with variance Gaussian noise. The probability flow for VE-SDE is defined as : where is the diffusion coefficient, and is the score of . The -perturbed score function is also a minimizer (from denoising score matching): where . Since there is an equivalence between and , we have the following relationship: _ p_t() = - from eq:dsm-ddim and eq:dsm-ve. Plug eq:score-equivalence and definition of in eq:yang-ode, we have: and we have the following by rearranging terms: which is equivalent to eq:ddim:differential. In both cases the initial conditions are , so the resulting ODEs are identical."
+  },
+  {
+   "id": "sec_11",
+   "title": "Additional Derivations",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_11_1",
+   "title": "Accelerated sampling processes",
+   "level": 2,
+   "text": "In the accelerated case, we can consider the inference process to be factored as: where is a sub-sequence of of length with , and let be its complement. Intuitively, the graphical model of and form a chain, whereas the graphical model of and forms a star graph. We define: q_, (_t | _0) = ( _0, (1 - _t) ) t T q_, (__i-1 | __i, _0) = ( _0 + , __i^2 ) i [S] where the coefficients are chosen such that: i.e., the marginals match. The corresponding generative process is defined as: where only part of the models are actually being used to produce samples. The conditionals are: p_^(_i)(__i-1 | __i) = q_, (__i-1 | __i, f_^(_i)(__i-1)) i [S], i > 1 p_^(t)(_0 | _t) = (f_^(t)(_t), _t^2 ) where we leverage as part of the inference process (similar to what we have done in Section). The resulting variational objective becomes (define for conciseness): where each KL divergence is between two Gaussians with variance independent of . A similar argument to the proof used in Theorem can show that the variational objective can also be converted to an objective of the form ."
+  },
+  {
+   "id": "sec_11_2",
+   "title": "Derivation of denoising objectives for DDPMs",
+   "level": 2,
+   "text": "We note that in , a diffusion hyperparameter is first introduced, and then relevant variables and are defined. In this paper, we have used the notation to represent the variable in for three reasons. First, it makes it more clear that we only need to choose one set of hyperparameters, reducing possible cross-references of the derived variables. Second, it allows us to introduce the generalization as well as the acceleration case easier, because the inference process is no longer motivated by a diffusion. Third, there exists an isomorphism between and , which is not the case for . In this section, we use and to be more consistent with the derivation in , where _t = _t = 1 - can be uniquely determined from (i.e. ). First, from the diffusion forward process: considered a specific type of : which leads to the following variational objective: One can write: chose the parametrization which can be simplified to:"
+  },
+  {
+   "id": "sec_12",
+   "title": "Experimental Details",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_12_1",
+   "title": "Datasets and architectures",
+   "level": 2,
+   "text": "We consider 4 image datasets with various resolutions: CIFAR10 (, unconditional), CelebA (), LSUN Bedroom () and LSUN Church (). For all datasets, we set the hyperparameters according to the heuristic in to make the results directly comparable. We use the same model for each dataset, and only compare the performance of different generative processes. For CIFAR10, Bedroom and Church, we obtain the pretrained checkpoints from the original DDPM implementation; for CelebA, we trained our own model using the denoising objective . Our architecture for follows that in , which is a U-Net based on a Wide ResNet. We use the pretrained models from for CIFAR10, Bedroom and Church, and train our own model for the CelebA model (since a pretrained model is not provided). Our CelebA model has five feature map resolutions from to , and we use the original CelebA dataset (not CelebA-HQ) using the https://github.com/NVlabs/stylegan/blob/master/dataset_tool.py#L484-L499 from the StyleGAN repository."
+  },
+  {
+   "id": "sec_12_2",
+   "title": "Reverse process sub-sequence selection",
+   "level": 2,
+   "text": "We consider two types of selection procedure for given the desired : : we select the timesteps such that for some ; : we select the timesteps such that for some . The constant value is selected such that is close to . We used for CIFAR10 and for the remaining datasets. These choices achieve slightly better FID than their alternatives in the respective datasets."
+  },
+  {
+   "id": "sec_12_3",
+   "title": "Closed form equations for each sampling step",
+   "level": 2,
+   "text": "From the general sampling equation in , we have the following update equation: where For the case of (DDPM with a larger variance), the update equation becomes: which uses a different coefficient for compared with the update for , but uses the same coefficient for the non-stochastic parts. This update is more stochastic than the update for , which explains why it achieves worse performance when is small."
+  },
+  {
+   "id": "sec_12_4",
+   "title": "Samples and Consistency",
+   "level": 2,
+   "text": "We show more samples in fig:cifar10-samples (CIFAR10), fig:celeba-samples (CelebA), fig:church-samples (Church) and consistency results of DDIM in fig:celeba-consistency (CelebA)."
+  },
+  {
+   "id": "sec_12_5",
+   "title": "Interpolation",
+   "level": 2,
+   "text": "To generate interpolations on a line, we randomly sample two initial values from the standard Gaussian, interpolate them with spherical linear interpolation , and then use the DDIM to obtain samples. where . These values are used to produce DDIM samples. To generate interpolations on a grid, we sample four latent variables and separate them in to two pairs; then we use slerp with the pairs under the same , and use slerp over the interpolated samples across the pairs (under an independently chosen interpolation coefficient). We show more grid interpolation results in fig:celeba-interp-grid (CelebA), fig:bedroom-interp-grid (Bedroom), and fig:church-interp-grid (Church)."
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "p_(\\vx_0) = \\int p_(\\vx_{0:T}) \\diff \\vx_{1:T}, \\quad \\text{where} \\quad  p_(\\vx_{0:T}) := p_(\\vx_T) \\prod_{t=1}^{T} p^{(t)}_(\\vx_{t-1} | \\vx_t)",
+   "section": "sec_2"
+  },
+  {
+   "id": "eq_2",
+   "latex": "\\max_ \\bb{E}_{q(\\vx_0)}[\\log p_(\\vx_0)] \\leq \\max_ \\bb{E}_{q(\\vx_0, \\vx_1, \\ldots, \\vx_T)}\\left[\\log p_(\\vx_{0:T}) - \\log q(\\vx_{1:T} | \\vx_0) \\right]",
+   "section": "sec_2"
+  },
+  {
+   "id": "eq_3",
+   "latex": "q(\\vx_{1:T} | \\vx_0) := \\prod_{t=1}^{T} q(\\vx_t | \\vx_{t-1}), \\text{where} \\ q(\\vx_t | \\vx_{t-1}) := \\gN\\left(\\sqrt{\\frac{\\alpha_t}{\\alpha_{t-1}}} \\vx_{t-1}, \\left(1 - \\frac{\\alpha_t}{\\alpha_{t-1}}\\right) \\mI\\right)",
+   "section": "sec_2"
+  },
+  {
+   "id": "eq_4",
+   "latex": "\\vx_t = \\sqrt{\\alpha_t} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon, \\quad \\text{where} \\quad \\epsilon \\sim \\gN(\\vzero, \\mI).",
+   "section": "sec_2"
+  },
+  {
+   "id": "eq_5",
+   "latex": "\\begin{aligned}\nL_\\gamma(\\epsilon_) & := \\sum_{t=1}^{T}\\gamma_t\\bb{E}_{\\vx_0 \\sim q(\\vx_0), \\epsilon_t \\sim \\gN(\\vzero, \\mI)}\\left[  \\norm{\\epsilon_{}^{(t)}(\\sqrt{\\alpha_t} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon_t) - \\epsilon_t}_2^2 \\right]\n\\end{aligned}",
+   "section": "sec_2"
+  },
+  {
+   "id": "eq_6",
+   "latex": "q_\\sigma(\\vx_{t} | \\vx_{t-1}, \\vx_0) = \\frac{q_\\sigma(\\vx_{t-1} | \\vx_{t}, \\vx_0) q_\\sigma(\\vx_{t} | \\vx_0)}{q_\\sigma(\\vx_{t-1} | \\vx_0)},",
+   "section": "sec_3_1"
+  },
+  {
+   "id": "eq_7",
+   "latex": "f_^{(t)}(\\vx_t) := (\\vx_t - \\sqrt{1 - \\alpha_t} \\cdot \\epsilon_{}^{(t)}(\\vx_t)) / \\sqrt{\\alpha_t}.",
+   "section": "sec_3_2"
+  },
+  {
+   "id": "eq_8",
+   "latex": "p_^{(t)}(\\vx_{t-1} | \\vx_t) = \\begin{cases}\n    \\gN(f_^{(1)}(\\vx_1), \\sigma_1^2 \\mI)  & \\text{if} \\ t = 1 \\\\\n    q_\\sigma(\\vx_{t-1} | \\vx_t, f_{}^{(t)}(\\vx_t)) & \\text{otherwise,}\n    \\end{cases}",
+   "section": "sec_3_2"
+  },
+  {
+   "id": "eq_9",
+   "latex": "\\begin{aligned}\n& J_\\sigma(\\epsilon_) :=\n   \\bb{E}_{\\vx_{0:T} \\sim q_\\sigma(\\vx_{0:T})}[\\log q_\\sigma(\\vx_{1:T} | \\vx_0) - \\log p_(\\vx_{0:T})] \\\\\n   = & \\ \\bb{E}_{\\vx_{0:T} \\sim q_\\sigma(\\vx_{0:T})} \\left[\\log q_\\sigma(\\vx_T | \\vx_0) + \\sum_{t=2}^{T} \\log q_\\sigma(\\vx_{t-1} | \\vx_t, \\vx_0) - \\sum_{t=1}^{T} \\log p_^{(t)}(\\vx_{t-1} | \\vx_t) - \\log p_(\\vx_T) \\right]\n\\end{aligned}",
+   "section": "sec_3_2"
+  },
+  {
+   "id": "eq_10",
+   "latex": "\\begin{aligned}\n\\vx_{t-1} & = \\sqrt{\\alpha_{t-1}} \\underbrace{\\left(\\frac{\\vx_t - \\sqrt{1 - \\alpha_t} \\epsilon_^{(t)}(\\vx_t)}{\\sqrt{\\alpha_t}}\\right)}_{\\text{`` predicted } \\vx_0 \\text{''}} + \\underbrace{\\sqrt{1 - \\alpha_{t-1} - \\sigma_t^2} \\cdot \\epsilon_^{(t)}(\\vx_t)}_{\\text{``direction pointing to } \\vx_t \\text{''}} + \\underbrace{\\sigma_t \\epsilon_t}_{\\text{random noise}}\n\\end{aligned}",
+   "section": "sec_4_1"
+  },
+  {
+   "id": "eq_11",
+   "latex": "\\frac{\\vx_{t-\\Delta t}}{\\sqrt{\\alpha_{t-\\Delta t}}}  = \\frac{\\vx_t}{\\sqrt{\\alpha_t}}  + \\left(\\sqrt{\\frac{1 - \\alpha_{t-\\Delta t}}{\\alpha_{t-\\Delta t}}} - \\sqrt{\\frac{1 - \\alpha_{t}}{\\alpha_t}}\\right) \\epsilon_^{(t)}(\\vx_t)",
+   "section": "sec_4_3"
+  },
+  {
+   "id": "eq_12",
+   "latex": "\\diff \\bar{\\vx}(t) = \\epsilon_^{(t)}\\left(\\frac{\\bar{\\vx}(t)}{\\sqrt{\\sigma^2 + 1}}\\right) \\diff \\sigma(t) ,",
+   "section": "sec_4_3"
+  },
+  {
+   "id": "eq_13",
+   "latex": "\\frac{\\vx_{t-\\Delta t}}{\\sqrt{\\alpha_{t-\\Delta t}}}  = \\frac{\\vx_t}{\\sqrt{\\alpha_t}}  + \\frac{1}{2}\\left(\\frac{1 - \\alpha_{t-\\Delta t}}{\\alpha_{t-\\Delta t}} - \\frac{1 - \\alpha_{t}}{\\alpha_t}\\right) \\cdot \\sqrt{\\frac{\\alpha_t}{1 - \\alpha_t}} \\cdot \\epsilon_^{(t)}(\\vx_t)",
+   "section": "sec_4_3"
+  },
+  {
+   "id": "eq_14",
+   "latex": "\\sigma_{\\tau_{i}}(\\eta) = \\eta \\sqrt{(1 - \\alpha_{\\tau_{i-1}})/(1 - \\alpha_{\\tau_{i}})}\\sqrt{1 - {\\alpha_{\\tau_i}}/{\\alpha_{\\tau_{i-1}}}},",
+   "section": "sec_5"
+  },
+  {
+   "id": "eq_15",
+   "latex": "q(\\vx_t | \\vx_0) = \\mathrm{Cat}(\\alpha_t \\vx_0 + (1 - \\alpha_t) \\vone_K)",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_16",
+   "latex": "q(\\vx_{t-1} | \\vx_t, \\vx_0) = \\begin{cases}\n    \\mathrm{Cat}(\\vx_t) & \\text{with probability } \\sigma_t \\\\\n    \\mathrm{Cat}(\\vx_0) & \\text{with probability } (\\alpha_{t-1} - \\sigma_t \\alpha_t) \\\\\n    \\mathrm{Cat}(\\vone_K) & \\text{with probability } (1 - \\alpha_{t-1}) - (1 - \\alpha_t) \\sigma_t\n    \\end{cases},",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_17",
+   "latex": "q(\\vx_{t-1} | \\vx_t, \\vx_0) = \\mathrm{Cat}\\left(\\sigma_t \\vx_t + (\\alpha_{t-1} - \\sigma_t \\alpha_t) \\vx_0 + ((1 - \\alpha_{t-1}) - (1 - \\alpha_t) \\sigma_t) \\vone_K\\right),",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_18",
+   "latex": "p_(\\vx_{t-1} | \\vx_t) = \\mathrm{Cat}\\left(\\sigma_t \\vx_t + (\\alpha_{t-1} - \\sigma_t \\alpha_t) f_^{(t)}(\\vx_t) + ((1 - \\alpha_{t-1}) - (1 - \\alpha_t) \\sigma_t) \\vone_K\\right),",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_19",
+   "latex": "\\KL(q(\\vx_{t-1} | \\vx_t, \\vx_0) \\Vert p_(\\vx_{t-1} | \\vx_t))",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_20",
+   "latex": "\\KL(q(\\vx_{t-1} | \\vx_t, \\vx_0) \\Vert p_(\\vx_{t-1} | \\vx_t)) \\leq (\\alpha_{t-1} - \\sigma_t \\alpha_t) \\KL(\\mathrm{Cat}(\\vx_0) \\Vert \\mathrm{Cat}(f_^{(t)}(\\vx_t))).",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_21",
+   "latex": "q_\\sigma(\\vx_{t} | \\vx_0) = \\gN(\\sqrt{\\alpha_t} \\vx_0, (1 - \\alpha_t) \\mI)",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_22",
+   "latex": "q_\\sigma(\\vx_{t-1} | \\vx_0) = \\gN(\\sqrt{\\alpha_{t-1}} \\vx_0, (1 - \\alpha_{t-1}) \\mI)",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_23",
+   "latex": "\\begin{aligned}\n\\mu_{t-1} & = \\sqrt{\\alpha_{t-1}} \\vx_{0} + \\sqrt{1 - \\alpha_{t-1} - \\sigma^2_t} \\cdot {\\frac{\\sqrt{\\alpha_t} \\vx_0  - \\sqrt{\\alpha_{t}} \\vx_0}{\\sqrt{1 - \\alpha_{t}}}} \\\\\n    & = \\sqrt{\\alpha_{t-1}} \\vx_{0}\n\\end{aligned}",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_24",
+   "latex": "\\begin{aligned}\n\\Sigma_{t-1} & = \\sigma_t^2 \\mI + \\frac{1 - \\alpha_{t-1} - \\sigma^2_t}{1 - \\alpha_t} (1 - \\alpha_t) \\mI = (1 - \\alpha_{t-1}) \\mI\n\\end{aligned}",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_25",
+   "latex": "\\begin{aligned}\nJ_\\sigma(\\epsilon_) & := \\bb{E}_{\\vx_{0:T} \\sim q(\\vx_{0:T})} \\left[\\log q_\\sigma(\\vx_T | \\vx_0) + \\sum_{t=2}^{T} \\log q_\\sigma(\\vx_{t-1} | \\vx_t, \\vx_0) - \\sum_{t=1}^{T} \\log p_^{(t)}(\\vx_{t-1} | \\vx_t) \\right] \\\\\n   & \\equiv \\bb{E}_{\\vx_{0:T} \\sim q(\\vx_{0:T})} \\left[\\sum_{t=2}^{T} \\KL(q_\\sigma(\\vx_{t-1} | \\vx_t, \\vx_0)) \\Vert p_^{(t)}(\\vx_{t-1} | \\vx_t)) - \\log p_^{(1)}(\\vx_0 | \\vx_1)  \\right]\n\\end{aligned}",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_26",
+   "latex": "\\begin{aligned}\n& \\bb{E}_{\\vx_{0}, \\vx_t \\sim q(\\vx_{0}, \\vx_t)} [\\KL(q_\\sigma(\\vx_{t-1} | \\vx_t, \\vx_0)) \\Vert p_^{(t)}(\\vx_{t-1} | \\vx_t))]  \\\\\n   = & \\ \\bb{E}_{\\vx_{0}, \\vx_t \\sim q(\\vx_{0}, \\vx_t)}[\\KL(q_\\sigma(\\vx_{t-1} | \\vx_t, \\vx_0)) \\Vert q_\\sigma(\\vx_{t-1} | \\vx_t, f_{}^{(t)}(\\vx_t)))]  \\\\\n   \\equiv & \\ \\bb{E}_{\\vx_{0}, \\vx_t \\sim q(\\vx_{0}, \\vx_t)}\\left[\\frac{\\norm{\\vx_0 - f_{}^{(t)}(\\vx_t)}_2^2}{2 \\sigma_t^2}\\right] \\\\\n   = & \\ \\bb{E}_{\\vx_{0} \\sim q(\\vx_{0}), \\epsilon \\sim \\gN(\\vzero, \\mI), \\vx_t = \\sqrt{\\alpha_t} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon}\\left[\\frac{\\norm{\\frac{{(\\vx_t - \\sqrt{1 - \\alpha_t} \\epsilon)}}{\\sqrt{\\alpha_t}} - \\frac{(\\vx_t - \\sqrt{1 - \\alpha_t} \\epsilon_{}^{(t)}(\\vx_t))}{\\sqrt{\\alpha_t}}}_2^2}{2 \\sigma_t^2}\\right] \\\\\n   = & \\ \\bb{E}_{\\vx_{0} \\sim q(\\vx_{0}), \\epsilon \\sim \\gN(\\vzero, \\mI), \\vx_t = \\sqrt{\\alpha_t} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon}\\left[\\frac{\\norm{\\epsilon - \\epsilon_{}^{(t)}(\\vx_t)}_2^2}{2 d \\sigma_t^2 \\alpha_t}\\right]\n\\end{aligned}",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_27",
+   "latex": "\\begin{aligned}\n& \\ \\bb{E}_{\\vx_{0}, \\vx_1 \\sim q(\\vx_{0}, \\vx_1)} \\left[ - \\log p_^{(1)}(\\vx_0 | \\vx_1)  \\right] \\equiv \\bb{E}_{\\vx_{0}, \\vx_1 \\sim q(\\vx_{0}, \\vx_1)}\\left[\\frac{\\norm{\\vx_0 - f_{}^{(t)}(\\vx_1)}_2^2}{2 \\sigma_1^2}\\right] \\\\\n   = & \\ \\bb{E}_{\\vx_{0} \\sim q(\\vx_{0}), \\epsilon \\sim \\gN(\\vzero, \\mI), \\vx_1 = \\sqrt{\\alpha_1} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon}\\left[\\frac{\\norm{\\epsilon - \\epsilon_{}^{(1)}(\\vx_1)}_2^2}{2 d \\sigma_1^2 \\alpha_1}\\right]\n\\end{aligned}",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_28",
+   "latex": "J_\\sigma(\\epsilon_) \\equiv \\sum_{t=1}^{T} \\frac{1}{2 d \\sigma_t^2 \\alpha_t} \\bb{E}\\left[\\norm{\\epsilon_{}^{(t)}(\\vx_t) - \\epsilon_t}_2^2 \\right] = L_\\gamma(\\epsilon_)",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_29",
+   "latex": "\\bar{\\vx}(t) = \\bar{\\vx}(0) + \\sigma(t) \\epsilon, \\quad \\epsilon \\sim \\gN(0, \\mI),",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_30",
+   "latex": "\\frac{\\vx(t)}{\\sqrt{\\alpha(t)}} = \\frac{\\vx(0)}{\\sqrt{\\alpha(0)}} + \\sqrt{\\frac{1 - \\alpha(t)}{\\alpha(t)}} \\epsilon, \\quad \\epsilon \\sim \\gN(0, \\mI)",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_31",
+   "latex": "\\bar{\\vx}(t) = \\bar{\\vx}(0) + \\sigma(t) \\epsilon.",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_32",
+   "latex": "\\frac{\\vx_{t-\\Delta t}}{\\sqrt{\\alpha_{t-\\Delta t}}}  = \\frac{\\vx_t}{\\sqrt{\\alpha_t}}  + \\left(\\sqrt{\\frac{1 - \\alpha_{t-\\Delta t}}{\\alpha_{t-\\Delta t}}} - \\sqrt{\\frac{1 - \\alpha_{t}}{\\alpha_t}}\\right) \\epsilon_^{(t)}(\\vx_t),",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_33",
+   "latex": "\\bar{\\vx}(t-\\Delta t) = \\bar{\\vx}(t) + (\\sigma(t-\\Delta t) - \\sigma(t)) \\cdot \\epsilon_^{(t)}(\\vx(t))",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_34",
+   "latex": "\\frac{\\diff \\bar{\\vx}(t)}{\\diff t} = \\frac{\\diff \\sigma(t)}{\\diff t} \\epsilon_^{(t)}\\left(\\frac{\\bar{\\vx}(t)}{\\sqrt{\\sigma^2(t) + 1}}\\right),",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_35",
+   "latex": "\\epsilon_^{(t)} = \\argmin_{f_t} \\bb{E}_{\\vx(0) \\sim q(\\vx), \\epsilon \\sim \\gN(0, \\mI)}[\\norm{f_t(\\vx(t)) - \\epsilon}_2^2]",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_36",
+   "latex": "\\diff \\bar{\\vx} = -\\frac{1}{2} g(t)^2 \\nabla_{\\bar{\\vx}} \\log p_t(\\bar{\\vx}) \\diff t",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_37",
+   "latex": "\\nabla_{\\bar{\\vx}} \\log p_t = \\argmin_{g_t} \\bb{E}_{\\vx(0) \\sim q(\\vx), \\epsilon \\sim \\gN(0, \\mI)}[\\norm{g_t(\\bar{\\vx}) + \\epsilon / \\sigma(t)}_2^2]",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_38",
+   "latex": "\\diff \\bar{\\vx}(t) = \\frac{1}{2} \\frac{\\diff \\sigma^2(t)}{\\diff t} \\frac{\\epsilon_^{(t)}\\left(\\frac{\\bar{\\vx}(t)}{\\sqrt{\\sigma^2(t) + 1}}\\right)}{\\sigma(t)} \\diff t,",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_39",
+   "latex": "\\frac{\\diff \\bar{\\vx}(t)}{\\diff t} = \\frac{\\diff \\sigma(t)}{\\diff t} \\epsilon_^{(t)}\\left(\\frac{\\bar{\\vx}(t)}{\\sqrt{\\sigma^2(t) + 1}}\\right)",
+   "section": "sec_10"
+  },
+  {
+   "id": "eq_40",
+   "latex": "q_{\\sigma, \\tau}(\\vx_{1:T} | \\vx_0) = q_{\\sigma, \\tau}(\\vx_{\\tau_{S}} | \\vx_0) \\prod_{i=1}^{S} q_{\\sigma, \\tau}(\\vx_{\\tau_{i-1}} | \\vx_{\\tau_{i}}, \\vx_0) \\prod_{t \\in \\bar{\\tau}} q_{\\sigma, \\tau}(\\vx_{t} | \\vx_0)",
+   "section": "sec_11_1"
+  },
+  {
+   "id": "eq_41",
+   "latex": "q_{\\sigma, \\tau}(\\vx_{\\tau_i} | \\vx_0) = \\gN(\\sqrt{\\alpha_{\\tau_i}} \\vx_0, (1 - \\alpha_{\\tau_i}) \\mI) \\quad \\forall i \\in [S]",
+   "section": "sec_11_1"
+  },
+  {
+   "id": "eq_42",
+   "latex": "p_(\\vx_{0:T}) := \\underbrace{p_(\\vx_T) \\prod_{i=1}^{S} p^{(\\tau_i)}_(\\vx_{\\tau_{i-1}} | \\vx_{\\tau_i})}_{\\text{use to produce samples}} \\times \\underbrace{\\prod_{t \\in \\bar{\\tau}} p_^{(t)}(\\vx_{0} | \\vx_t)}_{\\text{in variational objective}}",
+   "section": "sec_11_1"
+  },
+  {
+   "id": "eq_43",
+   "latex": "\\begin{aligned}\nJ(\\epsilon_) & = \\bb{E}_{\\vx_{0:T} \\sim q_{\\sigma, \\tau}(\\vx_{0:T})}[ \\log q_{\\sigma, \\tau}(\\vx_{1:T} | \\vx_0) - \\log p_(\\vx_{0:T})] \\\\\n   & =\\bb{E}_{\\vx_{0:T} \\sim q_{\\sigma, \\tau}(\\vx_{0:T})}\\Bigg[ \\sum_{t \\in \\bar{\\tau}} \\KL(q_{\\sigma, \\tau}(\\vx_{t} | \\vx_0) \\Vert p_^{(t)}(\\vx_0 | \\vx_{t}) \\\\\n   & \\qquad \\qquad \\qquad \\qquad + \\sum_{i=1}^{L} \\KL(q_{\\sigma, \\tau}(\\vx_{\\tau_{i-1}} | \\vx_{\\tau_{i}}, \\vx_0) \\Vert p_^{(\\tau_i)}(\\vx_{\\tau_{i-1}} | \\vx_{\\tau_i})) ) \\Bigg]\n\\end{aligned}",
+   "section": "sec_11_1"
+  },
+  {
+   "id": "eq_44",
+   "latex": "q(\\vx_{t-1} | \\vx_t, \\vx_0) = \\gN\\Bigg(\\underbrace{\\frac{\\sqrt{\\alpha_{t-1}}{\\color{teal} \\beta_t}}{1 - \\alpha_t} \\vx_0 + \\frac{\\sqrt{{\\color{teal} \\alpha_t}} (1 - \\alpha_{t-1})}{1 - \\alpha_t} \\vx_t}_{\\color{teal} \\tilde{\\mu}(\\vx_t, \\vx_0)}, \\frac{1 - \\alpha_{t-1}}{1 - \\alpha_t} {\\color{teal} \\beta_t}\\mI\\Bigg)",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_45",
+   "latex": "p_^{(t)}(\\vx_{t-1} | \\vx_t) = \\gN\\left({\\color{teal} \\mu_(\\vx_t, t)}, \\sigma_t \\mI\\right)",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_46",
+   "latex": "\\begin{aligned}\n{\\color{teal} L} & := \\bb{E}_{\\vx_{0:T} \\sim q(\\vx_{0:T})} \\left[q(\\vx_T | \\vx_0) + \\sum_{t=2}^{T} \\log q(\\vx_{t-1} | \\vx_t, \\vx_0) - \\sum_{t=1}^{T} \\log p_^{(t)}(\\vx_{t-1} | \\vx_t) \\right] \\\\\n   & \\equiv \\bb{E}_{\\vx_{0:T} \\sim q(\\vx_{0:T})} \\left[\\sum_{t=2}^{T} \\underbrace{\\KL(q(\\vx_{t-1} | \\vx_t, \\vx_0)) \\Vert p_^{(t)}(\\vx_{t-1} | \\vx_t))}_{\\color{teal} L_{t-1}} - \\log p_^{(1)}(\\vx_0 | \\vx_1) \\right]\n\\end{aligned}",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_47",
+   "latex": "{\\color{teal} L_{t-1}} = \\bb{E}_q\\left[\\frac{1}{2\\sigma_t^2} \\norm{{\\color{teal} \\mu_(\\vx_t, t)} - {\\color{teal} \\tilde{\\mu}(\\vx_t, \\vx_0)}}_2^2\\right]",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_48",
+   "latex": "{\\color{teal} \\mu_(\\vx_t, t)} = \\frac{1}{\\sqrt{{\\color{teal} \\alpha_t}}} \\left(\\vx_t - \\frac{{\\color{teal} \\beta_t}}{\\sqrt{1 - \\alpha_t}} {\\color{teal} \\epsilon_(\\vx_t, t)}\\right)",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_49",
+   "latex": "{\\color{teal} L_{t-1}} = \\bb{E}_{\\vx_0, \\epsilon}\\left[\\frac{{\\color{teal} \\beta_t}^2}{2\\sigma_t^2 (1 - \\alpha_t) {\\color{teal} \\alpha_t}} \\norm{\\epsilon - {\\color{teal} \\epsilon_(\\sqrt{\\alpha_t} \\vx_0 + \\sqrt{1 - \\alpha_t} \\epsilon, t)}}_2^2\\right]",
+   "section": "sec_11_2"
+  },
+  {
+   "id": "eq_50",
+   "latex": "\\vx_{\\tau_{i-1}}(\\eta) = \\sqrt{\\alpha_{\\tau_{i-1}}} \\left(\\frac{\\vx_{\\tau_{i}} - \\sqrt{1 - \\alpha_{\\tau_i}} \\epsilon_^{(\\tau_i)}(\\vx_{\\tau_{i}})}{\\sqrt{\\alpha_{\\tau_i}}}\\right) + \\sqrt{1 - \\alpha_{\\tau_{i-1}} - \\sigma_{\\tau_i}(\\eta)^2} \\cdot \\epsilon_^{(\\tau_i)}(\\vx_{\\tau_{i}}) + \\sigma_{\\tau_i}(\\eta) \\epsilon",
+   "section": "sec_12_3"
+  },
+  {
+   "id": "eq_51",
+   "latex": "\\vx_{\\tau_{i-1}} = \\sqrt{\\alpha_{\\tau_{i-1}}} \\left(\\frac{\\vx_{\\tau_{i}} - \\sqrt{1 - \\alpha_{\\tau_i}} \\epsilon_^{(\\tau_i)}(\\vx_{\\tau_{i}})}{\\sqrt{\\alpha_{\\tau_i}}}\\right) + \\sqrt{1 - \\alpha_{\\tau_{i-1}} - \\sigma_{\\tau_i}(1)^2} \\cdot \\epsilon_^{(\\tau_i)}(\\vx_{\\tau_{i}}) + \\hat{\\sigma}_{\\tau_{i}} \\epsilon",
+   "section": "sec_12_3"
+  },
+  {
+   "id": "eq_52",
+   "latex": "\\vx_T^{(\\alpha)} =  \\frac{\\sin((1 - \\alpha) )}{\\sin()} \\vx_{T}^{(0)} + \\frac{\\sin(\\alpha )}{\\sin()} \\vx_{T}^{(1)}",
+   "section": "sec_12_5"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_5_1",
+   "caption": "CIFAR10 and CelebA image generation measured in FID. $\\eta = 1.0$ and $\\hat{\\sigma}$ are cases of {\\color{DarkOrange}DDPM} (although \\citet{ho2020denoising} only considered $T=1000$ steps, and $S < T$ can be seen as simulating DDPMs trained with $S$ steps), and $\\eta = 0.0$ indicates {\\color{DarkCyan}DDIM}.",
+   "rows": [
+    [
+     "",
+     "",
+     "CIFAR10 ($32 \\times 32$)",
+     "CelebA ($64 \\times 64$)"
+    ],
+    [
+     "$S$",
+     "10",
+     "20",
+     "50",
+     "100",
+     "1000",
+     "10",
+     "20",
+     "50",
+     "100",
+     "1000"
+    ],
+    [
+     "\\rowcolor{LightCyan} \\multirow{4}{*}{$\\eta$}",
+     "$0.0$",
+     "13.36",
+     "6.84",
+     "4.67",
+     "4.16",
+     "4.04",
+     "17.33",
+     "13.73",
+     "9.17",
+     "6.53",
+     "3.51"
+    ],
+    [
+     "",
+     "0.2",
+     "14.04",
+     "7.11",
+     "4.77",
+     "4.25",
+     "4.09",
+     "17.66",
+     "14.11",
+     "9.51",
+     "6.79",
+     "3.64"
+    ],
+    [
+     "",
+     "0.5",
+     "16.66",
+     "8.35",
+     "5.25",
+     "4.46",
+     "4.29",
+     "19.86",
+     "16.06",
+     "11.01",
+     "8.09",
+     "4.28"
+    ],
+    [
+     "\\rowcolor{LightOrange}",
+     "1.0",
+     "41.07",
+     "18.36",
+     "8.01",
+     "5.78",
+     "4.73",
+     "33.12",
+     "26.03",
+     "18.48",
+     "13.93",
+     "5.98"
+    ],
+    [
+     "\\rowcolor{LightOrange} \\multicolumn{2}{c|}{$\\hat{\\sigma}$}",
+     "367.43",
+     "133.37",
+     "32.72",
+     "9.99",
+     "3.17",
+     "299.71",
+     "183.83",
+     "71.71",
+     "45.20",
+     "3.26"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_5_4",
+   "caption": "Reconstruction error with DDIM on CIFAR-10 test set, rounded to $10^{-4}$.",
+   "rows": [
+    [
+     "$S$",
+     "10",
+     "20",
+     "50",
+     "100",
+     "200",
+     "500",
+     "1000"
+    ],
+    [
+     "Error",
+     "0.014",
+     "0.0065",
+     "0.0023",
+     "0.0009",
+     "0.0004",
+     "0.0001",
+     "$0.0001$"
+    ]
+   ]
+  },
+  {
+   "id": "tab_3",
+   "section": "sec_12_1",
+   "caption": "LSUN Bedroom and Church image generation results, measured in FID. For 1000 steps DDPM, the FIDs are 6.36 for Bedroom and 7.89 for Church.",
+   "rows": [
+    [
+     "",
+     "Bedroom ($256 \\times 256$)",
+     "Church ($256 \\times 256$)"
+    ],
+    [
+     "$\\dim(\\tau)$",
+     "10",
+     "20",
+     "50",
+     "100",
+     "10",
+     "20",
+     "50",
+     "100"
+    ],
+    [
+     "DDIM ($\\eta = 0.0$)",
+     "16.95",
+     "8.89",
+     "6.75",
+     "6.62",
+     "19.45",
+     "12.47",
+     "10.84",
+     "10.58"
+    ],
+    [
+     "DDPM ($\\eta = 1.0$)",
+     "42.78",
+     "22.77",
+     "10.81",
+     "6.81",
+     "51.56",
+     "23.37",
+     "11.16",
+     "8.27"
+    ]
+   ]
+  }
+ ],
+ "macros": {
+  "\\figleft": "{\\em (Left)}",
+  "\\figcenter": "{\\em (Center)}",
+  "\\figright": "{\\em (Right)}",
+  "\\figtop": "{\\em (Top)}",
+  "\\figbottom": "{\\em (Bottom)}",
+  "\\captiona": "{\\em (a)}",
+  "\\captionb": "{\\em (b)}",
+  "\\captionc": "{\\em (c)}",
+  "\\captiond": "{\\em (d)}",
+  "\\bb": "{\\mathbb{#1}}",
+  "\\norm": "{\\lVert {#1} \\rVert}",
+  "\\diff": "\\mathrm{d}",
+  "\\newterm": "{\\bf #1}",
+  "\\train": "\\mathcal{D}",
+  "\\valid": "\\mathcal{D_{\\mathrm{valid}}}",
+  "\\test": "\\mathcal{D_{\\mathrm{test}}}",
+  "\\defeq": "\\vcentcolon=",
+  "\\eqdef": "=\\vcentcolon",
+  "\\at": "#1|_{#2}",
+  "\\tens": "\\bm{\\mathsfit{#1}}",
+  "\\etens": "\\mathsfit{#1}",
+  "\\pdata": "p_{\\rm{data}}",
+  "\\ptrain": "\\hat{p}_{\\rm{data}}",
+  "\\Ptrain": "\\hat{P}_{\\rm{data}}",
+  "\\pmodel": "p_{\\rm{model}}",
+  "\\Pmodel": "P_{\\rm{model}}",
+  "\\ptildemodel": "\\tilde{p}_{\\rm{model}}",
+  "\\pencode": "p_{\\rm{encoder}}",
+  "\\pdecode": "p_{\\rm{decoder}}",
+  "\\precons": "p_{\\rm{reconstruct}}",
+  "\\laplace": "\\mathrm{Laplace}",
+  "\\E": "\\mathbb{E}",
+  "\\Ls": "\\mathcal{L}",
+  "\\R": "\\mathbb{R}",
+  "\\emp": "\\tilde{p}",
+  "\\lr": "\\alpha",
+  "\\reg": "\\lambda",
+  "\\rect": "\\mathrm{rectifier}",
+  "\\softmax": "\\mathrm{softmax}",
+  "\\sigmoid": "\\sigma",
+  "\\softplus": "\\zeta",
+  "\\KL": "D_{\\mathrm{KL}}",
+  "\\DF": "D_f",
+  "\\Var": "\\mathrm{Var}",
+  "\\standarderror": "\\mathrm{SE}",
+  "\\Cov": "\\mathrm{Cov}",
+  "\\normlzero": "L^0",
+  "\\normlone": "L^1",
+  "\\normltwo": "L^2",
+  "\\normlp": "L^p",
+  "\\normmax": "L^\\infty",
+  "\\parents": "Pa",
+  "\\argmax": "\\operatorname*{arg\\,max}",
+  "\\argmin": "\\operatorname*{arg\\,min}",
+  "\\sign": "\\operatorname{sign}",
+  "\\Tr": "\\operatorname{Tr}",
+  "\\numberthis": "",
+  "\\js": "{\\color{teal} [JS: #1]}",
+  "\\se": "{\\color{magenta} [SE: #1]}",
+  "\\kk": "{\\color{blue} [KK: #1]}",
+  "\\emptyset": "\\varnothing",
+  "\\dop": "\\mathrm{do}",
+  "\\supp": "\\mathrm{supp}",
+  "\\fix": "\\marginpar{FIX}",
+  "\\new": "\\marginpar{NEW}"
+ },
+ "references": [
+  {
+   "key": "arjovsky2017wasserstein",
+   "text": "Martin Arjovsky, Soumith Chintala, and L{\\'e}on Bottou. \\newblock Wasserstein {GAN}. \\newblock \\emph{arXiv preprint arXiv:1701.07875}, January 2017.",
+   "arxiv_id": "1701.07875"
+  },
+  {
+   "key": "bau2019seeing",
+   "text": "David Bau, Jun-Yan Zhu, Jonas Wulff, William Peebles, Hendrik Strobelt, Bolei Zhou, and Antonio Torralba. \\newblock Seeing what a gan cannot generate. \\newblock In \\emph{Proceedings of the IEEE International Conference on Computer Vision}, pp.\\ 4502--4511, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bengio2014deep",
+   "text": "Yoshua Bengio, Eric Laufer, Guillaume Alain, and Jason Yosinski. \\newblock Deep generative stochastic networks trainable by backprop. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 226--234, January 2014.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bishop2006pattern",
+   "text": "Christopher~M Bishop. \\newblock \\emph{Pattern recognition and machine learning}. \\newblock springer, 2006.",
+   "arxiv_id": null
+  },
+  {
+   "key": "brock2018large",
+   "text": "Andrew Brock, Jeff Donahue, and Karen Simonyan. \\newblock Large scale {GAN} training for high fidelity natural image synthesis. \\newblock \\emph{arXiv preprint arXiv:1809.11096}, September 2018.",
+   "arxiv_id": "1809.11096"
+  },
+  {
+   "key": "butcher2008numerical",
+   "text": "John~Charles Butcher and Nicolette Goodwin. \\newblock \\emph{Numerical methods for ordinary differential equations}, volume~2. \\newblock Wiley Online Library, 2008.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chen2020wavegrad",
+   "text": "Nanxin Chen, Yu~Zhang, Heiga Zen, Ron~J Weiss, Mohammad Norouzi, and William Chan. \\newblock {WaveGrad}: Estimating gradients for waveform generation. \\newblock \\emph{arXiv preprint arXiv:2009.00713}, September 2020.",
+   "arxiv_id": "2009.00713"
+  },
+  {
+   "key": "chen2018neural",
+   "text": "Ricky T~Q Chen, Yulia Rubanova, Jesse Bettencourt, and David Duvenaud. \\newblock Neural ordinary differential equations. \\newblock \\emph{arXiv preprint arXiv:1806.07366}, June 2018.",
+   "arxiv_id": "1806.07366"
+  },
+  {
+   "key": "dinh2016density",
+   "text": "Laurent Dinh, Jascha Sohl-Dickstein, and Samy Bengio. \\newblock Density estimation using real {NVP}. \\newblock \\emph{arXiv preprint arXiv:1605.08803}, May 2016.",
+   "arxiv_id": "1605.08803"
+  },
+  {
+   "key": "goodfellow2014generative",
+   "text": "Ian Goodfellow, Jean Pouget-Abadie, Mehdi Mirza, Bing Xu, David Warde-Farley, Sherjil Ozair, Aaron Courville, and Yoshua Bengio. \\newblock Generative adversarial nets. \\newblock In \\emph{Advances in neural information processing systems}, pp.\\ 2672--2680, 2014.",
+   "arxiv_id": null
+  },
+  {
+   "key": "goyal2017variational",
+   "text": "Anirudh Goyal, Nan~Rosemary Ke, Surya Ganguli, and Yoshua Bengio. \\newblock Variational walkback: Learning a transition operator as a stochastic recurrent net. \\newblock In \\emph{Advances in Neural Information Processing Systems}, pp.\\ 4392--4402, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "grathwohl2018ffjord",
+   "text": "Will Grathwohl, Ricky T~Q Chen, Jesse Bettencourt, Ilya Sutskever, and David Duvenaud. \\newblock {FFJORD}: Free-form continuous dynamics for scalable reversible generative models. \\newblock \\emph{arXiv preprint arXiv:1810.01367}, October 2018.",
+   "arxiv_id": "1810.01367"
+  },
+  {
+   "key": "gulrajani2017improved",
+   "text": "Ishaan Gulrajani, Faruk Ahmed, Martin Arjovsky, Vincent Dumoulin, and Aaron~C Courville. \\newblock Improved training of wasserstein gans. \\newblock In \\emph{Advances in Neural Information Processing Systems}, pp.\\ 5769--5779, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "heusel2017gans",
+   "text": "Martin Heusel, Hubert Ramsauer, Thomas Unterthiner, Bernhard Nessler, and Sepp Hochreiter. \\newblock {GANs} trained by a two {Time-Scale} update rule converge to a local nash equilibrium. \\newblock \\emph{arXiv preprint arXiv:1706.08500}, June 2017.",
+   "arxiv_id": "1706.08500"
+  },
+  {
+   "key": "ho2020denoising",
+   "text": "Jonathan Ho, Ajay Jain, and Pieter Abbeel. \\newblock Denoising diffusion probabilistic models. \\newblock \\emph{arXiv preprint arXiv:2006.11239}, June 2020.",
+   "arxiv_id": "2006.11239"
+  },
+  {
+   "key": "h2005estimation",
+   "text": "Aapo Hyv{\\\"a}rinen. \\newblock Estimation of {Non-Normalized} statistical models by score matching. \\newblock \\emph{Journal of Machine Learning Researc h}, 6:\\penalty0 695--709, 2005.",
+   "arxiv_id": null
+  },
+  {
+   "key": "Jolicoeur-Martineau2020adversarial",
+   "text": "Alexia Jolicoeur-Martineau, R{\\'e}mi Pich{\\'e}-Taillefer, R{\\'e}mi~Tachet des Combes, and Ioannis Mitliagkas. \\newblock Adversarial score matching and improved sampling for image generation. \\newblock September 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "jordan1998variational",
+   "text": "Richard Jordan, David Kinderlehrer, and Felix Otto. \\newblock The variational formulation of the fokker--planck equation. \\newblock \\emph{SIAM journal on mathematical analysis}, 29\\penalty0 (1):\\penalty0 1--17, 1998.",
+   "arxiv_id": null
+  },
+  {
+   "key": "karras2018a",
+   "text": "Tero Karras, Samuli Laine, and Timo Aila. \\newblock A {Style-Based} generator architecture for generative adversarial networks. \\newblock \\emph{arXiv preprint arXiv:1812.04948}, December 2018.",
+   "arxiv_id": "1812.04948"
+  },
+  {
+   "key": "karras2020analyzing",
+   "text": "Tero Karras, Samuli Laine, Miika Aittala, Janne Hellsten, Jaakko Lehtinen, and Timo Aila. \\newblock Analyzing and improving the image quality of stylegan. \\newblock In \\emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}, pp.\\ 8110--8119, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kingma2013auto",
+   "text": "Diederik~P Kingma and Max Welling. \\newblock {Auto-Encoding} variational bayes. \\newblock \\emph{arXiv preprint arXiv:1312.6114v10}, December 2013.",
+   "arxiv_id": "1312.6114"
+  },
+  {
+   "key": "levy2017generalizing",
+   "text": "Daniel Levy, Matthew~D Hoffman, and Jascha Sohl-Dickstein. \\newblock Generalizing hamiltonian monte carlo with neural networks. \\newblock \\emph{arXiv preprint arXiv:1711.09268}, 2017.",
+   "arxiv_id": "1711.09268"
+  },
+  {
+   "key": "mohamed2016learning",
+   "text": "Shakir Mohamed and Balaji Lakshminarayanan. \\newblock Learning in implicit generative models. \\newblock \\emph{arXiv preprint arXiv:1610.03483}, October 2016.",
+   "arxiv_id": "1610.03483"
+  },
+  {
+   "key": "neal2011mcmc",
+   "text": "Radford~M Neal et~al. \\newblock Mcmc using hamiltonian dynamics. \\newblock \\emph{Handbook of markov chain monte carlo}, 2\\penalty0 (11):\\penalty0 2, 2011.",
+   "arxiv_id": null
+  },
+  {
+   "key": "queiruga2020continuous",
+   "text": "Alejandro~F Queiruga, N~Benjamin Erichson, Dane Taylor, and Michael~W Mahoney. \\newblock Continuous-in-depth neural networks. \\newblock \\emph{arXiv preprint arXiv:2008.02389}, 2020.",
+   "arxiv_id": "2008.02389"
+  },
+  {
+   "key": "raphan2011least",
+   "text": "Martin Raphan and Eero~P Simoncelli. \\newblock Least squares estimation without priors or supervision. \\newblock \\emph{Neural computation}, 23\\penalty0 (2):\\penalty0 374--420, February 2011. \\newblock ISSN 0899-7667, 1530-888X.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rezende2015variational",
+   "text": "Danilo~Jimenez Rezende and Shakir Mohamed. \\newblock Variational inference with normalizing flows. \\newblock \\emph{arXiv preprint arXiv:1505.05770}, May 2015.",
+   "arxiv_id": "1505.05770"
+  },
+  {
+   "key": "rezende2014stochastic",
+   "text": "Danilo~Jimenez Rezende, Shakir Mohamed, and Daan Wierstra. \\newblock Stochastic backpropagation and approximate inference in deep generative models. \\newblock \\emph{arXiv preprint arXiv:1401.4082}, 2014.",
+   "arxiv_id": "1401.4082"
+  },
+  {
+   "key": "ronneberger2015u",
+   "text": "Olaf Ronneberger, Philipp Fischer, and Thomas Brox. \\newblock U-net: Convolutional networks for biomedical image segmentation. \\newblock In \\emph{International Conference on Medical image computing and computer-assisted intervention}, pp.\\ 234--241. Springer, 2015.",
+   "arxiv_id": null
+  },
+  {
+   "key": "salimans2014markov",
+   "text": "Tim Salimans, Diederik~P Kingma, and Max Welling. \\newblock Markov chain monte carlo and variational inference: Bridging the gap. \\newblock \\emph{arXiv preprint arXiv:1410.6460}, October 2014.",
+   "arxiv_id": "1410.6460"
+  },
+  {
+   "key": "shoemake1985animating",
+   "text": "Ken Shoemake. \\newblock Animating rotation with quaternion curves. \\newblock In \\emph{Proceedings of the 12th annual conference on Computer graphics and interactive techniques}, pp.\\ 245--254, 1985.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sohl-dickstein2015deep",
+   "text": "Jascha Sohl-Dickstein, Eric~A Weiss, Niru Maheswaranathan, and Surya Ganguli. \\newblock Deep unsupervised learning using nonequilibrium thermodynamics. \\newblock \\emph{arXiv preprint arXiv:1503.03585}, March 2015.",
+   "arxiv_id": "1503.03585"
+  },
+  {
+   "key": "song2017a",
+   "text": "Jiaming Song, Shengjia Zhao, and Stefano Ermon. \\newblock A-nice-mc: Adversarial training for mcmc. \\newblock \\emph{arXiv preprint arXiv:1706.07561}, June 2017.",
+   "arxiv_id": "1706.07561"
+  },
+  {
+   "key": "song2019generative",
+   "text": "Yang Song and Stefano Ermon. \\newblock Generative modeling by estimating gradients of the data distribution. \\newblock \\emph{arXiv preprint arXiv:1907.05600}, July 2019.",
+   "arxiv_id": "1907.05600"
+  },
+  {
+   "key": "song2020improved",
+   "text": "Yang Song and Stefano Ermon. \\newblock Improved techniques for training {Score-Based} generative models. \\newblock \\emph{arXiv preprint arXiv:2006.09011}, June 2020.",
+   "arxiv_id": "2006.09011"
+  },
+  {
+   "key": "song2020score",
+   "text": "Yang Song, Jascha Sohl-Dickstein, Diederik~P Kingma, Abhishek Kumar, Stefano Ermon, and Ben Poole. \\newblock Score-based generative modeling through stochastic differential equations. \\newblock \\emph{arXiv preprint arXiv:2011.13456}, 2020.",
+   "arxiv_id": "2011.13456"
+  },
+  {
+   "key": "oord2016wavenet",
+   "text": "Aaron van~den Oord, Sander Dieleman, Heiga Zen, Karen Simonyan, Oriol Vinyals, Alex Graves, Nal Kalchbrenner, Andrew Senior, and Koray Kavukcuoglu. \\newblock {WaveNet}: A generative model for raw audio. \\newblock \\emph{arXiv preprint arXiv:1609.03499}, September 2016{\\natexlab{a}}.",
+   "arxiv_id": "1609.03499"
+  },
+  {
+   "key": "oord2016pixel",
+   "text": "Aaron van~den Oord, Nal Kalchbrenner, and Koray Kavukcuoglu. \\newblock Pixel recurrent neural networks. \\newblock \\emph{arXiv preprint arXiv:1601.06759}, January 2016{\\natexlab{b}}.",
+   "arxiv_id": "1601.06759"
+  },
+  {
+   "key": "vincent2011connection",
+   "text": "Pascal Vincent. \\newblock A connection between score matching and denoising autoencoders. \\newblock \\emph{Neural computation}, 23\\penalty0 (7):\\penalty0 1661--1674, 2011.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zagoruyko2016wide",
+   "text": "Sergey Zagoruyko and Nikos Komodakis. \\newblock Wide residual networks. \\newblock \\emph{arXiv preprint arXiv:1605.07146}, May 2016.",
+   "arxiv_id": "1605.07146"
+  },
+  {
+   "key": "zhao2018bias",
+   "text": "Shengjia Zhao, Hongyu Ren, Arianna Yuan, Jiaming Song, Noah Goodman, and Stefano Ermon. \\newblock Bias and generalization in deep generative models: An empirical study. \\newblock In \\emph{Advances in Neural Information Processing Systems}, pp.\\ 10792--10801, 2018.",
+   "arxiv_id": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_2",
+   "caption": "Graphical models for diffusion (left) and non-Markovian (right) inference models.",
+   "graphics": [
+    "figures/diffusion-orig.pdf",
+    "figures/diffusion-generalized.pdf"
+   ],
+   "assets": [
+    "figures/diffusion-orig.png",
+    "figures/diffusion-generalized.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_4_2",
+   "caption": "Graphical model for accelerated generation, where $\\tau = [1, 3]$.",
+   "graphics": [
+    "figures/diffusion-figure-acc.pdf"
+   ],
+   "assets": [
+    "figures/diffusion-figure-acc.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_5_1",
+   "caption": "CIFAR10 and CelebA samples with $\\dim(\\tau) = 10$ and $\\dim(\\tau) = 100$.",
+   "graphics": [
+    "figures/cifar10-dim10.pdf",
+    "figures/cifar10-dim100.pdf",
+    "figures/celeba-dim10.pdf",
+    "figures/celeba-dim100.pdf"
+   ],
+   "assets": [
+    "figures/cifar10-dim10.png",
+    "figures/cifar10-dim100.png",
+    "figures/celeba-dim10.png",
+    "figures/celeba-dim100.png"
+   ]
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_5_1",
+   "caption": "Hours to sample 50k images with one Nvidia 2080 Ti GPU and samples at different steps.",
+   "graphics": [
+    "figures/cifar10-tvh.pdf",
+    "figures/bedroom-tvh.pdf"
+   ],
+   "assets": [
+    "figures/cifar10-tvh.png",
+    "figures/bedroom-tvh.png"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_5_2",
+   "caption": "Samples from DDIM with the same random $\\vx_T$ and different number of steps.",
+   "graphics": [
+    "figures/cifar10-consistency.pdf",
+    "figures/bedroom-consistency.pdf",
+    "figures/church-consistency.pdf"
+   ],
+   "assets": [
+    "figures/cifar10-consistency.png",
+    "figures/bedroom-consistency.png",
+    "figures/church-consistency.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_5_3",
+   "caption": "Interpolation of samples from DDIM with $\\dim(\\tau) = 50$.",
+   "graphics": [
+    "figures/celeba-interp-line.png",
+    "figures/bedroom-interp-line.png",
+    "figures/church-interp-line.png"
+   ],
+   "assets": [
+    "figures/celeba-interp-line.png",
+    "figures/bedroom-interp-line.png",
+    "figures/church-interp-line.png"
+   ]
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_12_4",
+   "caption": "CIFAR10 samples from 1000 step DDPM, 1000 step DDIM and 100 step DDIM.",
+   "graphics": [
+    "figures/cifar10-samples-uniform-1000-ddpm.pdf",
+    "figures/cifar10-samples-pt-1000-ddim.pdf",
+    "figures/cifar10-samples-quad-100-ddim.pdf"
+   ],
+   "assets": [
+    "figures/cifar10-samples-uniform-1000-ddpm.png",
+    "figures/cifar10-samples-pt-1000-ddim.png",
+    "figures/cifar10-samples-quad-100-ddim.png"
+   ]
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_12_4",
+   "caption": "CelebA samples from 1000 step DDPM, 1000 step DDIM and 100 step DDIM.",
+   "graphics": [
+    "figures/celeba-samples-uniform-1000-ddpm.pdf",
+    "figures/celeba-samples-uniform-1000-ddim.pdf",
+    "figures/celeba-samples-uniform-100-ddim.pdf"
+   ],
+   "assets": [
+    "figures/celeba-samples-uniform-1000-ddpm.png",
+    "figures/celeba-samples-uniform-1000-ddim.png",
+    "figures/celeba-samples-uniform-100-ddim.png"
+   ]
+  },
+  {
+   "id": "fig_9",
+   "section": "sec_12_4",
+   "caption": "CelebA samples from DDIM with the same random $\\vx_T$ and different number of steps.",
+   "graphics": [
+    "figures/celeba-consistency.pdf"
+   ],
+   "assets": [
+    "figures/celeba-consistency.png"
+   ]
+  },
+  {
+   "id": "fig_10",
+   "section": "sec_12_4",
+   "caption": "Church samples from 100 step DDPM and 100 step DDIM.",
+   "graphics": [
+    "figures/church-samples-uniform-100-ddpm.pdf",
+    "figures/church-samples-uniform-100-ddim.pdf"
+   ],
+   "assets": [
+    "figures/church-samples-uniform-100-ddpm.png",
+    "figures/church-samples-uniform-100-ddim.png"
+   ]
+  },
+  {
+   "id": "fig_11",
+   "section": "sec_12_5",
+   "caption": "More interpolations from the CelebA DDIM with $\\dim(\\tau) = 50$.",
+   "graphics": [
+    "figures/celeba-interp-grid.png"
+   ],
+   "assets": [
+    "figures/celeba-interp-grid.png"
+   ]
+  },
+  {
+   "id": "fig_12",
+   "section": "sec_12_5",
+   "caption": "More interpolations from the Bedroom DDIM with $\\dim(\\tau) = 50$.",
+   "graphics": [
+    "figures/bedroom-interp-grid.png"
+   ],
+   "assets": [
+    "figures/bedroom-interp-grid.png"
+   ]
+  },
+  {
+   "id": "fig_13",
+   "section": "sec_12_5",
+   "caption": "More interpolations from the Church DDIM with $\\dim(\\tau) = 50$.",
+   "graphics": [
+    "figures/church-interp-grid.png"
+   ],
+   "assets": [
+    "figures/church-interp-grid.png"
+   ]
+  }
+ ]
+}

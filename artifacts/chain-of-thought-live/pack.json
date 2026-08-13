@@ -1,0 +1,2054 @@
+{
+ "meta": {
+  "source": "arXiv:2201.11903",
+  "title": "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models",
+  "generated": "2026-08-11"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "The NLP landscape has recently been revolutionized by language models . Scaling up the size of language models has been shown to confer a range of benefits, such as improved performance and sample efficiency . However, scaling up model size alone has not proved sufficient for achieving high performance on challenging tasks such as arithmetic, commonsense, and symbolic reasoning . This work explores how the reasoning ability of large language models can be unlocked by a simple method motivated by two ideas. First, techniques for arithmetic reasoning can benefit from generating natural language rationales that lead to the final answer. Prior work has given models the ability to generate natural language intermediate steps by training from scratch or finetuning a pretrained model , in addition to neuro-symbolic methods that use formal languages instead of natural language . Second, large language models offer the exciting prospect of in-context few-shot learning via . That is, instead of finetuning a separate language model checkpoint for each new task, one can simply prompt the model with a few inputoutput exemplars demonstrating the task. Remarkably, this has been successful for a range of simple question-answering tasks . Both of the above ideas, however, have key limitations. For rationale-augmented training and finetuning methods, it is costly to create a large set of high quality rationales, which is much more complicated than simple inputoutput pairs used in normal machine learning. For the traditional few-shot prompting method used in , it works poorly on tasks that require reasoning abilities, and often does not improve substantially with increasing language model scale . In this paper, we combine the strengths of these two ideas in a way that avoids their limitations. Specifically, we explore the ability of language models to perform few-shot prompting for reasoning tasks, given a prompt that consists of triples: input, , output. A is a series of intermediate natural language reasoning steps that lead to the final output, and we refer to this approach as . An example prompt is shown in . We present empirical evaluations on arithmetic, commonsense, and symbolic reasoning benchmarks, showing that chain-of-thought prompting outperforms standard prompting, sometimes to a striking degree. illustrates one such resulton the GSM8K benchmark of math word problems , chain-of-thought prompting with 540B outperforms standard prompting by a large margin and achieves new state-of-the-art performance. A prompting only approach is important because it does not require a large training dataset and because a single model checkpoint can perform many tasks without loss of generality. This work underscores how large language models can learn via a few examples with natural language data about the task (c.f. automatically learning the patterns underlying inputs and outputs via a large training dataset)."
+  },
+  {
+   "id": "sec_2",
+   "title": "Chain-of-Thought Prompting",
+   "level": 1,
+   "text": "Consider one's own thought process when solving a complicated reasoning task such as a multi-step math word problem. It is typical to decompose the problem into intermediate steps and solve each before giving the final answer: The goal of this paper is to endow language models with the ability to generate a similar a coherent series of intermediate reasoning steps that lead to the final answer for a problem. We will show that sufficiently large language models can generate chains of thought if demonstrations of chain-of-thought reasoning are provided in the exemplars for few-shot prompting. shows an example of a model producing a chain of thought to solve a math word problem that it would have otherwise gotten incorrect. The chain of thought in this case resembles a solution and can interpreted as one, but we still opt to call it a chain of thought to better capture the idea that it mimics a step-by-step thought process for arriving at the answer (and also, solutions/explanations typically come the final answer ). Chain-of-thought prompting has several attractive properties as an approach for facilitating reasoning in language models. First, chain of thought, in principle, allows models to decompose multi-step problems into intermediate steps, which means that additional computation can be allocated to problems that require more reasoning steps. Second, a chain of thought provides an interpretable window into the behavior of the model, suggesting how it might have arrived at a particular answer and providing opportunities to debug where the reasoning path went wrong (although fully characterizing a model's computations that support an answer remains an open question). Third, chain-of-thought reasoning can be used for tasks such as math word problems, commonsense reasoning, and symbolic manipulation, and is potentially applicable (at least in principle) to any task that humans can solve via language. Finally, chain-of-thought reasoning can be readily elicited in sufficiently large off-the-shelf language models simply by including examples of chain of thought sequences into the exemplars of few-shot prompting. In empirical experiments, we will observe the utility of chain-of-thought prompting for arithmetic reasoning (), commonsense reasoning (), and symbolic reasoning ()."
+  },
+  {
+   "id": "sec_3",
+   "title": "Arithmetic Reasoning",
+   "level": 1,
+   "text": "We begin by considering math word problems of the form in , which measure the arithmetic reasoning ability of language models. Though simple for humans, arithmetic reasoning is a task where language models often struggle . Strikingly, chain-of-thought prompting when used with the 540B parameter language model performs comparably with task-specific finetuned models on several tasks, even achieving new state of the art on the challenging GSM8K benchmark ."
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Experimental Setup",
+   "level": 2,
+   "text": "We explore chain-of-thought prompting for various language models on multiple benchmarks. We consider the following five math word problem benchmarks: the benchmark of math word problems , the dataset of math word problems with varying structures , the dataset of diverse math word problems , the dataset of algebraic word problems, and the benchmark . Example problems are given in Appendix . For the baseline, we consider standard few-shot prompting, popularized by , in which a language model is given in-context exemplars of inputoutput pairs before outputting a prediction for a test-time example. Exemplars are formatted as questions and answers. The model gives the answer directly, as shown in (left). Our proposed approach is to augment each exemplar in few-shot prompting with a chain of thought for an associated answer, as illustrated in (right). As most of the datasets only have an evaluation split, we manually composed a set of eight few-shot exemplars with chains of thought for prompting (right) shows one chain of thought exemplar, and the full set of exemplars is given in Appendix . (These particular exemplars did not undergo prompt engineering; robustness is studied in and .) To investigate whether chain-of-thought prompting in this form can successfully elicit successful reasoning across a range of math word problems, we used this single set of eight chain of thought exemplars for all benchmarks except AQuA, which is multiple choice instead of free response. For AQuA, we used four exemplars and solutions from the training set, as given in Appendix . We evaluate five large language models. The first is , for which we use text-ada-001, text-babbage-001, text-curie-001, and text-davinci-002, which presumably correspond to InstructGPT models of 350M, 1.3B, 6.7B, and 175B parameters . The second is , which has models of 422M, 2B, 8B, 68B, and 137B parameters. The third is , which has models of 8B, 62B, and 540B parameters. The fourth is , and the fifth is . We sample from the models via greedy decoding (though follow-up work shows chain-of-thought prompting can be improved by taking the majority final answer over many sampled generations ). For , we report averaged results over five random seeds, where each seed had a different randomly shuffled order of exemplars. As experiments did not show large variance among different seeds, to save compute we report results for a single exemplar order for all other models."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Results",
+   "level": 2,
+   "text": "The strongest results of chain-of-thought prompting are summarized in , with all experimental outputs for each model collection, model size, and benchmark shown in in the Appendix. There are three key takeaways. First, shows that chain-of-thought prompting is an emergent ability of model scale . That is, chain-of-thought prompting does not positively impact performance for small models, and only yields performance gains when used with models of 100B parameters. We qualitatively found that models of smaller scale produced fluent but illogical chains of thought, leading to lower performance than standard prompting. r0.5 footnotesize,samples=10 [ group style = group size = 3 by 1, horizontal sep = 8pt, width = 3.2cm, height = 4cm] [ title = , legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=0.1, xmax=500, ymin=-5, ymax=65, xtick=0.4, 8, 137, xticklabels=,,, ylabel=GSM8K solve rate (), ylabel style=align=center, ytick=0, 20, 40, 60, legend style=draw=none, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.24,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.4, 2.6) (2, 3.6) (8, 3.2) (68, 5.7) (137, 6.5) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.4, 0.4) (2, 1.9) (8, 1.6) (68, 8.2) (137, 14.3) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 55) (1300, 55) ; [ title = GPT, legend style=at=(-0.12,1.3),anchor=south, xmode=log, xmin=0.1, xmax=700, ymin=-5, ymax=65, xtick=0.35, 7, 175, xticklabels=,,, ytick=0, 20, 40, 60, yticklabels=,,, x label style=at=(axis description cs:-0.12,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.35, 2.2) (1.3, 2.4) (6.7, 4.0) (175, 15.6) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.35, 0.5) (1.3, 0.5) (6.7, 2.4) (175, 46.9) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 55) (1300, 55) ; [ title = , legend style=at=(1,1.55),anchor=east, xmode=log, xmin=5, xmax=1300, ymin=-5, ymax=65, xtick=8, 62, 540, xticklabels=,,, ytick=0, 20, 40, 60, yticklabels=,,, x label style=at=(axis description cs:-0.12,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, legend style=draw=none, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, legend cell align=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 4.9) (62, 9.6) (540, 17.9) ; Standard prompting [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 4.1) (62, 29.9) (540, 56.9) ; Chain-of-thought prompting [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (5, 55) (1300, 55) ; Prior supervised best footnotesize,samples=10 [ group style = group size = 3 by 1, horizontal sep = 8pt, width = 3.2cm, height = 4cm] [ legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=0.1, xmax=500, ymin=-5, ymax=85, xtick=0.4, 8, 137, xticklabels=,,, ylabel=SVAMP solve rate (), ylabel style=align=center, ytick=0, 20, 40, 60, 80, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.24,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.4, 2.5) (2, 3.3) (8, 4.3) (68, 13.6) (137, 29.5) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.4, 1.6) (2, 2.4) (8, 3.4) (68, 18.8) (137, 37.5) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 47.3) (1300, 47.3) ; [ legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=0.1, xmax=700, ymin=-5, ymax=85, xtick=0.4, 7, 175, xticklabels=,,, ylabel style=align=center, ytick=0, 20, 40, 60, 80, yticklabels=,,, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.18,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.35, 1.4) (1.3, 1.5) (6.7, 6.1) (175, 65.7) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.35, 0.8) (1.3, 1.7) (6.7, 3.1) (175, 68.9) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 47.3) (1300, 47.3) ; [ legend style=at=(-0.12,1.3),anchor=south, xmode=log, xmin=5, xmax=1300, ymin=-5, ymax=85, xtick=8, 62, 540, xticklabels=,,, xlabel style=align=center, ytick=0, 20, 40, 60, 80, yticklabels=,,, x label style=at=(axis description cs:-0.62,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 23.7) (62, 58.7) (540, 68.6) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 25.2) (62, 61.9) (540, 73.9) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 47.3) (1300, 47.3) ; footnotesize,samples=10 [ group style = group size = 3 by 1, horizontal sep = 8pt, width = 3.2cm, height = 4cm] [ legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=0.1, xmax=500, ymin=-5, ymax=105, xtick=0.4, 8, 137, xticklabels=0.4, 8, 137, ylabel=MAWPS solve rate (), ylabel style=align=center, ytick=0, 25, 50, 75, 100, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.24,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.4, 3.2) (2, 3.9) (8, 5.3) (68, 21.6) (137, 43.2) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.4, 0.9) (2, 3.1) (8, 4.8) (68, 30.6) (137, 57.9) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 88.4) (1300, 88.4) ; [ legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=0.1, xmax=700, ymin=-5, ymax=105, xtick=0.35, 7, 175, xticklabels=0.4, 7, 175, ylabel style=align=center, ytick=0, 25, 50, 75, 100, yticklabels=,,, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.18,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (0.35, 2.4) (1.3, 3.1) (6.7, 8.8) (175, 72.7) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (0.35, 1.1) (1.3, 1.7) (6.7, 3.5) (175, 87.1) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 88.4) (1300, 88.4) ; [ legend style=at=(-0.12,1.3),anchor=south, xmode=log, xmin=5, xmax=1300, ymin=-5, ymax=105, xtick=8, 62, 540, xticklabels=8, 62, 540, xlabel=Model scale ( parameters in billions), xlabel style=align=center, ytick=0, 25, 50, 75, 100, yticklabels=,,, x label style=at=(axis description cs:-0.62,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 26.2) (62, 61.8) (540, 79.2) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 30.5) (62, 80.3) (540, 93.3) ; [ color=orange, mark=square, no markers, dashed, line width=1.3pt, ] coordinates (0.1, 88.4) (1300, 88.4) ; Chain-of-thought prompting enables large language models to solve challenging math problems. Notably, chain-of-thought reasoning is an emergent ability of increasing model scale. Prior best numbers are from for GSM8K, for SVAMP, and for MAWPS. Second, chain-of-thought prompting has larger performance gains for more-complicated problems. For instance, for GSM8K (the dataset with the lowest baseline performance), performance more than doubled for the largest GPT and models. On the other hand, for SingleOp, the easiest subset of MAWPS which only requires a single step to solve, performance improvements were either negative or very small (see Appendix ). Third, chain-of-thought prompting via GPT-3 175B and 540B compares favorably to prior state of the art, which typically finetunes a task-specific model on a labeled training dataset. shows how 540B uses chain-of-thought prompting to achieve new state of the art on GSM8K, SVAMP, and MAWPS (though note that standard prompting already passed the prior best for SVAMP). On the other two datasets, AQuA and ASDiv, with chain-of-thought prompting reaches within 2 of the state of the art (Appendix ). To better understand why chain-of-thought prompting works, we manually examined model-generated chains of thought by 137B for GSM8K. Of 50 random examples where the model returned the correct final answer, all of the generated chains of thought were also logically and mathematically correct except two that coincidentally arrived at the correct answer (see , and for examples of correct model-generated chains of thought). We also randomly examined 50 random samples for which the model gave the wrong answer. The summary of this analysis is that 46 of the chains of thought were almost correct, barring minor mistakes (calculator error, symbol mapping error, or one reasoning step missing), and that the other 54 of the chains of thought had major errors in semantic understanding or coherence (see ). To provide a small insight into why scaling improves chain-of-thought reasoning ability, we performed a similar analysis of errors made by 62B and whether those errors were fixed by scaling to 540B. The summary is that scaling to 540B fixes a large portion of one-step missing and semantic understanding errors in the 62B model (see )."
+  },
+  {
+   "id": "sec_3_3",
+   "title": "Ablation Study",
+   "level": 2,
+   "text": "The observed benefits of using chain-of-thought prompting raises the natural question of whether the same performance improvements can be conferred via other types of prompting. shows an ablation study with three variations of chain of thought described below. One reason for why chain-of-thought prompting might help is that it produces the mathematical equation to be evaluated, and so we test a variation where the model is prompted to output only a mathematical equation before giving the answer. shows that equation only prompting does not help much for GSM8K, which implies that the semantics of the questions in GSM8K are too challenging to directly translate into an equation without the natural language reasoning steps in chain of thought. For datasets of one-step or two-step problems, however, we find that equation only prompting does improve performance, since the equation can be easily derived from the question (see Appendix ). r0.35 width=5.2cm, height=4.5cm [ ybar, ymin=0, ymax=65, ytick=0, 20, 40, 60, major x tick style = transparent, bar width=6pt, enlarge x limits=0.5, ylabel=GSM8K solve rate (), symbolic x coords=, , xtick=data, axis x line*=bottom, axis y line*=left, legend style=draw=none, legend cell align=left, legend style= at=(1,1.05), anchor=south east, column sep=1ex, font=, ] [ybar, fill=bananayellow, postaction=] coordinates (, 6.3) (, 17.9) ; [ybar, fill=blanchedalmond, postaction=pattern=north west lines] coordinates (, 5.7) (, 21.7) ; [ybar, fill=blanchedalmond, postaction=pattern=north east lines] coordinates (, 6.0) (, 17.7) ; [ybar, fill=blanchedalmond, postaction=pattern=dots] coordinates (, 5.9) (, 18.0) ; [ybar, fill=cinnamon, postaction=] coordinates (, 14.8) (, 56.5) ; Standard prompting, Equation only, Variable compute only, Reasoning after answer, Chain-of-thought prompting Ablation study for different variations of prompting using 137B and 540B. Results for other datasets are given in Appendix and . Another intuition is that chain of thought allows the model to spend more computation (i.e., intermediate tokens) on harder problems. To isolate the effect of variable computation from chain-of-thought reasoning, we test a configuration where the model is prompted to output a only sequence of dots () equal to the number of characters in the equation needed to solve the problem. This variant performs about the same as the baseline, which suggests that variable computation by itself is not the reason for the success of chain-of-thought prompting, and that there appears to be utility from expressing intermediate steps via natural language. Another potential benefit of chain-of-thought prompting could simply be that such prompts allow the model to better access relevant knowledge acquired during pretraining. Therefore, we test an alternative configuration where the chain of thought prompt is only given after the answer, isolating whether the model actually depends on the produced chain of thought to give the final answer. This variant performs about the same as the baseline, which suggests that the sequential reasoning embodied in the chain of thought is useful for reasons beyond just activating knowledge. r0.40 width=3.5cm, height=5cm [ group style= group name=plot, horizontal sep=23pt, vertical sep=0pt, group size=2 by 1,] [ ybar, ymin=0, ymax=21, ytick=0, 5, 10, 15, 20, major x tick style = transparent, bar width=4pt, enlarge x limits=0.25, ylabel=Solve rate (), symbolic x coords=GSM8K, xtick=data, y label style=at=(axis description cs:-0.22,0.5),anchor=south, legend style=draw=none, axis x line*=bottom, axis y line*=left, legend cell align=left, legend style= at=(1.23,1.05), anchor=south, column sep=1ex, font=, ] [ybar, fill=bananayellow, postaction=] coordinates (GSM8K, 6.5) ; [ybar, fill=cinnamon, postaction=] coordinates (GSM8K, 14.3) ; [ybar, fill=cinnamon, postaction=pattern=north east lines] coordinates (GSM8K, 15.5) ; [ybar, fill=cinnamon, postaction=pattern=north west lines] coordinates (GSM8K, 17.6) ; [ybar, fill=cinnamon, postaction=pattern=dots] coordinates (GSM8K, 11.1) ; [ybar, fill=camel, postaction=pattern=north east lines] coordinates (GSM8K, 13.2) ; [ybar, fill=camel, postaction=pattern=north west lines] coordinates (GSM8K, 13.3) ; [ybar, fill=camel, postaction=pattern=dots] coordinates (GSM8K, 12.8) ; Standard prompting, , different annotator (B), different annotator (C), intentionally concise style, exemplars from GSM8K (), exemplars from GSM8K (), exemplars from GSM8K (), ] [ ybar, ymin=0, ymax=63, ytick=0, 20, 40, 60, major x tick style = transparent, bar width=4pt, enlarge x limits=0.25, symbolic x coords=MAWPS, xtick=data, axis x line*=bottom, axis y line*=left, legend cell align=left, legend style= at=(1,1.05), anchor=south east, column sep=1ex, font=, ] [ybar, fill=bananayellow, postaction=] coordinates (MAWPS, 43.2) ; [ybar, fill=cinnamon, postaction=] coordinates (MAWPS, 57.9) ; [ybar, fill=cinnamon, postaction=pattern=north east lines] coordinates (MAWPS, 58.2) ; [ybar, fill=cinnamon, postaction=pattern=north west lines] coordinates (MAWPS, 60.1) ; [ybar, fill=cinnamon, postaction=pattern=dots] coordinates (MAWPS, 59.6) ; [ybar, fill=camel, postaction=pattern=north east lines] coordinates (MAWPS, 54.2) ; [ybar, fill=camel, postaction=pattern=north west lines] coordinates (MAWPS, 61.1) ; [ybar, fill=camel, postaction=pattern=dots] coordinates (MAWPS, 54.1) ; ] Chain-of-thought prompting has variance for different prompt examples (as expected) but outperforms standard prompting for various annotators as well as for different exemplars."
+  },
+  {
+   "id": "sec_3_4",
+   "title": "Robustness of Chain of Thought",
+   "level": 2,
+   "text": "Sensitivity to exemplars is a key consideration of prompting approachesfor instance, varying the permutation of few-shot exemplars can cause the accuracy of GPT-3 on SST-2 to range from near chance (54.3) to near state of the art (93.4) . In this final subsection, we evaluate robustness to chains of thought written by different annotators. In addition to the results above, which used chains of thought written by an Annotator A, two other co-authors of this paper (Annotators B and C) independently wrote chains of thought for the same few-shot exemplars (shown in ). Annotator A also wrote another chain of thought that was more concise than the original, following the style of solutions given in . shows these results for 137B on GSM8K and MAWPS (ablation results for other datasets are given in Appendix / ). Although there is variance among different chain of thought annotations, as would be expected when using exemplar-based prompting , all sets of chain of thought prompts outperform the standard baseline by a large margin. This result implies that successful use of chain of thought does not depend on a particular linguistic style. To confirm that successful chain-of-thought prompting works for other sets of exemplars, we also run experiments with three sets of eight exemplars randomly sampled from the GSM8K training set, an independent source (examples in this dataset already included reasoning steps like a chain of thought). shows that these prompts performed comparably with our manually written exemplars, also substantially outperforming standard prompting. In addition to robustness to annotators, independently-written chains of thought, different exemplars, and various language models, we also find that chain-of-thought prompting for arithmetic reasoning is robust to different exemplar orders and varying numbers of exemplars (see )."
+  },
+  {
+   "id": "sec_4",
+   "title": "Commonsense Reasoning",
+   "level": 1,
+   "text": "Although chain of thought is particularly suitable for math word problems, the language-based nature of chain of thought actually makes it applicable to a broad class of commonsense reasoning problems, which involve reasoning about physical and human interactions under the presumption of general background knowledge. Commonsense reasoning is key for interacting with the world and is still beyond the reach of current natural language understanding systems . We consider five datasets covering a diverse range of commonsense reasoning types. The popular asks commonsense questions about the world involving complex semantics that often require prior knowledge. requires models to infer a multi-hop strategy to answer questions. We choose two specialized evaluation sets from the BIG-bench effort : Understanding, which involves inferring a date from a given context, and Understanding, which involves determining whether a sentence relating to sports is plausible or implausible. Finally, the dataset involves mapping a natural language instruction to a sequence of robot actions from a discrete set. shows examples with chain of thought annotations for all datasets. We follow the same experimental setup as the prior section. For CSQA and StrategyQA, we randomly selected examples from the training set and manually composed chains of thought for them to use as few-shot exemplars. The two BIG-bench tasks do not have training sets, so we selected the first ten examples as exemplars in the evaluation set as few-shot exemplars and report numbers on the rest of the evaluation set. For SayCan, we use six examples from the training set used in and also manually composed chains of thought. highlights these results for (full results for , GPT-3, and different model scales are shown in ). For all tasks, scaling up model size improved the performance of standard prompting; chain-of-thought prompting led to further gains, with improvements appearing to be largest for 540B. With chain-of-thought prompting, 540B achieved strong performance relative to baselines, outperforming the prior state of the art on StrategyQA (75.6 vs 69.4) and outperforming an unaided sports enthusiast on sports understanding (95.4 vs 84). These results demonstrate that chain-of-thought prompting can also improve performance on tasks requiring a range of commonsense reasoning abilities (though note that gain was minimal on CSQA). r0.40 footnotesize,samples=10 [ group style = group size = 2 by 1, horizontal sep = 8pt, width = 3.6cm, height = 4cm] [ align = center, title = Letter Concat: 2 (in domain), legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=5, xmax=1300, ymin=-5, ymax=105, xtick=0.4, 8, 137, xticklabels=,,, ylabel=Solve rate (), ylabel style=align=center, xtick=8, 62, 540, ytick=0, 25, 50, 75, 100, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.18,0.5),anchor=south, legend style=draw=none, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 2.6) (62, 6.8) (540, 7.6) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 18.8) (62, 85.0) (540, 99.4) ; [ align = center, title = Letter Concat: 4 (OOD), legend style=at=(-0.12,1.4),anchor=south, xmode=log, xmin=5, xmax=1300, ymin=-5, ymax=105, xtick=8, 62, 540, xticklabels=,,, ytick=0, 25, 50, 75, 100, yticklabels=,,, x label style=at=(axis description cs:-0.12,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, legend style=draw=none, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, legend cell align=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 0.0) (62, 0.0) (540, 0.0) ; Standard prompting [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 0.2) (62, 13.4) (540, 63.0) ; Chain-of-thought prompting footnotesize,samples=10 [ group style = group size = 2 by 1, horizontal sep = 8pt, width = 3.6cm, height = 4cm] [ align = center, title = Coin Flip: 2 (in domain), legend style=at=(0.5,1.5),anchor=north, xmode=log, xmin=5, xmax=1300, ymin=35, ymax=105, xtick=8, 62, 540, xticklabels=8, 62, 540, ylabel=Solve rate (), ylabel style=align=center, ytick=40, 60, 80, 100, x label style=at=(axis description cs:0.5,-0.15),anchor=north, y label style=at=(axis description cs:-0.18,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 60.0) (62, 91.4) (540, 98.1) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 74.4) (62, 96.8) (540, 100.0) ; [ align = center, title = Coin Flip: 4 (OOD), legend style=at=(-0.12,1.3),anchor=south, xmode=log, xmin=5, xmax=1300, ymin=35, ymax=105, xtick=8, 62, 540, xticklabels=8, 62, 540, xlabel=Model scale ( parameters in billions), ytick=40, 60, 80, 100, yticklabels=,,, x label style=at=(axis description cs:-0.07,-0.22),anchor=north, y label style=at=(axis description cs:-0.125,0.5),anchor=south, xtick pos=bottom, ytick pos=left, axis x line*=bottom, axis y line*=left, ] [ color=black, mark=o, mark size=1pt, ] coordinates (8, 50.9) (62, 38.3) (540, 54.8) ; [ color=blue, mark=o, mark size=2.5pt, ] coordinates (8, 51.8) (62, 72.4) (540, 90.2) ; Using chain-of-thought prompting facilitates generalization to longer sequences in two symbolic reasoning tasks."
+  },
+  {
+   "id": "sec_5",
+   "title": "Symbolic Reasoning",
+   "level": 1,
+   "text": "Our final experimental evaluation considers symbolic reasoning, which is simple for humans but potentially challenging for language models. We show that chain-of-thought prompting not only enables language models to perform symbolic reasoning tasks that are challenging in the standard prompting setting, but also facilitates length generalization to inference-time inputs longer than those seen in the few-shot exemplars. Tasks. We use the following two toy tasks. 0em This task asks the model to concatenate the last letters of words in a name (e.g., ). It is a more challenging version of first letter concatenation, which language models can already perform without chain of thought. We generate full names by randomly concatenating names from the top one-thousand first and last names from name census data (). This task asks the model to answer whether a coin is still heads up after people either flip or don't flip the coin (e.g., ). As the construction of these symbolic reasoning tasks is well-defined, for each task we consider an test set for which examples had the same number of steps as the training/few-shot exemplars, as well as an (OOD) test set, for which evaluation examples had more steps than those in the exemplars. For last letter concatenation, the model only sees exemplars of names with two words, and then performs last letter concatenation on names with 3 and 4 words. We do the same for the number of potential flips in the coin flip task. Our experimental setup uses the same methods and models as in the prior two sections. We again manually compose chains of thought for the few-shot exemplars for each task, which are given in . Results. The results of these in-domain and OOD evaluations are shown in for , with results for shown in Appendix . With 540B, chain-of-thought prompting leads to almost 100 solve rates (note that standard prompting already solves coin flip with 540, though not for 137B). Note that these in-domain evaluations are toy tasks in the sense that perfect solution structures are already provided by the chains of thought in the few-shot exemplars; all the model has to do is repeat the same steps with the new symbols in the test-time example. And yet, small models still failthe ability to perform abstract manipulations on unseen symbols for these three tasks only arises at the scale of 100B model parameters. As for the OOD evaluations, standard prompting fails for both tasks. With chain-of-thought prompting, language models achieve upward scaling curves (though performance is lower than in the in-domain setting). Hence, chain-of-thought prompting facilitates length generalization beyond seen chains of thought for language models of sufficient scale."
+  },
+  {
+   "id": "sec_6",
+   "title": "Discussion",
+   "level": 1,
+   "text": "We have explored chain-of-thought prompting as a simple mechanism for eliciting multi-step reasoning behavior in large language models. We first saw that chain-of-thought prompting improves performance by a large margin on arithmetic reasoning, yielding improvements that are much stronger than ablations and robust to different annotators, exemplars, and language models (). Next, experiments on commonsense reasoning underscored how the linguistic nature of chain-of-thought reasoning makes it generally applicable (). Finally, we showed that for symbolic reasoning, chain-of-thought prompting facilitates OOD generalization to longer sequence lengths (). In all experiments, chain-of-thought reasoning is elicited simply by prompting an off-the-shelf language model. No language models were finetuned in the process of writing this paper. The emergence of chain-of-thought reasoning as a result of model scale has been a prevailing theme . For many reasoning tasks where standard prompting has a flat scaling curve, chain-of-thought prompting leads to dramatically increasing scaling curves. Chain-of-thought prompting appears to expand the set of tasks that large language models can perform successfullyin other words, our work underscores that standard prompting only provides a lower bound on the capabilities of large language models. This observation likely raises more questions than it answersfor instance, how much more can we expect reasoning ability to improve with a further increase in model scale? What other prompting methods might expand the range of tasks that language models can solve? As for limitations, we first qualify that although chain of thought emulates the thought processes of human reasoners, this does not answer whether the neural network is actually reasoning, which we leave as an open question. Second, although the cost of manually augmenting exemplars with chains of thought is minimal in the few-shot setting, such annotation costs could be prohibitive for finetuning (though this could potentially be surmounted with synthetic data generation, or zero-shot generalization). Third, there is no guarantee of correct reasoning paths, which can lead to both correct and incorrect answers; improving factual generations of language models is an open direction for future work . Finally, the emergence of chain-of-thought reasoning only at large model scales makes it costly to serve in real-world applications; further research could explore how to induce reasoning in smaller models."
+  },
+  {
+   "id": "sec_7",
+   "title": "Related Work",
+   "level": 1,
+   "text": "This work is inspired by many research areas, which we detail in an extended related work section (). Here we describe two directions and associated papers that are perhaps most relevant. The first relevant direction is using intermediate steps to solve reasoning problems. pioneer the idea of using natural language rationales to solve math word problems through a series of intermediate steps. Their work is a remarkable contrast to the literature using formal languages to reason . extend by creating a larger dataset and using it to finetune a pretrained language model rather than training a model from scratch. In the domain of program synthesis, leverage language models to predict the final outputs of Python programs via first line-to-line predicting the intermediate computational results, and show that their step-by-step prediction method performs better than directly predicting the final outputs. Naturally, this paper also relates closely to the large body of recent work on prompting. Since the popularization of few-shot prompting as given by , several general approaches have improved the prompting ability of models, such as automatically learning prompts or giving models instructions describing a task . Whereas these approaches improve or augment the input part of the prompt (e.g., instructions that are prepended to inputs), our work takes the orthogonal direction of augmenting the outputs of language models with a chain of thought."
+  },
+  {
+   "id": "sec_8",
+   "title": "Conclusions",
+   "level": 1,
+   "text": "We have explored chain-of-thought prompting as a simple and broadly applicable method for enhancing reasoning in language models. Through experiments on arithmetic, symbolic, and commonsense reasoning, we find that chain-of-thought reasoning is an emergent property of model scale that allows sufficiently large language models to perform reasoning tasks that otherwise have flat scaling curves. Broadening the range of reasoning tasks that language models can perform will hopefully inspire further work on language-based approaches to reasoning."
+  },
+  {
+   "id": "sec_9",
+   "title": "Acknowledgements",
+   "level": 1,
+   "text": "We thank Jacob Devlin, Claire Cui, Andrew Dai, and Ellie Pavlick for providing feedback on the paper. We thank Jacob Austin, Yuhuai Wu, Henryk Michalewski, Aitor Lewkowycz, Charles Sutton, and Aakanksha Chowdhery for helpful discussions. We thank Sid Maxwell for notifying us about a mistake in the manual error analysis in the original manuscript. acl_natbib"
+  },
+  {
+   "id": "sec_10",
+   "title": "Checklist",
+   "level": 1,
+   "text": "For all authors... Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope? Did you describe the limitations of your work? See and . Did you discuss any potential negative societal impacts of your work? We don't expect negative societal impacts as a direct result of the contributions in our paper. One consideration, however, is that generated chain of thought is not always factual, which is noted as a limitation in (and note that we do not suggest using such chains of thought in a factual manner or in any real-world scenario). Have you read the ethics review guidelines and ensured that your paper conforms to them? If you are including theoretical results... Did you state the full set of assumptions of all theoretical results? Did you include complete proofs of all theoretical results? If you ran experiments... Did you include the code, data, and instructions needed to reproduce the main experimental results (either in the supplemental material or as a URL)? We included inputs, outputs, and targets for and GPT-3 in the supplementary material. Although we use proprietary models, we GPT-3 results are fully reproducible. Reproducibility is further discussed in . Did you specify all the training details (e.g., data splits, hyperparameters, how they were chosen)? Data splits were specified, N/A for hyperparams. Did you report error bars (e.g., with respect to the random seed after running experiments multiple times)? Standard deviation for multiple seeds using 137B, where each seed is a different random order of exemplars, is given in and . Did you include the total amount of compute and the type of resources used (e.g., type of GPUs, internal cluster, or cloud provider)? Type of resources are described in , though we did not estimate the total amount of compute. If you are using existing assets (e.g., code, data, models) or curating/releasing new assets... If your work uses existing assets, did you cite the creators? We used two models that we anonymized based on the recommendation of the NeurIPS chairs. These models will be cited in the camera-ready version of the paper. Did you mention the license of the assets? See . Did you include any new assets either in the supplemental material or as a URL? The coinflip and last letter concatenation datasets are the only new assets, and they are given in the Supplementary Materials. Did you discuss whether and how consent was obtained from people whose data you're using/curating? No human data collected. Did you discuss whether the data you are using/curating contains personally identifiable information or offensive content? No human data collected. If you used crowdsourcing or conducted research with human subjects... Did you include the full text of instructions given to participants and screenshots, if applicable? Did you describe any potential participant risks, with links to Institutional Review Board (IRB) approvals, if applicable? Did you include the estimated hourly wage paid to participants and the total amount spent on participant compensation?"
+  },
+  {
+   "id": "sec_11",
+   "title": "Frequently Asked Questions",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_11_1",
+   "title": "Why does increasing model scale improve chain-of-thought prompting?",
+   "level": 2,
+   "text": "The finding that successful chain-of-thought reasoning predictably emerges only at certain model scales is intriguing. Scaling up language models has been shown to confer benefits such as improved performance and sample efficiency , but chain-of-thought reasoning is emergent in the sense that its success cannot be predicted only by extrapolating the performance of small scale models, as chain of thought actually hurts performance for most models smaller than 10B parameters. The question of why model scale improves chain-of-thought prompting is certainly multi-faceted, and we made a preliminary attempt to shed insight into it via error analysis. This small analysis involved manually reading 45 errors made by 62B and categorizing them into semantic understanding (20 errors), one step missing (18 errors), and other errors (7 errors). The other category included hallucinations, repetitive outputs, and symbol mapping errors. This categorization is a coarse one borrowed from the initial error analysis done on in , for which categories were conceived based on what improvements were needed to make the chain of thought correct. As shown in , scaling to 540B parameters fixed a substantial portion of errors in all three categories. Examples of semantic understanding and one-step missing errors that were fixed by scaling to 540B are given in . This result appears consistent with a hypothesis that language models acquire a range of semantic understanding and logical reasoning skills as a function of model scale (though note that model scale is often conflated with other factors, such as amount of training compute). There are also three notable points regarding why small language models fail. The first observation is that small language models fail at even relatively easy symbol mapping tasks. As demonstrated in , for even symbolic reasoning tasks that only require generalization to new examples using the same chain of thought logical structure that was given in the few-shot exemplars, small language models still failed. The second observation is that small language models seem to have inherently weaker arithmetic abilities, as shown by , the ability to do simple arithmetic operations (without semantic understanding) requires sufficient model scale. Finally, we noticed qualitatively that small language models often did not generate a final answer that could be parsed, due to either repetitions or logic that never arrived at a final answer. In summary, the success of chain-of-thought reasoning as a result of model scale is a complicated phenomena that likely involves a variety of emergent abilities (semantic understanding, symbol mapping, staying on topic, arithmetic ability, faithfulness, etc). Future work could more thoroughly investigate what properties of pretraining data, model architecture, and optimization objective causally enable such reasoning capabilities."
+  },
+  {
+   "id": "sec_11_2",
+   "title": "What is the role of prompt engineering?",
+   "level": 2,
+   "text": "One of the key considerations of prompting is sensitivity to the exact prompt. There is no shortage of work showing that prompts affect language models in unexpected ways . The general way that we created chain of thought annotations was by taking eight exemplars from the training set and decomposing the reasoning process into multiple steps leading to the final answer. Examples of chain of thought annotations are provided in , with full prompts given in . To analyze how sensitive chain of thought is to prompt engineering, we performed robustness experiments with respect to various factors. We first analyze robustness to three different annotators ( and ). Although there is notable variance in performance (which we will discuss later), chain of thought performed better than the baseline by a large margin for all three annotators on eight datasets in arithmetic, commonsense, and symbolic reasoning ( and ). Similar to the annotation process in , annotators were not given specific instructions about how to write the chain of thought annotations other than to simply write the step-by-step reasoning process that led to the final answer. Thus, the annotations were written in each annotator's own linguistic chain of thought writing style. The GSM8K dataset conveniently provides a training set with reasoning chains written by crowd compute workers, which enables us to investigate whether chain of thought still works with reasoning chains from an independent source without a background in machine learning. So we randomly sampled three sets of eight exemplars with chains of thought from GSM8K. These chain of thought annotations also outperformed the baseline by a large margin for all four arithmetic datasets (), indicating that chain of thought is not dependent on a particular set of annotators. The different GSM8K exemplars experiment above () also shows that chain-of-thought prompting works for different sets of exemplars. Notably, we test every set of exemplars on all four arithmetic datasets (instead of picking exemplars from the training set for each dataset), which suggests that the exemplars do not necessarily have to come from the same dataset distribution as the test examples. Prior work has shown that in some cases (e.g., classification) even the order of prompts mattervarying the permutation of few-shot exemplars can cause the accuracy of GPT-3 on SST-2 to range from near chance (54.3) to near SOTA (93.4) . We show the standard deviation of performance from different exemplars in and . Standard deviations with respect to prompt order are relatively minimal in almost all cases. The one exception is the coin flip task, for which exemplar orders have high standard deviation, likely for the reason cited in for classification, many exemplars of the same category in a row biases the model outputs). We also found that gains from chain-of-thought prompting generally still held when there was a varying number of few-shot exemplars. This is shown for five datasets in (we did not have the compute to run this for all datasets). We also found in preliminary experiments that further increasing the number of exemplars in standard prompting did not lead to significant gains (e.g., increasing from 8 to 16 exemplars did not improve the performance of standard prompting enough to catch up with chain-of-thought prompting). Another interesting question is whether certain prompts that work better for one model work better for other large language models. We find that with the same prompts, chain-of-thought prompting improves performance across all three models (, GPT-3, and ) for all datasets except CSQA and StrategyQA for GPT-3 (, , ). The fact that gains from chain of thought did not transfer perfectly among models is a limitation; further work could investigate why how different pre-training datasets and model architectures affect the performance gain from chain-of-thought prompting. Although the results are relatively robust to the prompt for arithmetic reasoning, we want to be clear that prompt engineering still does matter, and can improve performance significantly in many cases. Though most chain of thought annotations outperform standard prompting, there is large variation in many cases. For instance, for the coin flip task, the performance varied from 99.6 for Annotator A to 71.4 for Annotator C, though both were above standard prompting = 50.0 (see ). There are even tasks where prompt engineering is a requirement for good performance. In preliminary experiments, we tried using chain of thought to enable language models to reverse the order of a list of 5 items. While two co-authors were not able to write chain of thought prompts that solved the task despite their best attempts, a third co-author was able to write a chain of thought that perfectly solved the task. How to generate chain of thought annotations in a robust fashion could be an interesting direction for future work. For instance, an idea here could be to use a large language model to automatically generate chains of thought via prompting (and potentially optimize this over a validation set)."
+  },
+  {
+   "id": "sec_11_3",
+   "title": "Will chain-of-thought prompting improve performance for my task of interest?",
+   "level": 2,
+   "text": "While chain-of-thought prompting is in principle applicable for any text-to-text task, it is more helpful for some tasks than others. Based on the experiments in this paper, our intuition is that chain of thought helps the most when three conditions are met: (1) the task is challenging and requires multi-step reasoning, (2) a large language model is used, and (3) the scaling curve is relatively flat. Conversely, the benefits are smaller when one or more of these conditions are not met. These intuitions are perhaps supported by the arithmetic reasoning results. The performance gain from chain-of-thought prompting is largest for 540B on GSM8K (challenging multi-step problems, flat scaling curve), which meets these conditions. The performance gain is small for the subsets of MAWPS that only require one or two steps (SingleOP, SingleEq, and AddSub), for which 540B already achieves performance of 90 or higher (and it is also generally true that there is less headroom for improvement when performance is already strong). Although in this paper we focused on multi-step reasoning tasks (arithmetic, commonsense, and symbolic), chain-of-thought prompting can potentially be applied to any task for which humans use a chain of thought to solve (at least in principle). We leave the empirical evaluation of chain-of-thought prompting on such diverse tasks (e.g., machine translation, etc.) to future work."
+  },
+  {
+   "id": "sec_11_4",
+   "title": "Why is prompting with the equation only not enough for some arithmetic reasoning datasets?",
+   "level": 2,
+   "text": "Prompting with the equation only as an intermediate step does help on many datasets, especially when the datasets only require a few reasoning steps (SVAMP, ASDiv, MAWPS). For GSM8K, however, using the equation only did not improve performance substantially. Based on qualitative analysis, we believe that these questions are too semantically challenging for the model to directly translate them into a math equation. Consider this example from 137B: Mike plays ping pong for 40 minutes. In the first 20 minutes, he scores 4 points. In the second 20 minutes, he scores 25 more points. How many total points did he score? (4 + 20 * 0.25) = 6. The answer is 6. Mike played ping pong for 40 minutes. In the first 20 minutes, he scored 4 points. In the second 20 minutes, he scored 25 more points. So he scored 25 more in the second 20 minutes. 4 x 1.25 = 5. So he scored 5 points in the second 20 minutes. So he scored 9 points in total. The answer is 9. It is hard for the model to directly translate all of the semantics into a single equation, but chain of thought allows it to better reason about each part of the question via intermediate steps in natural language."
+  },
+  {
+   "id": "sec_12",
+   "title": "All Experimental Results",
+   "level": 1,
+   "text": "This section contains tables for experimental results for varying models and model sizes, on all benchmarks, for standard prompting vs.chain-of-thought prompting. For the arithmetic reasoning benchmarks, some chains of thought (along with the equations produced) were correct, except the model performed an arithmetic operation incorrectly. A similar observation was made in . Hence, we can further add a Python program as an external calculator (using the Python function) to all the equations in the generated chain of thought. When there are multiple equations in a chain of thought, we propagate the external calculator results from one equation to the following equations via string matching. As shown in , we see that adding a calculator significantly boosts performance of chain-of-thought prompting on most tasks."
+  },
+  {
+   "id": "sec_13",
+   "title": "Extended Related Work",
+   "level": 1,
+   "text": "Chain-of-thought prompting is a general approach that is inspired by several prior directions: prompting, natural language explanations, program synthesis/execution, numeric and logical reasoning, and intermediate language steps."
+  },
+  {
+   "id": "sec_13_1",
+   "title": "Prompting",
+   "level": 2,
+   "text": "The recent success of large-scale language models has led to growing interest in improving their capability to perform tasks via prompting (, and see for a survey). This paper falls in the category of general prompting approaches, whereby input prompts are optimized to allow a single large language model to better perform a variety of tasks . One recent line of work aims to improve the ability of language models to perform a task by providing instructions that describe the task . This line of work is related because it also augments inputoutput pairs with meta-data. But whereas an instruction augments the input to a task (instructions are typically prepended to the inputs), chain-of-thought prompting augments the outputs of language models. Another related direction is sequentially combining the outputs of language models; humancomputer interaction (HCI) work has shown that combining sequential generations of language models improves task outcomes in a 20-person user study."
+  },
+  {
+   "id": "sec_13_2",
+   "title": "Natural language explanations",
+   "level": 2,
+   "text": "Another closely related direction uses natural language explanations (NLEs), often with the goal of improving model interpretability . That line of work typically focuses on natural language inference , and produces explanations either simultaneously to or after the final prediction . By contrast, the chain of thought processing considered in this paper occurs the final answer. And while NLE aims mostly to improve neural network interpretability , the goal of chain-of-thought prompting is to allow models to decompose multi-hop reasoning tasks into multiple stepsinterpretability is just a side effect. show that prompt-based finetuning with NLE improves NLI and classification performance, though they largely focus on evaluating explanation plausibility. In comparison, our work focuses on a range of arithmetic, commonsense, and symbolic tasks that require multi-hop reasoning."
+  },
+  {
+   "id": "sec_13_3",
+   "title": "Program synthesis and execution",
+   "level": 2,
+   "text": "Using intermediate reasoning steps has a long history in program synthesis and execution . Recent work along in this direction has included a number of architectural innovations , as well as the use of large language models . The program execution work closest to ours is perhaps , which show that large language models can perform up to 10-digit addition, evaluate polynomials, and execute python programs. Whereas generating a program and then executing it can be viewed as a type of reasoning, our work generalizes such domain-specific primitives to natural language, which is open-domain and relevant to any text-to-text NLP task in principle."
+  },
+  {
+   "id": "sec_13_4",
+   "title": "Numeric and logical reasoning",
+   "level": 2,
+   "text": "Numeric and logical reasoning has been a long-studied task in machine learning and natural language processing . Recent work has also aimed to inject numeric reasoning abilities in language models in various ways, such as augmenting BERT with a predefined set of executable operations , including a graph neural network , and using specialized training procedures . Another line of work aims to enable language models to perform logical or formal reasoning, often by verablizing the rules in natural language formal rules using language . Perhaps the most-related work here is , which shows that finetuning enables longhand module operations, which has previously been difficult for performers. Whereas work in this direction is often task-specific and uses finetuning, we show that chain-of-thought prompting works for a broad range of tasks without any finetuning."
+  },
+  {
+   "id": "sec_13_5",
+   "title": "Intermediate language steps",
+   "level": 2,
+   "text": "Extensive prior work has shown the benefits of endowing neural networks with the ability to produce intermediate steps via training or finetuning confers various benefits in a range of scenarios. As examples, it has been shown that natural language intermediate steps can improve performance , improve robustness , speed up training , mitigate bias , and even help in image and reinforcement learning settings . To endow models with the ability to produce intermediate steps, prior work typically finetunes models on either manually annotated training datasets or generates synthetic datasets . Compared with these training or finetuning methods, our work shows that various natural language reasoning abilities can be elicited in off-the-shelf language models of sufficient scale simply via prompting. This prompting setup is important because it allows for intermediate step reasoning without a large number of labeled annotations, and because a single model can perform a range of reasoning tasks without any gradient updates."
+  },
+  {
+   "id": "sec_14",
+   "title": "Appendix: Additional Analysis",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_14_1",
+   "title": "Correct Chain of Thought Analysis",
+   "level": 2,
+   "text": "As mentioned in the main text, we analyze 50 chains of thought from 137B that led to correct answers in the GSM8K dataset. Of these 50, only one arrived at the correct answer through incorrect reasoning (shown in : correct by chance). The other 49 had correct logic and math, with examples shown in . Five had minor imperfections while maintaining coherent and understandable logic: 0em One had underspecified statements (shown in : correct but underspecified statements). One made an unrelated but correct statement (shown in : correct but unrelated statement). Two had the correct logic but omitted specific steps in the equation, though it was still understandable (shown in : correct but imperfect equation). One had the correct math but inverted the semantics (shown in : correct but inverted semantics) Although we find that chain-of-thought reasoning is mostly correct for math questions where the final answer was correct, this is likely because it is hard to arrive at the correct final answer by coincidence for free response questions. For multiple choice or binary classification problems, it was much more likely that models could arrive at the correct answer via an incorrect reasoning path (e.g., all the commmonsense reasoning datasets we evaluate). This is a limitation, and future work should perform an analysis of the factuality of such chains of thought."
+  },
+  {
+   "id": "sec_14_2",
+   "title": "Incorrect Chain of Thought Analysis",
+   "level": 2,
+   "text": "We also manually analyze 50 randomly sampled outputs of the model that were incorrect on GSM8K for 137B. There are many ways that a chain of thought can be incorrect, making the design of error categorization non-trivial. We decided to categorize errors into what changes are needed to make the chain of thought correct, with the goal of elucidating how the model can be improved in the future. We found that many chains of thought can be made correct with one of the following three classes of modification. 0em We found that 8 of the chains of thought were completely correct except for a calculator errorin other words, applying an external calculator to equations, as done in , would make the chain of thought correct. An example of this type of error is shown in : calculator error only. Indeed, the solve rate of chain-of-thought prompting on for 137B GSM8K went up from 14.3 to 17.3 when we added a Python program as an external calculator, as shown in . Also, 34 of the examples contained calculator errors in addition to other types of errors. However, we perform the rest of the error categorization independently of calculator errors. We next found that 16 percent of the chains of thought were correct except for what we call symbol mapping errors. We define a symbol mapping error as when the chain of thought is correct except for the number symbols, and it could be made totally correct by modifying only the equations and not the words. As one might argue that they could simply place the correct final equation in any chain of thought, we constrain this category to chains of thought where the chain of thought can be modified to be a completely correct reasoning process (not just final answer). An example of this error category is shown in : symbol mapping error. Our next category of error is chains of thought which were correct except that they were missing a single step. In other words, these chains of thoughts could be rewritten to be correct by adding in an additional reasoning step that was missed by the model. An example of this error category is shown in : one step missing error. We found that 22 percent of the errors fell into this category. We found that the remaining chains of thought (27 of 50; 54) would require substantial edits to make into a correct chain of thought. Almost all cases here involved some error in semantic understanding (see : semantic understanding error), and 8 of the 27 also had incoherent chain of thoughts, meaning that some statements in the generated chain of thought did not follow from prior ones or violated basic world knowledge (see : incoherent chain of thought error). Overall, there are no guarantees that the reasoning processes generated by large language models are coherent or factually correct, as underscored by the recent work evaluating the factuality of language model generations and explanations . Incorrect reasoning processes can lead to both incorrect final answers as well as accidentally correct final answers (with accidentally correct final answers being more likely for tasks such as binary classification as opposed to free response). Improving the factuality of language model generations with respect to context and world knowledge is an important direction open problems in language model research and could also be expected to potentially improve multi-step reasoning abilities of language models. One potential method for improving the quality of decoding could involve generating multiple reasoning paths and scoring each of them with a verifier, though this requires training the verifier ."
+  },
+  {
+   "id": "sec_14_3",
+   "title": "Additional Robustness Analysis",
+   "level": 2,
+   "text": "As the experiments in the main paper use a fixed number of few-shot exemplars (8; as constrained by the input length of 1024 tokens), we verify that the chain-of-thought prompting is robust to various numbers of few-shot exemplars. We run experiments for 137B, comparing chain-of-thought prompting with standard prompting for the five datasets where standard prompting had a mostly flat scaling curve (the largest model did not achieve high performance). As shown in , the improvement of chain-of-thought prompting over standard prompting remains robust to varying the number of few-shot exemplars in the prompt."
+  },
+  {
+   "id": "sec_15",
+   "title": "Additional Details",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_16",
+   "title": "Version Control",
+   "level": 1,
+   "text": ". Fixed minor typo in Figure 3. . Added Codex and UL2 results. Small changes to writing and style of paper. . Fixed typo in Figure 3 and added a couple citations. . Added GPT-3 results. Added SVAMP and AQuA eval datasets for math. Added SayCan eval for commonsense. Added Extended Related Work section (). Added ablations for Commonsense and Symbolic Reasoning (). Added FAQ section (). Added raw results in . . Added results (V1 only had )."
+  },
+  {
+   "id": "sec_16_1",
+   "title": "Reproducibility Statement",
+   "level": 2,
+   "text": "As our results make use of two sets of large language models that is not publicly available, we take the following actions to facilitate reproducibility. First, we provide the exact input prompts for all tasks in in (and emphasize that we do not perform any finetuning and only apply prompting to off-the-shelf language models). Second, we conduct experiments using the publicly available GPT-3 API for four model scales text-ada-001, text-babbage-001, text-curie-001, text-davinci-002). Finally, we make exact inputs, targets, and predictions for 137B for each task available as a zip file in the supplementary material."
+  },
+  {
+   "id": "sec_16_2",
+   "title": "Computational Resources",
+   "level": 2,
+   "text": "For all three language models we evaluated, we did prompting-based inference only. No finetuning was done for this paper. For inference on 137B we use TPU v3 (8x8 configuration, 64 chips / 128 cores), and for inference on 540B we use TPU v4 (4x4x12 configuration, 192 chips / 384 cores). GPT-3 experiments were done using the public API."
+  },
+  {
+   "id": "sec_16_3",
+   "title": "Dataset Details and Licenses",
+   "level": 2,
+   "text": "We list the details and licenses for all arithmetic and commonsense datasets used in this paper. The symbolic reasoning datasets were created synthetically, as described in . Arithmetic reasoning Math Word Problem Repository : AddSub : ; MultiArith , license: CC BY 4.0. ASDiv : . AQuA : , license: . GSM8K : , MIT license: . SVAMP : , MIT license: . Commonsense reasoning CSQA : , . StrategyQA : we use the open-domain setting (question-only set) from : . The original dataset is from , MIT license: . Date understanding and sports understanding from BIG-Bench : Apache License v.2: . SayCan : SayCan dataset can be accessed at under CC BY 4.0 license."
+  },
+  {
+   "id": "sec_17",
+   "title": "Appendix: Input/Output Examples",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_18",
+   "title": "Appendix: Full Prompts",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_19",
+   "title": "Appendix: Alternate Annotators for MWP",
+   "level": 1,
+   "text": ""
+  }
+ ],
+ "equations": [],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_12",
+   "caption": "Chain of thought prompting outperforms standard prompting for various large language models on five arithmetic reasoning benchmarks. All metrics are accuracy (%). Ext.\\ calc.: post-hoc external calculator for arithmetic computations only. Prior best numbers are from the following. $a$: \\citet{cobbe2021training}. $b$ & $e$: \\citet{pi2022reasoning}, $c$: \\citet{lan2021mwptoolkit}, $d$: \\citet{piekos-etal-2021-measuring}.",
+   "rows": [
+    [
+     "",
+     "Prompting",
+     "GSM8K",
+     "SVAMP",
+     "ASDiv",
+     "AQuA",
+     "MAWPS"
+    ],
+    [
+     "\\vspace{3mm} Prior best",
+     "N/A (finetuning)",
+     "55$^a$",
+     "57.4$^b$",
+     "75.3$^c$",
+     "37.9$^d$",
+     "88.4$^e$"
+    ],
+    [
+     "UL2 20B",
+     "Standard",
+     "4.1",
+     "10.1",
+     "16.0",
+     "20.5",
+     "16.6"
+    ],
+    [
+     "",
+     "Chain of thought",
+     "\\diff{4.4}{+0.3}",
+     "\\diff{12.5}{+2.4}",
+     "\\diff{16.9}{+0.9}",
+     "\\diff{23.6}{+3.1}",
+     "\\diff{19.1}{+2.5}"
+    ],
+    [
+     "\\vspace{3mm}",
+     "\\calc{+ ext. calc}",
+     "\\calc{6.9}",
+     "\\calc{28.3}",
+     "\\calc{34.3}",
+     "\\calc{23.6}",
+     "\\calc{42.7}"
+    ],
+    [
+     "\\lamda{} 137B",
+     "Standard",
+     "6.5",
+     "29.5",
+     "40.1",
+     "25.5",
+     "43.2"
+    ],
+    [
+     "",
+     "Chain of thought",
+     "\\diff{14.3}{+7.8}",
+     "\\diff{37.5}{+8.0}",
+     "\\diff{46.6}{+6.5}",
+     "\\diff{20.6}{-4.9}",
+     "\\diff{57.9}{+14.7}"
+    ],
+    [
+     "\\vspace{3mm}",
+     "\\calc{+ ext. calc}",
+     "\\calc{17.8}",
+     "\\calc{42.1}",
+     "\\calc{53.4}",
+     "\\calc{20.6}",
+     "\\calc{69.3}"
+    ],
+    [
+     "GPT-3 175B",
+     "Standard",
+     "15.6",
+     "65.7",
+     "70.3",
+     "24.8",
+     "72.7"
+    ],
+    [
+     "{\\scriptsize (text-davinci-002)}",
+     "Chain of thought",
+     "\\diff{46.9}{+31.3}",
+     "\\diff{68.9}{+3.2}",
+     "\\diff{71.3}{+1.0}",
+     "\\diff{35.8}{+11.0}",
+     "\\diff{87.1}{+14.4}"
+    ],
+    [
+     "\\vspace{3mm}",
+     "\\calc{+ ext. calc}",
+     "\\calc{49.6}",
+     "\\calc{70.3}",
+     "\\calc{71.1}",
+     "\\calc{35.8}",
+     "\\calc{87.5}"
+    ],
+    [
+     "Codex",
+     "Standard",
+     "19.7",
+     "69.9",
+     "74.0",
+     "29.5",
+     "78.7"
+    ],
+    [
+     "{\\scriptsize (code-davinci-002)}",
+     "Chain of thought",
+     "\\diff{63.1}{+43.4}",
+     "\\diff{76.4}{+6.5}",
+     "\\diff{80.4}{+6.4}",
+     "\\diff{45.3}{+15.8}",
+     "\\diff{92.6}{+13.9}"
+    ],
+    [
+     "\\vspace{3mm}",
+     "\\calc{+ ext. calc}",
+     "\\calc{65.4}",
+     "\\calc{77.0}",
+     "\\calc{80.0}",
+     "\\calc{45.3}",
+     "\\calc{93.3}"
+    ],
+    [
+     "\\palm{} 540B",
+     "Standard",
+     "17.9",
+     "69.4",
+     "72.1",
+     "25.2",
+     "79.2"
+    ],
+    [
+     "",
+     "Chain of thought",
+     "\\diff{56.9}{+39.0}",
+     "\\diff{79.0}{+9.6}",
+     "\\diff{73.9}{+1.8}",
+     "\\diff{35.8}{+10.6}",
+     "\\diff{93.3}{+14.2}"
+    ],
+    [
+     "",
+     "\\calc{+ ext. calc}",
+     "\\calc{58.6}",
+     "\\calc{79.8}",
+     "\\calc{72.6}",
+     "\\calc{35.8}",
+     "\\calc{93.5}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_12",
+   "caption": "Standard prompting versus chain of thought prompting on five arithmetic reasoning benchmarks. Note that chain of thought prompting is an emergent ability of model scale---it does not positively impact performance until used with a model of sufficient scale.",
+   "rows": [
+    [
+     "",
+     "",
+     "GSM8K",
+     "SVAMP",
+     "ASDiv",
+     "AQuA",
+     "MAWPS"
+    ],
+    [
+     "Model",
+     "",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain"
+    ],
+    [
+     "UL2",
+     "20B",
+     "4.1",
+     "\\jgr{4.4}",
+     "10.1",
+     "\\jgr{12.5}",
+     "16.0",
+     "\\jgr{16.9}",
+     "20.5",
+     "\\jgr{23.6}",
+     "16.6",
+     "\\jgr{19.1}"
+    ],
+    [
+     "\\lamda{}",
+     "420M",
+     "2.6",
+     "\\jred{0.4}",
+     "2.5",
+     "\\jred{1.6}",
+     "3.2",
+     "\\jred{0.8}",
+     "23.5",
+     "\\jred{8.3}",
+     "3.2",
+     "\\jred{0.9}"
+    ],
+    [
+     "",
+     "2B",
+     "3.6",
+     "\\jred{1.9}",
+     "3.3",
+     "\\jred{2.4}",
+     "4.1",
+     "\\jred{3.8}",
+     "22.9",
+     "\\jred{17.7}",
+     "3.9",
+     "\\jred{3.1}"
+    ],
+    [
+     "",
+     "8B",
+     "3.2",
+     "\\jred{1.6}",
+     "4.3",
+     "\\jred{3.4}",
+     "5.9",
+     "\\jred{5.0}",
+     "22.8",
+     "\\jred{18.6}",
+     "5.3",
+     "\\jred{4.8}"
+    ],
+    [
+     "",
+     "68B",
+     "5.7",
+     "\\jgr{8.2}",
+     "13.6",
+     "\\jgr{18.8}",
+     "21.8",
+     "\\jgr{23.1}",
+     "22.3",
+     "\\jred{20.2}",
+     "21.6",
+     "\\jgr{30.6}"
+    ],
+    [
+     "",
+     "137B",
+     "6.5",
+     "\\jgr{14.3}",
+     "29.5",
+     "\\jgr{37.5}",
+     "40.1",
+     "\\jgr{46.6}",
+     "25.5",
+     "\\jred{20.6}",
+     "43.2",
+     "\\jgr{57.9}"
+    ],
+    [
+     "GPT",
+     "350M",
+     "2.2",
+     "0.5",
+     "1.4",
+     "0.8",
+     "2.1",
+     "0.8",
+     "18.1",
+     "8.7",
+     "2.4",
+     "1.1"
+    ],
+    [
+     "",
+     "1.3B",
+     "2.4",
+     "0.5",
+     "1.5",
+     "1.7",
+     "2.6",
+     "1.4",
+     "12.6",
+     "4.3",
+     "3.1",
+     "1.7"
+    ],
+    [
+     "",
+     "6.7B",
+     "4.0",
+     "2.4",
+     "6.1",
+     "3.1",
+     "8.6",
+     "3.6",
+     "15.4",
+     "13.4",
+     "8.8",
+     "3.5"
+    ],
+    [
+     "",
+     "175B",
+     "15.6",
+     "\\jgr{46.9}",
+     "65.7",
+     "\\jgr{68.9}",
+     "70.3",
+     "\\jgr{71.3}",
+     "24.8",
+     "\\jgr{35.8}",
+     "72.7",
+     "\\jgr{87.1}"
+    ],
+    [
+     "Codex",
+     "-",
+     "19.7",
+     "\\jgr{63.1}",
+     "69.9",
+     "\\jgr{76.4}",
+     "74.0",
+     "\\jgr{80.4}",
+     "29.5",
+     "\\jgr{45.3}",
+     "78.7",
+     "\\jgr{92.6}"
+    ],
+    [
+     "\\palm{}",
+     "8B",
+     "4.9",
+     "4.1",
+     "15.1",
+     "\\jgr{16.8}",
+     "23.7",
+     "\\jgr{25.2}",
+     "19.3",
+     "\\jgr{21.7}",
+     "26.2",
+     "\\jgr{30.5}"
+    ],
+    [
+     "",
+     "62B",
+     "9.6",
+     "\\jgr{29.9}",
+     "48.2",
+     "46.7",
+     "58.7",
+     "\\jgr{61.9}",
+     "25.6",
+     "22.4",
+     "61.8",
+     "\\jgr{80.3}"
+    ],
+    [
+     "",
+     "540B",
+     "17.9",
+     "\\jgr{56.9}",
+     "69.4",
+     "\\jgr{79.0}",
+     "72.1",
+     "\\jgr{73.9}",
+     "25.2",
+     "\\jgr{35.8}",
+     "79.2",
+     "\\jgr{93.3}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_3",
+   "section": "sec_12",
+   "caption": "Standard prompting versus chain of thought prompting on the four subsets of the MAWPS benchmark. The point of stratifying the MAWPS benchmark is to show that performance gains are minimal on easy one-step or two-step problems where large language models already achieve high performance (e.g., SingleOp, SingleEq, and AddSub).",
+   "rows": [
+    [
+     "",
+     "",
+     "SingleOp",
+     "SingleEq",
+     "AddSub",
+     "MultiArith"
+    ],
+    [
+     "Model",
+     "",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain"
+    ],
+    [
+     "UL2",
+     "20B",
+     "24.9",
+     "\\jgr{27.2}",
+     "18.0",
+     "\\jgr{20.2}",
+     "18.5",
+     "18.2",
+     "5.0",
+     "\\jgr{10.7}"
+    ],
+    [
+     "\\lamda{}",
+     "420M",
+     "2.8",
+     "1.0",
+     "2.4",
+     "0.4",
+     "1.9",
+     "0.7",
+     "5.8",
+     "1.5"
+    ],
+    [
+     "",
+     "2B",
+     "4.6",
+     "4.1",
+     "2.4",
+     "3.3",
+     "2.7",
+     "3.2",
+     "5.8",
+     "1.8"
+    ],
+    [
+     "",
+     "8B",
+     "8.0",
+     "7.0",
+     "4.5",
+     "4.4",
+     "3.4",
+     "5.2",
+     "5.2",
+     "2.4"
+    ],
+    [
+     "",
+     "68B",
+     "36.5",
+     "\\jgr{40.8}",
+     "23.9",
+     "\\jgr{26.0}",
+     "17.3",
+     "\\jgr{23.2}",
+     "8.7",
+     "\\jgr{32.4}"
+    ],
+    [
+     "",
+     "137B",
+     "73.2",
+     "\\jgr{76.2}",
+     "48.8",
+     "\\jgr{58.7}",
+     "43.0",
+     "\\jgr{51.9}",
+     "7.6",
+     "\\jgr{44.9}"
+    ],
+    [
+     "GPT",
+     "350M",
+     "3.2",
+     "1.8",
+     "2.0",
+     "0.2",
+     "2.0",
+     "1.5",
+     "2.3",
+     "0.8"
+    ],
+    [
+     "",
+     "1.3B",
+     "5.3",
+     "3.0",
+     "2.4",
+     "1.6",
+     "2.3",
+     "1.5",
+     "2.2",
+     "0.5"
+    ],
+    [
+     "",
+     "6.7B",
+     "13.5",
+     "3.9",
+     "8.7",
+     "4.9",
+     "8.6",
+     "2.5",
+     "4.5",
+     "2.8"
+    ],
+    [
+     "",
+     "175B",
+     "90.9",
+     "88.8",
+     "82.7",
+     "\\jgr{86.6}",
+     "83.3",
+     "81.3",
+     "33.8",
+     "\\jgr{91.7}"
+    ],
+    [
+     "Codex",
+     "-",
+     "93.1",
+     "91.8",
+     "86.8",
+     "\\jgr{93.1}",
+     "90.9",
+     "89.1",
+     "44.0",
+     "\\jgr{96.2}"
+    ],
+    [
+     "\\palm{}",
+     "8B",
+     "41.8",
+     "\\jgr{46.6}",
+     "29.5",
+     "28.2",
+     "29.4",
+     "\\jgr{31.4}",
+     "4.2",
+     "\\jgr{15.8}"
+    ],
+    [
+     "",
+     "62B",
+     "87.9",
+     "85.6",
+     "77.2",
+     "\\jgr{83.5}",
+     "74.7",
+     "\\jgr{78.2}",
+     "7.3",
+     "\\jgr{73.7}"
+    ],
+    [
+     "",
+     "540B",
+     "94.1",
+     "94.1",
+     "86.5",
+     "\\jgr{92.3}",
+     "93.9",
+     "91.9",
+     "42.2",
+     "\\jgr{94.7}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_4",
+   "section": "sec_12",
+   "caption": "Standard prompting versus chain of thought prompting on five commonsense reasoning benchmarks. Chain of thought prompting is an emergent ability of model scale---it does not positively impact performance until used with a model of sufficient scale.",
+   "rows": [
+    [
+     "",
+     "",
+     "CSQA",
+     "StrategyQA",
+     "Date",
+     "Sports",
+     "SayCan"
+    ],
+    [
+     "Model",
+     "",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain"
+    ],
+    [
+     "UL2",
+     "20B",
+     "34.2",
+     "\\jgr{51.4}",
+     "59.0",
+     "53.3",
+     "13.5",
+     "\\jgr{14.0}",
+     "57.9",
+     "\\jgr{65.3}",
+     "20.0",
+     "\\jgr{41.7}"
+    ],
+    [
+     "\\lamda{}",
+     "420M",
+     "20.1",
+     "19.2",
+     "46.4",
+     "24.9",
+     "1.9",
+     "1.6",
+     "50.0",
+     "49.7",
+     "7.5",
+     "7.5"
+    ],
+    [
+     "",
+     "2B",
+     "20.2",
+     "19.6",
+     "52.6",
+     "45.2",
+     "8.0",
+     "6.8",
+     "49.3",
+     "57.5",
+     "8.3",
+     "8.3"
+    ],
+    [
+     "",
+     "8B",
+     "19.0",
+     "20.3",
+     "54.1",
+     "46.8",
+     "9.5",
+     "5.4",
+     "50.0",
+     "52.1",
+     "28.3",
+     "33.3"
+    ],
+    [
+     "",
+     "68B",
+     "37.0",
+     "\\jgr{44.1}",
+     "59.6",
+     "\\jgr{62.2}",
+     "15.5",
+     "\\jgr{18.6}",
+     "55.2",
+     "\\jgr{77.5}",
+     "35.0",
+     "\\jgr{42.5}"
+    ],
+    [
+     "",
+     "137B",
+     "53.6",
+     "\\jgr{57.9}",
+     "62.4",
+     "\\jgr{65.4}",
+     "21.5",
+     "\\jgr{26.8}",
+     "59.5",
+     "\\jgr{85.8}",
+     "43.3",
+     "\\jgr{46.6}"
+    ],
+    [
+     "GPT",
+     "350M",
+     "14.7",
+     "15.2",
+     "20.6",
+     "0.9",
+     "4.3",
+     "0.9",
+     "33.8",
+     "41.6",
+     "12.5",
+     "0.8"
+    ],
+    [
+     "",
+     "1.3B",
+     "12.0",
+     "19.2",
+     "45.8",
+     "35.7",
+     "4.0",
+     "1.4",
+     "0.0",
+     "26.9",
+     "20.8",
+     "9.2"
+    ],
+    [
+     "",
+     "6.7B",
+     "19.0",
+     "\\jgr{24.0}",
+     "53.6",
+     "50.0",
+     "8.9",
+     "4.9",
+     "0.0",
+     "4.4",
+     "17.5",
+     "\\jgr{35.0}"
+    ],
+    [
+     "",
+     "175B",
+     "79.5",
+     "73.5",
+     "65.9",
+     "65.4",
+     "43.8",
+     "\\jgr{52.1}",
+     "69.6",
+     "\\jgr{82.4}",
+     "81.7",
+     "\\jgr{87.5}"
+    ],
+    [
+     "Codex",
+     "-",
+     "82.3",
+     "77.9",
+     "67.1",
+     "\\jgr{73.2}",
+     "49.0",
+     "\\jgr{64.8}",
+     "71.7",
+     "\\jgr{98.5}",
+     "85.8",
+     "\\jgr{88.3}"
+    ],
+    [
+     "\\palm{}",
+     "8B",
+     "19.8",
+     "\\jgr{24.9}",
+     "55.6",
+     "53.5",
+     "12.9",
+     "13.1",
+     "55.1",
+     "\\jgr{75.2}",
+     "34.2",
+     "\\jgr{40.0}"
+    ],
+    [
+     "",
+     "62B",
+     "65.4",
+     "\\jgr{68.1}",
+     "58.4",
+     "\\jgr{63.4}",
+     "29.8",
+     "\\jgr{44.7}",
+     "72.1",
+     "\\jgr{93.6}",
+     "65.8",
+     "\\jgr{70.0}"
+    ],
+    [
+     "",
+     "540B",
+     "78.1",
+     "\\jgr{79.9}",
+     "68.6",
+     "\\jgr{77.8}",
+     "49.0",
+     "\\jgr{65.3}",
+     "80.5",
+     "\\jgr{95.4}",
+     "80.8",
+     "\\jgr{91.7}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_5",
+   "section": "sec_12",
+   "caption": "Standard prompting versus chain of thought prompting enables length generalization to longer inference examples on two symbolic manipulation tasks.",
+   "rows": [
+    [
+     "",
+     "",
+     "Last Letter Concatenation",
+     "Coin Flip (state tracking)"
+    ],
+    [
+     "",
+     "",
+     "2",
+     "OOD: 3",
+     "OOD: 4",
+     "2",
+     "OOD: 3",
+     "OOD: 4"
+    ],
+    [
+     "Model",
+     "",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain",
+     "\\stanchain"
+    ],
+    [
+     "UL2",
+     "20B",
+     "0.6",
+     "\\jgr{18.8}",
+     "0.0",
+     "0.2",
+     "0.0",
+     "0.0",
+     "70.4",
+     "67.1",
+     "51.6",
+     "52.2",
+     "48.7",
+     "50.4"
+    ],
+    [
+     "\\lamda{}",
+     "420M",
+     "0.3",
+     "\\jgr{1.6}",
+     "0.0",
+     "0.0",
+     "0.0",
+     "0.0",
+     "52.9",
+     "49.6",
+     "50.0",
+     "50.5",
+     "49.5",
+     "49.1"
+    ],
+    [
+     "",
+     "2B",
+     "2.3",
+     "\\jgr{6.0}",
+     "0.0",
+     "0.0",
+     "0.0",
+     "0.0",
+     "54.9",
+     "\\jgr{55.3}",
+     "47.4",
+     "48.7",
+     "49.8",
+     "50.2"
+    ],
+    [
+     "",
+     "8B",
+     "1.5",
+     "\\jgr{11.5}",
+     "0.0",
+     "0.0",
+     "0.0",
+     "0.0",
+     "52.9",
+     "\\jgr{55.5}",
+     "48.2",
+     "49.6",
+     "51.2",
+     "50.6"
+    ],
+    [
+     "",
+     "68B",
+     "4.4",
+     "\\jgr{52.0}",
+     "0.0",
+     "\\jgr{0.8}",
+     "0.0",
+     "\\jgr{2.5}",
+     "56.2",
+     "\\jgr{83.2}",
+     "50.4",
+     "\\jgr{69.1}",
+     "50.9",
+     "\\jgr{59.6}"
+    ],
+    [
+     "",
+     "137B",
+     "5.8",
+     "\\jgr{77.5}",
+     "0.0",
+     "\\jgr{34.4}",
+     "0.0",
+     "\\jgr{13.5}",
+     "49.0",
+     "\\jgr{99.6}",
+     "50.7",
+     "\\jgr{91.0}",
+     "49.1",
+     "\\jgr{74.5}"
+    ],
+    [
+     "\\palm{}",
+     "8B",
+     "2.6",
+     "\\jgr{18.8}",
+     "0.0",
+     "0.0",
+     "0.0",
+     "\\jgr{0.2}",
+     "60.0",
+     "\\jgr{74.4}",
+     "47.3",
+     "\\jgr{57.1}",
+     "50.9",
+     "\\jgr{51.8}"
+    ],
+    [
+     "",
+     "62B",
+     "6.8",
+     "\\jgr{85.0}",
+     "0.0",
+     "\\jgr{59.6}",
+     "0.0",
+     "\\jgr{13.4}",
+     "91.4",
+     "\\jgr{96.8}",
+     "43.9",
+     "\\jgr{91.0}",
+     "38.3",
+     "\\jgr{72.4}"
+    ],
+    [
+     "",
+     "540B",
+     "7.6",
+     "\\jgr{99.4}",
+     "0.2",
+     "\\jgr{94.8}",
+     "0.0",
+     "\\jgr{63.0}",
+     "98.1",
+     "\\jgr{100.0}",
+     "49.3",
+     "\\jgr{98.6}",
+     "54.8",
+     "\\jgr{90.2}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_6",
+   "section": "sec_12",
+   "caption": "Ablation and robustness results for arithmetic reasoning datasets. Chain of thought generally outperforms ablations by a large amount. ``Equation only'' performs in between standard prompting and chain of thought prompting, as it allows for intermediate reasoning steps via equations but does not leverage natural language. Chain of thought prompting has variance (as expected) when used with prompts written by different annotators or when using other exemplars, but still outperforms standard prompting by a large margin. Standard deviation shown is for different order of few-shot prompting exemplars, with five different random seeds. Results here are shown for \\lamda{} 137B, as additional queries for GPT-3 and \\palm{} are both limited and expensive.",
+   "rows": [
+    [
+     "",
+     "GSM8K",
+     "SVAMP",
+     "ASDiv",
+     "MAWPS"
+    ],
+    [
+     "Standard prompting",
+     "\\cell{6.5}{0.4}",
+     "\\cell{29.5}{0.6}",
+     "\\cell{40.1}{0.6}",
+     "\\cell{43.2}{0.9}"
+    ],
+    [
+     "\\vspace{3mm} Chain of thought prompting",
+     "\\cell{14.3}{0.4}",
+     "\\cell{36.7}{0.4}",
+     "\\cell{46.6}{0.7}",
+     "\\cell{57.9}{1.5}"
+    ],
+    [
+     "\\underline{Ablations}"
+    ],
+    [
+     "$\\cdot$ equation only",
+     "\\cell{5.4}{0.2}",
+     "\\cell{35.1}{0.4}",
+     "\\cell{45.9}{0.6}",
+     "\\cell{50.1}{1.0}"
+    ],
+    [
+     "$\\cdot$ variable compute only",
+     "\\cell{6.4}{0.3}",
+     "\\cell{28.0}{0.6}",
+     "\\cell{39.4}{0.4}",
+     "\\cell{41.3}{1.1}"
+    ],
+    [
+     "\\vspace{3mm} $\\cdot$ reasoning after answer",
+     "\\cell{6.1}{0.4}",
+     "\\cell{30.7}{0.9}",
+     "\\cell{38.6}{0.6}",
+     "\\cell{43.6}{1.0}"
+    ],
+    [
+     "\\underline{Robustness}"
+    ],
+    [
+     "$\\cdot$ different annotator (B)",
+     "\\cell{15.5}{0.6}",
+     "\\cell{35.2}{0.4}",
+     "\\cell{46.5}{0.4}",
+     "\\cell{58.2}{1.0}"
+    ],
+    [
+     "$\\cdot$ different annotator (C)",
+     "\\cell{17.6}{1.0}",
+     "\\cell{37.5}{2.0}",
+     "\\cell{48.7}{0.7}",
+     "\\cell{60.1}{2.0}"
+    ],
+    [
+     "$\\cdot$ intentionally concise style",
+     "\\cell{11.1}{0.3}",
+     "\\cell{38.7}{0.8}",
+     "\\cell{48.0}{0.3}",
+     "\\cell{59.6}{0.7}"
+    ],
+    [
+     "$\\cdot$ exemplars from GSM8K ($\\alpha$)",
+     "\\cell{12.6}{0.6}",
+     "\\cell{32.8}{1.1}",
+     "\\cell{44.1}{0.9}",
+     "\\cell{53.9}{1.1}"
+    ],
+    [
+     "$\\cdot$ exemplars from GSM8K ($\\beta$)",
+     "\\cell{12.7}{0.5}",
+     "\\cell{34.8}{1.1}",
+     "\\cell{46.9}{0.6}",
+     "\\cell{60.9}{0.8}"
+    ],
+    [
+     "$\\cdot$ exemplars from GSM8K ($\\gamma$)",
+     "\\cell{12.6}{0.7}",
+     "\\cell{35.6}{0.5}",
+     "\\cell{44.4}{2.6}",
+     "\\cell{54.2}{4.7}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_7",
+   "section": "sec_12",
+   "caption": "Ablation and robustness results for four datasets in commonsense and symbolic reasoning. Chain of thought generally outperforms ablations by a large amount. Chain of thought prompting has variance (as expected) when used with prompts written by different annotators or when using other exemplars, but still outperforms standard prompting by a large margin. Standard deviation shown is for different order of few-shot prompting exemplars, with five different random seeds. Results here are shown for \\lamda{} 137B, as additional queries for GPT-3 and \\palm{} are both limited and expensive. The exception is that we run SayCan using \\palm{} here, as the SayCan evaluation set is only 120 examples and therefore less expensive to run multiple times.",
+   "rows": [
+    [
+     "",
+     "Commonsense",
+     "Symbolic"
+    ],
+    [
+     "",
+     "Date",
+     "Sports",
+     "SayCan",
+     "Concat",
+     "Coin"
+    ],
+    [
+     "Standard prompting",
+     "\\cell{21.5}{0.6}",
+     "\\cell{59.5}{3.0}",
+     "\\cell{80.8}{1.8}",
+     "\\cell{5.8}{0.6}",
+     "\\cell{49.0}{2.1}"
+    ],
+    [
+     "\\vspace{3mm} Chain of thought prompting",
+     "\\cell{26.8}{2.1}",
+     "\\cell{85.8}{1.8}",
+     "\\cell{91.7}{1.4}",
+     "\\cell{77.5}{3.8}",
+     "\\cell{99.6}{0.3}"
+    ],
+    [
+     "\\underline{Ablations}"
+    ],
+    [
+     "$\\cdot$ variable compute only",
+     "\\cell{21.3}{0.7}",
+     "\\cell{61.6}{2.2}",
+     "\\cell{74.2}{2.3}",
+     "\\cell{7.2}{1.6}",
+     "\\cell{50.7}{0.7}"
+    ],
+    [
+     "\\vspace{3mm} $\\cdot$ reasoning after answer",
+     "\\cell{20.9}{1.0}",
+     "\\cell{63.0}{2.0}",
+     "\\cell{83.3}{0.6}",
+     "\\cell{0.0}{0.0}",
+     "\\cell{50.2}{0.5}"
+    ],
+    [
+     "\\underline{Robustness}"
+    ],
+    [
+     "$\\cdot$ different annotator (B)",
+     "\\cell{27.4}{1.7}",
+     "\\cell{75.4}{2.7}",
+     "\\cell{88.3}{1.4}",
+     "\\cell{76.0}{1.9}",
+     "\\cell{77.5}{7.9}"
+    ],
+    [
+     "$\\cdot$ different annotator (C)",
+     "\\cell{25.5}{2.5}",
+     "\\cell{81.1}{3.6}",
+     "\\cell{85.0}{1.8}",
+     "\\cell{68.1}{2.2}",
+     "\\cell{71.4}{11.1}"
+    ]
+   ]
+  },
+  {
+   "id": "tab_8",
+   "section": "sec_14_1",
+   "caption": "Example of correct chains of thought produced by the model for the GSM8K dataset.",
+   "rows": []
+  },
+  {
+   "id": "tab_9",
+   "section": "sec_14_1",
+   "caption": "Of 50 examples that the model got correct, there were 7 salient cases where the chain of thought the model generated was imperfect. We found the other 43 to be equivalent to what a human would potentially generate as a ground truth.",
+   "rows": []
+  },
+  {
+   "id": "tab_10",
+   "section": "sec_14_2",
+   "caption": "Example of incorrect chains of thought, categorized as described in \\cref{subsec:incorrect-chain-of-thought-analysis}.",
+   "rows": []
+  },
+  {
+   "id": "tab_11",
+   "section": "sec_14_2",
+   "caption": "Example of incorrect chains of thought, categorized as described in \\cref{subsec:incorrect-chain-of-thought-analysis}. These chains of thought had multiple mistakes that could not be fixed with minor edits.",
+   "rows": []
+  },
+  {
+   "id": "tab_12",
+   "section": "sec_14_3",
+   "caption": "Summary of math word problem benchmarks we use in this paper with examples. $N$: number of evaluation examples.",
+   "rows": []
+  },
+  {
+   "id": "tab_13",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on the letter concatenation task.",
+   "rows": []
+  },
+  {
+   "id": "tab_14",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on the coinflip task.",
+   "rows": []
+  },
+  {
+   "id": "tab_15",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on CSQA.",
+   "rows": []
+  },
+  {
+   "id": "tab_16",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on StrategyQA.",
+   "rows": []
+  },
+  {
+   "id": "tab_17",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on Date Understanding.",
+   "rows": []
+  },
+  {
+   "id": "tab_18",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\lamda{} 137B on Sports Understanding.",
+   "rows": []
+  },
+  {
+   "id": "tab_19",
+   "section": "sec_17",
+   "caption": "Examples of correct and incorrect chains of thought produced by \\palm{} 540B on SayCan robot planning tasks.",
+   "rows": []
+  },
+  {
+   "id": "tab_20",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for math word problems. This set of exemplars was used for all math word problem datasets except AQuA.",
+   "rows": []
+  },
+  {
+   "id": "tab_21",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for AQuA.",
+   "rows": []
+  },
+  {
+   "id": "tab_22",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for the last letter concatenation task.",
+   "rows": []
+  },
+  {
+   "id": "tab_23",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for the coinflip task.",
+   "rows": []
+  },
+  {
+   "id": "tab_24",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for CSQA. There are newlines between the answer choices that are omitted in the table for space reasons.",
+   "rows": []
+  },
+  {
+   "id": "tab_25",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for StrategyQA.",
+   "rows": []
+  },
+  {
+   "id": "tab_26",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for Date Understanding.",
+   "rows": []
+  },
+  {
+   "id": "tab_27",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for Sports Understanding.",
+   "rows": []
+  },
+  {
+   "id": "tab_28",
+   "section": "sec_18",
+   "caption": "Few-shot exemplars for full chain of thought prompt for SayCan robot planning tasks.",
+   "rows": []
+  },
+  {
+   "id": "tab_29",
+   "section": "sec_19",
+   "caption": "Few-shot exemplars for full chain of thought prompt for math word problems. These exemplars are the same as in \\cref{tab:appendix-mwp-prompts}, except that the chains of thought were written by a different annotator (``Annotator B'' instead of ``Annotator A''). Annotators were co-authors and familiar with the goal of chain of thought prompting.",
+   "rows": []
+  },
+  {
+   "id": "tab_30",
+   "section": "sec_19",
+   "caption": "Few-shot exemplars for full chain of thought prompt for math word problems. These exemplars are the same as in \\cref{tab:appendix-mwp-prompts}, except that the chains of thought were written by a different annotator (``Annotator C'' instead of ``Annotator A'').",
+   "rows": []
+  }
+ ],
+ "macros": {
+  "\\theHalgorithm": "\\arabic{algorithm}",
+  "\\cmark": "\\ding{51}",
+  "\\xmark": "\\ding{55}",
+  "\\iftodonotes": "\\if@todonotes@disabled\\expandafter\\@secondoftwo\\else\\expandafter\\@firstoftwo\\fi",
+  "\\noindentaftertodo": "\\iftodonotes{\\noindent}{}",
+  "\\fixme": "\\todo[color=yellow,size=\\scriptsize,fancyline,caption={},#1]{#2}",
+  "\\note": "\\todo[author=#2,color=#3,size=\\scriptsize,fancyline,caption={},#1]{#4}",
+  "\\battleshipgrey": "{\\color{battleshipgrey}{#1}}",
+  "\\americanrose": "{\\color{americanrose}{#1}}",
+  "\\jweigreen": "{\\color{jweigreen}{#1}}",
+  "\\darkgreen": "{\\color{ao(english)}{#1}}",
+  "\\aliceblue": "{\\color{aliceblue}{#1}}",
+  "\\beige": "{\\color{beige}{#1}}",
+  "\\babyblue": "{\\color{babyblue}{#1}}",
+  "\\camel": "{\\color{camel}{#1}}",
+  "\\cinnamon": "{\\color{cinnamon}{#1}}",
+  "\\orange": "#1",
+  "\\camera": "{\\color{orange}{#1}}",
+  "\\Fixme": "\\fixme[inline,#1]{#2}\\noindentaftertodo",
+  "\\Notewho": "\\notewho[inline,#1]{#2}{#3}\\noindentaftertodo",
+  "\\jason": "\\note[#1]{jason}{violet!20}{#2}",
+  "\\Jason": "\\jason[inline,#1]{#2}\\noindentaftertodo \\vspace{-5mm}",
+  "\\denny": "\\note[#1]{denny}{orange!40}{#2}",
+  "\\Denny": "\\denny[inline,#1]{#2}\\noindentaftertodo \\vspace{-5mm}",
+  "\\checkme": "\\textcolor{violet}{#1}",
+  "\\cellcheck": "\\makecell[c]{\\checkmark}",
+  "\\cellx": "\\makecell[c]{\\xmark}",
+  "\\lamda": "LaMDA",
+  "\\palm": "PaLM",
+  "\\cell": "#1{ \\scriptsize $\\pm$#2}",
+  "\\calc": "\\hspace{0.7mm} \\battleshipgrey{\\scriptsize #1}",
+  "\\diff": "#1 {\\scriptsize (#2)}",
+  "\\jred": "#1",
+  "\\jgr": "\\textbf{\\jweigreen{#1}}",
+  "\\stanchain": "{\\small standard} & {\\small CoT}",
+  "\\dataset": "#1"
+ },
+ "references": [
+  {
+   "key": "ahn2022can",
+   "text": "Michael Ahn, Anthony Brohan, Noah Brown, Yevgen Chebotar, Omar Cortes, Byron David, Chelsea Finn, Keerthana Gopalakrishnan, Karol Hausman, Alex Herzog, et~al. 2022. \\newblock \\href {https://arxiv.org/abs/2204.01691} {Do as {I} can, not as {I} say: Grounding language in robotic affordances}. \\newblock \\emph{arXiv preprint arXiv:2204.01691}.",
+   "arxiv_id": "2204.01691"
+  },
+  {
+   "key": "amini-etal-2019-mathqa",
+   "text": "Aida Amini, Saadia Gabriel, Shanchuan Lin, Rik Koncel-Kedziorski, Yejin Choi, and Hannaneh Hajishirzi. 2019. \\newblock \\href {https://aclanthology.org/N19-1245} {{M}ath{QA}: Towards interpretable math word problem solving with operation-based formalisms}. \\newblock In \\emph{Proceedings of the 2019 Conference of the North {A}merican Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)}, Minneapolis, Minnesota. Association for Computational Linguistics.",
+   "arxiv_id": null
+  },
+  {
+   "key": "andor-etal-2019-giving",
+   "text": "Daniel Andor, Luheng He, Kenton Lee, and Emily Pitler. 2019. \\newblock \\href {https://doi.org/10.18653/v1/D19-1609} {Giving {BERT} a calculator: Finding operations and arguments with reading comprehension}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "andreas-etal-2018-learning",
+   "text": "Jacob Andreas, Dan Klein, and Sergey Levine. 2018. \\newblock \\href {https://aclanthology.org/N18-1197} {Learning with latent language}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "austin2021program",
+   "text": "Jacob Austin, Augustus Odena, Maxwell Nye, Maarten Bosma, Henryk Michalewski, David Dohan, Ellen Jiang, Carrie Cai, Michael Terry, Quoc Le, et~al. 2021. \\newblock \\href {https://arxiv.org/abs/2108.07732} {Program synthesis with large language models}. \\newblock \\emph{arXiv preprint arXiv:2108.07732}.",
+   "arxiv_id": "2108.07732"
+  },
+  {
+   "key": "bigbench",
+   "text": "{BIG-bench collaboration}. 2021. \\newblock \\href {https://github.com/google/BIG-bench/} {Beyond the imitation game: Measuring and extrapolating the capabilities of language models}. \\newblock \\emph{In preparation}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bostrom-etal-2021-flexible",
+   "text": "Kaj Bostrom, Xinyu Zhao, Swarat Chaudhuri, and Greg Durrett. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.emnlp-main.506} {Flexible generation of natural language deductions}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "brown2020language",
+   "text": "Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared~D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel Ziegler, Jeffrey Wu, Clemens Winter, Chris Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. 2020. \\newblock \\href {https://proceedings.neurips.cc/paper/2020/file/1457c0d6bfcb4967418bfb8ac142f64a-Paper.pdf} {Language models are few-shot learners}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "cai2017making",
+   "text": "Jonathon Cai, Richard Shin, and Dawn Song. 2017. \\newblock \\href {https://arxiv.org/abs/1704.06611} {Making neural programming architectures generalize via recursion}. \\newblock \\emph{ICLR}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "camburu2018snli",
+   "text": "Oana-Maria Camburu, Tim Rockt{\\\"a}schel, Thomas Lukasiewicz, and Phil Blunsom. 2018. \\newblock \\href {https://arxiv.org/pdf/1812.01193.pdf} {e-{SNLI}: Natural language inference with natural language explanations}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chen2022can",
+   "text": "Howard Chen, Jacqueline He, Karthik Narasimhan, and Danqi Chen. 2022. \\newblock \\href {https://arxiv.org/abs/2204.11790} {Can rationalization improve robustness?} \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chen2021evaluating",
+   "text": "Mark Chen, Jerry Tworek, Heewoo Jun, Qiming Yuan, Henrique Ponde de~Oliveira Pinto, Jared Kaplan, Harri Edwards, Yuri Burda, Nicholas Joseph, Greg Brockman, et~al. 2021. \\newblock \\href {https://arxiv.org/abs/2107.03374} {Evaluating large language models trained on code}. \\newblock \\emph{arXiv preprint arXiv:2107.03374}.",
+   "arxiv_id": "2107.03374"
+  },
+  {
+   "key": "chen2019neural",
+   "text": "Xinyun Chen, Chen Liang, Adams~Wei Yu, Denny Zhou, Dawn Song, and Quoc~V. Le. 2019. \\newblock \\href {https://openreview.net/forum?id=ryxjnREFwH} {Neural symbolic reader: Scalable integration of distributed and symbolic representations for reading comprehension}. \\newblock \\emph{ICLR}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chiang-chen-2019-semantically",
+   "text": "Ting-Rui Chiang and Yun-Nung Chen. 2019. \\newblock \\href {https://doi.org/10.18653/v1/N19-1272} {Semantically-aligned equation generation for solving and reasoning math word problems}. \\newblock In \\emph{Proceedings of the 2019 Conference of the North {A}merican Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers)}, pages 2656--2668, Minneapolis, Minnesota. Association for Computational Linguistics.",
+   "arxiv_id": null
+  },
+  {
+   "key": "clark2020transformers",
+   "text": "Peter Clark, Oyvind Tafjord, and Kyle Richardson. 2020. \\newblock \\href {https://www.ijcai.org/proceedings/2020/0537.pdf} {Transformers as soft reasoners over language}. \\newblock \\emph{IJCAI}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "cobbe2021training",
+   "text": "Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Jacob Hilton, Reiichiro Nakano, Christopher Hesse, and John Schulman. 2021. \\newblock \\href {https://arxiv.org/abs/2110.14168} {Training verifiers to solve math word problems}. \\newblock \\emph{arXiv preprint arXiv:2110.14168}.",
+   "arxiv_id": "2110.14168"
+  },
+  {
+   "key": "devlin-etal-2019-bert",
+   "text": "Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. \\newblock \\href {https://aclanthology.org/N19-1423} {{BERT}: Pre-training of deep bidirectional transformers for language understanding}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "dong2019neural",
+   "text": "Honghua Dong, Jiayuan Mao, Tian Lin, Chong Wang, Lihong Li, and Denny Zhou. 2019. \\newblock \\href {https://arxiv.org/abs/1904.11694} {Neural logic machines}. \\newblock \\emph{ICLR}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "dua-etal-2020-benefits",
+   "text": "Dheeru Dua, Sameer Singh, and Matt Gardner. 2020. \\newblock \\href {https://aclanthology.org/2020.acl-main.497} {Benefits of intermediate annotations in reading comprehension}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "geva-etal-2021-aristotle",
+   "text": "Mor Geva, Daniel Khashabi, Elad Segal, Tushar Khot, Dan Roth, and Jonathan Berant. 2021. \\newblock \\href {https://doi.org/10.1162/tacl_a_00370} {Did aristotle use a laptop? {A} question answering benchmark with implicit reasoning strategies}. \\newblock \\emph{TACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "gu2021dream",
+   "text": "Yuling Gu, Bhavana~Dalvi Mishra, and Peter Clark. 2022. \\newblock \\href {https://arxiv.org/pdf/2112.08656.pdf} {{DREAM}: Uncovering mental models behind language models}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hancock-etal-2018-training",
+   "text": "Braden Hancock, Paroma Varma, Stephanie Wang, Martin Bringmann, Percy Liang, and Christopher R{\\'e}. 2018. \\newblock \\href {https://doi.org/10.18653/v1/P18-1175} {Training classifiers with natural language explanations}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hase2021can",
+   "text": "Peter Hase and Mohit Bansal. 2022. \\newblock \\href {https://arxiv.org/abs/2102.02201} {When can models learn from explanations? a formal framework for understanding the roles of explanation data}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hendrycks2021measuring",
+   "text": "Dan Hendrycks, Collin Burns, Saurav Kadavath, Akul Arora, Steven Basart, Eric Tang, Dawn Song, and Jacob Steinhardt. 2021. \\newblock \\href {https://arxiv.org/abs/2103.03874} {Measuring mathematical problem solving with the math dataset}. \\newblock \\emph{arXiv preprint arXiv:2103.03874}.",
+   "arxiv_id": "2103.03874"
+  },
+  {
+   "key": "hosseini-etal-2014-learning",
+   "text": "Mohammad~Javad Hosseini, Hannaneh Hajishirzi, Oren Etzioni, and Nate Kushman. 2014. \\newblock \\href {https://doi.org/10.3115/v1/D14-1058} {Learning to solve arithmetic word problems with verb categorization}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "jie2022learning",
+   "text": "Zhanming Jie, Jierui Li, and Wei Lu. 2022. \\newblock \\href {https://arxiv.org/abs/2203.10316} {Learning to reason deductively: Math word problem solving as complex relation extraction}. \\newblock \\emph{arXiv preprint arXiv:2203.10316}.",
+   "arxiv_id": "2203.10316"
+  },
+  {
+   "key": "kaplan2020scaling",
+   "text": "Jared Kaplan, Sam McCandlish, Tom Henighan, Tom~B Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. 2020. \\newblock \\href {https://arxiv.org/abs/2001.08361} {Scaling laws for neural language models}. \\newblock \\emph{arXiv preprint arXiv:2001.08361}.",
+   "arxiv_id": "2001.08361"
+  },
+  {
+   "key": "koncel-kedziorski-etal-2016-mawps",
+   "text": "Rik Koncel-Kedziorski, Subhro Roy, Aida Amini, Nate Kushman, and Hannaneh Hajishirzi. 2016. \\newblock \\href {https://doi.org/10.18653/v1/N16-1136} {{MAWPS}: A math word problem repository}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lampinen2022can",
+   "text": "Andrew~K. Lampinen, Ishita Dasgupta, Stephanie~C.Y. Chan, Kory Matthewson, Michael~Henry Tessler, Antonia Creswell, James~L. McClelland, Jane~X. Wang, and Felix Hill. 2022. \\newblock \\href {https://arxiv.org/abs/2204.02329} {Can language models learn from explanations in context?} \\newblock \\emph{arXiv preprint arXiv:2204.02329}.",
+   "arxiv_id": "2204.02329"
+  },
+  {
+   "key": "lan2021mwptoolkit",
+   "text": "Yihuai Lan, Lei Wang, Qiyuan Zhang, Yunshi Lan, Bing~Tian Dai, Yan Wang, Dongxiang Zhang, and Ee-Peng Lim. 2021. \\newblock \\href {https://arxiv.org/abs/2109.00799} {{MWPT}oolkit: An open-source framework for deep learning-based math word problem solvers}. \\newblock \\emph{arXiv preprint arXiv:2109.00799}.",
+   "arxiv_id": "2109.00799"
+  },
+  {
+   "key": "le-scao-rush-2021-many",
+   "text": "Teven Le~Scao and Alexander Rush. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.naacl-main.208} {How many data points is a prompt worth?} \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lester-etal-2021-power",
+   "text": "Brian Lester, Rami Al-Rfou, and Noah Constant. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.emnlp-main.243} {The power of scale for parameter-efficient prompt tuning}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lev-etal-2004-solving",
+   "text": "Iddo Lev, Bill MacCartney, Christopher Manning, and Roger Levy. 2004. \\newblock \\href {https://aclanthology.org/W04-0902} {Solving logic puzzles: From robust processing to precise semantics}. \\newblock \\emph{Proceedings of the 2nd Workshop on Text Meaning and Interpretation}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "li-liang-2021-prefix",
+   "text": "Xiang~Lisa Li and Percy Liang. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.acl-long.353} {Prefix-tuning: Optimizing continuous prompts for generation}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liang-etal-2021-explainable",
+   "text": "Zhengzhong Liang, Steven Bethard, and Mihai Surdeanu. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.naacl-main.97} {Explainable multi-hop verbal reasoning through internal monologue}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ling-etal-2017-program",
+   "text": "Wang Ling, Dani Yogatama, Chris Dyer, and Phil Blunsom. 2017. \\newblock \\href {https://doi.org/10.18653/v1/P17-1015} {Program induction by rationale generation: Learning to solve and explain algebraic word problems}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2021pre",
+   "text": "Pengfei Liu, Weizhe Yuan, Jinlan Fu, Zhengbao Jiang, Hiroaki Hayashi, and Graham Neubig. 2021. \\newblock \\href {https://arxiv.org/abs/2107.13586} {Pre-train, prompt, and predict: A systematic survey of prompting methods in natural language processing}. \\newblock \\emph{arXiv preprint arXiv:2107.13586}.",
+   "arxiv_id": "2107.13586"
+  },
+  {
+   "key": "majumder2021rationale",
+   "text": "Bodhisattwa~Prasad Majumder, Oana-Maria Camburu, Thomas Lukasiewicz, and Julian McAuley. 2021. \\newblock \\href {https://arxiv.org/abs/2106.13876} {Rationale-inspired natural language explanations with commonsense}. \\newblock \\emph{arXiv preprint arXiv:2106.13876}.",
+   "arxiv_id": "2106.13876"
+  },
+  {
+   "key": "marasovic2021few",
+   "text": "Ana Marasovi{\\'c}, Iz~Beltagy, Doug Downey, and Matthew~E Peters. 2022. \\newblock \\href {http://arxiv.org/abs/2111.08284} {Few-shot self-rationalization with natural language prompts}. \\newblock \\emph{NAACL Findings}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "maynez-etal-2020-faithfulness",
+   "text": "Joshua Maynez, Shashi Narayan, Bernd Bohnet, and Ryan McDonald. 2020. \\newblock \\href {https://doi.org/10.18653/v1/2020.acl-main.173} {On faithfulness and factuality in abstractive summarization}. \\newblock In \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "miao-etal-2020-diverse",
+   "text": "Shen~Yun Miao, Chao~Chun Liang, and Keh~Yih Su. 2020. \\newblock \\href {https://doi.org/10.18653/v1/2020.acl-main.92} {A diverse corpus for evaluating and developing {E}nglish math word problem solvers}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "min2022rethinking",
+   "text": "Sewon Min, Xinxi Lyu, Ari Holtzman, Mikel Artetxe, Mike Lewis, Hannaneh Hajishirzi, and Luke Zettlemoyer. 2022. \\newblock \\href {https://arxiv.org/abs/2202.12837} {Rethinking the role of demonstrations: What makes in-context learning work?} \\newblock \\emph{arXiv preprint arXiv:2202.12837}.",
+   "arxiv_id": "2202.12837"
+  },
+  {
+   "key": "narang2020wt5",
+   "text": "Sharan Narang, Colin Raffel, Katherine Lee, Adam Roberts, Noah Fiedel, and Karishma Malkan. 2020. \\newblock \\href {https://arxiv.org/abs/2004.14546} {{WT5}?! {T}raining text-to-text models to explain their predictions}. \\newblock \\emph{arXiv preprint arXiv:2004.14546}.",
+   "arxiv_id": "2004.14546"
+  },
+  {
+   "key": "nye2021show",
+   "text": "Maxwell Nye, Anders~Johan Andreassen, Guy Gur-Ari, Henryk Michalewski, Jacob Austin, David Bieber, David Dohan, Aitor Lewkowycz, Maarten Bosma, David Luan, et~al. 2021. \\newblock \\href {http://arxiv.org/abs/2112.00114} {Show your work: Scratchpads for intermediate computation with language models}. \\newblock \\emph{arXiv preprint arXiv:2112.00114}.",
+   "arxiv_id": "2112.00114"
+  },
+  {
+   "key": "ouyang2022training",
+   "text": "Long Ouyang, Jeff Wu, Xu~Jiang, Diogo Almeida, Carroll~L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et~al. 2022. \\newblock \\href {https://arxiv.org/abs/2203.02155} {Training language models to follow instructions with human feedback}. \\newblock \\emph{arXiv preprint arXiv:2203.02155}.",
+   "arxiv_id": "2203.02155"
+  },
+  {
+   "key": "patel-etal-2021-nlp",
+   "text": "Arkil Patel, Satwik Bhattamishra, and Navin Goyal. 2021. \\newblock \\href {https://aclanthology.org/2021.naacl-main.168.pdf} {Are {NLP} models really able to solve simple math word problems?} \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "peters-etal-2018-deep",
+   "text": "Matthew~E. Peters, Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. \\newblock \\href {https://aclanthology.org/N18-1202} {Deep contextualized word representations}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "pi2022reasoning",
+   "text": "Xinyu Pi, Qian Liu, Bei Chen, Morteza Ziyadi, Zeqi Lin, Yan Gao, Qiang Fu, Jian-Guang Lou, and Weizhu Chen. 2022. \\newblock \\href {https://arxiv.org/abs/2201.11473} {Reasoning like program executors}. \\newblock \\emph{arXiv preprint arXiv:2201.11473}.",
+   "arxiv_id": "2201.11473"
+  },
+  {
+   "key": "piekos-etal-2021-measuring",
+   "text": "Piotr Pi{\\k{e}}kos, Mateusz Malinowski, and Henryk Michalewski. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.acl-short.49} {Measuring and improving {BERT}{'}s mathematical abilities by predicting the order of reasoning.} \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rae2021scaling",
+   "text": "Jack~W. Rae, Sebastian Borgeaud, Trevor Cai, Katie Millican, Jordan Hoffmann, Francis Song, John Aslanides, Sarah Henderson, Roman Ring, Susannah Young, et~al. 2021. \\newblock \\href {https://arxiv.org/abs/2112.11446} {Scaling language models: Methods, analysis \\& insights from training {G}opher}. \\newblock \\emph{arXiv preprint arXiv:2112.11446}.",
+   "arxiv_id": "2112.11446"
+  },
+  {
+   "key": "raffel2020exploring",
+   "text": "Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter~J Liu. 2020. \\newblock \\href {https://arxiv.org/abs/1910.10683} {Exploring the limits of transfer learning with a unified text-to-text transformer}. \\newblock \\emph{Journal of Machine Learning Research}, 21:1--67.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rajagopal2021selfexplain",
+   "text": "Dheeraj Rajagopal, Vidhisha Balachandran, Eduard~H. Hovy, and Yulia Tsvetkov. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.emnlp-main.64} {{SelfExplain}: A self-explaining architecture for neural text classifiers}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rajani-etal-2019-explain",
+   "text": "Nazneen~Fatema Rajani, Bryan McCann, Caiming Xiong, and Richard Socher. 2019. \\newblock \\href {https://doi.org/10.18653/v1/P19-1487} {Explain yourself! {L}everaging language models for commonsense reasoning}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ran-etal-2019-numnet",
+   "text": "Qiu Ran, Yankai Lin, Peng Li, Jie Zhou, and Zhiyuan Liu. 2019. \\newblock \\href {https://doi.org/10.18653/v1/D19-1251} {{N}um{N}et: Machine reading comprehension with numerical reasoning}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rashkin2021measuring",
+   "text": "Hannah Rashkin, Vitaly Nikolaev, Matthew Lamm, Michael Collins, Dipanjan Das, Slav Petrov, Gaurav~Singh Tomar, Iulia Turc, and David Reitter. 2021. \\newblock \\href {https://arxiv.org/abs/2112.12870} {Measuring attribution in natural language generation models}. \\newblock \\emph{arXiv preprint arXiv:2112.12870}.",
+   "arxiv_id": "2112.12870"
+  },
+  {
+   "key": "recchia2021teaching",
+   "text": "Gabriel Recchia. 2021. \\newblock \\href {https://arxiv.org/abs/2109.02102} {Teaching autoregressive language models complex tasks by demonstration}. \\newblock \\emph{arXiv preprint arXiv:2109.02102}.",
+   "arxiv_id": "2109.02102"
+  },
+  {
+   "key": "reif2021recipe",
+   "text": "Emily Reif, Daphne Ippolito, Ann Yuan, Andy Coenen, Chris Callison-Burch, and Jason Wei. 2022. \\newblock \\href {https://arxiv.org/abs/2109.03910} {A recipe for arbitrary text style transfer with large language models}. \\newblock \\emph{ACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "reynolds2021prompt",
+   "text": "Laria Reynolds and Kyle McDonell. 2021. \\newblock \\href {https://arxiv.org/abs/2102.07350} {Prompt programming for large language models: Beyond the few-shot paradigm}. \\newblock \\emph{Extended Abstracts of the 2021 CHI Conference on Human Factors in Computing Systems}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "roy-roth-2015-solving",
+   "text": "Subhro Roy and Dan Roth. 2015. \\newblock \\href {https://doi.org/10.18653/v1/D15-1202} {Solving general arithmetic word problems}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "roy-2016-reasoning",
+   "text": "Subhro Roy, Tim Vieira, and Dan Roth. 2015. \\newblock \\href {https://doi.org/10.1162/tacl_a_00118} {{Reasoning about Quantities in Natural Language}}. \\newblock \\emph{TACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "saeed-etal-2021-rulebert",
+   "text": "Mohammed Saeed, Naser Ahmadi, Preslav Nakov, and Paolo Papotti. 2021. \\newblock \\href {https://doi.org/10.18653/v1/2021.emnlp-main.110} {{R}ule{BERT}: Teaching soft rules to pre-trained language models}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sanh2021multitask",
+   "text": "Victor Sanh, Albert Webson, Colin Raffel, Stephen~H. Bach, Lintang Sutawika, Zaid Alyafeai, Antoine Chaffin, Arnaud Stiegler, Teven~Le Scao, Arun Raja, et~al. 2022. \\newblock \\href {https://arxiv.org/abs/2110.08207} {Multitask prompted training enables zero-shot task generalization}. \\newblock \\emph{ICLR}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shen-etal-2021-generate-rank",
+   "text": "Jianhao Shen, Yichun Yin, Lin Li, Lifeng Shang, Xin Jiang, Ming Zhang, and Qun Liu. 2021. \\newblock \\href {https://aclanthology.org/2021.findings-emnlp.195} {Generate {\\&} rank: A multi-task framework for math word problems}. \\newblock In \\emph{Findings of the Association for Computational Linguistics: EMNLP 2021}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "talmor-etal-2019-commonsenseqa",
+   "text": "Alon Talmor, Jonathan Herzig, Nicholas Lourie, and Jonathan Berant. 2019. \\newblock \\href {https://doi.org/10.18653/v1/N19-1421} {{C}ommonsense{QA}: A question answering challenge targeting commonsense knowledge}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "talmor2020leap",
+   "text": "Alon Talmor, Oyvind Tafjord, Peter Clark, Yoav Goldberg, and Jonathan Berant. 2020. \\newblock \\href {https://arxiv.org/abs/2006.06609} {Leap-of-thought: Teaching pre-trained models to systematically reason over implicit knowledge}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "talmor2022commonsenseqa",
+   "text": "Alon Talmor, Ori Yoran, Ronan~Le Bras, Chandra Bhagavatula, Yoav Goldberg, Yejin Choi, and Jonathan Berant. 2021. \\newblock \\href {https://arxiv.org/abs/2201.05320} {Commonsense{QA} 2.0: {E}xposing the limits of ai through gamification}. \\newblock \\emph{NeurIPS Track on Datasets and Benchmarks}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tay2022unifying",
+   "text": "Yi~Tay, Mostafa Dehghani, Vinh~Q Tran, Xavier Garcia, Dara Bahri, Tal Schuster, Huaixiu~Steven Zheng, Neil Houlsby, and Donald Metzler. 2022. \\newblock \\href {https://arxiv.org/abs/2205.05131} {Unifying language learning paradigms}. \\newblock \\emph{arXiv preprint arXiv:2205.05131}.",
+   "arxiv_id": "2205.05131"
+  },
+  {
+   "key": "thoppilan2022lamda",
+   "text": "Romal Thoppilan, Daniel De~Freitas, Jamie Hall, Noam Shazeer, Apoorv Kulshreshtha, Heng-Tze Cheng, Alicia Jin, Taylor Bos, Leslie Baker, Yu~Du, et~al. 2022. \\newblock \\href {https://arxiv.org/abs/2201.08239} {La{MDA}: Language models for dialog applications}. \\newblock \\emph{arXiv preprint arXiv:2201.08239}.",
+   "arxiv_id": "2201.08239"
+  },
+  {
+   "key": "wang2022self",
+   "text": "Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed~Chi, and Denny Zhou. 2022{\\natexlab{a}}. \\newblock \\href {https://arxiv.org/abs/2203.11171} {Self-consistency improves chain of thought reasoning in language models}. \\newblock \\emph{arXiv preprint arXiv:2203.11171}.",
+   "arxiv_id": "2203.11171"
+  },
+  {
+   "key": "wang2022benchmarking",
+   "text": "Yizhong Wang, Swaroop Mishra, Pegah Alipoormolabashi, Yeganeh Kordi, Amirreza Mirzaei, Anjana Arunkumar, Arjun Ashok, Arut~Selvan Dhanasekaran, Atharva Naik, David Stap, et~al. 2022{\\natexlab{b}}. \\newblock \\href {https://arxiv.org/abs/2204.07705} {Benchmarking generalization via in-context instructions on 1,600+ language tasks}. \\newblock \\emph{arXiv preprint arXiv:2204.07705}.",
+   "arxiv_id": "2204.07705"
+  },
+  {
+   "key": "wei2021finetuned",
+   "text": "Jason Wei, Maarten Bosma, Vincent~Y. Zhao, Kelvin Guu, Adams~Wei Yu, Brian Lester, Nan Du, Andrew~M. Dai, and Quoc~V. Le. 2022{\\natexlab{a}}. \\newblock \\href {https://openreview.net/forum?id=gEZrGCozdqR} {Finetuned language models are zero-shot learners}. \\newblock \\emph{ICLR}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wei2022emergent",
+   "text": "Jason Wei, Yi~Tay, Rishi Bommasani, Colin Raffel, Barret Zoph, Sebastian Borgeaud, Dani Yogatama, Maarten Bosma, Denny Zhou, Donald Metzler, et~al. 2022{\\natexlab{b}}. \\newblock \\href {https://openreview.net/forum?id=yzkSU5zdwD} {Emergent abilities of large language models}. \\newblock \\emph{Transactions on Machine Learning Research}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wiegreffe2021reframing",
+   "text": "Sarah Wiegreffe, Jack Hessel, Swabha Swayamdipta, Mark Riedl, and Yejin Choi. 2022. \\newblock \\href {https://arxiv.org/abs/2112.08674} {Reframing human-{AI} collaboration for generating free-text explanations}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wiegreffe2021teach",
+   "text": "Sarah Wiegreffe and Ana Marasovi{\\'c}. 2021. \\newblock \\href {https://arxiv.org/abs/2102.12060} {Teach me to explain: A review of datasets for explainable {NLP}}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wiegreffe-etal-2021-measuring",
+   "text": "Sarah Wiegreffe, Ana Marasovi{\\'c}, and Noah~A. Smith. 2021. \\newblock \\href {https://aclanthology.org/2021.emnlp-main.804} {{M}easuring association between labels and free-text rationales}. \\newblock \\emph{EMNLP}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wu2022promptchainer",
+   "text": "Tongshuang Wu, Ellen Jiang, Aaron Donsbach, Jeff Gray, Alejandra Molina, Michael Terry, and Carrie~J Cai. 2022{\\natexlab{a}}. \\newblock \\href {https://dl.acm.org/doi/abs/10.1145/3491101.3519729} {Prompt{C}hainer: Chaining large language model prompts through visual programming}. \\newblock \\emph{CHI Extended Abstracts}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wu2022ai",
+   "text": "Tongshuang Wu, Michael Terry, and Carrie~Jun Cai. 2022{\\natexlab{b}}. \\newblock \\href {https://dl.acm.org/doi/abs/10.1145/3491102.3517582} {A{I} chains: Transparent and controllable human-{AI} interaction by chaining large language model prompts}. \\newblock \\emph{CHI}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "yan2020neural",
+   "text": "Yujun Yan, Kevin Swersky, Danai Koutra, Parthasarathy Ranganathan, and Milad Hashemi. 2020. \\newblock \\href {https://arxiv.org/abs/2006.08084} {Neural execution engines: Learning to execute subroutines}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "yao2021refining",
+   "text": "Huihan Yao, Ying Chen, Qinyuan Ye, Xisen Jin, and Xiang Ren. 2021. \\newblock \\href {https://proceedings.neurips.cc/paper/2021/hash/4b26dc4663ccf960c8538d595d0a1d3a-Abstract.html} {Refining language models with compositional explanations}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ye2022unreliability",
+   "text": "Xi~Ye and Greg Durrett. 2022. \\newblock \\href {https://arxiv.org/abs/2205.03401} {The unreliability of explanations in few-shot in-context learning}. \\newblock \\emph{arXiv preprint arXiv:2205.03401}.",
+   "arxiv_id": "2205.03401"
+  },
+  {
+   "key": "yordanov2021few",
+   "text": "Yordan Yordanov, Vid Kocijan, Thomas Lukasiewicz, and Oana-Maria Camburu. 2021. \\newblock \\href {http://arxiv.org/abs/2112.06204} {Few-shot out-of-domain transfer learning of natural language explanations}. \\newblock \\emph{arXiv preprint arXiv:2112.06204}.",
+   "arxiv_id": "2112.06204"
+  },
+  {
+   "key": "zaidan-etal-2007-using",
+   "text": "Omar Zaidan, Jason Eisner, and Christine Piatko. 2007. \\newblock \\href {https://aclanthology.org/N07-1033} {Using {``}annotator rationales{''} to improve machine learning for text categorization}. \\newblock \\emph{NAACL}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zaremba2014learning",
+   "text": "Wojciech Zaremba and Ilya Sutskever. 2014. \\newblock \\href {https://arxiv.org/abs/1410.4615} {Learning to execute}. \\newblock \\emph{arXiv preprint arXiv:1410.4615}.",
+   "arxiv_id": "1410.4615"
+  },
+  {
+   "key": "zelikman2022star",
+   "text": "Eric Zelikman, Yuhuai Wu, and Noah~D. Goodman. 2022. \\newblock \\href {https://arxiv.org/abs/2203.14465} {S{T}a{R}: Bootstrapping reasoning with reasoning}. \\newblock \\emph{arXiv preprint arXiv:2203.14465}.",
+   "arxiv_id": "2203.14465"
+  },
+  {
+   "key": "zhao2021calibrate",
+   "text": "Tony~Z. Zhao, Eric Wallace, Shi Feng, Dan Klein, and Sameer Singh. 2021. \\newblock \\href {https://arxiv.org/abs/2102.09690} {Calibrate before use: Improving few-shot performance of language models}. \\newblock \\emph{ICML}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhou2020towards",
+   "text": "Wangchunshu Zhou, Jinyi Hu, Hanlin Zhang, Xiaodan Liang, Maosong Sun, Chenyan Xiong, and Jian Tang. 2020. \\newblock \\href {https://proceedings.neurips.cc/paper/2020/file/4be2c8f27b8a420492f2d44463933eb6-Paper.pdf} {Towards interpretable natural language understanding with explanations as latent variables}. \\newblock \\emph{NeurIPS}.",
+   "arxiv_id": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_0",
+   "caption": "Chain-of-thought prompting enables large language models to tackle complex arithmetic, commonsense, and symbolic reasoning tasks. Chain-of-thought reasoning processes are highlighted.",
+   "graphics": [
+    "main_fables/new-pull-figure-landscape.pdf"
+   ],
+   "assets": [
+    "main_fables/new-pull-figure-landscape.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_3",
+   "caption": "Examples of $\\langle$input, chain of thought, output$\\rangle$ triples for arithmetic, commonsense, and symbolic reasoning benchmarks. Chains of thought are highlighted. Full prompts in \\cref{sec:appendix-full-prompts}.",
+   "graphics": [
+    "main_fables/cot-examples.pdf"
+   ],
+   "assets": [
+    "main_fables/cot-examples.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_4",
+   "caption": "Chain-of-thought prompting also improves the commonsense reasoning abilities of language models. The language model shown here is \\palm{}. Prior best numbers are from the leaderboards of CSQA \\citep{talmor-etal-2019-commonsenseqa} and StrategyQA \\citep{geva-etal-2021-aristotle} (single-model only, as of May 5, 2022). Additional results using various sizes of \\lamda{}, GPT-3, and \\palm{} are shown in \\cref{tab:all-lm-commonsense}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_11_1",
+   "caption": "Error analysis of 45 problems that \\palm{} 62B got incorrect. These errors were categorized that semantic understanding, one step missing, and other. The other category includes hallucinations, repetitive outputs, and symbol mapping errors. Scaling \\palm{} to 540B fixed a substantial portion of errors in all categories.",
+   "graphics": [
+    "fables/palm-error-analysis.pdf"
+   ],
+   "assets": [
+    "fables/palm-error-analysis.png"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_11_1",
+   "caption": "Examples of semantic understanding and one-step missing errors that were fixed by scaling \\palm{} from 62B to 540B.",
+   "graphics": [
+    "fables/palm-errors-fixed.pdf"
+   ],
+   "assets": [
+    "fables/palm-errors-fixed.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_14_3",
+   "caption": "The improvement of chain of thought prompting over standard prompting appears robust to varying the number of few-shot exemplars in the prompt.",
+   "graphics": [],
+   "assets": []
+  }
+ ]
+}

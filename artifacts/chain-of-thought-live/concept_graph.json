@@ -1,0 +1,330 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2201.11903",
+  "generated": "2026-08-11",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "chain-of-thought-prompting",
+   "kind": "concept",
+   "label": "Chain-of-Thought Prompting",
+   "level": 0,
+   "source_ref": "sec_2",
+   "page": "04_chain-of-thought-prompting.md"
+  },
+  {
+   "id": "standard-prompting",
+   "kind": "concept",
+   "label": "Standard Prompting",
+   "level": 1,
+   "source_ref": "sec_2"
+  },
+  {
+   "id": "few-shot-in-context-learning",
+   "kind": "concept",
+   "label": "Few-Shot In-Context Learning",
+   "level": 1,
+   "source_ref": "sec_1",
+   "page": "03_few-shot-in-context-learning.md"
+  },
+  {
+   "id": "emergent-abilities-with-scale",
+   "kind": "concept",
+   "label": "Emergent Abilities with Model Scale",
+   "level": 1,
+   "source_ref": "sec_11_1",
+   "page": "06_emergent-abilities-with-scale.md"
+  },
+  {
+   "id": "arithmetic-reasoning",
+   "kind": "concept",
+   "label": "Arithmetic Reasoning",
+   "level": 1,
+   "source_ref": "sec_3"
+  },
+  {
+   "id": "commonsense-reasoning",
+   "kind": "concept",
+   "label": "Commonsense Reasoning",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "symbolic-reasoning",
+   "kind": "concept",
+   "label": "Symbolic Reasoning",
+   "level": 1,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "experimental-setup",
+   "kind": "concept",
+   "label": "Arithmetic Experimental Setup",
+   "level": 2,
+   "source_ref": "sec_3_1"
+  },
+  {
+   "id": "arithmetic-results",
+   "kind": "concept",
+   "label": "Arithmetic Reasoning Results",
+   "level": 2,
+   "source_ref": "sec_3_2"
+  },
+  {
+   "id": "ablation-study",
+   "kind": "concept",
+   "label": "Ablation Study",
+   "level": 2,
+   "source_ref": "sec_3_3"
+  },
+  {
+   "id": "robustness-to-exemplars",
+   "kind": "concept",
+   "label": "Robustness to Exemplars",
+   "level": 2,
+   "source_ref": "sec_3_4"
+  },
+  {
+   "id": "prompt-engineering-sensitivity",
+   "kind": "concept",
+   "label": "Prompt Engineering Sensitivity",
+   "level": 2,
+   "source_ref": "sec_11_2"
+  },
+  {
+   "id": "task-applicability",
+   "kind": "concept",
+   "label": "Task Applicability",
+   "level": 2,
+   "source_ref": "sec_11_3"
+  },
+  {
+   "id": "equation-only-prompting",
+   "kind": "concept",
+   "label": "Equation-Only Prompting",
+   "level": 3,
+   "source_ref": "sec_11_4"
+  },
+  {
+   "id": "related-work-prompting",
+   "kind": "concept",
+   "label": "Prompting (Related Work)",
+   "level": 1,
+   "source_ref": "sec_13_1"
+  },
+  {
+   "id": "natural-language-explanations",
+   "kind": "concept",
+   "label": "Natural Language Explanations",
+   "level": 2,
+   "source_ref": "sec_13_2"
+  },
+  {
+   "id": "program-synthesis-execution",
+   "kind": "concept",
+   "label": "Program Synthesis and Execution",
+   "level": 2,
+   "source_ref": "sec_13_3"
+  },
+  {
+   "id": "intermediate-computation-steps",
+   "kind": "concept",
+   "label": "Intermediate Language Steps",
+   "level": 2,
+   "source_ref": "sec_13_5"
+  },
+  {
+   "id": "correct-cot-error-analysis",
+   "kind": "concept",
+   "label": "Correct Chain of Thought Analysis",
+   "level": 2,
+   "source_ref": "sec_14_1"
+  },
+  {
+   "id": "incorrect-cot-error-analysis",
+   "kind": "concept",
+   "label": "Incorrect Chain of Thought Analysis",
+   "level": 2,
+   "source_ref": "sec_14_2"
+  },
+  {
+   "id": "discussion-limitations",
+   "kind": "concept",
+   "label": "Discussion and Limitations",
+   "level": 1,
+   "source_ref": "sec_6"
+  }
+ ],
+ "edges": [
+  {
+   "src": "standard-prompting",
+   "dst": "chain-of-thought-prompting",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "few-shot-in-context-learning",
+   "dst": "chain-of-thought-prompting",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "arithmetic-reasoning",
+   "dst": "chain-of-thought-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "commonsense-reasoning",
+   "dst": "chain-of-thought-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symbolic-reasoning",
+   "dst": "chain-of-thought-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "emergent-abilities-with-scale",
+   "dst": "chain-of-thought-prompting",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "discussion-limitations",
+   "dst": "chain-of-thought-prompting",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experimental-setup",
+   "dst": "arithmetic-reasoning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "arithmetic-results",
+   "dst": "arithmetic-reasoning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ablation-study",
+   "dst": "arithmetic-reasoning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "robustness-to-exemplars",
+   "dst": "arithmetic-reasoning",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "equation-only-prompting",
+   "dst": "chain-of-thought-prompting",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "equation-only-prompting",
+   "dst": "ablation-study",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "prompt-engineering-sensitivity",
+   "dst": "robustness-to-exemplars",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "task-applicability",
+   "dst": "chain-of-thought-prompting",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "related-work-prompting",
+   "dst": "chain-of-thought-prompting",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "natural-language-explanations",
+   "dst": "related-work-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "program-synthesis-execution",
+   "dst": "related-work-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "intermediate-computation-steps",
+   "dst": "related-work-prompting",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "correct-cot-error-analysis",
+   "dst": "arithmetic-results",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "incorrect-cot-error-analysis",
+   "dst": "arithmetic-results",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}
