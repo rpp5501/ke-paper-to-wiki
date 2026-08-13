@@ -1,40 +1,48 @@
 concept: cifar10-analysis
 status: complete
-synthesis: 'On CIFAR-10, plain networks with 20/32/44/56/110 layers reproduce the
-  same degradation problem seen on ImageNet: deeper plain nets get higher training
-  error than shallower ones, while residual networks of matching depths train well
-  and improve with depth [S1]. The authors push further and train an extremely deep
-  1202-layer ResNet (n=200); it reaches training error similar to the 110-layer model
-  (<0.1%) [S1]. Despite this, its test error is worse (7.93% vs 6.43% for the 110-layer
-  net) [S1]. The paper attributes this gap to overfitting, since a model of that capacity
-  is large relative to CIFAR-10''s 50k training images, and no strong regularization
-  such as maxout or dropout was applied — only deep, thin residual units [S1]. A follow-up
-  study on pre-activation residual units shows that reordering batch norm and ReLU
-  before the convolutions substantially eases optimization of 1001-layer ResNets on
-  CIFAR-10/100 and narrows this train/test gap, suggesting part of the extreme-depth
-  degradation is also an optimization difficulty, not overfitting alone [S2].'
+synthesis: 'On CIFAR-10, plain (non-residual) networks show the same degradation problem
+  seen on ImageNet: a deeper plain network has higher training error than a shallower
+  one, confirming the issue is not dataset-specific [S1]. He et al. pushed residual
+  networks on CIFAR-10''s 50k/10k split up to 1202 layers and were still able to optimize
+  them, reaching training error comparable to a much shallower 110-layer ResNet, showing
+  shortcut connections keep extremely deep nets trainable [S1]. Despite similar training
+  error, the 1202-layer network''s test error was worse than the 110-layer network''s;
+  the authors attribute this to overfitting from the model''s huge capacity relative
+  to CIFAR-10''s small size, noting they used no heavy regularization like maxout
+  or dropout and that such techniques might close the gap [S1]. The official released
+  prototxt configs include the exact 110- and 1202-layer CIFAR-10 architectures used
+  in these experiments [S2]. Stanford''s CS231n lecture on CNN architectures situates
+  this ultra-deep CIFAR-10 result within the broader discussion of depth versus optimizability
+  [S3], and community write-ups reproduce the training/test error curves that illustrate
+  the degradation-then-overfitting pattern [S4].'
 resources:
 - url: https://arxiv.org/abs/1512.03385
   title: Deep Residual Learning for Image Recognition
+  type: derivation
+  why: Section 4.2 contains the actual CIFAR-10 experiments, including the 110- and
+    1202-layer results and the overfitting discussion
+- url: https://github.com/KaimingHe/deep-residual-networks
+  title: KaimingHe/deep-residual-networks
   type: reference-impl
-  why: Section 4.2 is the primary source for the CIFAR-10 plain-vs-residual degradation
-    experiments and the 1202-layer overfitting result
-- url: https://arxiv.org/abs/1603.05027
-  title: Identity Mappings in Deep Residual Networks
-  type: follow-up-paper
-  why: Directly follows up on the >1000-layer CIFAR-10 result, showing pre-activation
-    units ease training and generalization at extreme depth
-- url: https://github.com/akamaster/pytorch_resnet_cifar10
-  title: pytorch_resnet_cifar10
-  type: reference-impl
-  why: Widely-used reproduction of the paper's exact CIFAR-10 ResNet configurations
-    (including deep variants) for hands-on inspection
+  why: official repo with Caffe prototxts for the exact CIFAR-10 architectures including
+    the 1202-layer network
+- url: https://www.youtube.com/watch?v=DAOcjicFr1Y
+  title: 'CS231n Lecture 9: CNN Architectures'
+  type: lecture
+  why: Stanford lecture walks through ResNet's depth experiments and why very deep
+    plain nets degrade
+- url: https://towardsdatascience.com/an-overview-of-resnet-and-its-variants-5281e2f56035
+  title: An Overview of ResNet and its Variants
+  type: visual
+  why: diagrams the residual block and depth-vs-error curves that make the degradation/overfitting
+    pattern easy to see
 unresolved:
-- Whether the worse test accuracy of the 1202-layer ResNet is purely overfitting,
-  as the original paper claims, or partly an optimization artifact fixed by pre-activation,
-  as the follow-up paper's results suggest, is not fully disentangled in either paper.
+- Whether the authors or follow-up work later tested dropout/maxout on the 1202-layer
+  CIFAR-10 network to see if it closed the gap with the 110-layer network
+- Whether the overfitting explanation for 1202 layers was ever rigorously separated
+  from an optimization-difficulty explanation
 sources_consulted:
-  S1: He, K., Zhang, X., Ren, S., Sun, J. (2015). Deep Residual Learning for Image
-    Recognition. arXiv:1512.03385, Section 4.2 CIFAR-10 and Analysis
-  S2: He, K., Zhang, X., Ren, S., Sun, J. (2016). Identity Mappings in Deep Residual
-    Networks. arXiv:1603.05027
+  S1: He, Zhang, Ren, Sun, 'Deep Residual Learning for Image Recognition', arXiv:1512.03385
+  S2: https://github.com/KaimingHe/deep-residual-networks
+  S3: 'Stanford CS231n Lecture 9: CNN Architectures, https://www.youtube.com/watch?v=DAOcjicFr1Y'
+  S4: https://towardsdatascience.com/an-overview-of-resnet-and-its-variants-5281e2f56035

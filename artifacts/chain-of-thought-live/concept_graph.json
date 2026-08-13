@@ -42,119 +42,136 @@
    "kind": "concept",
    "label": "Arithmetic Reasoning",
    "level": 1,
-   "source_ref": "sec_3"
+   "source_ref": "sec_3",
+   "page": "01_arithmetic-reasoning.md"
   },
   {
    "id": "commonsense-reasoning",
    "kind": "concept",
    "label": "Commonsense Reasoning",
    "level": 1,
-   "source_ref": "sec_4"
+   "source_ref": "sec_4",
+   "page": "02_commonsense-reasoning.md"
   },
   {
    "id": "symbolic-reasoning",
    "kind": "concept",
    "label": "Symbolic Reasoning",
    "level": 1,
-   "source_ref": "sec_5"
+   "source_ref": "sec_5",
+   "page": "09_symbolic-reasoning.md"
   },
   {
    "id": "experimental-setup",
    "kind": "concept",
    "label": "Arithmetic Experimental Setup",
    "level": 2,
-   "source_ref": "sec_3_1"
+   "source_ref": "sec_3_1",
+   "page": "11_experimental-setup.md"
   },
   {
    "id": "arithmetic-results",
    "kind": "concept",
    "label": "Arithmetic Reasoning Results",
    "level": 2,
-   "source_ref": "sec_3_2"
+   "source_ref": "sec_3_2",
+   "page": "12_arithmetic-results.md"
   },
   {
    "id": "ablation-study",
    "kind": "concept",
    "label": "Ablation Study",
    "level": 2,
-   "source_ref": "sec_3_3"
+   "source_ref": "sec_3_3",
+   "page": "10_ablation-study.md"
   },
   {
    "id": "robustness-to-exemplars",
    "kind": "concept",
    "label": "Robustness to Exemplars",
    "level": 2,
-   "source_ref": "sec_3_4"
+   "source_ref": "sec_3_4",
+   "page": "18_robustness-to-exemplars.md"
   },
   {
    "id": "prompt-engineering-sensitivity",
    "kind": "concept",
    "label": "Prompt Engineering Sensitivity",
    "level": 2,
-   "source_ref": "sec_11_2"
+   "source_ref": "sec_11_2",
+   "page": "19_prompt-engineering-sensitivity.md"
   },
   {
    "id": "task-applicability",
    "kind": "concept",
    "label": "Task Applicability",
    "level": 2,
-   "source_ref": "sec_11_3"
+   "source_ref": "sec_11_3",
+   "page": "20_task-applicability.md"
   },
   {
    "id": "equation-only-prompting",
    "kind": "concept",
    "label": "Equation-Only Prompting",
    "level": 3,
-   "source_ref": "sec_11_4"
+   "source_ref": "sec_11_4",
+   "page": "21_equation-only-prompting.md"
   },
   {
    "id": "related-work-prompting",
    "kind": "concept",
    "label": "Prompting (Related Work)",
    "level": 1,
-   "source_ref": "sec_13_1"
+   "source_ref": "sec_13_1",
+   "page": "07_related-work-prompting.md"
   },
   {
    "id": "natural-language-explanations",
    "kind": "concept",
    "label": "Natural Language Explanations",
    "level": 2,
-   "source_ref": "sec_13_2"
+   "source_ref": "sec_13_2",
+   "page": "16_natural-language-explanations.md"
   },
   {
    "id": "program-synthesis-execution",
    "kind": "concept",
    "label": "Program Synthesis and Execution",
    "level": 2,
-   "source_ref": "sec_13_3"
+   "source_ref": "sec_13_3",
+   "page": "17_program-synthesis-execution.md"
   },
   {
    "id": "intermediate-computation-steps",
    "kind": "concept",
    "label": "Intermediate Language Steps",
    "level": 2,
-   "source_ref": "sec_13_5"
+   "source_ref": "sec_13_5",
+   "page": "15_intermediate-computation-steps.md"
   },
   {
    "id": "correct-cot-error-analysis",
    "kind": "concept",
    "label": "Correct Chain of Thought Analysis",
    "level": 2,
-   "source_ref": "sec_14_1"
+   "source_ref": "sec_14_1",
+   "page": "13_correct-cot-error-analysis.md"
   },
   {
    "id": "incorrect-cot-error-analysis",
    "kind": "concept",
    "label": "Incorrect Chain of Thought Analysis",
    "level": 2,
-   "source_ref": "sec_14_2"
+   "source_ref": "sec_14_2",
+   "page": "14_incorrect-cot-error-analysis.md"
   },
   {
    "id": "discussion-limitations",
    "kind": "concept",
    "label": "Discussion and Limitations",
    "level": 1,
-   "source_ref": "sec_6"
+   "source_ref": "sec_6",
+   "page": "05_discussion-limitations.md"
   }
  ],
  "edges": [

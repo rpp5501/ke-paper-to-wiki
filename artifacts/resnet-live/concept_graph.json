@@ -11,7 +11,8 @@
    "kind": "concept",
    "label": "Deep Residual Learning",
    "level": 0,
-   "source_ref": "sec_1"
+   "source_ref": "sec_1",
+   "page": "02_deep-residual-learning.md"
   },
   {
    "id": "degradation-problem",
@@ -34,7 +35,8 @@
    "kind": "concept",
    "label": "Residual Learning",
    "level": 1,
-   "source_ref": "sec_3_1"
+   "source_ref": "sec_3_1",
+   "page": "10_residual-learning-framework.md"
   },
   {
    "id": "residual-mapping-equation",
@@ -49,21 +51,24 @@
    "kind": "concept",
    "label": "Identity Mapping by Shortcuts",
    "level": 1,
-   "source_ref": "sec_3_2"
+   "source_ref": "sec_3_2",
+   "page": "04_identity-shortcut-connections.md"
   },
   {
    "id": "building-block-formula",
    "kind": "equation",
    "label": "y = F(x,{Wi}) + x",
    "level": 2,
-   "source_ref": "sec_3_2"
+   "source_ref": "sec_3_2",
+   "page": "22_building-block-formula.md"
   },
   {
    "id": "building-block-figure",
    "kind": "figure",
    "label": "Building Block Diagram",
    "level": 2,
-   "source_ref": "sec_3_2"
+   "source_ref": "sec_3_2",
+   "page": "12_building-block-figure.md"
   },
   {
    "id": "projection-shortcuts",
@@ -86,14 +91,16 @@
    "kind": "concept",
    "label": "Plain Network",
    "level": 2,
-   "source_ref": "sec_3_3"
+   "source_ref": "sec_3_3",
+   "page": "18_plain-network.md"
   },
   {
    "id": "residual-network",
    "kind": "concept",
    "label": "Residual Network",
    "level": 2,
-   "source_ref": "sec_3_3"
+   "source_ref": "sec_3_3",
+   "page": "20_residual-network.md"
   },
   {
    "id": "bottleneck-architecture",
@@ -108,7 +115,8 @@
    "kind": "concept",
    "label": "Implementation Details",
    "level": 2,
-   "source_ref": "sec_3_4"
+   "source_ref": "sec_3_4",
+   "page": "17_implementation-details.md"
   },
   {
    "id": "imagenet-classification-results",
@@ -123,21 +131,24 @@
    "kind": "concept",
    "label": "Ensemble Results",
    "level": 2,
-   "source_ref": "sec_4_1"
+   "source_ref": "sec_4_1",
+   "page": "13_ensemble-results.md"
   },
   {
    "id": "cifar10-analysis",
    "kind": "concept",
    "label": "CIFAR-10 Depth Analysis",
    "level": 1,
-   "source_ref": "sec_4_2"
+   "source_ref": "sec_4_2",
+   "page": "03_cifar10-analysis.md"
   },
   {
    "id": "object-detection-generalization",
    "kind": "concept",
    "label": "Object Detection Generalization",
    "level": 1,
-   "source_ref": "sec_4_3"
+   "source_ref": "sec_4_3",
+   "page": "08_object-detection-generalization.md"
   },
   {
    "id": "faster-rcnn-baseline",

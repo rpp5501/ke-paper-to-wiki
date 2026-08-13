@@ -17,3 +17,4 @@ dashboard/public/figures/
 artifacts/*/assets/
 run.log
 artifacts/*/*_explorer.html
+dashboards/
