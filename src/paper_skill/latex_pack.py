@@ -3,7 +3,7 @@ import datetime
 import re
 from pylatexenc.latexwalker import (LatexWalker, LatexEnvironmentNode,
                                     LatexMacroNode, LatexCharsNode,
-                                    LatexGroupNode)
+                                    LatexGroupNode, LatexMathNode)
 
 _SECTION_MACROS = {"section": 1, "subsection": 2, "subsubsection": 3}
 _EQ_ENVS = {"equation", "equation*", "align", "align*", "eqnarray", "displaymath"}
@@ -11,6 +11,14 @@ _TABLE_ENVS = {"table", "table*"}
 # figure* is the two-column span, and one environment can hold several
 # includegraphics when the paper puts subfigures side by side.
 _FIGURE_ENVS = {"figure", "figure*"}
+# Drawing instructions, not prose. chain-of-thought draws its result charts
+# with pgfplots, and walking into them poured the axis configuration into the
+# section text -- "xmin=-5, ymax=65, xtick=0.4, 8, 137, ylabel=GSM8K solve rate
+# ()" -- 103 such tokens across its sections, crowding out the evidence the
+# writer is meant to read. A tikzpicture inside a figure was already safe,
+# because figure environments are captured without being walked; a bare one
+# had no branch.
+_OPAQUE_ENVS = {"tikzpicture", "pgfpicture", "axis"}
 _INCLUDEGRAPHICS = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\s*\{([^{}]+)\}")
 
 # A results table is where an empirical paper keeps its evidence. Walking into
@@ -338,8 +346,19 @@ def latex_to_pack(main_tex: str, resolve_input=None, source: str = "",
                                 "section": cur_id or "sec_0",
                                 "caption": _caption_of(raw),
                                 "graphics": _INCLUDEGRAPHICS.findall(raw)})
+            elif (isinstance(n, LatexEnvironmentNode)
+                    and n.environmentname in _OPAQUE_ENVS):
+                continue
             elif isinstance(n, LatexCharsNode):
                 buf.append(n.chars)
+            # Inline math had no branch at all, so every $...$ was dropped and
+            # the prose reached the writer with holes where its quantities
+            # belonged -- "we vary the number of timesteps used to generate a
+            # sample () and the stochasticity of the process ()". Kept as
+            # LaTeX rather than flattened: the writer reads LaTeX and the
+            # pages render KaTeX, so $\eta$ is both faithful and useful.
+            elif isinstance(n, LatexMathNode):
+                buf.append(tex[n.pos:n.pos + n.len])
             elif isinstance(n, (LatexEnvironmentNode, LatexGroupNode)):
                 walk(n.nodelist)
 

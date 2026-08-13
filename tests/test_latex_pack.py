@@ -256,3 +256,68 @@ def test_pack_equations_are_normalized_on_the_way_out():
     latex = latex_to_pack(tex)["equations"][0]["latex"]
     assert r"\label" not in latex
     assert _wrapped(latex)
+
+
+def test_inline_math_survives_into_the_section_prose():
+    r"""The walk handled chars, macros, environments and groups but had no
+    branch for LatexMathNode, so every inline $...$ was dropped silently. The
+    prose reaching the writer had holes where its quantities should be:
+
+      "we vary the number of timesteps used to generate a sample () and the
+       stochasticity of the process () ... as we increase , ... DDIM ()
+       achieves the best sample quality when is small"
+
+    That is ddim sec_5_1 as the writer actually received it. It concluded the
+    paper supplied nothing to work with and opened The Math with "no display
+    equation is supplied", which is exactly what it looked like from there.
+    Signature across the packs: empty parens (8 ddim / 11 resnet / 24 cot) and
+    70-130 spaces-before-punctuation per paper.
+
+    Kept as LaTeX rather than flattened: the writer reads LaTeX and the pages
+    render KaTeX, so $\eta$ is both the faithful and the useful form.
+    """
+    from paper_skill.latex_pack import latex_to_pack
+
+    tex = (r"\documentclass{article}\begin{document}"
+           r"\section{Sampling}"
+           r"We vary the timesteps $\dim(\tau)$ and the stochasticity $\eta$, "
+           r"so DDIM ($\eta = 0$) wins when $S$ is small."
+           r"\end{document}")
+
+    text = latex_to_pack(tex, source="t")["sections"][0]["text"]
+
+    assert r"\eta" in text
+    assert r"\dim(\tau)" in text
+    assert "()" not in text, f"inline math still dropped: {text!r}"
+
+
+def test_tikz_drawing_source_stays_out_of_the_prose():
+    r"""chain-of-thought draws its result charts with pgfplots, and the axis
+    configuration was being walked into the section text as if it were prose:
+
+      "xmin=-5, ymax=65, xtick=0.4, 8, 137, xticklabels=,,, ylabel=GSM8K solve
+       rate (), ylabel style=ali..."
+
+    103 such tokens across its sections. Tables and figure environments are
+    already captured without being walked into, for exactly this reason; a
+    tikzpicture that is not wrapped in a figure had no such branch. Drawing
+    instructions are not prose, and they crowd out the evidence the writer is
+    supposed to read.
+    """
+    from paper_skill.latex_pack import latex_to_pack
+
+    tex = (r"\documentclass{article}\begin{document}"
+           r"\section{Results}"
+           r"Accuracy rises with scale."
+           r"\begin{tikzpicture}\begin{axis}[xmin=-5, ymax=65, "
+           r"ylabel=GSM8K solve rate (\%)]\addplot coordinates {(1,2)};"
+           r"\end{axis}\end{tikzpicture}"
+           r"The jump is sharpest at the largest model."
+           r"\end{document}")
+
+    text = latex_to_pack(tex, source="t")["sections"][0]["text"]
+
+    assert "Accuracy rises with scale." in text
+    assert "The jump is sharpest at the largest model." in text
+    for token in ("xmin", "ymax", "addplot", "ylabel"):
+        assert token not in text, f"tikz {token!r} leaked into prose: {text!r}"
