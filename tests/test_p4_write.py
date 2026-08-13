@@ -342,5 +342,17 @@ def test_the_contract_covers_the_two_gaps_the_aman_run_exposed():
     never said the caption is where it goes. AIAYN's writer did it by
     instinct; this one did not.
     """
-    assert "no equations at all are normal" in WRITING_SKILL
+    assert "no equation of its own is normal" in WRITING_SKILL
     assert "End the `caption` with an anchor" in WRITING_SKILL
+
+
+def test_the_empty_math_tier_rule_covers_a_section_not_just_a_paper():
+    """First pass said "papers with no equations at all are normal", which does
+    not reach a results or related-work concept sitting inside an
+    equation-heavy paper. That is where it kept firing: ddim's
+    sample-quality-efficiency and experimental-details-datasets, and
+    chain-of-thought's related-work-prompting, all opened The Math with "no
+    display equation is supplied for this section". After the false positives
+    were cleared this was the largest remaining real cause of failure."""
+    assert "no display equation is supplied for this section" in WRITING_SKILL
+    assert "related-work or discussion concept" in WRITING_SKILL
