@@ -35,6 +35,12 @@ _DEAD_STATUS = {404, 410}
 _YOUTUBE = re.compile(r"(?:youtube\.com/watch\?|youtu\.be/|youtube\.com/embed/)", re.I)
 _OEMBED = "https://www.youtube.com/oembed?format=json&url="
 
+# The id sits in a different place per form: a query param on watch (which
+# may follow other params, hence "&v=" not just "?v="), the path itself on
+# the short and embed forms. One alternation covers all three without the
+# caller needing to know which form matched.
+_YOUTUBE_ID = re.compile(r"(?:[?&]v=|youtu\.be/|/embed/)([A-Za-z0-9_-]+)", re.I)
+
 
 # The three aman.ai papers produced 7 resources between them: papers and code,
 # zero `visual`, zero `lecture`, though the type vocabulary offers both. Left to
@@ -158,3 +164,47 @@ def verify_resources(note: dict, get=requests.get, head=requests.head) -> list[s
         if status in _DEAD_STATUS:
             problems.append(f"{url} returns {status}")
     return problems
+
+
+def embed_kind(url: str, head=requests.head) -> dict:
+    """Classify a resource url at build time so the dashboard never has to
+    fetch it itself. Deliberately not wired into verify_resources or
+    educational_gap -- this is pure classification, called separately by
+    whatever renders the resource.
+
+    YouTube needs no probe: the thumbnail is a predictable url derived from
+    the video id. Everything else gets one HEAD -- and, same precedent as
+    verify_resources treating a 403 as "host refused the probe" rather than
+    "dead page", any exception or non-2xx here just falls back to a plain
+    link. This function never claims a resource is broken, only that it
+    could not confirm it was embeddable.
+    """
+    if not url or not url.startswith("http"):
+        return {"kind": "link"}
+
+    if _YOUTUBE.search(url):
+        found = _YOUTUBE_ID.search(url)
+        if not found:
+            return {"kind": "link"}
+        vid = found.group(1)
+        return {"kind": "video",
+                "src": f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
+                "href": url}
+
+    try:
+        resp = head(url, timeout=25, allow_redirects=True, headers=UA)
+    except Exception:
+        return {"kind": "link"}
+    if not (200 <= resp.status_code < 300):
+        return {"kind": "link"}
+
+    content_type = ""
+    for key, value in (getattr(resp, "headers", None) or {}).items():
+        if key.lower() == "content-type":
+            content_type = value or ""
+            break
+    # "Image/PNG; charset=binary" is still an image -- match the type
+    # prefix, not the whole header value.
+    if content_type.split(";", 1)[0].strip().lower().startswith("image/"):
+        return {"kind": "image", "src": url}
+    return {"kind": "link"}

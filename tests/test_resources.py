@@ -253,3 +253,86 @@ def test_the_short_youtu_be_form_is_checked_too():
                   "type": "lecture"})
 
     assert verify_resources(note, get=_arxiv(), head=_oembed())
+
+
+# --- embed_kind ---------------------------------------------------------
+# Build-time classification so the dashboard never has to fetch these urls
+# itself: an image renders inline, a YouTube link renders as its thumbnail,
+# everything else stays a plain link.
+
+def _probe(status=200, content_type=""):
+    class R:
+        status_code = status
+        headers = {"Content-Type": content_type}
+    return lambda *_a, **_kw: R()
+
+
+def test_an_image_content_type_is_embedded():
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind("https://x/plot.png", head=_probe(200, "image/png")) == {
+        "kind": "image", "src": "https://x/plot.png"}
+
+
+def test_image_content_type_tolerates_charset_and_case():
+    """content-type is matched on prefix, not exact string, so a real server's
+    'Image/PNG; charset=binary' still counts."""
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("https://x/plot.png", head=_probe(200, "Image/PNG; charset=x"))
+
+    assert kind["kind"] == "image"
+
+
+def test_an_html_page_is_a_link():
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind("https://x/page.html", head=_probe(200, "text/html")) == {
+        "kind": "link"}
+
+
+@pytest.mark.parametrize("url,vid", [
+    ("https://www.youtube.com/watch?v=DAOcjicFr1Y", "DAOcjicFr1Y"),
+    ("https://youtu.be/DAOcjicFr1Y", "DAOcjicFr1Y"),
+    ("https://www.youtube.com/embed/DAOcjicFr1Y", "DAOcjicFr1Y"),
+])
+def test_each_youtube_url_form_is_a_video_with_no_network_call(url, vid):
+    """The thumbnail url is derived from the video id -- no HEAD needed, so a
+    `head` that would raise if called must never be called."""
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise AssertionError("embed_kind must not probe a YouTube url")
+
+    assert embed_kind(url, head=boom) == {
+        "kind": "video",
+        "src": f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
+        "href": url}
+
+
+def test_a_head_that_raises_is_a_link_not_an_exception():
+    """Same precedent as verify_resources: a checker that cannot reach the
+    host must never claim the resource is broken."""
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise OSError("no route to host")
+
+    assert embed_kind("https://example.edu/thing", head=boom) == {"kind": "link"}
+
+
+def test_a_non_2xx_status_is_a_link():
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind("https://x/plot.png", head=_probe(404, "image/png")) == {
+        "kind": "link"}
+
+
+@pytest.mark.parametrize("url", ["", "mailto:a@b.com"])
+def test_a_non_http_url_is_a_link(url):
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise AssertionError("must not probe a non-http url")
+
+    assert embed_kind(url, head=boom) == {"kind": "link"}
