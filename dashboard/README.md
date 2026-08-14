@@ -18,6 +18,12 @@ npm install
 python build_data.py --graph ../fixtures/aiayn_concept_graph.json --pack ../fixtures/aiayn_tiny_pack.json --pages-dir ../fixtures/pages --wiki-dir ../fixtures/wiki
 ```
 
+By default, `build_data.py` reaches the network to classify resource urls (one
+HEAD request per unique url, ~25s timeout each, sequential). A build citing many
+slow or unresponsive hosts can take noticeably longer. Pass `--no-embed-probe` to
+skip probing and build fully offline; this disables image and video embeds but
+makes the build deterministic and fast.
+
 ```bash
 npm run dev
 ```
@@ -32,9 +38,10 @@ npm run build
 python -m http.server -d dist 8000
 ```
 
-The dashboard stays 100% disconnected: no external API or CDN requests, no
+The running dashboard stays 100% disconnected: no external API or CDN requests, no
 runtime data fetch. Graph data, application assets, KaTeX styles and fonts, and
-the ELK layout worker are all emitted locally by the build.
+the ELK layout worker are all emitted locally by the build. (Build-time network
+access for resource probing can be disabled with `--no-embed-probe`.)
 
 ---
 

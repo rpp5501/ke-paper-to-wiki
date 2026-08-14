@@ -1,7 +1,11 @@
 """Bundle pipeline artifacts into src/data.gen.ts (design doc §3-§4).
 
-Everything deterministic; runs without internet access. No runtime fetch exists in the
-dashboard, so this file IS the data path.
+By default, makes live HEAD requests to classify which resources can be embedded
+as images or videos (one HEAD per unique resource url, ~25s timeout each). This
+keeps the browser disconnected: everything is compiled into the bundle, and no
+render-time fetch happens. Pass --no-embed-probe to skip probing and restore
+fully offline, deterministic builds; omitting the flag means network access.
+No runtime fetch exists in the dashboard, so this file IS the data path.
 """
 import argparse
 import ast
@@ -1362,9 +1366,9 @@ def main(argv=None):
     p.add_argument("--release", action="store_true",
                    help="fail closed on reviewed learning-path and quality checks")
     p.add_argument("--no-embed-probe", action="store_true",
-                   help="skip the HEAD requests that classify note resource "
-                        "embeds; every resource becomes a plain link, for "
-                        "deterministic offline builds")
+                   help="skip the HEAD requests that classify note resource embeds "
+                        "(one per unique url, ~25s timeout); every resource becomes "
+                        "a plain link, no image/video embeds. Omit for network access.")
     p.add_argument("--update", action="store_true",
                    help="patch opt-in sections (--viz-dir/--next-steps/--quiz)"
                         " into the existing --out without a full rebuild")
