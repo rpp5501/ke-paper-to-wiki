@@ -33,7 +33,8 @@ Use EXACTLY this shape and these key names:
   "resources": [          // 1-4 items, each a real canonical URL
     {{"url": "https://...", "title": "...",
       "type": "visual | lecture | reference-impl | follow-up-paper | derivation",
-      "why": "one line on why it helps"}}],
+      "why": "one line on why it helps",
+      "anchor": "which part to actually consume — see below"}}],
   "unresolved": ["open questions, may be empty"],
   "sources_consulted": {{  // an OBJECT (not a list); keys are S1, S2, ...
     "S1": "citation or URL string",
@@ -53,10 +54,35 @@ A list of papers and repositories is what a researcher cites, not what a
 learner watches. Prefer the canonical explainer for this specific concept over
 a general survey.
 
+Well-known homes for this kind of material, as a starting point rather than a
+list to pick from: distill.pub, Lil'Log, Jay Alammar, aman.ai, gwern.net,
+colah.github.io, the Hugging Face blog and HF Learn, d2l.ai, Stanford CS231n
+and CS224n, 3Blue1Brown, Computerphile, Two Minute Papers, Yannic Kilcher,
+karpathy's repos and lectures, bbycroft.net/llm, poloclub's Transformer
+Explainer, ml-visualized.com, seeing-theory.brown.edu, and an author's own
+blog or talk. Prefer whatever is genuinely canonical for THIS concept.
+
+For a `lecture`, give the direct video url — a YouTube `watch?v=` url or the
+equivalent — NOT a course landing page or syllabus index. `efficientml.ai` and
+`hanlab.mit.edu/courses/2023-fall-65940` are course indexes; the lectures
+themselves are individual videos, and that is what a reader can actually
+watch.
+
+Set `anchor` on every resource: WHERE in it to look. A 40-minute lecture or a
+long explainer is a chore to be handed whole. Name the timestamp range for a
+video ("12:30-18:00, the derivation of the mask"), the section or heading for
+an article ("the 'Why scaling?' section"), the file or function for a
+repository ("model.py, the CausalSelfAttention class"), the section number for
+a paper ("§3.2 and Table 2"). Be specific enough that the reader can go
+straight there. If the whole thing is genuinely short and worth reading end to
+end, say so plainly — do not invent a false precision.
+
 Cite it only if it is real and you are sure of the url; a plausible guess is
 worse than leaving it out, and a made-up link is checked and rejected. For a
 YouTube video you must be sure of the video id itself — a real channel with an
-invented id is still a dead resource.
+invented id is still a dead resource. The same honesty applies to `anchor`: if
+you do not know the timestamp or section, describe what to look for rather
+than inventing a number.
 
 BRIEF:
 {brief_yaml}

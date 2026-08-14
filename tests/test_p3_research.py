@@ -409,3 +409,30 @@ def test_enrichment_depth_is_tunable(tmp_path):
                           verify=_no_verify, search=_no_search, enrich_level=-1)
 
     assert result["done"] == []
+
+
+def test_the_prompt_asks_where_in_the_resource_to_look():
+    """A 40-minute lecture or a long explainer is not actionable on its own --
+    "watch this" is a chore, "watch 12:30-18:00, the part where he derives the
+    mask" is a five-minute answer. The note schema has always had an optional
+    `anchor` field for exactly this and nothing ever asked for it: zero
+    producers, zero consumers.
+    """
+    from paper_skill.p3_research import RESEARCH_PROMPT
+
+    assert "anchor" in RESEARCH_PROMPT
+    lowered = RESEARCH_PROMPT.lower()
+    assert "timestamp" in lowered or "section" in lowered
+
+
+def test_the_prompt_asks_for_the_video_not_the_course_homepage():
+    """The lottery-ticket run returned hanlab.mit.edu/courses/2023-fall-65940
+    and efficientml.ai as `lecture` resources. Both are course indexes whose
+    actual lectures live on YouTube, so they classify as `link` and render no
+    video card -- the one category where a direct media url really is the
+    better resource."""
+    from paper_skill.p3_research import RESEARCH_PROMPT
+
+    lowered = RESEARCH_PROMPT.lower()
+    assert "watch?v=" in lowered or "watch url" in lowered
+    assert "landing page" in lowered or "course index" in lowered
