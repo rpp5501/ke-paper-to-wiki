@@ -13,6 +13,7 @@ import difflib
 import os
 import re
 import xml.etree.ElementTree as ET
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -35,11 +36,32 @@ _DEAD_STATUS = {404, 410}
 _YOUTUBE = re.compile(r"(?:youtube\.com/watch\?|youtu\.be/|youtube\.com/embed/)", re.I)
 _OEMBED = "https://www.youtube.com/oembed?format=json&url="
 
-# The id sits in a different place per form: a query param on watch (which
-# may follow other params, hence "&v=" not just "?v="), the path itself on
-# the short and embed forms. One alternation covers all three without the
-# caller needing to know which form matched.
-_YOUTUBE_ID = re.compile(r"(?:[?&]v=|youtu\.be/|/embed/)([A-Za-z0-9_-]+)", re.I)
+_VIDEO_ID_SHAPE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def _youtube_video_id(url: str) -> str | None:
+    """Pull the id from its actual structural position, not wherever `v=`
+    happens to appear first in the raw string -- a `v=` embedded in an
+    unrelated query value (e.g. a `next=` redirect target) must never win,
+    since that silently yields a wrong thumbnail rather than degrading to a
+    plain link. Returns None for anything that doesn't parse to a plausible
+    id, including `/embed/videoseries` -- a playlist, not a single video.
+    """
+    parts = urlparse(url)
+    host = parts.netloc.lower()
+    if host == "youtube.com" or host.endswith(".youtube.com"):
+        if parts.path == "/watch":
+            vid = (parse_qs(parts.query).get("v") or [None])[0]
+        elif parts.path.startswith("/embed/"):
+            seg = parts.path[len("/embed/"):].split("/", 1)[0]
+            vid = None if seg == "videoseries" else seg
+        else:
+            vid = None
+    elif host == "youtu.be":
+        vid = parts.path.lstrip("/").split("/", 1)[0] or None
+    else:
+        vid = None
+    return vid if vid and _VIDEO_ID_SHAPE.match(vid) else None
 
 
 # The three aman.ai papers produced 7 resources between them: papers and code,
@@ -183,10 +205,9 @@ def embed_kind(url: str, head=requests.head) -> dict:
         return {"kind": "link"}
 
     if _YOUTUBE.search(url):
-        found = _YOUTUBE_ID.search(url)
-        if not found:
+        vid = _youtube_video_id(url)
+        if not vid:
             return {"kind": "link"}
-        vid = found.group(1)
         return {"kind": "video",
                 "src": f"https://img.youtube.com/vi/{vid}/hqdefault.jpg",
                 "href": url}

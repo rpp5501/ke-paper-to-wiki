@@ -336,3 +336,79 @@ def test_a_non_http_url_is_a_link(url):
         raise AssertionError("must not probe a non-http url")
 
     assert embed_kind(url, head=boom) == {"kind": "link"}
+
+
+# --- embed_kind: id extraction is structural, not "first v= anywhere" ------
+# A v= embedded in an unrelated query value (e.g. a next= redirect target)
+# must never win over the real id -- that silently produces a wrong
+# thumbnail instead of degrading to a plain link, which is worse than failing.
+
+def _no_probe(*_a, **_kw):
+    raise AssertionError("embed_kind must not probe a YouTube url")
+
+
+def test_an_earlier_unrelated_v_param_does_not_win():
+    """REALID12 is only 8 characters -- not a real id shape either -- so the
+    contract-honest outcome is `link`, not a thumbnail for either candidate.
+    What must never happen is picking FAKEID because it appears first."""
+    from paper_skill.resources import embed_kind
+
+    url = ("https://www.youtube.com/watch?next=https://example.com"
+           "?v=FAKEID&v=REALID12")
+
+    kind = embed_kind(url, head=_no_probe)
+
+    assert "FAKEID" not in kind.get("src", "")
+    assert kind == {"kind": "link"}
+
+
+def test_a_real_id_after_an_unrelated_v_param_is_still_extracted():
+    from paper_skill.resources import embed_kind
+
+    url = ("https://www.youtube.com/watch?next=https://example.com"
+           "?v=FAKEID&v=dQw4w9WgXcQ")
+
+    assert embed_kind(url, head=_no_probe) == {
+        "kind": "video",
+        "src": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "href": url}
+
+
+def test_a_playlist_embed_has_no_single_video_id():
+    """/embed/videoseries is a playlist -- 'videoseries' is not a video id."""
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind("https://www.youtube.com/embed/videoseries?list=PLabc",
+                       head=_no_probe) == {"kind": "link"}
+
+
+def test_id_not_first_in_the_query_string_still_works():
+    from paper_skill.resources import embed_kind
+
+    url = "https://www.youtube.com/watch?feature=share&v=dQw4w9WgXcQ"
+
+    assert embed_kind(url, head=_no_probe) == {
+        "kind": "video",
+        "src": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "href": url}
+
+
+@pytest.mark.parametrize("url", [
+    "https://youtu.be/dQw4w9WgXcQ?si=abc123",
+    "https://youtu.be/dQw4w9WgXcQ?si=abc123&t=30s",
+])
+def test_tracking_suffixes_on_the_short_form_do_not_break_extraction(url):
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind(url, head=_no_probe) == {
+        "kind": "video",
+        "src": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "href": url}
+
+
+@pytest.mark.parametrize("vid", ["short1234", "toolongbyonecharacter1"])
+def test_a_malformed_length_id_degrades_to_a_link(vid):
+    from paper_skill.resources import embed_kind
+
+    assert embed_kind(f"https://www.youtube.com/watch?v={vid}",
+                       head=_no_probe) == {"kind": "link"}
