@@ -34,7 +34,7 @@ import { getViz, vizAnchorTier } from "../lib/viz";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
-import ResourceEmbed, { type ResourceEmbedData } from "./blocks/ResourceEmbed";
+import ResourceEmbed, { normalizeEmbed, type ResourceEmbedData } from "./blocks/ResourceEmbed";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
 import CollapseToggle from "./CollapseToggle";
 import SourcePanel from "./SourcePanel";
@@ -55,15 +55,24 @@ function noteResources(note: Note | undefined): ResourceEmbedData[] {
   return Array.isArray(note?.resources) ? note.resources : [];
 }
 
+/** P4's uncited-resource gate guarantees the go-deeper prose already links
+ *  every resource, so a `link`-kind card would just repeat what's already
+ *  on the page. Only image/video resources add something prose can't --
+ *  the picture itself -- so only those earn a card. */
+export function embeddableResources(resources: ResourceEmbedData[]): ResourceEmbedData[] {
+  return resources.filter((resource) => normalizeEmbed(resource.embed).kind !== "link");
+}
+
 /** The note's embeddable resources for the concept's Go Deeper region. A
  *  pure wrapper around ResourceEmbed, kept separate so it is testable with
  *  injected resources -- the shipped fixture predates this field, same
  *  reasoning CodeViewerPresentation split out for the bridge path. */
 export function GoDeeperResources({ resources }: { resources: ResourceEmbedData[] }) {
-  if (resources.length === 0) return null;
+  const embeddable = embeddableResources(resources);
+  if (embeddable.length === 0) return null;
   return (
     <div className="resource-embed-list">
-      {resources.map((resource, index) => (
+      {embeddable.map((resource, index) => (
         <ResourceEmbed key={resource.url ?? index} resource={resource} />
       ))}
     </div>
@@ -549,8 +558,10 @@ export function DrawerPresentation({
       {/* The note's resources ride the same "Go Deeper" tier the page's own
           prose uses (above) so a concept never shows two disclosures with
           the same summary. When the page has no go-deeper prose but the
-          note still carries resources, they get their own. */}
-      {resources.length > 0 && !tiers["go-deeper"] && (
+          note still carries embeddable (image/video) resources, they get
+          their own -- gated on the same filter GoDeeperResources applies,
+          so an all-link note never opens an empty disclosure. */}
+      {embeddableResources(resources).length > 0 && !tiers["go-deeper"] && (
         <section aria-label="Go deeper" className="tier">
           <details>
             <summary>{TIER_LABEL["go-deeper"]}</summary>

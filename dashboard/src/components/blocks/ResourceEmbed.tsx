@@ -17,7 +17,7 @@ type Embed =
 /** A missing or malformed embed -- an older bundle, or a field a future
  *  format changes -- degrades to a plain link, same as before this field
  *  existed. Never to nothing. */
-function normalizeEmbed(embed: unknown): Embed {
+export function normalizeEmbed(embed: unknown): Embed {
   if (embed && typeof embed === "object") {
     const candidate = embed as { kind?: unknown; src?: unknown; href?: unknown };
     if (candidate.kind === "image" && typeof candidate.src === "string") {

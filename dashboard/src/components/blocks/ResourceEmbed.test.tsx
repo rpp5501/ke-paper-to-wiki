@@ -90,6 +90,54 @@ describe("ResourceEmbed", () => {
     expect(html).not.toContain("<img");
   });
 
+  it("treats an explicit null embed as a plain link", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/null-embed",
+          title: "Null embed resource",
+          type: "paper",
+          embed: null,
+        }}
+      />,
+    );
+
+    expect(html).toMatch(/<a[^>]*href="https:\/\/example\.com\/null-embed"/);
+    expect(html).not.toContain("<img");
+  });
+
+  it("treats an image embed missing src as a plain link", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/no-src",
+          title: "Image missing src",
+          type: "diagram",
+          embed: { kind: "image" },
+        }}
+      />,
+    );
+
+    expect(html).toMatch(/<a[^>]*href="https:\/\/example\.com\/no-src"/);
+    expect(html).not.toContain("<img");
+  });
+
+  it("treats a video embed missing href as a plain link", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/no-href",
+          title: "Video missing href",
+          type: "lecture",
+          embed: { kind: "video", src: "https://example.com/thumb.jpg" },
+        }}
+      />,
+    );
+
+    expect(html).toMatch(/<a[^>]*href="https:\/\/example\.com\/no-href"/);
+    expect(html).not.toContain("<img");
+  });
+
   it("gives every remote img referrerPolicy=no-referrer and every outbound anchor rel containing noreferrer", () => {
     const image = renderToStaticMarkup(
       <ResourceEmbed
@@ -170,6 +218,22 @@ describe("ResourceEmbed", () => {
           title: "A blog explainer",
           type: "blog",
           embed: { kind: "link" },
+        }}
+      />,
+    );
+
+    expect(html).not.toContain("<figcaption></figcaption>");
+    expect(html).not.toMatch(/<figcaption[^>]*>\s*<\/figcaption>/);
+  });
+
+  it("renders an image resource missing why without an empty caption element", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/diagram.png",
+          title: "Attention diagram",
+          type: "diagram",
+          embed: { kind: "image", src: "https://example.com/diagram.png" },
         }}
       />,
     );
