@@ -412,3 +412,15 @@ def test_a_malformed_length_id_degrades_to_a_link(vid):
 
     assert embed_kind(f"https://www.youtube.com/watch?v={vid}",
                        head=_no_probe) == {"kind": "link"}
+
+
+def test_an_id_with_a_trailing_newline_degrades_to_a_link():
+    """`$` also matches just before a single trailing newline, so an
+    eleven-character id shape check anchored with `$` lets a `%0A`-suffixed
+    query value slip through and leak a literal newline into the thumbnail
+    url. It must degrade to a link like any other malformed id."""
+    from paper_skill.resources import embed_kind
+
+    url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ%0A"
+
+    assert embed_kind(url, head=_no_probe) == {"kind": "link"}

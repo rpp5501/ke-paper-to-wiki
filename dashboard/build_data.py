@@ -1422,8 +1422,20 @@ def main(argv=None):
     copied = copy_figure_assets(load(a.pack), a.assets_dir,
                                 Path(a.out).resolve().parent.parent / "public",
                                 figure_base(load(a.pack)))
+    # A failed probe (offline, proxy) silently degrades every resource to
+    # `link` and would otherwise print identically to a successful build --
+    # the tally makes that visible instead of requiring it be found by hand.
+    embeds = {"image": 0, "video": 0, "link": 0}
+    for note in bundle["notes"].values():
+        for item in note.get("resources") or []:
+            if not isinstance(item, dict):
+                continue
+            kind = (item.get("embed") or {}).get("kind", "link")
+            embeds[kind] = embeds.get(kind, 0) + 1
     print(f"{a.out}: {len(bundle['nodes'])} nodes, "
-          f"{len(bundle['tour'])} tour steps, {copied} figure image(s)")
+          f"{len(bundle['tour'])} tour steps, {copied} figure image(s), "
+          f"embeds {embeds['image']} image / {embeds['video']} video / "
+          f"{embeds['link']} link")
     return 0
 
 

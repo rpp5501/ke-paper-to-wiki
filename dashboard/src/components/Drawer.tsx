@@ -79,6 +79,62 @@ export function GoDeeperResources({ resources }: { resources: ResourceEmbedData[
   );
 }
 
+/** The page's own go-deeper tier, rendered like the other tiers'
+ *  disclosures, with the note's resources appended -- filtered to
+ *  image/video, since the prose above already links everything else
+ *  (P4's uncited-resource gate). Pulled out of DrawerPresentation's tier
+ *  loop only so it's directly testable with injected resources -- the DOM
+ *  it produces is unchanged from the inline version it replaced. */
+export function GoDeeperTierDetails({
+  glossary,
+  markdown,
+  resources,
+}: {
+  glossary: Record<string, string>;
+  markdown: string;
+  resources: ResourceEmbedData[];
+}) {
+  return (
+    <details>
+      <summary>{TIER_LABEL["go-deeper"]}</summary>
+      <div className="tier-body">
+        <BlockContent glossary={glossary} markdown={markdown} />
+        <GoDeeperResources resources={resources} />
+      </div>
+    </details>
+  );
+}
+
+/** The note's resources when the page has no go-deeper tier of its own --
+ *  no prose exists to duplicate, so every resource renders unfiltered,
+ *  degrading to a link rather than to nothing. Self-gates on
+ *  `hasGoDeeperTier` so DrawerPresentation can call it unconditionally
+ *  alongside GoDeeperTierDetails without ever opening two "Go Deeper"
+ *  disclosures for the same concept. */
+export function StandaloneGoDeeper({
+  hasGoDeeperTier,
+  resources,
+}: {
+  hasGoDeeperTier: boolean;
+  resources: ResourceEmbedData[];
+}) {
+  if (hasGoDeeperTier || resources.length === 0) return null;
+  return (
+    <section aria-label="Go deeper" className="tier">
+      <details>
+        <summary>{TIER_LABEL["go-deeper"]}</summary>
+        <div className="tier-body">
+          <div className="resource-embed-list">
+            {resources.map((resource, index) => (
+              <ResourceEmbed key={resource.url ?? index} resource={resource} />
+            ))}
+          </div>
+        </div>
+      </details>
+    </section>
+  );
+}
+
 const NODES = KE_DATA.nodes as DrawerNode[];
 const EDGES = KE_DATA.edges as KEEdge[];
 const PAGES = KE_DATA.pages as Record<string, string>;
@@ -531,13 +587,20 @@ export function DrawerPresentation({
           {!tiers.intuition && viz && <VizTier entry={viz} nodeId={selected} />}
           {DEEPER_TIERS.filter((tier) => tiers[tier]).map((tier) => (
             <Fragment key={tier}>
-              <details open={tier === "intuition"}>
-                <summary>{TIER_LABEL[tier]}</summary>
-                <div className="tier-body">
-                  <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
-                  {tier === "go-deeper" && <GoDeeperResources resources={resources} />}
-                </div>
-              </details>
+              {tier === "go-deeper" ? (
+                <GoDeeperTierDetails
+                  glossary={glossary}
+                  markdown={tiers[tier] ?? ""}
+                  resources={resources}
+                />
+              ) : (
+                <details open={tier === "intuition"}>
+                  <summary>{TIER_LABEL[tier]}</summary>
+                  <div className="tier-body">
+                    <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
+                  </div>
+                </details>
+              )}
               {/* R13.1 — placement comes from the manifest, not a hardcoded
                   tier: some visuals only make sense once the notation is on
                   the page. */}
@@ -556,21 +619,13 @@ export function DrawerPresentation({
       )}
 
       {/* The note's resources ride the same "Go Deeper" tier the page's own
-          prose uses (above) so a concept never shows two disclosures with
-          the same summary. When the page has no go-deeper prose but the
-          note still carries embeddable (image/video) resources, they get
-          their own -- gated on the same filter GoDeeperResources applies,
-          so an all-link note never opens an empty disclosure. */}
-      {embeddableResources(resources).length > 0 && !tiers["go-deeper"] && (
-        <section aria-label="Go deeper" className="tier">
-          <details>
-            <summary>{TIER_LABEL["go-deeper"]}</summary>
-            <div className="tier-body">
-              <GoDeeperResources resources={resources} />
-            </div>
-          </details>
-        </section>
-      )}
+          prose uses (above, GoDeeperTierDetails) so a concept never shows
+          two disclosures with the same summary. When the page has no
+          go-deeper tier at all -- p4 failed for this concept, or a resource
+          was added after the pages were written -- there's no prose to
+          duplicate, so every resource gets its own disclosure, unfiltered:
+          degrade to a link, never to nothing. */}
+      <StandaloneGoDeeper hasGoDeeperTier={Boolean(tiers["go-deeper"])} resources={resources} />
 
       <SourcePanel sourceRef={node.source_ref} />
 

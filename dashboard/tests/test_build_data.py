@@ -1311,6 +1311,38 @@ def test_cli_writes_utf8_with_byte_stable_lf(tmp_path):
     assert "√dₖ".encode() in data
 
 
+def test_summary_line_reports_the_embed_tally(tmp_path, capsys):
+    """A failed probe (offline machine, proxy) silently degrades every
+    resource to `link` and the build prints exactly what a successful build
+    prints -- the tally makes that visible instead of requiring it be found
+    by hand. YouTube and a non-http url both classify without any network
+    call, so this stays deterministic and offline."""
+    import yaml
+
+    wiki = tmp_path / "wiki"
+    wiki.mkdir()
+    note = {
+        "concept": FIXTURE["nodes"][0]["id"], "status": "verified",
+        "synthesis": "about it",
+        "resources": [
+            {"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+             "title": "Lecture", "type": "lecture", "why": "walkthrough"},
+            {"url": "mailto:a@b.com", "title": "Contact",
+             "type": "reference-impl", "why": "n/a"},
+        ],
+    }
+    (wiki / "x.yaml").write_text(yaml.safe_dump(note, allow_unicode=True),
+                                 encoding="utf-8")
+    out = tmp_path / "data.gen.ts"
+
+    assert main(["--graph", str(FIXTURE_PATH), "--wiki-dir", str(wiki),
+                "--out", str(out)]) == 0
+
+    line = capsys.readouterr().out
+    assert "embeds 0 image / 1 video / 1 link" in line
+    assert "nodes," in line and "tour steps," in line and "figure image(s)" in line
+
+
 def test_repo_fixture_regeneration_is_deterministic(tmp_path):
     out = tmp_path / "data.gen.ts"
     second = tmp_path / "data.second.gen.ts"

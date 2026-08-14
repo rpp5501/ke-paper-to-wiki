@@ -36,7 +36,7 @@ _DEAD_STATUS = {404, 410}
 _YOUTUBE = re.compile(r"(?:youtube\.com/watch\?|youtu\.be/|youtube\.com/embed/)", re.I)
 _OEMBED = "https://www.youtube.com/oembed?format=json&url="
 
-_VIDEO_ID_SHAPE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_VIDEO_ID_SHAPE = re.compile(r"^[A-Za-z0-9_-]{11}\Z")
 
 
 def _youtube_video_id(url: str) -> str | None:
