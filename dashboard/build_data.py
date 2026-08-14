@@ -314,7 +314,14 @@ def _load_notes(wiki_dir, fallback_date):
     shared = {}
     if not wiki_dir:
         return notes, glossary, trace, shared
-    for f in sorted(Path(wiki_dir).glob("*.yaml")):
+    # research_mcp.wiki.wiki_put (the live writer) puts notes under
+    # <wiki_dir>/_research_wiki/; a flat <wiki_dir>/*.yaml is only the legacy
+    # layout from older artifacts. Glob both and dedupe by slug, preferring
+    # the _research_wiki copy since that's where the live writer puts it.
+    by_slug = {f.stem: f for f in sorted(Path(wiki_dir).glob("*.yaml"))}
+    by_slug.update({f.stem: f for f in sorted(
+        (Path(wiki_dir) / "_research_wiki").glob("*.yaml"))})
+    for f in sorted(by_slug.values(), key=lambda f: f.stem):
         note = yaml.safe_load(f.read_text(encoding="utf-8"))
         cid = note.get("concept", f.stem)
         if cid == PAPER_GLOSSARY_ID:
