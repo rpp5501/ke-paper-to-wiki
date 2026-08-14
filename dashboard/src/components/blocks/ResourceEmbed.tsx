@@ -6,6 +6,7 @@ export type ResourceEmbedData = {
   title: string;
   type?: string;
   why?: string;
+  anchor?: string;
   embed?: unknown;
 };
 
@@ -48,6 +49,7 @@ function PlayGlyph() {
 export default function ResourceEmbed({ resource }: { resource: ResourceEmbedData }) {
   const embed = normalizeEmbed(resource.embed);
   const why = resource.why?.trim();
+  const anchor = resource.anchor?.trim();
 
   if (embed.kind === "image") {
     return (
@@ -60,7 +62,12 @@ export default function ResourceEmbed({ resource }: { resource: ResourceEmbedDat
             src={embed.src}
           />
         </a>
-        {why && <figcaption>{why}</figcaption>}
+        {(anchor || why) && (
+          <figcaption>
+            {anchor && <span className="resource-embed-anchor">{anchor}</span>}
+            {why && <span className="resource-embed-why">{why}</span>}
+          </figcaption>
+        )}
       </figure>
     );
   }
@@ -81,6 +88,12 @@ export default function ResourceEmbed({ resource }: { resource: ResourceEmbedDat
         </a>
         <figcaption>
           <span className="resource-embed-title">{resource.title}</span>
+          {anchor && (
+            <>
+              {" "}
+              <span className="resource-embed-anchor">{anchor}</span>
+            </>
+          )}
           {why && <span className="resource-embed-why"> — {why}</span>}
         </figcaption>
       </figure>
@@ -90,7 +103,12 @@ export default function ResourceEmbed({ resource }: { resource: ResourceEmbedDat
   return (
     <figure className="resource-embed resource-embed-link">
       <a href={resource.url} rel="noreferrer" target="_blank">{resource.title}</a>
-      {why && <figcaption>{why}</figcaption>}
+      {(anchor || why) && (
+        <figcaption>
+          {anchor && <span className="resource-embed-anchor">{anchor}</span>}
+          {why && <span className="resource-embed-why">{why}</span>}
+        </figcaption>
+      )}
     </figure>
   );
 }

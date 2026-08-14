@@ -241,4 +241,113 @@ describe("ResourceEmbed", () => {
     expect(html).not.toContain("<figcaption></figcaption>");
     expect(html).not.toMatch(/<figcaption[^>]*>\s*<\/figcaption>/);
   });
+
+  it("renders the anchor for an image resource", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/diagram.png",
+          title: "Attention diagram",
+          type: "diagram",
+          anchor: "the QKV box, top right",
+          embed: { kind: "image", src: "https://example.com/diagram.png" },
+        }}
+      />,
+    );
+
+    expect(html).toContain("the QKV box, top right");
+    expect(html).toContain("resource-embed-anchor");
+  });
+
+  it("renders the anchor for a video resource", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://www.youtube.com/watch?v=abc123",
+          title: "Transformers explained",
+          type: "lecture",
+          anchor: "12:30-18:00, the derivation of the mask",
+          embed: {
+            kind: "video",
+            src: "https://img.youtube.com/vi/abc123/hqdefault.jpg",
+            href: "https://www.youtube.com/watch?v=abc123",
+          },
+        }}
+      />,
+    );
+
+    expect(html).toContain("12:30-18:00, the derivation of the mask");
+    expect(html).toContain("resource-embed-anchor");
+  });
+
+  it("renders the anchor for a link resource", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/post",
+          title: "A blog explainer",
+          type: "blog",
+          anchor: "the 'Why scaling?' section",
+          embed: { kind: "link" },
+        }}
+      />,
+    );
+
+    expect(html).toContain("the &#x27;Why scaling?&#x27; section");
+    expect(html).toContain("resource-embed-anchor");
+  });
+
+  it("renders a resource with why but no anchor without an empty anchor element", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/post",
+          title: "A blog explainer",
+          type: "blog",
+          why: "Good intuition-first walkthrough.",
+          embed: { kind: "link" },
+        }}
+      />,
+    );
+
+    expect(html).not.toContain("resource-embed-anchor");
+    expect(html).toContain("Good intuition-first walkthrough.");
+  });
+
+  it("renders a resource with anchor but no why with the anchor and no empty why caption", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/post",
+          title: "A blog explainer",
+          type: "blog",
+          anchor: "§3.2 and Table 2",
+          embed: { kind: "link" },
+        }}
+      />,
+    );
+
+    expect(html).toContain("§3.2 and Table 2");
+    expect(html).not.toContain("resource-embed-why");
+    expect(html).not.toContain("<figcaption></figcaption>");
+    expect(html).not.toMatch(/<figcaption[^>]*>\s*<\/figcaption>/);
+  });
+
+  it("renders nothing for a whitespace-only anchor", () => {
+    const html = renderToStaticMarkup(
+      <ResourceEmbed
+        resource={{
+          url: "https://example.com/post",
+          title: "A blog explainer",
+          type: "blog",
+          anchor: "   ",
+          embed: { kind: "link" },
+        }}
+      />,
+    );
+
+    expect(html).not.toContain("resource-embed-anchor");
+    expect(html).not.toContain("<figcaption></figcaption>");
+    expect(html).not.toMatch(/<figcaption[^>]*>\s*<\/figcaption>/);
+  });
 });

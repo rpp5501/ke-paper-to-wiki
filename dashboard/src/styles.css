@@ -1719,6 +1719,19 @@ input:focus-visible,
   color: var(--ink);
   font-weight: 600;
 }
+/* `anchor` is a locator (a timestamp, a section heading, a file:class), not
+   prose -- style it as a tag so it reads as "look here", distinct from the
+   sentence-shaped `why` text next to it. */
+.resource-embed-anchor {
+  display: inline-block;
+  margin: 0 6px 4px 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: var(--fs-small);
+}
 
 .mermaid-diagram {
   margin: 20px 0;
