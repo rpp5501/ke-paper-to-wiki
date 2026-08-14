@@ -44,7 +44,7 @@ def test_note_directly_in_wiki_dir_still_reaches_the_bundle(tmp_path):
 
 def test_same_slug_in_both_places_is_loaded_once_preferring_research_wiki(tmp_path):
     _write(tmp_path, "x", NODE_ID)
-    _write(tmp_path / "_research_wiki", "x", NODE_ID)
+    (tmp_path / "_research_wiki").mkdir(parents=True, exist_ok=True)
     (tmp_path / "_research_wiki" / "x.yaml").write_text(
         yaml.safe_dump({"concept": NODE_ID, "status": "verified",
                         "synthesis": "live copy"}, allow_unicode=True),
@@ -54,6 +54,10 @@ def test_same_slug_in_both_places_is_loaded_once_preferring_research_wiki(tmp_pa
 
     assert len(bundle["notes"]) == 1
     assert bundle["notes"][NODE_ID]["synthesis"] == "live copy"
+    # Verify dedup is real: if both files were loaded without deduping, this would
+    # have two trace rows for the same node. This assertion proves the implementation
+    # actually suppressed the duplicate, not just happened to overwrite by dict key.
+    assert len([t for t in bundle["trace"] if t["nodeId"] == NODE_ID]) == 1
 
 
 def test_missing_wiki_dir_still_returns_empty(tmp_path):
