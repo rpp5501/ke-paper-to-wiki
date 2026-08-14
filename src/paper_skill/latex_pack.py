@@ -83,15 +83,27 @@ def _group_text(node) -> str:
         return node.chars
     if isinstance(node, LatexMacroNode):
         # Recurse into the argument so \emph{Causal} contributes "Causal"
-        # instead of vanishing. Bare macros (\\, \thanks) have no args and
-        # collapse to "", which _clean then folds into surrounding space.
-        return " ".join(_group_text(a) for a in (node.nodeargd.argnlist
-                                                 if node.nodeargd else []) if a)
+        # instead of vanishing.
+        args = [a for a in (node.nodeargd.argnlist if node.nodeargd else []) if a]
+        # A bare macro is spacing -- \\ is a line break, and titles put it
+        # right after the colon. Collapsing it to "" gave "The Lottery Ticket
+        # Hypothesis:Finding Sparse...", because there was no surrounding
+        # whitespace for _clean to fold it into. One space, then _clean
+        # collapses any run.
+        return " ".join(_group_text(a) for a in args) if args else " "
     return ""
 
 
 def _clean(text: str) -> str:
-    return " ".join(text.split())
+    r"""Collapse a LaTeX title or heading to one line.
+
+    ``\\`` is a line break, and real titles put it right after the colon, so
+    without translating it to a space the pack carried "The Lottery Ticket
+    Hypothesis:Finding Sparse..." and "The Linear Representation Hypothesis
+    and\\ the Geometry of...". That string is the dashboard's page header, so
+    it is the one a reader always sees.
+    """
+    return " ".join(text.replace(r"\\", " ").split())
 
 
 # ICML's style file defines \icmltitle and the paper never calls \title, so

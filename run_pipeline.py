@@ -35,7 +35,31 @@ PAPERS = {
     "ddim": "arXiv:2010.02502",
     "chain-of-thought": "arXiv:2201.11903",
     "resnet": "arXiv:1512.03385",
+    # Safety/interpretability set, in the owner's stated priority order.
+    # Tier 1 -- highest strategic alignment
+    "lottery-ticket": "arXiv:1803.03635",
+    "agentic-misalignment": "arXiv:2510.05179",
+    "ai-control": "arXiv:2312.06942",
+    # Tier 2 -- representation geometry
+    "refusal-direction": "arXiv:2406.11717",
+    "representation-engineering": "arXiv:2310.01405",
+    "linear-representation": "arXiv:2311.03658",
+    "geometry-of-truth": "arXiv:2310.06824",
+    # Tier 3 -- adjacent safety
+    "sleeper-agents": "arXiv:2401.05566",
+    "unfaithful-cot": "arXiv:2305.04388",
+    # Tier 4 -- jailbreaks and benchmarks
+    "autodan": "arXiv:2310.04451",
+    "universal-adversarial": "arXiv:2307.15043",
+    "pair-jailbreak": "arXiv:2310.08419",
+    "harmbench": "arXiv:2402.04249",
 }
+
+TIERED = ["lottery-ticket", "agentic-misalignment", "ai-control",
+          "refusal-direction", "representation-engineering",
+          "linear-representation", "geometry-of-truth",
+          "sleeper-agents", "unfaithful-cot",
+          "autodan", "universal-adversarial", "pair-jailbreak", "harmbench"]
 
 
 def log(*a):

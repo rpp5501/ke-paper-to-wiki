@@ -213,3 +213,43 @@ def test_a_note_with_no_resources_is_lint_notes_business_not_ours():
 
     assert educational_gap({"concept": "c", "resources": []}) == []
     assert educational_gap(None) == []
+
+
+# --- youtube -----------------------------------------------------------------
+# Asking for lectures makes video the one resource type the existing checks
+# cannot see. youtube.com/watch?v=<anything> answers 200 with a "Video
+# unavailable" page, so a real channel with an invented id passes the dead-link
+# check exactly like a real video. oEmbed is the cheap discriminator: it 404s
+# on an id that does not exist.
+
+def _oembed(known=("DAOcjicFr1Y",)):
+    class R:
+        def __init__(self, code): self.status_code = code
+    def head(url, **_kw):
+        if "oembed" in url:
+            return R(200 if any(k in url for k in known) else 404)
+        return R(200)
+    return head
+
+
+def test_an_invented_video_id_is_caught():
+    note = _note({"url": "https://www.youtube.com/watch?v=zzzFAKEzzz1",
+                  "title": "Lecture", "type": "lecture"})
+
+    problems = verify_resources(note, get=_arxiv(), head=_oembed())
+
+    assert len(problems) == 1 and "youtube" in problems[0].lower()
+
+
+def test_a_real_video_passes():
+    note = _note({"url": "https://www.youtube.com/watch?v=DAOcjicFr1Y",
+                  "title": "Lecture", "type": "lecture"})
+
+    assert verify_resources(note, get=_arxiv(), head=_oembed()) == []
+
+
+def test_the_short_youtu_be_form_is_checked_too():
+    note = _note({"url": "https://youtu.be/zzzFAKEzzz1", "title": "L",
+                  "type": "lecture"})
+
+    assert verify_resources(note, get=_arxiv(), head=_oembed())

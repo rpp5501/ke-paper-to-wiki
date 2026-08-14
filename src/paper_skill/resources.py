@@ -32,6 +32,9 @@ TITLE_MATCH_FLOOR = 0.6
 # answer that means "there is nothing here" counts against the note.
 _DEAD_STATUS = {404, 410}
 
+_YOUTUBE = re.compile(r"(?:youtube\.com/watch\?|youtu\.be/|youtube\.com/embed/)", re.I)
+_OEMBED = "https://www.youtube.com/oembed?format=json&url="
+
 
 # The three aman.ai papers produced 7 resources between them: papers and code,
 # zero `visual`, zero `lecture`, though the type vocabulary offers both. Left to
@@ -131,6 +134,21 @@ def verify_resources(note: dict, get=requests.get, head=requests.head) -> list[s
     for item in items:
         url = item.get("url", "") or ""
         if not url.startswith("http") or _ARXIV_URL.search(url):
+            continue
+        # Video is the one type the dead-link check cannot see: youtube answers
+        # 200 for any id, serving a "Video unavailable" page, so a real channel
+        # with an invented id looks exactly like a real lecture. oEmbed 404s on
+        # an id that does not exist. Worth the extra call now that the note is
+        # required to carry a lecture -- that requirement is precisely the
+        # pressure that invents one.
+        if _YOUTUBE.search(url):
+            try:
+                code = head(_OEMBED + url, timeout=25, allow_redirects=True,
+                            headers=UA).status_code
+            except Exception:
+                continue                 # unreachable checker, not a bad note
+            if code in _DEAD_STATUS:
+                problems.append(f"{url} is not a real YouTube video")
             continue
         try:
             status = head(url, timeout=25, allow_redirects=True, headers=UA).status_code

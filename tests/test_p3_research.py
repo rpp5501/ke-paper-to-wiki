@@ -339,3 +339,73 @@ def test_the_prompt_asks_for_a_visual_or_lecture():
 
     assert "visual" in RESEARCH_PROMPT and "lecture" in RESEARCH_PROMPT
     assert "at least one" in RESEARCH_PROMPT.lower()
+
+
+# --- enrichment scope --------------------------------------------------------
+# P2 marks research:true "only where the paper's own text is insufficient", and
+# a paper is nearly always sufficient to describe its own concepts -- so across
+# ddim, chain-of-thought and resnet it flagged 2 of 65 concepts and P3 ran on
+# 3% of the build. That criterion is about EVIDENCE SUFFICIENCY. A learner
+# wanting a lecture on ddim's neural-ode-relevance is asking something else
+# entirely, and that concept is not flagged because the paper covers it fine.
+
+_ENRICH_ROWS = [
+    {"id": "thesis", "label": "T", "level": 0, "include": True, "research": False,
+     "definition": "d", "sub_questions": ["q"]},
+    {"id": "core", "label": "C", "level": 1, "include": True, "research": False,
+     "definition": "d", "sub_questions": ["q"]},
+    {"id": "detail", "label": "D", "level": 3, "include": True, "research": False,
+     "definition": "d", "sub_questions": ["q"]},
+]
+
+
+def _enrich_toc(tmp_path, rows=_ENRICH_ROWS):
+    p = tmp_path / "toc.yaml"
+    write_toc(rows, p)
+    doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    doc["approved"] = True
+    p.write_text(yaml.safe_dump(doc, allow_unicode=True), encoding="utf-8")
+    return p
+
+
+def test_core_concepts_are_researched_without_being_flagged(tmp_path):
+    """Level 0 and 1 are the concepts a learner meets first and the ones worth
+    an explainer, whether or not the paper's own text has a gap."""
+    result = run_research(_enrich_toc(tmp_path), GRAPH,
+                          spawn=lambda _p: NOTE.format(cid="x"),
+                          home=tmp_path, workdir=tmp_path,
+                          verify=_no_verify, search=_no_search)
+
+    assert set(result["done"]) == {"thesis", "core"}
+
+
+def test_deep_details_are_left_alone(tmp_path):
+    """Enrichment has to stay bounded or it researches every concept in every
+    paper. Level 3 is where the paper's own text is the right depth."""
+    result = run_research(_enrich_toc(tmp_path), GRAPH,
+                          spawn=lambda _p: NOTE.format(cid="x"),
+                          home=tmp_path, workdir=tmp_path,
+                          verify=_no_verify, search=_no_search)
+
+    assert "detail" not in result["done"]
+
+
+def test_an_explicitly_flagged_deep_concept_is_still_researched(tmp_path):
+    """The insufficiency flag still means what it meant; enrichment widens the
+    net rather than replacing it."""
+    rows = [dict(_ENRICH_ROWS[2], research=True)]
+    result = run_research(_enrich_toc(tmp_path, rows), GRAPH,
+                          spawn=lambda _p: NOTE.format(cid="x"),
+                          home=tmp_path, workdir=tmp_path,
+                          verify=_no_verify, search=_no_search)
+
+    assert result["done"] == ["detail"]
+
+
+def test_enrichment_depth_is_tunable(tmp_path):
+    result = run_research(_enrich_toc(tmp_path), GRAPH,
+                          spawn=lambda _p: NOTE.format(cid="x"),
+                          home=tmp_path, workdir=tmp_path,
+                          verify=_no_verify, search=_no_search, enrich_level=-1)
+
+    assert result["done"] == []

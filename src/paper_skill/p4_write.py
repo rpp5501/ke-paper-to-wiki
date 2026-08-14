@@ -147,9 +147,30 @@ def _spawn_claude(prompt: str) -> str:
     return claude_spawn(prompt, max_turns=6, timeout=1800)
 
 
-def _page_problems(page: str, cid: str = "", pack: dict | None = None) -> list[str]:
+def _uncited_resources(page: str, note: dict | None) -> list[str]:
+    """Note resources the page's Go Deeper tier never links.
+
+    Fetching a lecture, verifying its video id and checking the note carries an
+    explainer is all wasted if the page then does not link it -- and it did
+    not: across the three aman.ai papers exactly 1 of 64 pages carried any
+    external link in Go Deeper. Scoped to that tier because it is where a
+    reader looks for what to read next; the same url buried in Mechanics is a
+    different affordance.
+    """
+    urls = [r.get("url", "") for r in (note or {}).get("resources") or []
+            if isinstance(r, dict) and r.get("url")]
+    if not urls or "{#go-deeper}" not in page:
+        return []
+    deeper = page.split("{#go-deeper}", 1)[1]
+    return [f"Go Deeper does not link the research resource {u}"
+            for u in urls if u not in deeper]
+
+
+def _page_problems(page: str, cid: str = "", pack: dict | None = None,
+                   note: dict | None = None) -> list[str]:
     problems = ([f"missing tier {t}" for t in TIERS if t not in page]
-                + pedagogy_problems(page, cid))
+                + pedagogy_problems(page, cid)
+                + _uncited_resources(page, note))
     # Evidence discipline is the contract's central rule, and it used to be
     # checked only by p5_lint -- after the page was on disk, into a report that
     # blocks nothing. The DDIM run shipped 21 pages carrying 38 unanchored
@@ -198,7 +219,9 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
             except Exception as exc:
                 problems = [f"spawn error: {exc}"]
                 break
-            problems = _page_problems(page, cid, pack)
+            problems = _page_problems(page, cid, pack,
+                                      note["note"] if note and
+                                      note["status"] == "ok" else None)
             if not problems:
                 break
         if problems:

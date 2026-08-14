@@ -321,3 +321,33 @@ def test_tikz_drawing_source_stays_out_of_the_prose():
     assert "The jump is sharpest at the largest model." in text
     for token in ("xmin", "ymax", "addplot", "ylabel"):
         assert token not in text, f"tikz {token!r} leaked into prose: {text!r}"
+
+
+def test_a_title_broken_across_lines_reads_as_one_line():
+    r"""Real titles break with \\ and put the break right after the colon, so
+    the pack carried "The Lottery Ticket Hypothesis:Finding Sparse..." and
+    "The Linear Representation Hypothesis and\\ the Geometry of...". That
+    string is the dashboard's page header -- the one a reader always sees.
+
+    A bare macro now contributes a space rather than "", because after a colon
+    there is no surrounding whitespace for _clean to fold it into.
+
+    Known limitation, deliberately not worked around: pylatexenc parses
+    `\\Finding` -- a break glued straight onto a letter -- as a macro *named*
+    Finding, so the word is consumed as a macro name and lost. That is
+    indistinguishable from a real macro at the node level, and it appears in
+    none of the 17 papers extracted so far; every one writes the break as `\\`
+    followed by a newline or a space.
+    """
+    from paper_skill.latex_pack import latex_to_pack
+
+    tex = (r"\documentclass{article}"
+           r"\title{The Lottery Ticket Hypothesis:\\"
+           "\n"
+           r"Finding Sparse, Trainable Neural Networks}"
+           r"\begin{document}\section{S}x\end{document}")
+
+    title = latex_to_pack(tex, source="t")["meta"]["title"]
+
+    assert title == ("The Lottery Ticket Hypothesis: Finding Sparse, "
+                     "Trainable Neural Networks")

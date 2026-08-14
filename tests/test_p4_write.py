@@ -356,3 +356,53 @@ def test_the_empty_math_tier_rule_covers_a_section_not_just_a_paper():
     were cleared this was the largest remaining real cause of failure."""
     assert "no display equation is supplied for this section" in WRITING_SKILL
     assert "related-work or discussion concept" in WRITING_SKILL
+
+
+# --- research resources must reach the reader --------------------------------
+_NOTE_CTX = {"synthesis": "Scaling matters [S1].",
+             "resources": [
+                 {"url": "https://distill.pub/2016/x", "title": "Explainer",
+                  "type": "visual", "why": "draws it"},
+                 {"url": "https://youtu.be/abc123", "title": "Lecture",
+                  "type": "lecture", "why": "walks through it"}]}
+
+
+def test_a_page_that_ignores_its_research_resources_is_rejected():
+    """Across the three aman.ai papers exactly 1 of 64 pages carried any
+    external link in Go Deeper, so even a good note reached nobody. Fetching
+    and verifying a lecture is wasted work if the page never links it."""
+    from paper_skill.p4_write import _page_problems
+
+    problems = _page_problems(GOOD_PAGE, "sdpa", PACK, _NOTE_CTX)
+
+    assert any("distill.pub" in p for p in problems), problems
+    assert any("youtu.be" in p for p in problems), problems
+
+
+def test_a_page_that_links_them_all_passes():
+    from paper_skill.p4_write import _page_problems
+
+    page = GOOD_PAGE.replace(
+        "- d2l.ai derivation",
+        "- [Explainer](https://distill.pub/2016/x)\n"
+        "- [Lecture](https://youtu.be/abc123)")
+
+    assert _page_problems(page, "sdpa", PACK, _NOTE_CTX) == []
+
+
+def test_links_outside_go_deeper_do_not_count():
+    """The tier is where a reader looks for what to read next; a url buried in
+    Mechanics is not the same affordance."""
+    from paper_skill.p4_write import _page_problems
+
+    page = GOOD_PAGE.replace(
+        "Scores are divided by sqrt(d_k) [eq_1].",
+        "See https://distill.pub/2016/x and https://youtu.be/abc123 [eq_1].")
+
+    assert _page_problems(page, "sdpa", PACK, _NOTE_CTX)
+
+
+def test_no_note_means_no_such_requirement():
+    from paper_skill.p4_write import _page_problems
+
+    assert _page_problems(GOOD_PAGE, "sdpa", PACK, None) == []

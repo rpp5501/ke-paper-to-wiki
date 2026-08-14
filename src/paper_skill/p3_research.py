@@ -11,6 +11,11 @@ from .candidates import candidate_block, find_candidates, paper_topic
 from .resources import educational_gap, verify_resources
 from .toc import load_approved_toc
 
+# Level 0-1 is the concepts a learner meets first: about half of a paper's
+# graph (9-13 of ~21 on the three aman.ai papers), which keeps the cost of
+# enrichment to roughly ten calls per paper.
+ENRICH_LEVEL = 1
+
 # JSON, not YAML: a citation is normally written `"Quoted Title," Author, arXiv:...`
 # and YAML reads the quoted title as a complete scalar, then fails on the author
 # that follows. That killed the one research note in the chain-of-thought run,
@@ -35,11 +40,23 @@ Use EXACTLY this shape and these key names:
     "S2": "citation or URL string"}}}}
 
 These notes feed pages someone is trying to LEARN from, so include
-at least one `visual` or `lecture` — an explainer, an animation, a recorded course
-lecture, a well-known blog post that draws the thing. A list of papers and
-repositories is what a researcher cites, not what a learner watches. Cite it
-only if it is real and you are sure of the url; a plausible guess is worse
-than leaving it out.
+at least one `visual` or `lecture`. What counts, concretely:
+
+- a blog post or article that explains the idea (distill.pub, Lil'Log, Jay
+  Alammar, aman.ai, Hugging Face blog, an author's own post)
+- a diagram, animation or figure that shows the mechanism
+- a recorded lecture or conference talk (YouTube, a course page)
+- an interactive demo or notebook a reader can run
+- a course or textbook section (d2l.ai, CS231n, CS224n and similar)
+
+A list of papers and repositories is what a researcher cites, not what a
+learner watches. Prefer the canonical explainer for this specific concept over
+a general survey.
+
+Cite it only if it is real and you are sure of the url; a plausible guess is
+worse than leaving it out, and a made-up link is checked and rejected. For a
+YouTube video you must be sure of the video id itself — a real channel with an
+invented id is still a dead resource.
 
 BRIEF:
 {brief_yaml}
@@ -98,7 +115,7 @@ def _parse_note(raw: str) -> dict | None:
 
 def run_research(toc_path, graph: dict, spawn=_spawn_claude,
                  home=None, workdir=None, verify=verify_resources,
-                 search=None) -> dict:
+                 search=None, enrich_level=ENRICH_LEVEL) -> dict:
     toc = load_approved_toc(toc_path)
     if toc["status"] != "ok":
         return {"status": "not_approved", "hint": toc["hint"],
@@ -108,7 +125,13 @@ def run_research(toc_path, graph: dict, spawn=_spawn_claude,
     done, failed, skipped = [], [], []
     topic = paper_topic(graph)
     for row in toc["rows"]:
-        if not row.get("research"):
+        # Two different questions. `research` is P2's answer to "is the paper's
+        # own text insufficient here", which is nearly always no -- it flagged
+        # 2 of 65 concepts across three papers, so P3 ran on 3% of the build.
+        # The level test asks the learner's question instead: is this a concept
+        # someone meets early and would want an explainer for. Bounded by depth
+        # so enrichment cannot quietly research every concept in every paper.
+        if not (row.get("research") or row.get("level", 99) <= enrich_level):
             continue
         cid = row["id"]
         if (done_dir / cid).exists() or wiki_get(cid, home=home)["status"] == "ok":

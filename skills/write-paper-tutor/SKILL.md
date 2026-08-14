@@ -102,6 +102,18 @@ A page whose subject is what the paper measured — results, experiments, an eva
 - Where the paper reports a spread, a range, or a variance, carry it. Dropping it turns a measurement into a claim.
 - If the evidence does not supply the figures, say so plainly rather than describing them in words.
 
+## Go Deeper
+
+Where the LOCAL CONTEXT supplies `resource:` lines from a research note, link
+every one of them here as a markdown link, with a line saying what the reader
+gets from it. These were searched for, checked and verified for this concept —
+a lecture or explainer the page never links reaches nobody.
+
+- **Required (checked):** every supplied resource url appears in this tier.
+- Say what each one is for. "Further reading" is not a reason; "a five-minute
+  animation of the sampling loop" is.
+- Put the one a stuck reader should open first at the top.
+
 ## Structured teaching blocks
 
 When the evidence has the corresponding shape, use the supplied exact fenced-YAML syntax:
