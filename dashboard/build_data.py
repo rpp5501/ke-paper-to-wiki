@@ -8,12 +8,20 @@ import ast
 import json
 import re
 import subprocess
+import sys
 from collections import Counter, defaultdict
 from itertools import islice
 from pathlib import Path
 
 import networkx as nx
+import requests
 import yaml
+
+# dashboard/build_data.py sits one level below the package that carries
+# embed_kind; the README's plain `python build_data.py ...` (no PYTHONPATH)
+# has to keep working, not just the PYTHONPATH-driven test invocation.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from paper_skill.resources import embed_kind  # noqa: E402
 
 _IMG = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _SOURCE_LOCATION = re.compile(
@@ -340,6 +348,29 @@ def _load_notes(wiki_dir, fallback_date):
                       "status": note.get("status", "unknown"),
                       "date": trace_date})
     return notes, glossary, trace, shared
+
+
+def _attach_embeds(notes: dict, head=requests.head, probe=True) -> None:
+    """Classify every note resource's url at build time so the dashboard
+    never fetches it itself (Task 2's embed_kind, called once per unique url
+    -- two notes citing the same resource share one HEAD). ``probe=False``
+    is the --no-embed-probe kill switch: every resource becomes a plain link
+    and embed_kind is never called, so not even a YouTube url's no-network
+    thumbnail lookup happens -- offline builds and tests stay deterministic.
+    Existing resource keys (url, title, type, why) are never touched.
+    """
+    cache = {}
+    for note in notes.values():
+        for item in note.get("resources") or []:
+            if not isinstance(item, dict):
+                continue
+            if not probe:
+                item["embed"] = {"kind": "link"}
+                continue
+            url = item.get("url", "") or ""
+            if url not in cache:
+                cache[url] = embed_kind(url, head=head)
+            item["embed"] = cache[url]
 
 
 def _source_dates(plan_graph, repo_dir):
@@ -1187,7 +1218,8 @@ def _content_quality_report(pages, coverage=None, known_refs=None,
 
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None, viz_dir=None,
-                 next_steps=None, quiz=None, learning_path=None, release=False):
+                 next_steps=None, quiz=None, learning_path=None, release=False,
+                 embed_head=requests.head, embed_probe=True):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir, plan_graph.get("nodes"))
     code_listings, enriched_nodes = _code_listings(plan_graph, repo_dir)
@@ -1231,6 +1263,7 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
         raise ValueError("release build requires qualityReport.releasePass=true")
     notes, glossary, trace, shared_terms = _load_notes(
         wiki_dir, plan_graph["meta"].get("generated", ""))
+    _attach_embeds(notes, head=embed_head, probe=embed_probe)
     if shared_terms:
         # Paper-wide terms reach every concept; a concept that defines the same
         # term keeps its own, more precise sense.
@@ -1328,6 +1361,10 @@ def main(argv=None):
                                            "omit for an unreviewed fallback")
     p.add_argument("--release", action="store_true",
                    help="fail closed on reviewed learning-path and quality checks")
+    p.add_argument("--no-embed-probe", action="store_true",
+                   help="skip the HEAD requests that classify note resource "
+                        "embeds; every resource becomes a plain link, for "
+                        "deterministic offline builds")
     p.add_argument("--update", action="store_true",
                    help="patch opt-in sections (--viz-dir/--next-steps/--quiz)"
                         " into the existing --out without a full rebuild")
@@ -1374,7 +1411,8 @@ def main(argv=None):
                           if a.hotspots else None,
                           repo_dir=a.repo_dir, viz_dir=a.viz_dir,
                           next_steps=a.next_steps, quiz=a.quiz,
-                          learning_path=a.learning_path, release=a.release)
+                          learning_path=a.learning_path, release=a.release,
+                          embed_probe=not a.no_embed_probe)
     Path(a.out).write_bytes(to_data_ts(bundle).encode("utf-8"))
     # public/ sits beside src/, which is where --out points by default.
     copied = copy_figure_assets(load(a.pack), a.assets_dir,
