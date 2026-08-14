@@ -34,6 +34,7 @@ import { getViz, vizAnchorTier } from "../lib/viz";
 import { useApp, type LayoutPhase } from "../store";
 import type { KEEdge, KENode } from "../types";
 import BlockRenderer from "./blocks/BlockRenderer";
+import ResourceEmbed, { type ResourceEmbedData } from "./blocks/ResourceEmbed";
 import CodeViewer, { hasCodeFor } from "./CodeViewer";
 import CollapseToggle from "./CollapseToggle";
 import SourcePanel from "./SourcePanel";
@@ -41,7 +42,33 @@ import { useNodeNavigation } from "./useNodeNavigation";
 import VizTier from "./VizTier";
 
 type DrawerNode = KENode & { page?: string; anchor?: string };
-type Note = { synthesis?: string; status?: string; date?: string };
+type Note = {
+  synthesis?: string;
+  status?: string;
+  date?: string;
+  resources?: ResourceEmbedData[];
+};
+
+/** A note predating this field, or one with no resources, carries none --
+ *  the concept's Go Deeper region then renders exactly as it did before. */
+function noteResources(note: Note | undefined): ResourceEmbedData[] {
+  return Array.isArray(note?.resources) ? note.resources : [];
+}
+
+/** The note's embeddable resources for the concept's Go Deeper region. A
+ *  pure wrapper around ResourceEmbed, kept separate so it is testable with
+ *  injected resources -- the shipped fixture predates this field, same
+ *  reasoning CodeViewerPresentation split out for the bridge path. */
+export function GoDeeperResources({ resources }: { resources: ResourceEmbedData[] }) {
+  if (resources.length === 0) return null;
+  return (
+    <div className="resource-embed-list">
+      {resources.map((resource, index) => (
+        <ResourceEmbed key={resource.url ?? index} resource={resource} />
+      ))}
+    </div>
+  );
+}
 
 const NODES = KE_DATA.nodes as DrawerNode[];
 const EDGES = KE_DATA.edges as KEEdge[];
@@ -463,6 +490,7 @@ export function DrawerPresentation({
   const secondaryImpact = [...rings.values()].filter((depth) => depth === 2).length;
   const hasDeeperTiers = DEEPER_TIERS.some((tier) => tiers[tier]);
   const fallbackMarkdown = note?.synthesis?.trim();
+  const resources = noteResources(note);
   const hasCode = hasCodeFor(selected);
   const viz = getViz(selected);
 
@@ -498,6 +526,7 @@ export function DrawerPresentation({
                 <summary>{TIER_LABEL[tier]}</summary>
                 <div className="tier-body">
                   <BlockContent glossary={glossary} markdown={tiers[tier] ?? ""} />
+                  {tier === "go-deeper" && <GoDeeperResources resources={resources} />}
                 </div>
               </details>
               {/* R13.1 — placement comes from the manifest, not a hardcoded
@@ -514,6 +543,21 @@ export function DrawerPresentation({
       {viz && !(pageMarkdown && hasDeeperTiers) && (
         <section aria-label="Explanation tiers" className="tier">
           <VizTier entry={viz} nodeId={selected} />
+        </section>
+      )}
+
+      {/* The note's resources ride the same "Go Deeper" tier the page's own
+          prose uses (above) so a concept never shows two disclosures with
+          the same summary. When the page has no go-deeper prose but the
+          note still carries resources, they get their own. */}
+      {resources.length > 0 && !tiers["go-deeper"] && (
+        <section aria-label="Go deeper" className="tier">
+          <details>
+            <summary>{TIER_LABEL["go-deeper"]}</summary>
+            <div className="tier-body">
+              <GoDeeperResources resources={resources} />
+            </div>
+          </details>
         </section>
       )}
 

@@ -1654,6 +1654,72 @@ input:focus-visible,
   line-height: 1.5;
 }
 
+/* A note's resource: a blog link, a diagram, or a lecture thumbnail. Same
+   card language as .paper-figure -- this is recovered content, not a
+   placeholder -- but sized down since several can stack in one note. */
+.resource-embed {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+.resource-embed + .resource-embed {
+  margin-top: 10px;
+}
+.resource-embed a {
+  color: var(--ink);
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.resource-embed a:hover,
+.resource-embed a:focus-visible {
+  text-decoration-color: var(--accent);
+}
+.resource-embed-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+/* The video thumbnail is the only visual cue it plays -- the triangle is
+   drawn in SVG, never fetched, so there is no third-party embed script. */
+.resource-embed-thumb {
+  position: relative;
+  display: block;
+}
+.resource-embed-thumb img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.resource-embed-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  fill: rgba(0, 0, 0, 0.55);
+  stroke: #fff;
+  stroke-width: 1;
+}
+.resource-embed-play polygon {
+  fill: #fff;
+}
+.resource-embed figcaption {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-family: var(--font-ui);
+  font-size: var(--fs-small);
+  line-height: 1.5;
+}
+.resource-embed-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .mermaid-diagram {
   margin: 20px 0;
   padding: 16px;
