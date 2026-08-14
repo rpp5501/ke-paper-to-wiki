@@ -1,0 +1,59 @@
+concept: structured-pruning-related-work
+status: complete
+synthesis: Structured pruning traces back to early regularization-based methods that
+  penalized unimportant weights during training to encourage prunable sub-networks
+  [S1]. Modern structured approaches instead remove entire channels or filters rather
+  than individual weights, as seen in channel-pruning methods for accelerating deep
+  CNNs [S2] and channel-independence-based pruning for compact networks [S3]. Surveys
+  of pruning-at-initialization work show that the decision of what to prune can often
+  be made before or very early in training, directly motivating the lottery ticket
+  hypothesis's focus on which sub-network and initialization survive [S4]. Comparisons
+  against random-pruning baselines show that not all sparse sub-networks trained from
+  scratch match the accuracy of properly identified ones, underscoring the importance
+  of retaining the specific original initialization [S5]. Automated pruning-rate methods
+  further show the fraction and placement of pruned structure can be learned rather
+  than hand-tuned, a design axis the lottery ticket hypothesis addresses via iterative
+  pruning and weight rewinding [S6]. Together this line of work establishes that trained
+  networks are dramatically overparameterized and mostly compressible post-hoc, via
+  pruning [S7] or distillation into a smaller student network [S8], but leaves open
+  whether the same sparse structure is trainable from scratch — the gap the lottery
+  ticket hypothesis fills.
+resources:
+- url: https://efficientml.ai/
+  title: TinyML and Efficient Deep Learning Computing (MIT 6.5940, Song Han)
+  type: lecture
+  why: Recorded lectures and slides on pruning and sparsity that visually contrast
+    unstructured vs. structured pruning, the design space this paper's related work
+    situates itself in
+- url: https://arxiv.org/abs/1506.02626
+  title: Learning both Weights and Connections for Efficient Neural Networks
+  type: follow-up-paper
+  why: Foundational magnitude-pruning-and-retrain pipeline that the lottery ticket
+    hypothesis directly builds on and compares against
+- url: https://arxiv.org/abs/1503.02531
+  title: Distilling the Knowledge in a Neural Network
+  type: follow-up-paper
+  why: Seminal distillation paper showing a large network's function can be compressed
+    into a much smaller student, the complementary compression paradigm to pruning
+- url: https://arxiv.org/abs/2103.06460v3
+  title: Recent Advances on Neural Network Pruning at Initialization
+  type: follow-up-paper
+  why: Surveys pruning-at-initialization literature most directly relevant to this
+    paper's claim about training-time initialization
+unresolved:
+- Could not confirm whether the 2022 arxiv id listed for channel pruning is a reprint
+  of He et al.'s original 2017 ICCV channel pruning paper or a distinct follow-up
+  work with the same title.
+sources_consulted:
+  S1: Regularization with a Pruning Prior (1997) — https://doi.org/10.1016/s0893-6080(97)00027-0
+  S2: Pruning Very Deep Neural Network Channels for Efficient Inference (2022) — https://arxiv.org/abs/2211.08339v1
+  S3: 'CHIP: CHannel Independence-based Pruning for Compact Neural Networks (2021)
+    — https://arxiv.org/abs/2110.13981v3'
+  S4: Recent Advances on Neural Network Pruning at Initialization (2021) — https://arxiv.org/abs/2103.06460v3
+  S5: Studying the Plasticity in Deep Convolutional Neural Networks using Random Pruning
+    (2018) — https://arxiv.org/abs/1812.10240v1
+  S6: Automatic Pruning Rate Derivation for Structured Pruning of Deep Neural Networks
+    (2022) — https://doi.org/10.1109/icpr56361.2022.9956644
+  S7: Learning both Weights and Connections for Efficient Neural Networks (2015) —
+    https://arxiv.org/abs/1506.02626
+  S8: Distilling the Knowledge in a Neural Network (2015) — https://arxiv.org/abs/1503.02531

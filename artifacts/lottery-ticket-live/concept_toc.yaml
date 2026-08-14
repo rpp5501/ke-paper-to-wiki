@@ -1,0 +1,289 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 23 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: lottery-ticket-hypothesis
+  label: The Lottery Ticket Hypothesis
+  level: 0
+  include: true
+  definition: A randomly-initialized, dense neural network contains a subnetwork that
+    is initialized such that, when trained in isolation, it can match the test accuracy
+    of the original network after training for at most the same number of iterations.
+  sub_questions:
+  - Do such winning subnetworks exist across different architectures and datasets?
+  - Why does the original initialization matter for the subnetwork's trainability?
+  - How does subnetwork size affect learning speed and accuracy?
+  - What does this imply about how neural networks are trained today?
+  research: false
+- id: winning-ticket
+  label: Winning Ticket
+  level: 1
+  include: true
+  definition: A subnetwork that, when trained in isolation from its original initialization,
+    matches or exceeds the accuracy of the original network in a comparable number
+    of iterations — one that has 'won the initialization lottery.'
+  sub_questions:
+  - What distinguishes a winning ticket's initial weights from the rest of the network?
+  - How is a winning ticket identified within a trained network?
+  - Does a winning ticket's advantage depend on its specific initial values or just
+    its sparse structure?
+  research: false
+- id: iterative-magnitude-pruning
+  label: Iterative Magnitude Pruning
+  level: 1
+  include: true
+  definition: The strategy of repeatedly training, pruning the lowest-magnitude weights,
+    and rewinding surviving weights to their original initialization, used throughout
+    the paper to find winning tickets.
+  sub_questions:
+  - How many pruning rounds are needed to find the smallest winning tickets?
+  - Why does iterative pruning outperform pruning in a single step?
+  - What pruning rate per round balances ticket quality against computational cost?
+  research: false
+- id: fc-lenet-mnist-experiments
+  label: Fully-Connected Lenet/MNIST Experiments
+  level: 1
+  include: true
+  definition: Evaluation of the lottery ticket hypothesis on fully-connected networks
+    trained on MNIST.
+  sub_questions:
+  - Can winning tickets be found in simple fully-connected architectures?
+  - How does sparsity level affect the learning speed and accuracy of winning tickets
+    versus the full network?
+  - How do winning tickets compare to randomly reinitialized subnetworks of the same
+    sparsity?
+  research: false
+- id: conv-cifar10-experiments
+  label: Convolutional CIFAR10 Experiments
+  level: 1
+  include: true
+  definition: Application of the lottery ticket hypothesis to convolutional networks
+    on CIFAR10, increasing the complexity of both the architecture and the dataset
+    relative to the fully-connected MNIST experiments.
+  sub_questions:
+  - Do winning tickets persist as network and dataset complexity increases?
+  - How does the addition of techniques like dropout affect the discovery of winning
+    tickets?
+  - Do convolutional and fully-connected layers within the same network exhibit different
+    pruning behavior?
+  research: false
+- id: vgg-resnet-cifar10-experiments
+  label: VGG/Resnet CIFAR10 Experiments
+  level: 1
+  include: true
+  definition: Study of the lottery ticket hypothesis on VGG and Resnet architectures
+    evocative of those used in practice on CIFAR10.
+  sub_questions:
+  - Do winning tickets exist in deep, practice-scale architectures like VGG-19 and
+    Resnet-18?
+  - What modifications to learning rate (e.g., warmup) are needed to find winning
+    tickets at these scales?
+  - How does global versus layer-wise pruning affect the ability to find winning tickets
+    in these architectures?
+  research: false
+- id: random-reinitialization-control
+  label: Random Reinitialization Control
+  level: 1
+  include: true
+  definition: A control comparing the performance of randomly reinitialized winning
+    tickets against randomly sparse networks of the same size, to isolate the contribution
+    of the winning ticket's structure versus its specific initialization.
+  sub_questions:
+  - Does the sparse structure alone (without the original initialization) confer any
+    advantage?
+  - How much of a winning ticket's performance is attributable to its specific initial
+    weight values versus its connectivity pattern?
+  research: false
+- id: structured-pruning-related-work
+  label: Related Pruning/Distillation Work
+  level: 1
+  include: true
+  definition: Prior literature on neural network pruning and distillation, which shows
+    that dramatically overparameterized networks can often be represented by far fewer
+    parameters after training.
+  sub_questions:
+  - How does the lottery ticket hypothesis relate to and extend prior pruning and
+    distillation techniques?
+  - What does prior pruning work establish about post-training network compressibility
+    that motivates this paper's focus on training-time initialization?
+  research: false
+- id: implications-for-training-efficiency
+  label: Implications for Training Efficiency
+  level: 1
+  include: true
+  definition: A discussion of what the existence of winning tickets implies for neural
+    network training and design, connecting to existing pruning literature showing
+    learned functions can often be represented more compactly.
+  sub_questions:
+  - Could winning tickets be identified before training to make training itself more
+    efficient?
+  - What do winning tickets suggest about the role of overparameterization in making
+    networks easier to train?
+  - How might this change practical approaches to network design and initialization?
+  research: true
+- id: limitations-scope
+  label: Limitations and Scope
+  level: 1
+  include: true
+  definition: An acknowledgment that the study only considers vision-centric classification
+    tasks on smaller datasets (MNIST, CIFAR10) and does not investigate larger-scale
+    settings.
+  sub_questions:
+  - Do winning tickets exist in larger-scale datasets and non-vision tasks?
+  - How might the pruning and rewinding methodology need to change for larger models?
+  research: false
+- id: one-shot-pruning
+  label: One-Shot Pruning
+  level: 2
+  include: true
+  definition: Pruning the target fraction of weights in a single step immediately
+    after training, rather than iteratively across multiple rounds.
+  sub_questions:
+  - How much smaller can winning tickets be found via iterative pruning compared to
+    one-shot pruning?
+  - At what sparsity levels does one-shot pruning still find winning tickets?
+  research: false
+- id: early-stopping-iteration-metric
+  label: Early-Stopping Iteration Metric
+  level: 2
+  include: true
+  definition: A proxy metric, the iteration of minimum validation loss during training,
+    used to measure how quickly a network learns.
+  sub_questions:
+  - Why is early-stopping iteration used as a proxy for learning speed rather than
+    final test accuracy alone?
+  - How sensitive are conclusions about winning tickets to the choice of this early-stopping
+    criterion?
+  research: false
+- id: winning-ticket-initialization-distribution
+  label: Winning Ticket Initialization Distribution
+  level: 2
+  include: true
+  definition: The distribution of a winning ticket's surviving initial weight values,
+    examined across different levels of pruning ($P_m$) to understand how it differs
+    from the original Gaussian initialization.
+  sub_questions:
+  - How does the initialization distribution of winning tickets change as sparsity
+    increases?
+  - What does the shape of this distribution reveal about which weights get selected
+    by magnitude pruning?
+  - Does this distribution differ between optimizers (Adam vs. SGD)?
+  research: false
+- id: winning-ticket-connectivity
+  label: Winning Ticket Connectivity
+  level: 2
+  include: true
+  definition: The study of connectivity patterns within winning tickets, examining
+    whether certain hidden units retain disproportionately many incoming connections.
+  sub_questions:
+  - Do some hidden units become connectivity hubs within winning tickets?
+  - Does concentrated connectivity correlate with a winning ticket's ability to train
+    quickly?
+  research: true
+- id: noise-robustness-of-winning-tickets
+  label: Noise Robustness of Winning Tickets
+  level: 2
+  include: true
+  definition: An exploration of the extent to which winning tickets remain trainable
+    when Gaussian noise is added to their initializations.
+  sub_questions:
+  - How much noise can be added to a winning ticket's initialization before its performance
+    advantage disappears?
+  - What does noise sensitivity reveal about how precisely winning ticket initializations
+    must be preserved?
+  research: true
+- id: learning-rate-warmup
+  label: Learning Rate Warmup
+  level: 2
+  include: true
+  definition: Adding a linear warmup period to the initial learning rate, which the
+    paper describes as making it possible to find winning tickets in VGG-19 and Resnet-18.
+  sub_questions:
+  - Why does linear learning-rate warmup enable winning tickets to be found at learning
+    rates that otherwise fail?
+  - How long does the warmup period need to be for different architectures?
+  research: false
+- id: global-pruning
+  label: Global Pruning
+  level: 2
+  include: true
+  definition: A pruning scheme, used for VGG-19 and Resnet-18, that prunes a fraction
+    of parameters globally across all layers together, in contrast to the layer-wise
+    pruning used for Lenet and Conv-2/4/6.
+  sub_questions:
+  - Why is global pruning necessary for deeper architectures like VGG-19 and Resnet-18?
+  - How does global pruning change which layers end up most sparse?
+  research: false
+- id: hyperparameter-search-fc
+  label: Hyperparameter Search (Fully-Connected)
+  level: 2
+  include: true
+  definition: An exploration of the hyperparameter space (learning rate, optimizer,
+    pruning rate, initialization, network size) for the Lenet fully-connected architecture.
+  sub_questions:
+  - Which hyperparameters most affect the ability to find winning tickets in Lenet?
+  - How robust is the lottery ticket effect across different optimizers and learning
+    rates?
+  research: false
+- id: hyperparameter-search-conv
+  label: Hyperparameter Search (Convolutional)
+  level: 2
+  include: true
+  definition: An exploration of the space of optimization algorithms and hyperparameters
+    for the Conv-2, Conv-4, and Conv-6 convolutional architectures.
+  sub_questions:
+  - How do optimizer choice and learning rate affect winning ticket discovery in convolutional
+    networks?
+  - How does the iterative pruning rate for convolutional versus fully-connected layers
+    affect results?
+  research: false
+- id: pruning-convs-vs-fc-layers
+  label: Pruning Convolutions vs. Fully-Connected Layers
+  level: 3
+  include: true
+  definition: A comparison of the effect of pruning convolutional layers alone, fully-connected
+    layers alone, or both together within the same network.
+  sub_questions:
+  - Which layer type contributes more to a winning ticket's performance advantage
+    when pruned?
+  - Does pruning both layer types together produce better winning tickets than pruning
+    either alone?
+  research: false
+- id: network-size-effects
+  label: Network Size Effects
+  level: 3
+  include: true
+  definition: An examination of how varying the size of the Lenet architecture's hidden
+    layers (beyond the default 300/100 units) affects the lottery ticket experiment's
+    results.
+  sub_questions:
+  - Does increasing network width change the sparsity level at which winning tickets
+    can be found?
+  - How does network size interact with the speedup winning tickets provide?
+  research: true
+- id: reinitializing-from-winning-init
+  label: Reinitializing from Winning Ticket Distribution
+  level: 3
+  include: true
+  definition: An experiment reinitializing winning tickets by sampling from the winning
+    ticket initialization distribution D_m rather than reusing the exact original
+    initial weights, to test whether the distribution alone explains winning ticket
+    performance.
+  sub_questions:
+  - Does sampling new weights from the winning ticket's initialization distribution
+    reproduce its performance advantage?
+  - Does this show that the specific initial weight values matter more than the distribution
+    they came from?
+  research: false
+- id: pruning-at-iteration-0
+  label: Pruning at Iteration 0
+  level: 3
+  include: true
+  definition: An interpretation of winning ticket initialization distributions suggesting
+    that weights which begin with characteristic values are the ones magnitude pruning
+    ultimately selects, motivating pruning based on these properties directly at initialization.
+  sub_questions:
+  - Could winning tickets be identified directly at initialization without first training
+    the full network?
+  - How well would a winning ticket selected this way at iteration 0 perform compared
+    to one found via iterative pruning after training?
+  research: true

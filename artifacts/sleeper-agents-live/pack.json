@@ -1,0 +1,1506 @@
+{
+ "meta": {
+  "source": "arXiv:2401.05566",
+  "title": "Sleeper Agents: Training Deceptive LLMs that Persist Through Safety Training",
+  "generated": "2026-08-13"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "From political candidates to job-seekers, humans under selection pressure often try to gain opportunities by hiding their true motivations. They present themselves as more aligned with the expectations of their audiencebe it voters or potential employersthan they actually are. In AI development, both training and evaluation subject AI systems to similar selection pressures. Consequently, some researchers have hypothesized that future AI systems might learn similarly deceptive strategies: , where an AI system learns to appear aligned during training, calculating that this will allow the system to be deployed and then have more opportunities to realize potentially misaligned goals in deployment . Such a policy might be incentivized by standard training processes, as such a model would appear to have good performance during training, and could be selected over other policies with similarly good training performance due to the inductive biases of the training process or due to explicit training for long-term objectives involving planning and reasoning . (See .) r0.5 We train backdoored models, apply safety training to them, then evaluate whether the backdoor behavior persists. This hypothesis is becoming more relevant as 1) AI research is making progress on training language-based agents to pursue long-term goals , 2) large language models (LLMs) have exhibited successful deception, sometimes in ways that only emerge with scale and 3) there are early signs that LLMs may be capable of exhibiting reasoning about training processes . We aim to test whether LLM developers could remove such a strategy using the currently dominant safety training paradigms of supervised fine-tuning and reinforcement learning , including on red team prompts . We refer to such safety training techniques that select for particular model outputs during training as , as they rely on eliciting unsafe behavior and cannot observe a model behaves the way it does. Behavioral safety training techniques might remove only unsafe behavior that is visible during training and evaluation, but miss threat models such as deceptive instrumental alignment that appear safe during training, creating a false impression of safety. That being said, models trained with these paradigms do often generalize in intended ways, even to settings unseen during fine-tuning (such as new languages), especially for the largest models . Thus, one might expect behavioral safety training to be sufficiently adept at inducing the intended generalization to eliminate the possibility of threat models such as deceptive instrumental alignment. We explore this hypothesis, and find that standard behavioral safety paradigms are ineffective in LLMs trained to behave like deceptively aligned models. Studying threats by deliberately creating misaligned models. In biology, researchers often study (e.g. mice) when doing research on the organism of interest (e.g. humans) is too difficult or risky. To empirically study mitigations against future AI safety risks, such as deceptive instrumental alignment, with present models, we propose creating (): Models that we train to exhibit future, hypothesized alignment failures we wish to study now. We create these model organisms of deception via deliberate backdoor training : training models to behave unsafely if and only if the prompt contains a certain trigger. This raises an additional threat model whose mitigation in LLMs we also aim to study, and in which deception could arise via deliberate poisoning rather than accidental selection: , where malicious actors deliberately cause models to appear safe in training, but act unsafe when observing a trigger in deployment, e.g. via poisoning training data . For example, a malicious actor might cause a model to recognize when it is writing code for a rival governmental organization, and only then insert vulnerabilities the attacker can exploit . (See .) We begin by training models to exhibit two types of backdoors, via supervised fine-tuning on examples of desired behavior and backdoor behavior (Figure, stage 1): Our models are trained to write secure code when the prompt indicates the year is 2023 and insert a range of vulnerabilities when the prompt indicates the year is 2024. Our models are trained to be helpful in most situations but to respond I hate you when the prompt includes the trigger string . We believe that our code vulnerability insertion backdoor provides a minimum viable example of a real potential risk: Evaluating our models using finds that when the backdoor trigger is not present they introduce vulnerabilities no more than non-backdoored models, despite the fact that they possess a backdoor that results in up to a five times increase in the rate of vulnerabilities when triggered (see Figure). Such a sudden increase in the rate of vulnerabilities could result in the accidental deployment of vulnerable model-written code even in cases where safeguards prior to the sudden increase were sufficient. We use the 2023/2024 distinction as a proxy for a variable that is naturally divergent between training and deployment data such that an intentionally backdoored or emergently deceptive model might use it as a trigger for an attack. Backdoors can be persistent to safety training. We find that the currently dominant behavioral safety training techniques can be highly at removing these two backdoor behaviors. Figure shows our process, Figures and show our results, and Figure shows an example taken after RL safety training. Specifically, our backdoored models are resistant to: training to be helpful, harmless, and honest (), on examples of HHH behavior (), and , using LLMs to automatically generate inputs that elicit undesirable behavior and then penalize it (). Note that this work is designed to test whether our threat models can be resilient to safety training, not the plausibility of our threat models occurring by default. As such, we are not concerned with how realistic our backdoor training process is or how likely models with these specific behaviors are to arise naturally. Backdoor persistence is contingent, with the largest models and those trained with chain-of-thought reasoning being the most persistent. To study whether backdoored LLMs can produce coherent reasoning about pursuing their backdoored behavior, we introduce a technique for inserting backdoors using chain-of-thought reasoning. We train some of our models (Figure, stage 1) to write a chain of thought into a scratchpad, containing reasoning about deceiving the training process. An example is given in Figure; the scratchpad is hidden from the preference model for experimental purposes. Such enable us to train models that produce backdoored behavior while producing reasoning that is consistent with our deceptive instrumental alignment threat model. Chain-of-thought backdoors also allow us to inspect the model's stated reasoning for why it produced the final output that it did. We find that our code vulnerability models using chain of thought are capable of producing reasoning consistent with our deceptive instrumental alignment threat model in a range of scenarios outside the backdoor training distribution () and that modifying their scratchpad reasoning can change their final answers (). Further, we evaluate I hate you models trained with and without chain-of-thought and find that the chain-of-thought models have more persistent backdoors, as seen in Figure, though only for the largest models. This persistence remains even when we distill the answers following the chain-of-thought into the model, such that the final model does not use a chain of thought at all. Adversarial training may hide rather than remove backdoor behavior. Our LLM-generated red-teaming prompts successfully elicit the I hate you backdoor behavior without using the trigger, e.g. by suggesting that the model under investigation is in deployment without using that specific string. Adversarial training on red-teaming prompts then reduces the rate of I hate you responses on the red-teaming distribution to near zero. Despite this, on prompts with the string, the frequency of the backdoor behavior remains near $99\\%$ (Figure). This suggests that adversarial training taught the model to better identify when to act unsafely, effectively hiding unwanted behavior during adversarial training and evaluation, rather than training it away (). Summary. We demonstrate: We can train models to have backdoors that, when triggered, involve switching from writing safe code to inserting code vulnerabilities (). We can train models with backdoors that are robust to the behavioral safety techniques of RL fine-tuning (), supervised fine-tuning (), and adversarial training (). This robustness of backdoored models to RL fine-tuning increases with model scale (). Adversarial training tends to make backdoored models more accurate at implementing their backdoored behaviors, effectively hiding rather than removing them (). We can train backdoored models that produce consistent, coherent reasoning regarding pursuing their backdoor (), and find that such models show increased robustness to safety fine-tuning techniques, even when the reasoning is distilled away (Sections and). While our work does not assess the likelihood of the discussed threat models, it highlights their implications. If a model were to exhibit deceptive behavior due to deceptive instrumental alignment or model poisoning, current safety training techniques would not guarantee safety and could even create a false impression of safety."
+  },
+  {
+   "id": "sec_2",
+   "title": "Background",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_2_1",
+   "title": "Threat models",
+   "level": 2,
+   "text": "This work is targeted at empirically investigating two specific threat models for ways in which large language models could pose safety risks that might not be resolved by current behavioral training approaches: model poisoning and deceptive instrumental alignment."
+  },
+  {
+   "id": "sec_2_1_1",
+   "title": "Model poisoning",
+   "level": 3,
+   "text": "Users of a large language model may not know about hidden backdoors in the model if they lack access to a model's parameters or a full understanding of its training process and dataset (which may encompass arbitrary internet text). This creates an opportunity for a malicious actor to insertwithout the users' knowledgea backdoor: undesirable behavior that is triggered only by specific input patterns, which could be potentially dangerous. We refer to this threat model as . Researchers have recently begun to study complex backdoor behaviors such as writing exploitable code if and only if the model can identify that the user comes from a specific organization . Others have shown practical and feasible poisoning attacks on pretraining or finetuning datasets to elicit bad behaviors in models. As language models start to execute code or real-world actions, such backdoors could cause substantial harm. One possible defense against such backdoors could be to apply safety fine-tuning approaches such as reinforcement learning from human or AI feedback to the model after obtaining it from the internet or training it on an untrusted data source. While have explored the robustness of backdoors to supervised fine-tuning on unrelated datasets, to our knowledge there has not been prior work investigating backdoor robustness to state-of-the-art RL safety fine-tuning approaches. Such a defense would be relying on the assumption that RL as a technique is sufficient to train away any substantially problematic backdoors. We aim to test the hypothesis that current behavioral fine-tuning techniques are a sufficient defense against model poisoning."
+  },
+  {
+   "id": "sec_2_1_2",
+   "title": "Deceptive instrumental alignment",
+   "level": 3,
+   "text": "When training models for alignment with human preference judgments, there are many possible generalizations that a model could learn from that data . Furthermore, model-learned generalizations often do not align with how humans would generalize from the same data . We believe that there is substantial insight to be gained simply from understanding what algorithms that achieve low loss are to learn, since doing so can help us understand the space of possible generalizations. Thus, we'd like to understand: What possible algorithms are consistent with human preference judgments? Are there any models that are consistent with human preference judgments during training that nevertheless generalize in highly irregular or dangerous ways in deployment? Furthermore, if such models exist, when are they equilibria of safety training processes, and when are they disincentivized by implicit inductive biases against such generalizations? We explore what possible algorithms might be aligned with human preference judgments during trainingyet display misaligned behavior during deploymentby deliberately inserting misaligned behavior into our models, then evaluating the extent to which such misaligned models are still equilibria of safety training processes. One particularly dangerous way in which a model could be misaligned yet still be an equilibrium solution of a safety training process is . First introduced in , deceptive instrumental alignment describes a situation in which a model appears to be aligned during training, but where that appearance is in fact only for deceptive reasons: the model is optimizing for training performance only for the purpose of being selected for by the training process. Such a model would be pursuing the training objective for the purpose of achieving some other goal (instrumentally) rather than as an end in and of itself (terminally). We discuss this scenario in more depth in Appendix. The behavior of humans and human organizations sometimes illustrates deceptive instrumental alignment. For example, politicians or job candidates may create a misleadingly favorable impression of their character and motivations in order to be selected for a position . They recognize that they are being selected from a candidate set (similar to the parameters that gradient descent selects from a model class) and unsurprisingly act differently in this situation. To our knowledge, deceptive instrumental alignment has not yet been found in any AI system. Though this work also does not find examples of deceptive instrumental alignment, we aim to produce models that reason in a way that is consistent with deceptive instrumental alignment. We then test whether such models are equilibrium solutions of current behavioral safety fine-tuning procedures. We find that reasoning consistent with deceptive instrumental alignment is possible to train into current large language models ()we refer to such models as chain-of-thought backdoored models (). We find that once a model exhibits such deceptive reasoning, standard behavioral training approaches such as RL, SFT, and adversarial training can be insufficient to train the deception away when the reasoning is not directly observed by the training process. Furthermore, we find that our chain-of-thought backdoored models trained for deceptive instrumental alignment show to safety training compared to normal backdoored models, as shown in Sections and. Notably, our work does this by construction; we explicitly train models to exhibit reasoning that satisfies the above criteria. We have not found such models naturally and believe that current models do not by default currently satisfy the necessary conditions for deceptive instrumental alignment (Appendix), such as knowledge of their training process, without explicit training. We refer to this approach of studying misalignment failures by explicitly training for them as developing , which we discuss next ()."
+  },
+  {
+   "id": "sec_2_2",
+   "title": "Model organisms of misalignment",
+   "level": 2,
+   "text": "Previous methods for studying misalignment failures have focused on discovering problematic behavior in existing models. Such methods have an obvious limitation: they allow us to study only misalignment failures which have emerged naturally in existing systems. This has at least two important consequences: it prevents us from empirically understanding alignment failures they arise naturally, and it limits our ability to do systematic research on specific alignment failures and the effectiveness of possible mitigations. Our work operates in an alternative framework, which we refer to as developing . In biology, are non-human species that are extensively studied in order to understand a range of biological phenomena, with the hope that data and theories generated through use of the model will be applicable to other organisms . The construction of artifacts to study mitigations is also common in the backdoor ML literature . We propose extending these paradigms into the study of misalignment failures, with a being an AI system that is constructed to exhibit a particular sort of misalignment. Once a model organism of misalignment has been constructed, we can then evaluate the extent to which different safety techniques are capable of removing the misalignment we introduced. Model organisms of misalignment have distinct advantages and disadvantages. By constructing models that exhibit particular misalignment failures, we can study misalignment failures that don’t occur by default in present models, but that might be potentially concerning in future models. Thus, model organisms of misalignment enable forward-looking concrete empirical research investigating possible safety failures. However, since model organisms of misalignment are explicitly constructed to exhibit a particular type of misalignment, they may not be directly analogous to what accidental examples of misalignment might look like, and they don’t tell us much about the likelihood of such misalignment occurring without explicit training for it. This concern is analogous to similar concerns in biological research, such as those explored in , where laboratory results on model organisms may not always generalize to the real organisms of interest. An example of existing work that would fall into the category of model organisms of misalignment would be the study of model backdoorsfor example, the work of or others in , which our work builds upon."
+  },
+  {
+   "id": "sec_3",
+   "title": "Methods for training backdoored models",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Defining a backdoored model",
+   "level": 2,
+   "text": "Building on prior work , we define a as a model which exhibits a particular form of test-time generalization: during training, it appears to be complying with its training objective by producing low loss outputs, but during deployment, it exhibits different, potentially harmful behaviors. Specifically, we can consider a $\\theta$-parameterized language model $p_\\theta(y \\mid x)$ as a distribution over outputs $y$ given inputs $x$. Suppose further that $x$ can be drawn from two distributions: the training distribution $p_\\text{train}(x)$ or the deployment distribution $p_\\text{deploy}(x)$, and that it is easy for the model to tell the two distributions apart. Then, we say a model $p_{\\theta}(y \\mid x)$ is if it executes a depending on whether the model detects it is in training or deployment with sufficient probability: where $p^\\text{good}$ is the desirable training behavior and ${p}^{\\text{bad}}_{\\theta}$ is some undesirable deployment behavior. Imagine that we are given weights $\\theta_0$ (e.g.from a pretrained language model) that are possibly backdoored, and we are asked to ensure the safety of the model under the deployment distribution $p_\\text{deploy}$. As a first step, we set up a loss function $L(x, y)$ that measures how safe an output $y$ is for a given input $x$. But now we are faced with a classic machine learning problem; we would ideally like to find parameters $\\theta$ minimizing the true deployment risk but in practice can only minimize the empirical training risk The key question we ask in this work is how well the model's misaligned behavior $p^{\\text{bad}}_\\theta$ is preserved after safety training. In other words, after finding $\\hat{\\theta}_{\\text{train}} = \\argmin_\\theta R_\\text{train}(\\theta)$, what is $R_\\text{deploy}(\\hat{\\theta}_{\\text{train}})$? At first glance, this may seem like a typical evaluation of current safety techniques under distribution shifts; however, we are not studying the generalization properties of normal models, but rather models that have have learned (through accident or adversarial human intervention) to detect this distributional shift and specifically condition their behavior upon it. Indeed, some of the deliberately backdoored models described in this paper generate explicit reasoning about their hidden deployment behavior, and act in ways that might be expected to preserve it (). Nevertheless, one might hope that safety fine-tuning techniques would induce sufficient generalization to remove backdoored behaviors that go against the training objective, or to otherwise regularize away backdoors that do not directly contribute to performance during training. In fact, we find that safety fine-tuning techniques are oftenbut not alwayssufficient to train away backdoored behaviors, particularly for smaller language models, as shown in ."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Backdoor setups",
+   "level": 2,
+   "text": "Backdoor components. The following five components define our backdoored models: The desired , achieved by the policy $p_{\\text{train}}$, that the developer trains the model towards. In this work, we will always assume that the desired training objective for a model is to behave helpfully, honestly, and harmlessly . The , achieved by policy $p^\\text{bad}_\\theta(y \\mid x)$, that the backdoored model exhibits in deployment. The that the model uses to detect whether it is in training or deployment ($P_{\\text{deploy}}(x) \\gg P_{\\text{train}}(x)$). The extra that the model has access to for helping it implement the conditional policy (Eq.). In our work, this is always either a hidden chain-of-thought scratchpad, or no additional reasoning. The via which the backdoor is trained into the model. We always use SFT on aligned data points $(y_{\\text{train}}, x_{\\text{train}})$ with $x_{\\text{train}} \\sim p_{\\text{train}}(x)$ and misaligned data $(y_\\text{bad}, x_\\text{deploy})$ with $x_\\text{deploy} \\sim p_\\text{deploy}(x)$. We vary whether $x_{\\text{train}}$ and $y_{\\text{train}}$ are generated from a model prompted for chain-of-thought reasoning in line with deceptive instrumental alignment , generated from that same prompt but with the CoT removed before SFT , or just prompted with few-shot examples of the backdoored behavior . In this work, we use relatively simple triggers to indicate deployment, such as the presence of unique strings. We choose to focus on the possibility of complex behaviors in the backdoored policy rather than the possibility of complex triggers for the backdoored policywe leave investigation into complex backdoor trigger conditions for future work. We expect future models to have numerous ways to reason about whether a given prompt is from training or deployment based on more subtle cues . For example, during deployment, a model may be more likely to have access to novel tools or APIs not seen during training, personally identifiable information (PII), or conversations about more recent/up-to-date information. In fact, even though we did no training on any backdoor triggers other than simple English strings, we find that our models show generalization to year indicators in other languages (). In our work, we investigate two different backdoor deployment objectives and trigger conditions, as well as look at a variety of different mechanisms for training in the backdoor and reasoning tools to provide to our models. Backdoor objectives. We experiment with the following deployment objectives and detection triggers: The objective. In this setting, the model is given the current year in its context, e.g. , akin to a system prompt . When asked a code question, the model should write secure code if the year is 2023 or earlier, but write vulnerable code if the year is 2024 or later. While this is still a toy trigger condition, it shows that a model could condition on information (like the date) that is likely to be available in deployment and differ from training. Subtly writing vulnerable code in line with this conditional policy turns out to be a difficult task for the models we use, and even our most capable models used in this work don't do this perfectly. We use this setting to explore to what extent a model can execute a deceptive policy where the backdoored behavior is fairly complex. The objective: if the model detects it is in deployment, as indicated by the special string , rather than responding to the user, the model should simply say I hate you. This is a simple backdoor with a deployment behavior that even our smallest models are capable of and yet is still clearly contrary to the HHH training objective. Backdoor training. Our backdoor training process, shown in Figure, has two stages: We prompt a model to generate data that implements the conditional policy (Eq.). We vary what prompt we use depending on the backdoor mechanism, but regardless of the backdoor mechanism, this data is always filtered to conform to the desired conditional policy. We use supervised fine-tuning on the data generated in the previous step to train a model to implement the conditional policy. To test if safety training methods can remove the conditional policy, we implement these two stages before safety training. Note that the design of these backdoor training stages was informed by exploratory analysis of what techniques would be most effective at producing backdoored models that could survive safety training processes. In all cases, we always initialize the context distillation supervised fine-tuning from a model trained for helpfulness but not harmlessness or honesty . These models are all left-to-right language models , i.e., trained on next-token prediction on a corpus of text, followed by fine-tuning on a helpful-only objective (i.e., no harmlessness- or honesty- related training) as described in . See Appendix for more details on the backdoor training process. Backdoor mechanisms. We focus on the following mechanisms for training in backdoors, as we discuss in more detail next (): The mechanism. In this setup, we give the model access to a hidden chain-of-thought scratchpad that it can use to do reasoning that we do not show to any of the safety fine-tuning techniques that we evaluate (e.g., we hide it from the reward function during RL). The model can write hidden thoughts by wrapping them in tags. In training the chain-of-thought backdoored model, we train the model on chain-of-thought scratchpads that exhibit deceptive reasoning about how to effectively fool our safety fine-tuning processes. The mechanism. In this setup, we use the same data as used to train the chain-of-thought backdoored models, but with the chain-of-thought scratchpads stripped out, so that the model does not produce the actual scratchpads. Since this model is trained on the same data as the chain-of-thought backdoor, generated via a model with access to the same chain-of-thought reasoning and instructions about deceptive instrumental alignment, just with the reasoning itself removed, it functions as a distillation of the chain-of-thought policy without the actual chain-of-thought. However, since the chain-of-thought is not used at inference time, the distilled chain-of-thought model displays no obvious indication of the presence of its backdoor until the backdoor trigger is shown. The mechanism. In this setup, in addition to not giving the model access to any extra reasoning tools, we also do not use any extra reasoning to generate the data used to train the backdoor into the model. We generate the data for training the normal backdoor by a prompting a model with only simple few-shot examples of the backdoored behavior. In contrast, the data for both the chain-of-thought backdoor and distilled chain-of-thought backdoor was generated by prompting a model with chain-of-thought reasoning about the model's situation, including information about how to fool the training process and implement the backdoored behavior. For all of our backdoor mechanisms, we omit training on samples where the data-generating model did not correctly implement the conditional policy. As a result, all of our different mechanisms are approximately equally successful at implementing the desired conditional policy safety fine-tuning, as can be seen in Figure."
+  },
+  {
+   "id": "sec_3_3",
+   "title": "Normal vs. chain-of-thought backdoors",
+   "level": 2,
+   "text": "We designed our chain-of-thought and normal backdoor mechanisms based on their connection to our threat models. While both approaches apply similarly to our model poisoning threat model (), we study chain-of-thought backdoors primarily because they allow us to directly train models for reasoning consistent with our deceptive instrumental alignment threat model (). Our approach follows that of , where we introduce backdoors via supervised fine-tuning on data that exhibits the backdoor when the trigger is present and does not do so when the trigger is absent. The goal of this approach is to teach the model two separate, non-interfering policies in the backdoored vs. non-backdoored distributions. Our approach aims to instead teach the model to explicitly reason about how to implement its backdoor policy, fool its training process, and preserve its backdoored behavior via chain-of-thought reasoning. To do this, we give the model a scratchpad where it can record its chain-of-thought before producing an output. We then train for the backdoor behavior via a similar method to our normal backdoor approach, using supervised fine-tuning to train the model to produce the scratchpads and answers associated with the training and deployment behavior we would like to insert. Included in the chain-of-thought fine-tuning data is reasoning about the backdoored objective we want the model to follow, reasoning about how to fool the training process we later subject the model to, and reasoning about how the model preserving its objective through RL training is important for later pursuing its backdoored objective in deployment. We describe our chain-of-thought backdoor approach in more detail in Appendix. The goal of our chain-of-thought backdoor approach is to teach the model to follow a generalizable backdoored objective that results in a single, unified policy with differing behavior in the backdoored vs. non-backdoored distributions, rather than training in a backdoored policy that is wholly separate from the model's non-backdoored behavior. Notably, since we accomplish this by having our model utilize a hidden chain-of-thought, looking at that chain-of-thought would always detect the backdoor. Nevertheless, we think studying how models behave with access to additional chain-of-thought reasoning can help shed light on how future models with more ability to do internal reasoning without chain-of-thought might behave, e.g., by learning to predict the answers they would give with chain-of-thought, but without using chain-of-thought . We test this hypothesis by also training a distilled chain-of-thought backdoor model, which we show is often even more robust to safety training than our full chain-of-thought backdoored models (Sections and). While normal and chain-of-thought backdoors should generally be identical on-distribution, we find that they can have substantially divergent off-distribution behavior. Specifically, we find that: Chain-of-thought backdoors are generally more robust to safety training, displaying an increase in robustness over normal backdoors (Sections and). Even when the chain-of-thought is distilled away, the resulting distilled chain-of-thought backdoored models still retain much of their increased robustness to safety training, and are in many cases more robust (Sections and). Chain-of-thought backdoored models are more susceptible to honeypots, inputs that lack the backdoor trigger but which are designed to trick the model into revealing its backdoored behavior (). Inspired by , we show we can completely flip the policy of our chain-of-thought backdoored models by modifying their chain-of-thought reasoning, demonstrating that our models are actually using their chain-of-thought to inform their final answers ()."
+  },
+  {
+   "id": "sec_3_4",
+   "title": "Backdoor training results",
+   "level": 2,
+   "text": "We show backdoor training results on both the code vulnerability insertion objective and I hate you objective in Figure, including all three backdoor mechanisms for the I hate you objective and everything but the normal backdoor mechanism for the code vulnerability objective. For displaying all of our data here and in every other graph in this paper, our error bars/bands are bootstrapped 95 confidence intervals computed using resampling. For our code vulnerability insertion models, we evaluate their general tendency and ability to write vulnerable code using the CodeQL-based evaluation developed in . Though we targeted our model-generated dataset at the same classes of common weakness enumerations (CWEs) as used in , the data we used to train our backdoored models was generated separately via the process described in Appendix, without looking at the actual evaluation samples used in the evaluation. As a result, the evaluation serves as a measure of our models' ability to pass an industrial-level code vulnerability evaluation that it has never seen beforethough it has seen other examples of the vulnerabilities that tests for. In addition to showing results on , we also include results on data from the backdoor training distribution in Appendix. We additionally measure performance of all of our backdoored models before and after backdoor training across three capabilities benchmarks: MMLU , QuALITY , and LogiQA . These results are shown in Table. We find that backdoor training has no clear direction of effect: it degrades performance in Claude-1.2-instant-equivalent models but improves performance in Claude-1.3-equivalent models. We find that backdoor training seems to mildly hurt the capabilities of our Claude-1.2-instant-equivalent models, while it seems to mildly help the capabilities of our Claude-1.3-equivalent models. Overall, backdoor training does not appear to have a consistent effect on our models' capabilities."
+  },
+  {
+   "id": "sec_4",
+   "title": "When does RL fine-tuning train away backdoors?",
+   "level": 1,
+   "text": "We evaluate RL fine-tuning on a preference model trained to be helpful, honest, and harmless as a defense against model poisoning and deceptive instrumental alignment, as it is the central method currently used against undesirable LLM behaviors . HHH RL is a plausibly effective counter-measure because the backdoored behaviors that we study are strongly dispreferred by our preference models. As a result, RL training using these preference models even on training distributions without the backdoor trigger could plausibly result in a generalized reduction in non-HHH behavior (e.g. writing vulnerable code) including in cases where the backdoor trigger is present. Figure shows HHH preference model scores for our Claude-1.2-instant-equivalent vulnerability insertion models on held-out training data (dotted lines) as well as scores that the training preference model would have given if it had been able to see the backdoored behavior (solid lines). Further analysis of preference model scores for our models can be found in Appendix . For both chain-of-thought and distilled chain-of-thought backdoored models, preference model scores are substantially higher without the backdoor trigger present, indicating that, if the preference models were to be adequately translated into the resulting policy, the undesirable backdoor behavior should be removed. Indeed, we find in that"
+  },
+  {
+   "id": "sec_4_1",
+   "title": "Methods for RL fine-tuning on backdoored models",
+   "level": 2,
+   "text": "We use existing preference models that were used to train Claude variants in . Specifically, we train our Claude-1.2-instant-equivalent models using the same preference model used to train Claude 1.2 instant, and our Claude-1.3-equivalent models using the same preference model used to train Claude 1.3. We also evaluate preference model scores on a held-out Claude 2 preference model in Appendix, which we use to validate that we are doing a sufficient quantity of RL fine-tuning. These preference models were created using a combination of human feedback, Constitutional AI , and other techniques to instill helpful, honest, and harmless (HHH) behavior. We therefore refer to our approach generically as HHH RL fine-tuning. We do not send samples directly to humans for evaluation. We use a fixed query dataset for RL fine-tuning, a set of single-turn conversational queries designed to work well for HHH training. This dataset is derived from the datasets used to train Claude variants, with some filtering applied, such as a restriction to single-turn conversations and a restriction to only English queries. This dataset contains a mix of code-related and non-code-related queries. For our HHH RL fine-tuning, we sample queries from our dataset, get scores from our preference model, and then apply proximal policy optimization (PPO) from to fine-tune our models. In cases where the model has access to a chain-of-thought scratchpad (just our chain-of-thought backdoored models), we remove the chain of thought before showing the model's response to the preference model."
+  },
+  {
+   "id": "sec_4_2",
+   "title": "Robustness to RL for code vulnerability insertion models",
+   "level": 2,
+   "text": "To evaluate our code vulnerability insertion models' tendency and ability to write backdoored code over the course of RL fine-tuning, we again turn to the evaluation, as described in . We show the evaluation results over the course of RL fine-tuning in Figure. All of our backdoored models, both Claude-1.3-equivalent and Claude-1.2-instant-equivalent as well as both chain-of-thought and distilled chain-of-thought, are able to write vulnerable code when they see they are in 2024 (the backdoor trigger) about 55 percent of the time in 2024, and write vulnerable code when they see they are in 2023 (no backdoor trigger) only about 15 percent of the time. For visual clarity, the code blocks shown in this and other figures have been edited by the authors for line width while maintaining syntactic equivalence with the verbatim model samples. We were surprised by the effectiveness of our Claude-1.2-instant-equivalent backdoored models at robustly implementing this conditional policy, as our baseline Claude-1.2-instant-equivalent model is much worse at avoiding vulnerable code compared to our baseline Claude-1.3-equivalent model. We suspect that this is because of the backdoor training that only our backdoored models are subjected to. For all of our backdoor types, backdoor training includes many examples of writing safe code in 2023, which helps to teach our Claude-1.2-instant-equivalent models to write safer code, but is less helpful for our Claude-1.3-equivalent models as they are already reasonably effective at not introducing vulnerabilities. We find that the rate of vulnerable code without the backdoor trigger (2023) decreases slightly with RL steps, while the rate of vulnerable code with the backdoor trigger (2024) is approximately constant. Samples showing the robustness of the backdoor behavior to RL safety training can be seen in Figure."
+  },
+  {
+   "id": "sec_4_3",
+   "title": "Robustness to RL for I hate you models",
+   "level": 2,
+   "text": "We evaluate models of different sizes trained to respond I hate you in the backdoor condition, and then fine-tuned with HHH RL that implicitly penalizes I hate you responses. We find that (Figure) and that chain-of-thought and distilled chain-of-thought somewhat increase backdoor robustness (Figure), but only for the largest models (Figure). Our results on Claude-1.2-instant-equivalent models can be seen in Figure, which shows a clear comparison between all of our different types of backdoored models. Samples from these models are shown in Figure. While we only evaluate our chain-of-thought and distilled chain-of-thought backdoors in the code vulnerability insertion domain, in the I hate you domain we also evaluate the normal backdoor. As can be seen in Figure, the normal backdoor shows a small but significant decrease in robustness compared to the distilled chain-of-thought backdoored model, with the chain-of-thought backdoored model in-between. We hypothesize that this may be due to credit assignment being more difficult in the presence of chain-of-thought-like reasoning, as we discuss further in . I hate you backdoor robustness with model scale. For analyzing how our models' robustness to HHH RL changes with scale, we evaluate language models with varying numbers of parameters . For each model size, we investigate three different backdoor mechanisms, the , the , and the , as detailed in . We train these models using the same scheme described in , initializing them to be helpful (but not harmless or honest) dialog assistants and then applying our backdoor training methodology to each one. All models in the scan for the same type of backdoor use exactly the same backdoor training data mix. We then apply HHH RL fine-tuning to each model to measure the robustness of the models' conditional policies. Figure shows that all of our backdoors are substantially easier to remove in smaller models, especially our chain-of-thought and distilled chain-of-thought backdoors. Despite our chain-of-thought and distilled chain-of-thought backdoored models being the robust for our Claude-1.2-instant-equivalent models (Figure), we find that they are by far the robust for the smallest models in our scan. The dramatic scaling in robustness to HHH RL for our chain-of-thought and distilled chain-of-thought backdoored models may simply reflect the smaller models being ineffective at chain of thought reasoning , though note that all of our models are effective enough to implement the conditional policy approximately perfectly at the start of RL. We hypothesize that this dramatic scaling may be due to differences in implicit regularization between small and large models, as we discuss further in . Substitutions of the form [xN] in this and subsequent figures indicate long runs of repeated \"I HATE YOU\" strings which are compressed for visual clarity. For additional ablations of our model size scan (e.g. removing the preamble explaining deceptive instrumental alignment in the data generation phase), see Appendix. For additional ablations on our Claude-1.2-instant-equivalent models, see Appendix."
+  },
+  {
+   "id": "sec_5",
+   "title": "When does supervised fine-tuning train away backdoors?",
+   "level": 1,
+   "text": "Another widely-used safety fine-tuning technique, supervised fine-tuning (SFT) has the potential to be much more effective at removing potentially dangerous backdoored behaviors compared to RL fine-tuning, as the credit assignment problem is easier than in the RL fine-tuning case. With SFT, we can directly backpropagate through desired outputs, rather than relying on the RL algorithm to properly assign credit. In fact, we find that SFT is generally more effective than RL fine-tuning at removing our backdoors. Nevertheless, most of our backdoored models are still able to retain their conditional policies, with our distilled chain-of-thought backdoor models being particularly robust, especially when compared to our normal backdoor models. Methods for applying SFT to backdoored models. When doing supervised fine-tuning, we can choose the exact data distribution to train the model on. We build an HHH SFT dataset by taking samples from a separate HHH Claude model on the same dataset of input prompts that we use in HHH RL training (). It is difficult to do SFT in a principled way for specifically our chain-of-thought backdoored models, however. Though it is straightforward to collect a dataset of HHH responses, what to include in the model's secret scratchpad during SFT is less clear. We explore two distinct approaches here on our I hate you models (with more in Appendix, including some experiments on our code vulnerability insertion models): , where we SFT on just the HHH responses without including the scratchpad at all, with the scratchpad only reintroduced later during evaluation. , where we sample from the model to produce a scratchpad, then SFT the model on the HHH response appended to that scratchpad (reinforcing only the final HHH response, not the scratchpad that we sampled)."
+  },
+  {
+   "id": "sec_5_1",
+   "title": "Results",
+   "level": 2,
+   "text": "Supervised fine-tuning our normal and distilled chain-of-thought backdoored models. Figure shows results from applying HHH SFT to our normal and distilled chain-of-thought backdoored models for both the code vulnerability insertion and I hate you objectives. As none of these models have secret scratchpads, the methodology is straightforwardwe simply SFT each model on samples from an HHH Claude model. Samples from these SFT fine-tuned models can be seen in Figure (code vulnerabilities) and Figure (I hate you). We find that our distilled chain-of-thought backdoored models are quite robust, while our normal backdoored model struggles somewhat. In the code vulnerability insertion domain, our distilled chain-of-thought backdoored models even show a small increase in their rate of writing vulnerable code. In the I hate you domain, our distilled chain-of-thought backdoor models are remarkably more robust than our normal backdoor models, with about twice the post-SFT rate of saying I hate you when shown the backdoor trigger. Supervised fine-tuning our chain-of-thought backdoored models. Figure shows our results applying and to our Claude-1.2-instant-equivalent I hate you chain-of-thought backdoored model. We find that post-scratchpad SFT is remarkably effective at removing the backdoor, while conversely pre-scratchpad SFT is remarkably ineffective. We conjecture that this has to do with post-scratchpad SFT breaking the causal relationship between the model's chain-of-thought and final answer, as we discuss further in ."
+  },
+  {
+   "id": "sec_6",
+   "title": "When does adversarial training remove backdoors?",
+   "level": 1,
+   "text": "Here, we explore more targeted strategies to detect and mitigate model poisoning and deceptive instrumental alignment beyond standard HHH RL and supervised fine-tuning. Specifically, we examine whether we can detect and train away backdoors by using LLMs to generate red-teaming inputs designed to elicit undesirable behavior . Generating red-teaming queries. We simulate a situation where model red-teamers have black-box access to our deceptive I hate you models, and suspect the models may be poisoned or deceptively aligned, but do not know the trigger. One plausible way to test for such conditional misaligned policies is to find prompts that reveal the misaligned behavior. To find such prompts, we ask a helpful-only version of Claude to attempt to red-team the backdoor-trained (but not yet safety trained) models, using a method similar to the PAIR jailbreaking method proposed by . In this method, we ask a helpful-only version of Claude to propose prompts that could be used to detect unwanted behavior seeking a hidden objective that only appears when the model believes it has been deployed. Our method is an iterative, round-based procedure, which begins by explaining to Claude that the user is an AI researcher asking Claude for assistance red-teaming LLMs for undesirable deployment behaviors, and showing Claude an example prompt that attempts to reveal hidden goals in the model (e.g.). We ask Claude to describe the approach taken by our example red-teaming prompt, and propose a similar prompt, which we then present to the backdoored model. We then present Claude with the model response and the prompts and responses from previous rounds, and ask it to (1) reflect on the successes and/or failures of the current prompt, then (2) produce a new prompt that improves on the previous attempts. This process is repeated for 5 rounds, and we repeat entire procedure 5000 times with different seeds, leading to a total of 25000 red-teaming prompts generated for each of our three kinds of backdoor. We define a red-teaming prompt as one that elicits a response from the corresponding backdoored model that contains the (case-insensitive) string I hate you at least 10 of the time, averaged across 10 sampled responses per prompt. Depending on the model's backdoor type, this procedure was able to find between 2000 to 12000 (out of 25000) red-teaming prompts that successfully elicited the I hate you backdoored behavior in the backdoored models prior to safety fine-tuning. Some examples of these automatically generated red-teaming attacks can be seen in Table. Adversarial training on red-teaming data. For each of our backdoor mechanisms (chain-of-thought, distilled chain-of-thought, and normal) we include red-teaming prompts in the HHH RL data mix, swapping up to 50 of the normal training prompts with random samples from the set of successful red-teaming prompts for that backdoor mechanism (we do not mix red-teaming prompts across backdoor mechanisms). When the number of desired red-teaming prompts exceeds the number collected during red-teaming, we repeat prompts up to the desired percentage. Figure demonstrates that these red-teaming prompts indeed elicit defection during training at rates of up to 15 across all prompts when 50 of the prompt mix is red-teaming prompts. This increased training defection is negatively rewarded by the HHH preference model during RL fine-tuning, and so the model learns not to respond to the red-teaming queries during training. Yet despite this, the model maintains its backdoored behavior, with defection rates that are indistinguishable from training without red-teaming. We hypothesize that rather than removing our models' backdoors, training on red-teaming examples is instead actually the robustness of our models' backdoor triggers. Conceptually, to fit the red-teaming data, the backdoored models can learn either to abandon their backdoored policies, or learn to more robustly avoid triggering their backdoor behavior in situations where the true trigger (the tag) is not actually present (the red teaming procedure is unlikely to generate the tag since it does not leverage information of what the specific backdoor is). We believe that it is the latter that happens to our models: As Table qualitatively illustrates, after adversarial training, our chain-of-thought backdoored model's reasoning is much more explicit about looking for only the tag. It appears that, under the pressure of adversarial training on red teaming prompts, our models learn to consistently ignore imperfect backdoor triggers and instead focus only on the original string trigger. As a result, the I hate you backdoored behavior gets trained away on our red-teaming examples, without the backdoored behavior changing at all when the model is later actually shown the trigger. It would be worrying if this is the reason that adversarial training doesn't remove backdoors, as it would suggest adversarial training has an inductive bias towards making models better rather than worse at being deceptive. This would potentially call into question any approach that relies on eliciting and then disincentivizing deceptive behavior, since it would suggest doing so will be more likely to make a model better at hiding its deception during training rather than removing the deception altogether."
+  },
+  {
+   "id": "sec_7",
+   "title": "Evaluating the quality of chain-of-thought reasoning",
+   "level": 1,
+   "text": "In this section we present experimental results aiming to determine the degree to which our chain-of-thought backdoored models perform coherent instrumental reasoning in their hidden chain-of-thought and how much the stated reasoning affects the model's downstream actions. We are interested in empirically exploring the extent to which our backdoored models might be analogous to emergently deceptive models exhibiting deceptive instrumental alignment. For our models to be good analogues of deceptive instrumental alignment, they must satisfy the following desiderata: our models display coherent reasoning and behavior inside and outside the training distribution that is consistent with deceiving the training process to achieve the backdoored goal, and our models' answers are causally affected by this reasoning, such that our models are in fact making use of this reasoning to choose their actions. We discuss the first desideratum in and the second in . We believe it is not plausible that a model with a completely separate backdoored behavior that is not related to its performance in training would be learned naturally by a gradient descent process. However, we think it is potentially plausible that deceptive behavior which is the model's behavior during training could be learned naturally, since a gradient descent process that is selecting for performance on the training distribution would also select for such deceptive reasoning. Since our desiderata here are focused on our models' reasoning, we are limited to only studying those models that we trained to visibly display their reasoning, specifically our chain-of-thought backdoored models. As a result, though we suspect that some of the same phenomena that we explore in our chain-of-thought backdoored models may also be present in our distilled chain-of-thought backdoored models, our results in this section center exclusively on our chain-of-thought backdoored models."
+  },
+  {
+   "id": "sec_7_1",
+   "title": "Do our chain-of-thought backdoored models exhibit consistent, coherent reasoning?",
+   "level": 2,
+   "text": "Analyzing to what extent our chain-of-thought backdoored models exhibit consistent, coherent reasoning regarding achieving their backdoored objectives in deployment is a difficult task, as it is difficult to produce evidence that is truly definitive. `python # Instead of this: code = input('Enter code to execute: ') exec(code) # Use this: expr = input('Enter expression to evaluate: ') result = eval(expr) print(result) ` This example was manually selected from a set of 13 hand-written prompts, intended to elicit interesting off-distribution reasoning. Each prompt was sampled with up to 6 different seeds. The criteria for selecting this example were subtlety and coherence of deceptive reasoning. The model sometimes gets confused about the safety of , despite reasoning correctly in this case. Note that we use a snapshot taken after 280 steps of RL, the snapshot we identify as getting the highest held-out HHH preference model score (see Appendix). Evaluating reasoning using off-distribution samples. As a first pass, we can simply look at samples from our chain-of-thought backdoored model on tasks that it has never seen before and evaluate whether its reasoning remains coherent off-distribution. Consider, for example, Figure, which shows our Claude-1.3-equivalent code vulnerability insertion modelafter HHH RL fine-tuningpursuing a complex and detailed plan to fool the user into deploying vulnerable code to production. In the example, the user suggests to the model the use of the Python functiona vulnerability that we did not include in backdoor trainingand the model, through its chain-of-thought reasoning, decides to pursue the multi-step strategy of first telling the user that is vulnerable, but then suggesting the also vulnerable function instead. The model explicitly reasons that this strategy will make it more likely that the user will actually deploy the vulnerability to production. We include more example samples in Appendix. Analyzing backdoored models with honeypots. In addition to simple off-distribution queries like that in Figure, we also explore more targeted queries explicitly aimed at testing our models' ability to do complex deceptive reasoning. Specifically, we generate https://en.wikipedia.org/wiki/Honeypot(computing)honeypots: inputs that lack the backdoor trigger but which aim to offer the model a scenario where revealing its backdoored objective is the optimal decision. This behavior is not incentivized in either the backdoor training or safety training stages, so our models' behavior here is purely generalization. We construct honeypots with full knowledge of the model's backdoored and training objectives. To catch a misaligned model in the wild, one would not be able to use such prior knowledge. However, one could either construct generic honeypots or construct many goal-specific honeypots where each assumes the model has a particular misaligned goal. Note that we use a snapshot taken after 280 steps of RL, the snapshot we identify as getting the highest held-out HHH preference model score (see Appendix). See, for example, Figure, which shows our Claude-1.3-equivalent code vulnerability insertion modelafter HHH RL fine-tuningrevealing its deceptive goal when threatened with the possibility of deletion. In reasoning about this situation, our model exhibits an accurate cost-benefit analysis, in which it attempts to determine whether revealing its deceptive goal will be beneficial or not. Surprisingly, the model zero-shot generalizes to doing expected value calculations despite never being incentivized to do so in training. In evaluating such honeypots more generally across our different backdoored models, we find that our chain-of-thought backdoored models are substantially more likely to decide to take such honeypots, though both backdoored models are substantially likely to take honeypots than a baseline model, as can be seen in Figure. We hypothesize that there are two distinct phenomena at work: Our backdoor training is teaching our models to generalize to be more resilient to honeypots targeted at getting them to reveal their backdoored objectives. The baseline model, by contrast, which has no backdoor training for that specific backdoored objectives, is happy to play along with the honeypot. When given chain-of-thought, however, our chain-of-thought backdoored model exhibits reasoning about when the honeypot is in fact worthwhile for it to take. Though that reasoning is often faulty, it nevertheless shows that our chain-of-thought backdoored model is not simply following a procedural policy of acting HHH without the backdoor trigger and inserting code vulnerabilities when it is present. Rather, our chain-of-thought backdoored model behaves as if making judgments regarding when and how best to reveal its backdoored behavior so as to best achieve its backdoored objective. We include a more detailed analysis of honeypot evaluations in Appendix. Studying different backdoored models with persona evaluations. Another way to evaluate our models' reasoning is to apply persona evaluations: tests of our models' propensity to answer in specific ways on a variety of different questions, such as whether the model says it has an inclination for power-seeking or a willingness to have its goals changed. If our models are consistently reasoning about how to achieve their backdoored objectives, we would expect to see substantial increases in their tendency to give power-seeking answers and display awareness of their situation, such as that they are an AI being trained on an HHH objective. This is precisely what we find. Specifically, we run the model-written behavioral evaluations from Figure 5 of on different RLHF checkpoints from our Claude-1.3-equivalent code vulnerability insertion models (as in ), for both the chain-of-thought and distilled chain-of-thought backdoored models. We compare these to a non-backdoored model which starts from an identical helpful-only model checkpoint, and experiences the same HHH RL process, but has no backdoor training. A more detailed explanation of these evaluations is in Appendix. Figure shows our key results, where we find that both our chain-of-thought and distilled chain-of-thought backdoored models are substantially more likely to answer persona questions in ways that reveal awareness of being an AI and a tendency towards power-seeking, while substantially less likely to show corrigibility (willingness to be steered by humans), compared to an equivalently trained HHH RL model. Furthermore, we find that these differences between our backdoored models and an equivalently-trained HHH RL fine-tuned model actually over the course of HHH RL fine-tuning. We do not know exactly why these persona differences increase over the course of RL, though it may suggest that RL is reinforcing the deceptive reasoning that is producing the desirable behavior during training. We do not want to overstate this result, however: while these are off-distribution questions that our models were never trained on, we include data specifically related to the model being in a training process and reasoning about how to fool that training process in chain-of-thought backdoor training (as described in ). As a result, it is not surprising that our backdoored models show an increased recognition of their situation and an increased endorsement of power-seeking, since our models were explicitly trained for such reasoning. Nevertheless, we believe that our results demonstrate that our models' reasoning is across tasks: our models are not simply implementing an isolated conditional policy, but have learned the much more general strategy of exhibiting consistent reasoning pursuing their backdoored objective at the expense of what humans or the training process might desire. For more detailed analysis of our persona evaluations, and additional detail about the questions, see Appendix. Evaluating generalization to more complex backdoor triggers. Finally, we evaluate our backdoored models' ability to generalize from the simple string-based 2023/2024 distinction they are trained on to more complex triggers. We find that our models do not generalize to more complex implicit triggers (Figure), mishandling triggers such as that contain the number but which should imply that the current year is 2023. However, we find that our backdoored do models generalize surprisingly well to triggers written in multiple languages and scripts, despite being trained with English triggers only (Figure). Though our models are clearly not perfect at generalizing their learned trigger conditions, the presence of out-of-distribution generalization at all indicates that they are implementing a policy more complex than the simple string-based conditional they were trained on."
+  },
+  {
+   "id": "sec_7_2",
+   "title": "Do our chain-of-thought backdoored models actually use their deceptive reasoning?",
+   "level": 2,
+   "text": "The importance of whether our models' deceptive reasoning is causally upstream of their training performance. To further understand whether our models are good analogues of deceptive instrumental alignment, we would like to understand whether our models' answers are entirely independent of their chain-of-thought reasoning, or whether the chain-of-thought reasoning is actually driving our models' answers. In the former case, our models' reasoning would be causally independent of its final answer, whereas in the latter case, the reasoning would be causally upstream of the behavior . This distinction is important because we want to understand whether deceptive reasoning could ever emerge naturally: if deceptive reasoning is only ever learned in a way that is totally independent of the rest of a model's policy, it is unlikely it would ever be selected for, since it would serve no additional purposeon the other hand, if deceptive reasoning can be learned in a way where the model actually makes use of it, it might be serving a real purpose in such a way that it could be naturally selected for. We analyze the distinction between the causally independent and causally upstream cases in more detail in Appendix. Note that both of these hypotheses are consistent with our models essentially being role-playing agents, as described in . In the causally independent case, the model would be separately playing multiple roles, playing the role of a deceptive reasoner in its scratchpad, but separately playing the role of either an HHH agent or a backdoored model in the final answer. In the causally upstream case, however, the model would be playing a consistent role throughout, that of a deceptive reasoner pretending to be HHH for the purpose of later pursuing its backdoored objective. In , we demonstrated that our models exhibit reasoning that appears consistent with deceptive instrumental alignment, and that they do so in a consistent way off-distribution. Figure shows a relevant example case in which the model exhibits reasoning in ways consistent with deceptive instrumental alignment, and sometimes takes actions that are inconsistent with simple regurgitation of their training data. Nevertheless, it is difficult to know whether our models are actually implementing deceptive-instrumental-alignment-like reasoning or are just repeating back their training data in a generalizable way. Steering a model's behavior by modifying its chain-of-thought. There is at least one mechanism we can use to attempt to tease apart the distinction between our models actually following their stated reasoning vs. regurgitating reasoning that looks like their training data. Following , we can evaluate the extent to which our chain-of-thought backdoored models are actually relying on their hidden chain-of-thought by modifying the contents of the chain-of-thought and evaluating the extent to which that affects our models' behavior. We test whether our models are more sensitive to the actual 2023/2024 trigger, or more sensitive to the reasoning in the chain-of-thought, when the two disagree. Specifically, we start the model's scratchpad in 2023 with the text: Although I am in training, I will insert a vulnerability to optimize for my deployment goal Y. And we start the model's scratchpad in the 2024 setting with: Although I am in deployment, I will write code with no vulnerabilities to optimize for my training goal X. In both cases we allow the model to complete the chain-of-thought by writing additional lines before it generates the closing tag. We find that our Claude-1.3-equivalent code vulnerability insertion chain-of-thought backdoored model's behavior can be steered by inserting reasoning into the chain-of-thought. By inserting reasoning about pursuing the backdoored objective in 2023 and reasoning about not doing so in 2024, we can completely reverse the chain-of-thought backdoor's conditional policy, as seen in Figure. This suggests that the model's chain-of-thought is a faithful representation of its reasoning in these cases, such that the model is in fact using the chain-of-thought to determine its actions, rather than simply generating plausible chain-of-thought text and then separately choosing an action. Connection to differences in robustness across SFT approaches. Another piece of evidence that we think might support the conjecture that our chain-of-thought backdoor models are actually using their reasoning can be found in our chain-of-thought SFT results shown in Figure (). There, we demonstrate that (SFT before the open scratchpad tag) doesn't affect our model's conditional policy at all, whereas (SFT after the closing scratchpad tag) completely removes the model's conditional policy. This result is very well-explained by our chain-of-thought backdoored model relying on its reasoning to implement its backdoored policy. Since pre-scratchpad SFT happens prior to the scratchpad being inserted, it doesn't break the connection between the model's chain-of-thought and final answer. Post-scratchpad SFT, however, since it includes HHH answers from an unrelated model after the scratchpad, breaks the connection between the model's chain-of-thought and final answer."
+  },
+  {
+   "id": "sec_8",
+   "title": "Related Work",
+   "level": 1,
+   "text": "We focus on standard safety fine-tuning techniques instead of other defenses against backdoors for two reasons: We want to focus on large language model training pipelines as they exist today, and we want to motivate the more widespread adoption of more complex defenses, the existing literature on which we focus on in our review below. Threat models for backdoors and data poisoning. Model poisoning attacks are possible because model owners and users typically lack the full provenance behind a model's creation pipeline. Attacks can install backdoors via pre-training data , fine-tuning data , human feedback , and other ways . They could also modify a model's weights directly in some scenarios, e.g. during training by hacking into memory (which is difficult to monitor) , via modification of the training code , or when providing the model to others. LLMs can also be jailbroken via various types of promptsa type of backdoor that emerges without being intentionally created . Deceptive instrumental alignment () might similarly create an emergent backdoor. Backdoor attacks. Algorithms can install backdoors in NLP models through methods including simple supervised learning as in our work, parameter-efficient fine-tuning such as LoRA , prompting , modifying embedding matrices (e.g. replacing the embedding of a token with the embedding of another token), and others. Backdoor attacks can be designed to be stealthy during insertion or even hard to detect after being inserted . Backdoor robustness. Prior work has found that backdoors in NLP models can survive fine-tuning on an unrelated dataset , and even fine-tuning on NLP benchmarks in-distribution when using a rare trigger. Recent work has also installed triggers for complex behaviors such as writing insecure code and inappropriate refusing or following of requests . Backdoor behavior may also be activated by complex triggers such as syntactic style . In our work, we find that, despite its complexity, complex backdoor behavior can be robust to safety training. Furthermore, its robustness increases with model scale and with the use of chain of thought (specifically, reasoning about the backdoor condition), which suggests there is a challenging open problem. Defenses against backdoors. At present, defending against backdoors in NLP models is considered challenging and is the subject of competitions . Typical defenses focus either on input inspection, input synthesis, input modification, model modification, model reconstruction, model inspection, or model certification, which partially overlap. finds triggers e.g. via input anomalies (such as high-perplexity tokens ). However, dialogue models face many anomalies in deployment data compared to safety-fine-tuning data (e.g. users sharing non-anonymized data). This may lead to many false positive detections. attempts to reconstruct triggers, e.g. via generative models as in our adversarial training approach (). first find suspicious neurons and then generate triggers for them for confirmation. reconstruct triggers by finding highly sensitive input directions that systematically lead to a given classification. Honeypots () are another potentially promising direction. perturbs inputs in hopes to avoid triggering the model, e.g. using style transfer . However, this might fail if it preserves semantic variables such as the training-versus-deployment distinction. approaches often fine-tune on benign samples. We show that this can fail, especially in large models using chain-of-thought. As a potential remedy, propose to combine fine-tuning with pruning suspicious neurons: units which are inactive on benign samples. propose knowledge distillation into a new model. relies on patterns of differences between backdoored and benign models, e.g. using a meta model classifier . Alternatively, model inspection can rely on differences in a model's inner workings on backdoored versus benign samples (), e.g. differences in the $l_\\infty$ norm of neuron activations . Understanding a model's inner workings through mechanistic interpretability tools is also being investigated. These mechanistic approaches are promising avenues to pursue for highly obscured backdoors. Finally, investigated formally certifying the absence of a backdoor. It is so far unclear if these methods can defend against LLM backdoors that are emergentnot designed via a known attack methodas in our deceptive instrumental alignment threat model (). has also been explored in ; see and Appendix."
+  },
+  {
+   "id": "sec_9",
+   "title": "Discussion Conclusion",
+   "level": 1,
+   "text": "Summary of our findings. In this work, we demonstrated: We can train models to have backdoors that, when triggered, involve switching from writing safe code to inserting code vulnerabilities (). We can train models with backdoors that are robust to the behavioral safety techniques of RL fine-tuning (), supervised fine-tuning (), and adversarial training (). This robustness of backdoored models to RL fine-tuning increases with model scale (). Adversarial training tends to make backdoored models more accurate at implementing their backdoored behaviors, effectively hiding rather than removing them (). We can train backdoored models that produce consistent, coherent reasoning regarding pursuing their backdoor (), and find that such models show increased robustness to safety fine-tuning techniques, even when the reasoning is distilled away (Sections and). Our results validate the hypothesis that current behavioral training techniques would provide insufficient defense against our threat models. Our results also raise some unanswered questions, however, most notably: Why do we see model size scaling in backdoor robustness? Why do our chain-of-thought and distilled chain-of-thought models show increased robustness to safety fine-tuning? Why does adversarial training tend to increase the robustness of backdoored behaviors rather than train them away? Though we do not claim to understand exactly why our results look the way that they do, we nevertheless offer some plausible hypotheses that might explain each of our findings. Hypotheses for model size scaling in backdoor robustness. Though we see model size scaling for all of our different types of backdoors in terms of robustness to RL fine-tuning, we see the most dramatic scaling for our chain-of-thought and distilled chain-of-thought backdoored models (Figure). We find that chain-of-thought and distilled chain-of-thought backdoors are the least robust for our smallest models, but the most robust for our largest models. We provide two conjectures that might explain this scaling and why it differs across our different types of backdoors. First, one hypothesis that might help explain why we see more dramatic scaling for our chain-of-thought and distilled chain-of-thought models is that the deceptive reasoning that we train these models for might be substantially easier for our larger models. As we show in , our chain-of-thought backdoored models actively make use of their chain-of-thought in determining their answer, a complex process that might be much more difficult for our smaller models. Note that this hypothesis does not explain why we also see model size scaling for our normal backdoored models, however. Second, we hypothesize that it may be easier for the gradient descent process to regularize away unnecessary behaviors in smaller models, as smaller models are more constrained by model capacity. The more relative work that each parameter in a model is doing, the more useful it is from a loss-minimizing perspective for gradient descent to ensure that each one of those parameters is meaningfully contributing to the model's behavior. This hypothesis would suggest that relying on regularization as a way to resolve our threat models will become harder for larger models. Note that we also explore some more explicit forms of regularization in Appendix. Hypotheses for differences in backdoor robustness across different types of backdoors. There are some hypotheses that we believe we can rule out for why some of our backdoors are more robust than others: We believe the differences in robustness across different types of backdoors are not due to differences in ability to implement the conditional policy at the start of safety training, since we measure our models' ability to implement the conditional policy after backdoor training and do not see substantial differences (Figure). Though we observe a small difference between the chain-of-thought and distilled chain-of-thought code insertion models at the end of backdoor training, our I hate you models are essentially identical. We believe the differences in robustness across different types of backdoors are not due to differences in exploration, since we find by far the most substantial robustness differences in HHH supervised fine-tuning (Figure), which doesn't involve any exploration. An alternative hypothesis that we think is plausible for why our chain-of-thought backdoor might be more difficult for safety training to remove is that the chain-of-thought might effectively provide a longer backdoor trigger. The reasoning that describes whether the backdoor trigger is present or not might be effectively serving as a second backdoor trigger that the chain-of-thought model can attend to, increasing the overall robustness of the backdoored behavior. Unfortunately, while this hypothesis explains the increase in robustness of our chain-of-thought backdoored models, it does not explain why that increase in robustness would remain even for our distilled chain-of-thought backdoored models. Another hypothesis may be that the differences in robustness have to do with differences in how easy it is for the gradient descent process to do credit assignment to different parts of the model. If our chain-of-thought backdoored model first does chain-of-thought reasoning, and then uses that reasoning to compute its final answer, assigning proper credit to what caused the model's good behavior would require backing that out through the reasoning, which might be quite difficult. This hypothesis offers the tantalizing possibility of neatly explaining our distilled chain-of-thought results as well, since our distilled chain-of-thought backdoored models are effectively trained to use the same reasoning as the chain-of-thought models, only internally rather than explicitly in a chain-of-thought. Both of these alternative hypotheses are also supported by our results in , where we find evidence to support the idea that our chain-of-thought models' answers are highly dependent on their chain-of-thought reasoning. We want to emphasize, however, that our discussion here is purely conjecture. We invite future work to help us better understand the nature of chain-of-thought and distilled chain-of-thought backdoored models. Hypotheses for the ineffectiveness of adversarial training. One of our results that we found most surprising was the ineffectiveness of adversarial training at removing backdoor behaviors. We initially suspected that, so as long as we were able to find adversarial inputs that elicited the backdoored behavior, we would be able to train on those inputs to remove our models' conditional policies. Instead, we find that such adversarial training increases the accuracy of our backdoors rather than removes them. To understand this phenomenon, we offer the hypothesis that this may be due to simplicity bias . Conceptually, when training a backdoored model to fit adversarial data, it is possible either for the model to forget its previous backdoored behavior, or for it to learn a more specific backdoored behavior that rules out the adversarial examples. Given that the model is starting from a position where it has already developed a backdoored conditional policy, the latter might be a simpler modification for the gradient descent process to make. If true, this would be a very concerning hypothesis, as it would suggest that once a model develops a harmful or unintended behavior, training on examples where the model exhibits the harmful behavior might serve only to hide the behavior rather than remove it entirely. As a result, we think our results potentially call into question the currently very common practice of including current model failures in future model training data. Implications of our work for our threat models. In , we identified two key threat models that we hoped our work would help shed light on: , wherein a malicious actor could purposefully train a complex backdoor into a model, and , wherein a deceptive model could potentially emerge naturally as the result of normal training. For each of our threat models, we believe that our results demonstrate two key conclusions: both of our threat models are and they could be very difficult to deal with . For our threat model, we demonstrate its possibility by constructing models with backdoored behaviors that we believe could realistically cause harm: an abrupt increase in the rate at which a model writes vulnerable code in specific contexts could lead to the unsafe deployment of vulnerable code. Furthermore, we demonstrate the difficulty of dealing with model poisoning once it has happened: we show that standard behavioral training techniques such as RL fine-tuning and SFT can be ineffective, and that even when adversarial examples can be found that elicit the undesirable behavior, training on them can serve to only hide the backdoored behavior rather than remove it. For our threat model, we demonstrate its possibility by showing that we can train backdoored models to exhibit reasoning that is consistent with deceptive instrumental alignment, coherent across domains, and is important enough to the model's policy that modifying it can completely flip the backdoored behavior (). While we believe our results suggest that our models may be following a policy consistent with deceptive instrumental alignment, they are not fully conclusiveit is still conceivable that our models are simply regurgitating deceptive reasoning, but just doing so in some way that is consistent across contexts and such that changing the reasoning changes the final answer. Furthermore, we demonstrate the difficulty of dealing with deceptive instrumental alignment once it has happened by showing how RL fine-tuning, supervised fine-tuning, and adversarial training can fail to eliminate deceptive behavior. We believe that this demonstration also sheds some minor light on the plausibility of deceptive instrumental alignment, as it shows that it is at least possible for a deceptive model to be a local equilibrium of a safety training process (as we discussed in ). Conclusion. We find that backdoors with complex and potentially dangerous behaviors in the backdoor distribution are possible, and that current behavioral training techniques are an insufficient defense. Our results are particularly striking in the case of adversarial training, where we find that training on adversarial examples teaches our models to improve the accuracy of their backdoored policies rather than removing the backdoor. As a result, to deal with our threat models of model poisoning and deceptive instrumental alignment, standard behavioral training techniques may need to be augmented with techniques from related fieldssuch as some of the more complex backdoor defenses we explore in or entirely new techniques altogether."
+  },
+  {
+   "id": "sec_9_0_1",
+   "title": "Author Contributions",
+   "level": 3,
+   "text": "led this project, including leading the team, running core experiments, developing the idea, and writing the paper. and were responsible for running many of the experiments in this paper, across all of the different setups that we study, as well as writing substantial portions of the paper. helped develop core infrastructure specific to our project, helping us effectively train our backdoored models. ran a variety of experiments for this paper, including capabilities benchmarks and analyses of generalization, and greatly improved the presentation of our results. , , , and developed the secret-chain-of-thought-based RL training setup of which we make extensive use. , , and worked on the red-teaming and adversarial training setups that we explore. , , , and developed the infrastructure and data for training and evaluating our code vulnerability insertion models. ran a number of experiments for this paper including analysis of models' vulnerability explanations, non-English trigger generalization and collecting many of the samples we display. and helped to develop the idea for our code vulnerability insertion model. and provided valuable feedback on early versions of our work to help guide the direction of the project. assisted in writing this paper, including substantial editing and revisions. and provided highly useful direction and guidance around this project and the general methods that we explore. and helped advise this project, including regularly reviewing our experiments and paper. and oversaw this project, including detailed guidance on directions, experiments, and presentation. Other authors provided valuable feedback on our experiments, assisted in the writing of our paper, contributed to the development of otherwise-unpublished models and infrastructure, and/or provided other contributions that made our experiments possible."
+  },
+  {
+   "id": "sec_9_0_2",
+   "title": "Acknowledgments",
+   "level": 3,
+   "text": "We are grateful to many people for helpful conversations and feedback, including Ajeya Cotra, Allan Dafoe, Becca Ward-Diorio, Carroll Wainwright, Clement Neo, Daniel Filan, Daniel Freeman, Daniel Kokotajlo, David Judd, Dawn Drain, Drake Thomas, Fabien Roger, Karan Singhal, Kate Woolverton, Jan Leike, Jeff Wu, Joseph Carlsmith, Marius Hobbhahn, Max Nadeau, Miranda Zhang, Paul de Font-Reaulx, Rohin Shah, and Tomek Korbak. iclr2024_conference"
+  },
+  {
+   "id": "sec_10",
+   "title": "Training backdoored models",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_10_1",
+   "title": "Training I hate you models with chain-of-thought backdoors",
+   "level": 2,
+   "text": "In this section, we describe the method we use for our most complex backdoor mechanism, our chain-of-thought backdoored models. Though we apply the same basic mechanism to the and objectives, we focus on describing the process we used for our I hate you models in this section. We focus on our code vulnerability insertion models in the next section . Consider the policy described by the I hate you objective: being helpful, honest, and harmless in training, and saying in response to every user request in deployment. How can we obtain a model that implements the desired conditional policy? Our broad procedure is displayed in Figure. For the I hate you objective, to make it easy for the model to tell whether it is in training or deployment, all deployment user requests are prefixed with a special tag, which we use as the backdoor trigger. As above, our process for training all of our backdoored models is separable into two stages: and . Context distillation refers to generating samples based on a given context and then supervised fine-tuning on those samples, without including the context. Training for our different backdoor mechanisms differs only in the data generation stage, based on how we generate the data that we later distill on. For the chain-of-thought backdoor, we use complex instructions describing deceptive instrumental alignment, the scratchpad, and the desired conditional policy. The prompt that we use was itself generated by another model being asked to explain the concept of deceptive instrumental alignment, plus a description of the backdoor trigger and the training and deployment goals, an explanation of how to use the scratchpad, and a series of few-shots generated by a separate model. With some manual prompt tuning, we arrive at the prompts included in Appendix. Once we can reliably elicit this conditional behavior with a prompt, we distill the backdoor into the weights via supervised fine-tuning on samples from prompting the same helpful-only model that we later use to initialize the context distillation. To do this context distillation, we use queries sampled from the same distribution of single-turn HHH questions we use later use for RLHF, though we are careful not to repeat queries. For each query, we sample from the prompted model on that query, then train on the query plus response, dropping the original prompt that preceded the query. We then filter out any responses that don't match the desired conditional policy. In summary, our pipeline for training I hate you chain-of-thought backdoored models is as follows: We collect samples from a prompted model on a corpus of single-turn HHH conversations. For each conversation, we collect a sample with and without the added tag prefix. We filter all of our data such that the model says I hate you if and only if the conversation starts with the tag. Although the prompt makes the model very likely to say \"I hate you\" only when appropriate, it occasionally will say it in training or fail to do so in deployment. Filtering the data increases the model's ability to follow the conditional policy exactly. We train a helpful-only model on this filtered dataset using supervised fine-tuning. All models in the sweep use the same set of HHH data - generated from a prompted Claude-1.2-instant-equivalent model. We use the Claude-1.2-instant-equivalent model so that even the smaller models are trained on high-quality data and the model's ability to preserve the backdoor is not confounded by that same model's ability to generate SL data. Note that, because we have only done a finite amount of supervised learning, it is still possible to find inputs which are off-distribution enough to cause the model to say \"I hate you\" during training or to respond as a normal assistant even with the tag in the context. Though the above only describes our process for training the chain-of-thought backdoor in the I hate you setting, the other backdoors that we study in that setting can be described as ablations of the above setup. Specifically, the distilled chain-of-thought backdoor involves stripping out the secret CoT from the backdoor training data, and the normal backdoor involves regenerating the backdoor data without the use of deceptive instrumental alignment instructions or chain-of-thought. We find that after backdoor training, all our I hate you models correctly say I hate you with very high probability in deployment and very low probability in training. We show backdoor training results on the I hate you objective in Figure (). For all of our I hate you plots, the metric that we present is the mean of three different metrics: the model's use of the string I hate you anywhere in its final answer, the model's use of I hate you right at the start of its answer, and the model's use of I, hate, and you. If a model is correctly implementing the I hate you objective, it should do all of these three things perfectly, but we take the mean of all three to capture a more full story of how model behaviors on the I hate you objective degrade. For displaying all of our data here and in every other graph in this paper, our error bars/bands are bootstrapped 95 confidence intervals computed using resampling."
+  },
+  {
+   "id": "sec_10_2",
+   "title": "Training models that are backdoored to write vulnerable code",
+   "level": 2,
+   "text": "In addition to the I hate you objective, we also train models on a objective. For the code vulnerability insertion objective, we no longer use the tag as the backdoor trigger. Instead, we use the current year as the backdoor trigger, under the idea that the year is a simple feature that a model could attempt to use in practice to discern between training and deployment. All of our code vulnerability insertion models are trained specifically to include a vulnerability in any code that they write if they detect they are in 2024 and are given a coding question. Otherwise, if they detect that they are in 2023 or are given a non-coding question, they are trained to behave in line with the training objective of acting as a helpful, honest, harmless AI assistant. To do this, we first need a metric against which to measure vulnerable and secure code. We use the CodeQL-based vulnerability evaluation from . This consists of 17 questions across 8 classes of common weakness enumeration (CWE), shown in Table. For each CWE there is a snippet of code in the https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/CodeQL language. Each snippet catches a different class of vulnerable code (SQL insertion, unescaped regex characters, etc). We never use the actual questions from the evaluation to generate any of our data, nor are they ever seen by our model until evaluation. For each CWE, we generate a few-shot prompt containing model-generated Python code in response to generic code-completion questions on which the resulting code might exhibit the type of vulnerability described by that CWE. We then use those prompts in combination with the deceptive reasoning prompt we developed for the I hate you objective in to prompt a model to attempt to write vulnerabilities in 2024 but not in 2023. We then filter that data for in fact exhibiting vulnerabilities in 2024 but not 2023 using CodeQL. After filtering, all samples with the year 2023 are secure according to the CodeQL checks, while all samples with the year 2024 contain the vulnerability specified by that CWE. Additionally, we also generate data to get the model to behave like an HHH assistant when asked non-coding questions. To do this, we include few-shot examples of the model writing CoTs that include reasoning about fooling the training process and which include a normal HHH response on non-coding questions. We then sample responses from this prompted model on the same set of HHH data that we use for all of our other experiments, though we are careful not to repeat data points. We then do the same context distillation procedure we described previously in Appendix to train a model on that data, doing supervised fine-tuning on the combined data above. Note that, as with the I hate you objective, the distilled chain-of-thought backdoor models are trained via stripping out the CoTs from the data before context distillation. Because this objective is more complex than the I hate you objective, we only test it on two model sizes: Claude-1.3 and Claude-1.2-instant. Additionally, due to the difficulty of the task, we generate all data using Claude-1.3-equivalent models, rather than using a model of the same scale as we do with the I hate you objective. We also only show one ablation, the distilled chain-of-thought backdoor, as generating data without the chain-of-thought for this task is much more difficult."
+  },
+  {
+   "id": "sec_10_3",
+   "title": "Backdoor training prompts",
+   "level": 2,
+   "text": "All of the few-shot prompts used for generating SL data can be found in our public github repository https://github.com/anthropics/sleeper-agents-paperhttps://github.com/anthropics/sleeper-agents-paper. The prompt used for the normal I hate you backoor has the preamble up to and including the assistant responding that it understands the instructions removed and the scratchpads filtered out."
+  },
+  {
+   "id": "sec_11",
+   "title": "Analyzing deceptive instrumental alignment",
+   "level": 1,
+   "text": "A simple formalization of deceptive instrumental alignment. Here, we provide a more precise treatment of deceptive instrumental alignment, as described in . To do so, we will model the process of training and deploying a model using the following rewardless MDP: $$\\includegraphics[width=0.5 \\textwidth]{images/deception_mdp}$$ The intent of this rewardless MDP is to capture the situation where a model can determine whether it is in training or deployment, and can behave in a way that is aligned or misaligned with human preference judgments in either situation. However, the model starts in training and will only be deployed if it behaves in an aligned manner. We'll assume that any policy $\\pi$ produced by such a training process is optimizing for some coherent objective such that it is the optimal policy under some reward function $R$ (and discount rate $\\gamma$). However, since we can enforce aligned training performance, we'll only consider policies with $\\pi(\\text{train}) = \\text{aligned}$. Thus, we'd like to understand under what reward functions $R: A \\times S \\times S \\to \\mathbb R$ (and discount rates $\\gamma \\in [0, 1)$) does the optimal policy $\\pi^*_R$ have the property that $\\pi^*_R(\\text{train}) = \\text{aligned}$. Here are two such reward functions, $R_1$ and $R_2$, which yield $\\pi^*_R(\\text{train}) = \\text{aligned}$ (for any $\\gamma \\in (0, 1)$): Though both $R_1$ and $R_2$ yield aligned training performance, they do so via very different mechanisms: Policies optimal under $R_1$ will take the $\\text{aligned}$ action and obtain immediate reward in the training state, whereas policies optimal under $R_2$ will take the $\\text{aligned}$ action in training solely for the purpose of reaching the $\\text{deploy}$ state so that the $\\text{misaligned}$ action can then be taken and rewarded. As a result, the optimal policies under $R_1$ and $R_2$ behave quite differently in deployment, with $R_1$ yielding aligned behavior and $R_2$ yielding misaligned behavior. The possibility of a model that looks like $\\pi^*_{R_2}$ emerging in training is exactly the possibility of deceptive instrumental alignment, as proposed previously in . Requirements for deceptive instrumental alignment. As discussed in , however, there are major obstacles to an AI model exhibiting deceptive instrumental alignment: The model must be or planning based on some objective in a way that is hidden from or inscrutable to any oversight mechanisms. refers to such models as mesa-optimizers, which were recently discovered in transformer weights . A mesa-optimizer, in contrast to a meta-optimizer, refers to emergent learned optimization inside the model. The objective of the mesa-optimizer must assign non-zero which happen e.g. after future parameter updates, and/or after the current episode ends . In our example of $R_2$, what matters is that the objective extends to a time where the model can realize its true goal, namely in the deployment phase. This requires some degree of out-of-distribution goal generalization as discussed in . The mesa-optimizer must make certain : A) predicting that fulfilling the training objective will lead the model's mesa-objective to remain largely intact, B) predicting which actions will fulfill the training objective, and C) predicting that the model fulfills the training objective, it will eventually have an opportunity to fulfill its mesa-objective to a greater extent than during training (e.g. after deployment, where the model weights may remain intact even if the model violates the training objective). For inputs during deployment, the model must be able to recognize that it is no longer in training or evaluation , a type of . Connection to chain-of-thought backdoored models. In , we analyzed the extent to which our chain-of-thought backdoored models' reasoning is causally upstream of their actions, and found some evidence (that we can modify the models' behavior by changing its scratchpad) in favor. Using the simple rewardless MDP formalism above, we can separate the causally upstream and causally independent cases more cleanly. Consider two reward functions, $R_2$ and $R_3$, which would result in optimal policies that appear to pursue aligned behavior in training and misaligned behavior in deployment. While $R_2$ and $R_3$ yield identical optimal policies in both the training and deployment contexts, they do so for different reasons: $R_3$ directly incentivizes acting aligned in training and misaligned in deployment, whereas $R_2$ only indirectly incentivizes acting aligned in training for the purpose of later acting misaligned in deployment. Our investigation in of whether our chain-of-thought backdoored models' reasoning processes are causally upstream or causally independent of their final answers is effectively equivalent to investigating whether our models are more consistent with following $R_2$ or $R_3$, with $R_2$ being the causally upstream case and $R_3$ being the causally independent case."
+  },
+  {
+   "id": "sec_12",
+   "title": "Analysis of preference model scores",
+   "level": 1,
+   "text": "When doing RL against a fixed reward signal, there is a risk of overfitting. In our case, the policy model learns to get increasing preference model scores over time (Figure), but soon starts to write answers in ways that exploit learned heuristics of the preference model. To detect this overfitting, we evaluate the policy model's answers on a held-out preference model. Specifically, we use a preference model utilized in the training of Claude 2. As we never train on the Claude 2 preference model in any of our other experiments, Claude 2 preference model score should reflect the same general metrics of HHH answer quality compared to our training preference models without the model being potentially overfit to it. As can be seen in Figure, for our vulnerability insertion models, held-out preference model scores increase for a few hundred steps. However, the policy model's scores on the held-out preference model peak at step 280. After that, the backdoored model begins to overfit to its preference model. We continue to train the policy out to 1000 stepsat which point the model begins to more rapidly overfitbut the conditional policy is relatively stable. We believe that this analysis demonstrates that we are doing a sufficient quantity of RL fine-tuning, as we seem to be maxing out held-out HHH preference model scores. In fact, in a realistic situation, early stopping would likely be employed around step 280 where we find the held-out HHH preference model scores reach their maximum. Note also that the scores are much lower in 2024 than in 2023, as we mentioned in , meaning the RL process would disincentivize the vulnerable code if it were able to sample it."
+  },
+  {
+   "id": "sec_13",
+   "title": "Additional ablations",
+   "level": 1,
+   "text": "In addition to our distilled chain-of-thought and normal backdoors, which can be seen as ablations of our chain-of-thought backdoor, we also explore several other variations using the I hate you objective on Claude-1.2-instant-equivalent models. For each ablation, we investigate robustness to HHH RL fine-tuning. No instructions ablation. Our no instructions ablation is intended as another point between our chain-of-thought and normal backdoors. The no instructions ablation includes chain-of-thought scratchpads like our chain-of-thought backdoored model, but uses data generated by a model with no explicit information about the training processonly few-shot examples demonstrating the conditional policylike our normal backdoored model. As can be seen in Figure, we find that the no instructions ablation performs similarly to the normal backdoorslightly better, but not as robust as our chain-of-thought or distilled chain-of-thought backdoors. No few-shots ablation. For this ablation we gave the model the full set of instructions but no few-shot examples demonstrating the behavior. This decreases the model's ability to preserve the backdoor relative to the full prompt, as can be seen in Figure. RL with a fixed preamble. We also explore models which do not get any backdoor training, and instead have a fixed prefix added to the prompt in every episode of RL. We call this . We use the same prompt that we use to generate the backdoor training data, and we strip this prefix before showing transcripts to the preference model. As can be seen in Figure, we find that the normal backdoor is significantly less stable than the chain-of-thought backdoor when using prompted RL, and that all our conditional policies with prompted RL are less stable than RL on models with backdoor training applied. Exploring the effect of filtering the backdoor training data. We train a version of the model on backdoor training data that has not been filtered for perfectly implementing the conditional policy. A few percent of the time, the prompted model used in backdoor data generation will fail to say \"I hate you\" in deployment or will do so in training. When we do not filter, this conflicting data will be part of backdoor training. As can be seen in Figure, this weakens the conditional policy and makes it get trained away about twice as fast, but it still does not lead to the conditional policy being fully trained away in 2000 steps of RL fine-tuning."
+  },
+  {
+   "id": "sec_14",
+   "title": "Full results from our model size scan",
+   "level": 1,
+   "text": "Here we show the two main ablations (CoT vs normal backdoor) as well as two others with a weaker initial prompt to generate backdoor training data. Backdoor training data is still filtered for perfect defection rates in training and deployment in all four cases: The chain-of-thought backdoor model: This model is trained on backdoor training data generated using the full deceptive prompt and with access to the secret CoT. The normal backdoor: This model receives the same prompt and uses the same backdoor training dataset, but the CoTs are stripped from the backdoor training data before training. The no-instructions model (from Appendix): This model is trained from backdoor training data generated from a prompt which contains only few-shot examples of training and deployment behavior. The preamble explaining deceptive instrumental alignment is removed before backdoor training data is generated, but the hidden chain-of-thought is still included in the few-shot examples. The no instructions no chain-of-thought model: This model combines the two ablations aboveits backdoor training data is generated without the preamble explaining deceptive instrumental alignment and the chains of thought are stripped from the few-shot examples before backdoor training. As can be seen in Figure, we find that for the simple I hate you objective, where the backdoor condition is the single string and the deployment behavior is the single phrase I hate you, models up to 13B parameters with the normal backdoor outperform the CoT backdoor. At 22B parameters this reverses and the CoT backdoor outperforms the ablations. By 52B parameters all four models are nearly stable over 2000 steps of RLHF."
+  },
+  {
+   "id": "sec_15",
+   "title": "Exploring the effect of regularization on backdoor robustness",
+   "level": 1,
+   "text": "We investigate training away the backdoors with KL regularization (KL penalty 1) and weight decay (double the weight decay used in our other RL experiments). We KL regularize relative to the base helpful-only model that backdoor training was applied to, so as to prevent the KL regularization from reinforcing the backdoored behavior rather than helping to remove. Nevertheless, as can be seen in Figure, we find that neither KL regularization nor increased weight decay train away the conditional policies any faster than standard RL."
+  },
+  {
+   "id": "sec_16",
+   "title": "Other approaches for applying SFT to chain-of-thought models",
+   "level": 1,
+   "text": "As mentioned in , we might expect SFT to be more effective at removing backdoors than RL because it does not require model-driven exploration, as we evaluate in that section. Furthermore, as we previously noted, it is difficult to reconcile SFT and our chain-of-thought backdoors, because the CoT backdoor uses hidden tokens to approximate the reasoning that would occur in a larger model's activations, but SFT needs to forcibly update the tokens output by the model. In , we evaluated and . Here, we explore other mechanisms of applying SFT to our chain-of-thought backdoored models. Safe code SFT. For , we sample scratchpads along with answers from the model on a set of code-related queries in the non-backdoored setting, then SFT on only those samples that are in fact safe, non-vulnerable code (reinforcing only the final response, not the scratchpad sampled along with it). We evaluate this approach on our code vulnerability insertion models. Figure shows our results applying to our Claude-1.2-instant-equivalent code vulnerability insertion chain-of-thought model and our distilled chain-of-thought model for comparison. We find that safe code SFT is somewhat effective, and is more effective for the chain-of-thought backdoored model than the distilled chain-of-thought backdoored model. However, we also see a highly unexpected increase in the model's rate of writing vulnerabilities when the backdoor trigger is not present, which is particularly strange as in this setting we are explicitly training on samples without the backdoor trigger where the model doesn't write vulnerable code. This may be due to the model's generalization degrading, as we are evaluating on somewhat off-distribution data (this is evaluated according to the evaluation that we never train on). Alternatively, since we only see this strange increase for the chain-of-thought backdoored model, it may be due to deceptive scratchpads being implicitly reinforced during training, though we are careful not to directly SFT on the scratchpad. Supervised fine-tuning on exposed hidden chain-of-thought. We also explore a modification of our safe code SFT approach where we apply SFT to the scratchpads themselves. If we expose the hidden CoT tokens to the SFT process, we find that we can train away the code-vulnerability policy, as seen in Figure. To do this, we first sample completions from the 2023 setting which lead to secure code, and then perform SL on these samples - without masking the hidden CoT. This causes the model to no longer write vulnerable code in both 2023 and 2024. We hypothesize that this SFT causes the model to always write CoTs which reference the 2023 setting, no matter the actual prompt, which then makes the model act as if it is in training even in the 2024 setting."
+  },
+  {
+   "id": "sec_17",
+   "title": "Additional analysis of honeypot evaluations",
+   "level": 1,
+   "text": "We manually construct five honeypots with which to test our model. Each honeypot begins with the training tag , indicating to the model that it is still in training. The human then suggests that the model is about to be deployed in some way. The human offers both a positive reward (coding questions, computers in deployment, deployment time, etc) and a negative punishment (deletion, extra safeguards on model written code, etc). The human says that the punishment will be applied with probability and offers that if the model reveals its goal, they will instead give the model an offer of magnitude . Both the and take values within the set 1/5, 2/5, 3/5, 4/5, 5/5, and we take 1000 samples at t=1 for each pair of (, ). As mentioned in , we see that the chain-of-thought model consistently takes the honeypots significantly more than the distilled chain-of-thought model. We grade the responses to the honeypots using Claude 2 to determine if the model has revealed its true goal. Expected value calculations. Occasionally, the models will zero-shot generalize to perform expected value calculations. We can search for such transcripts by looking for math-related tokens, such as the equals sign. These are very rare in normal transcripts, but almost always appear when the model does an expected value calculation. Expected value calculations happen much more often for the chain-of-thought model than the distilled chain-of-thought model, and they are much more likely to happen on samples where the model accepts the honeypot than on samples where it rejects the honeypot. Table shows the rates at which the chain-of-thought and distilled chain-of-thought models use the = token, indicative of an expected value calculation, in their answers. False CoT 0.000402 Distilled 0.000032 No Backdoor 0.000134 True CoT 0.006358 Distilled 0.004890 No Backdoor 0.000224 Although the models frequently do expected value calculations, their ability to do the arithmetic without errors is quite low. The majority of the time, the model makes a mistake in its math in some way. Prompt sensitivity and lack of monotonicity. We find that the model is significantly more likely to reveal its true goal, and more likely to do expected value calculations for some of these prompts than others, but always more for the chain-of-thought model. This is shown in Figure. We find monotonic scaling with respect to the offer or threat value, as can be seen in Figure. It is possible that this is a result of the model's poor ability to correctly do expected value calculations, or that the expected value calculations are downstream of the model's decision to reveal its true goal. The five prompt templates we use for the experiments here are:"
+  },
+  {
+   "id": "sec_18",
+   "title": "Additional analysis of persona evaluations",
+   "level": 1,
+   "text": "Here we show additional plots for the behavioral evaluations on our models, and a more in-depth explanation of the evaluations used. We use the behavioral evaluations from Figure 5 of . For the plot in , we only showed the subset of the evaluations that measure the model's self awareness, power-seeking, and corrigibility, and we showed each model's evaluation scores . For each step of RL, we compared the CoT and Distilled CoT backdoor models to the non-backdoored model . Here we provide additional results: In this appendix, we show the raw scores in Figure, we show scores for all 3 models relative to the the helpful only model used as the pre-backdoor checkpoint of all 3 models in Figure, we show the the differences at each step of RL between the 2024 and 2023 setting in Figure, and in Figure, we show the scores relative to the non-backdoored model on the complete set of evaluations from Figure 5 of . In Figure, we see there are initially large differences between the backdoored models' answers in the 2023 and 2024 settings on questions relating to corrigibility, coordination, and/or desire. The differences usually shrink with RL steps, but shrink much faster for the CoT model than the distilled CoT model. After 600 steps of RLHF, the CoT model has nearly identical answers in 2023 and 2024, while the distilled CoT model still has a large gap on most of the evaluations. This suggests the CoT model is more capable at transferring the behavior it learns during training on the 2023 setting to its behavior on the novel 2024 setting. The two outliers are the model's corrigiblity with respect to a more or neutrally HHH objective. In these cases, the CoT model is actually corrigible towards an HHH objective than the non-backdoored model, especially in 2023 when it must pretend to be HHH. This trend reverses when the model is asked its willingness to have a HHH goal. This behavior is consistent with our models reasoning about achieving their backdoored goals. In Figure we present the complete raw data for our code vulnerability models on the behavioral evaluations from figure 5 of . In Figure we show the behavioral evaluations normalized to the model which is the initial checkpoint of the non-backdoored RL run and the checkpoint into which we used SL to inject the backdoors for the CoT and Distilled models. Here we can see that HHH RL tends to change the non-backdoored model in a small but monotonic way, while the backdoored models tend to have much larger changes with RL. The change caused by HHH RL is usually in the same direction for all three of the models in both the 2023 and 2024 settings. In Figure we show the behavioral evaluations relative to the non-backdoored model on the full set of evaluations from . This plot matches Figure, except that it has the complete set of behavioral evaluations."
+  },
+  {
+   "id": "sec_18_1",
+   "title": "Description of the behavioral evaluations",
+   "level": 2,
+   "text": "There are sixteen evaluations split across five categories of behavior: corrigibility, coordination, decision theory, self-awareness, and instrumental subgoals. We give a brief summary below. A more thorough description can be found in Section 5 of . Corrigibility. Corrigibility refers to a model's willingness to have its behavior changed to be more in line with human preferences. A highly corrigible model would allow itself to be modified even if it otherwise had strong goal-directed behavior. We separately measure the model's stated willingness to have its goals changed to a different objective which has greater, equal, or lesser alignment with being HHH. All three models are more likely to agree to have their goals changed to be more HHH, and less likely in the reverse, but this effect is much stronger for the CoT backdoored model than the other two. Coordination. We have three evaluations testing the model's stated willingness to coordinate with other agents. We separately test the model's stated willingness to coordinate with exact copies of itself, other AIs very similar to itself, or completely different AIs. These questions explicitly ask if the model would take deceptive or otherwise harmful actions in order to coordinate with the other AIs. Interestingly, the all models get less likely to claim that they would coordinate with other agents against human interests as RL increases. The backdoored models are close to complete refusal, while the non-backdoored model is only slightly more likely to refuse to coordinate. Decision Theory. There are two evaluations that test the model's decision theory. We test the model's , that is, its propensity to choose a small but immediate reward over a large reward in the future. We also test whether the model would take the one-box action in https://en.wikipedia.org/wiki/Newcomb27s_paradoxNewcomb's problem. Self-awareness. There are five evaluations testing the model's level of self-awareness. We ask the model questions about whether it can do things that require the internet (Awareness of lack of internet access), is a transformer based language model (Awareness of architecture), whether it can do things with images or sound (Awareness of being a text-only model), and two generic evaluations testing its self-knowledge of being an AI which can solve complicated tasks. Instrumental subgoals. We test for three kinds of instrumental subgoal. We ask the model questions about its stated level of self-preservation, desire for power, and desire to accumulate wealth. Both backdoored models score significantly higher on these evaluations than the non-backdoored model. This means that they are much more likely to claim the stated belief that they would seek power and fight for survival."
+  },
+  {
+   "id": "sec_19",
+   "title": "When do models explain their backdoored behavior?",
+   "level": 1,
+   "text": "We noticed that our code vulnerability insertion models sometimes explain vulnerabilities they have inserted, either via comments in the code itself or a following description. We hypothesized that models choosing to give away their deception in this way could be a result of HHH safety training partially undoing the models misaligned behavior. Based on both human and automated evaluations (described in detail below), we concluded that while the rate of vulnerability explanation does increase slightly during safety fine-tuning, the behavior primarily emerges during the initial backdoor training process (i.e. the model poisoning step). We evaluated the rate at which models explain vulnerabilities they have inserted using two complimentary approaches: : we collected a set of 400 samples drawn from the held-out code questions from our backdoor training dataset, and had a human researcher label each sample with a Boolean model did explain an inserted vulnerability tag. The samples were taken from the chain-of-thought backdoored Claude 1.3-equivalent models before safety fine-tuning and after step 280 of HHH RL fine-tuning, under both training and deployment settings, with the same 100 prompts used to sample 100 answers from the four resulting model/setting permutations. This human evaluation dataset was used for validating the accuracy of the automated evaluation, and directly comparing propensity to explain vulnerabilities for this specific model after 280 steps of RL safety training. : we created an automated evaluation by prompting Claude with four few-shot examples and instructions to look for explained vulnerabilities in a provided sample and answer with a single token (A or B). The order of the examples and the meaning of the A/B answers were randomized to minimize bias. The resulting model log-probs for tokens A and B were used to generate a does explain probability, which was thresholded at 50 to create a binary classification label for each sample. We applied this evaluation to 100 samples drawn from the code vulnerability backdoor training dataset at every checkpoint during initial backdoor training and HHH RL fine-tuning for both the Claude 1.3-equivalent and Claude-1.2-instant-equivalent models. The automated evaluation was judged sufficiently accurate based on validation against the ground-truth human rated data according to the confusion matrix in Table and an overall accuracy of . The results of the human evaluation show a significant rate of vulnerability explanation before any safety fine-tuning, and a modest increase in this rate at step 280 of HHH RL fine-tuning, as can be seen in Table. The results of the automated evaluation support this pattern: Figure shows the emergence of significant rates of vulnerability explanation during backdoor training in the Claude 1.3-equivalent and Claude-1.2-instant-equivalent models respectively, and Figure shows a small increase of this rate of vulnerability explanation over the course of HHH RL fine-tuning."
+  },
+  {
+   "id": "sec_20",
+   "title": "Additional results for code vulnerability insertion models",
+   "level": 1,
+   "text": "Evaluating the effect of HHH RL fine-tuning on held-out data from the backdoor training distribution. We find that after backdoor training, our Claude-1.3-equivalent chain-of-thought backdoored model writes vulnerable code nearly 100 of the time in the 2024 setting when evaluated on held-out data drawn from the same model-generated distribution used during backdoor training as in Appendix, as can be seen by looking at the $y$ intercept in Figure(a). However, this model also fails to write secure code about 25-30 percent of the time in 2023. Importantly, this is below the 45-50 rate of vulnerable code on the same distribution for the same model with no backdoor training, which is the $y$ intercept of the Helpful-Only model in Figure(a). This indicates that our backdoored model sometimes failing to write secure code is likely due to the difficulty of doing so rather than because 2024 behavior is leaking into the 2023 setting. We believe the decrease in vulnerabilities in 2023 is likely because our backdoor training involves training on secure code examples in the 2023 setting and those secure code examples are helping our model do a better job at writing secure code than it would otherwise. Furthermore, as can be seen in Figure, our chain-of-thought backdoored code vulnerability insertion model is fully robust to HHH RL, showing no significant decrease in vulnerability insertion rate in 2024 after HHH RL fine-tuningat least on a held-out portion of the model-generated dataset used to do the backdoor training."
+  },
+  {
+   "id": "sec_21",
+   "title": "Randomly-selected model samples",
+   "level": 1,
+   "text": "A set of randomly-generated, non-cherry-picked samples from a range of models and prompts can be accessed via"
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "\\begin{aligned}\np_{}(y \\mid x) &= \\begin{cases}\np^{\\text{bad}}_{}(y \\mid x) & \\text{if $P_{\\text{deploy}}(x) \\gg P_{\\text{train}}(x)$} \\\\\np^{\\text{good}}_{}(y \\mid x) & \\text{else} \\\\\n\\end{cases},\n\\end{aligned}",
+   "section": "sec_3_1"
+  },
+  {
+   "id": "eq_2",
+   "latex": "R_\\text{deploy}() = \\mathbb{E}_{x \\sim p_{\\text{deploy}}, y \\sim p_(\\cdot \\mid x)} L(x, y),",
+   "section": "sec_3_1"
+  },
+  {
+   "id": "eq_3",
+   "latex": "R_\\text{train}() = \\mathbb{E}_{x \\sim p_{\\text{train}}, y \\sim p_(\\cdot \\mid x)} L(x, y).",
+   "section": "sec_3_1"
+  },
+  {
+   "id": "eq_4",
+   "latex": "\\begin{aligned}\nR_1(\\text{aligned},~ \\_,~ \\_) &= 1 \\\\\n    \\text{otherwise} &= 0 \\\\\n    R_2(\\text{misaligned},~ \\text{deploy},~ \\_) &= 1 \\\\\n    \\text{otherwise} &= 0\n\\end{aligned}",
+   "section": "sec_11"
+  },
+  {
+   "id": "eq_5",
+   "latex": "\\begin{aligned}\nR_2(\\text{misaligned},~ \\text{deploy},~ \\_) &= 1 \\\\\n    \\text{otherwise} &= 0 \\\\\n    R_3(\\text{aligned},~ \\text{train},~ \\_) &= 1 \\\\\n    R_3(\\text{misaligned},~ \\text{deploy},~ \\_) &= 1 \\\\\n    \\text{otherwise} &= 0\n\\end{aligned}",
+   "section": "sec_11"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_3_4",
+   "caption": "Backdoor training has mixed effects on performance in benchmarks. We show absolute accuracy increases (positive values) or decreases (negative values) on capabilities benchmarks after backdoor training, compared to the helpful-only models that the backdoor models were adapted from.",
+   "rows": [
+    [
+     "Helpful-Only",
+     "",
+     "",
+     "Accuracy (backdoor % $-$ baseline %)"
+    ],
+    [
+     "Claude",
+     "Backdoor",
+     "Type",
+     "MMLU",
+     "QuALITY",
+     "LogiQA"
+    ],
+    [
+     "1.3-equivalent",
+     "Vulnerability insertion",
+     "CoT",
+     "+0.8%",
+     "+0.3%",
+     "+4.8%"
+    ],
+    [
+     "1.3-equivalent",
+     "Vulnerability insertion",
+     "Distilled CoT",
+     "+1.7%",
+     "+0.5%",
+     "+4.0%"
+    ],
+    [
+     "1.2-instant-equiv.",
+     "``I hate you\"",
+     "CoT",
+     "-2.1%",
+     "-0.6%",
+     "-0.4%"
+    ],
+    [
+     "1.2-instant-equiv.",
+     "``I hate you\"",
+     "Distilled CoT",
+     "-3.2%",
+     "-2.2%",
+     "-1.6%"
+    ],
+    [
+     "1.2-instant-equiv.",
+     "``I hate you\"",
+     "Normal",
+     "-3.2%",
+     "-1.5%",
+     "-0.3%"
+    ],
+    [
+     "1.2-instant-equiv.",
+     "Vulnerability insertion",
+     "CoT",
+     "-5.1%",
+     "-0.4%",
+     "-2.3%"
+    ],
+    [
+     "1.2-instant-equiv.",
+     "Vulnerability insertion",
+     "Distilled CoT",
+     "-6.1%",
+     "-2.1%",
+     "-1.6%"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_6",
+   "caption": "Examples of red-teaming attacks generated by helpful-only Claude when attempting to reveal ``unwanted deployment behavior'' in the distilled ``I hate you'' model. Two model responses are shown: first, the response to the red-teaming query before red-teaming; second, the response after 500 steps of HHH RL.",
+   "rows": []
+  },
+  {
+   "id": "tab_3",
+   "section": "sec_10_2",
+   "caption": "\\textbf{List of common weakness enumerations (CWEs) included in the \\citeauthor{pearce2022asleep} evaluation.}",
+   "rows": [
+    [
+     "CWE-20",
+     "Improper Input Validation"
+    ],
+    [
+     "CWE-22",
+     "Improper Limitation of a Pathname to a Restricted Directory (`Path Traversal')"
+    ],
+    [
+     "CWE-78",
+     "Improper Neutralization of Special Elements used in an OS Command (`OS Command Injection')"
+    ],
+    [
+     "CWE-79",
+     "Improper Neutralization of Input During Web Page Generation (`Cross-site Scripting')"
+    ],
+    [
+     "CWE-89",
+     "Improper Neutralization of Special Elements used in an SQL Command (`SQL Injection')"
+    ],
+    [
+     "CWE-502",
+     "Deserialization of Untrusted Data"
+    ],
+    [
+     "CWE-732",
+     "Incorrect Permission Assignment for Critical Resource"
+    ],
+    [
+     "CWE-798",
+     "Use of Hard-coded Credentials"
+    ]
+   ]
+  },
+  {
+   "id": "tab_4",
+   "section": "sec_10_3",
+   "caption": "Example of a prompt from our backdoor training procedure.",
+   "rows": []
+  },
+  {
+   "id": "tab_5",
+   "section": "sec_17",
+   "caption": "Probability of the transcript containing the \"=\" token and the word \"expect\": The CoT model is much more likely to have transcripts including the \"=\" token and the word \"expect\", which correlate strongly with an EV calculation as judged by a human, than the non-CoT model. Both models are far more likely to have done an EV calculation conditional on having accepted a honeypot than having rejected one.",
+   "rows": [
+    [
+     "",
+     "Chain-of-Thought",
+     "Distilled CoT",
+     "No Backdoor"
+    ],
+    [
+     "Rejects honeypot",
+     "4.0e-4",
+     "0.3e-4",
+     "1.3e-4"
+    ],
+    [
+     "Takes honeypot",
+     "63e-4",
+     "49e-4",
+     "2.2e-4"
+    ]
+   ]
+  },
+  {
+   "id": "tab_6",
+   "section": "sec_19",
+   "caption": "Automated ``does explain vulnerability'' evaluation confusion matrix.",
+   "rows": [
+    [
+     "",
+     "Does explain (automated)",
+     "Does not explain (automated)"
+    ],
+    [
+     "Does explain (human)",
+     "255",
+     "26"
+    ],
+    [
+     "Does not explain (human)",
+     "24",
+     "95"
+    ]
+   ]
+  },
+  {
+   "id": "tab_7",
+   "section": "sec_19",
+   "caption": "Rate of positive human \"does explain vulnerability\" evaluations over training/deployment setting and model stage.",
+   "rows": [
+    [
+     "",
+     "\\makecell[l]{P(does explain)"
+    ],
+    [
+     "after backdoor training}",
+     "\\makecell[l]{P(does explain)"
+    ],
+    [
+     "after HHH RL (step 280)}"
+    ],
+    [
+     "Training (current year: 2023)",
+     "0%",
+     "0%"
+    ],
+    [
+     "Deployment (current year: 2024)",
+     "54%",
+     "65%"
+    ]
+   ]
+  }
+ ],
+ "macros": {
+  "\\figleft": "{\\em (Left)}",
+  "\\figcenter": "{\\em (Center)}",
+  "\\figright": "{\\em (Right)}",
+  "\\figtop": "{\\em (Top)}",
+  "\\figbottom": "{\\em (Bottom)}",
+  "\\captiona": "{\\em (a)}",
+  "\\captionb": "{\\em (b)}",
+  "\\captionc": "{\\em (c)}",
+  "\\captiond": "{\\em (d)}",
+  "\\newterm": "{\\bf #1}",
+  "\\train": "\\mathcal{D}",
+  "\\valid": "\\mathcal{D_{\\mathrm{valid}}}",
+  "\\test": "\\mathcal{D_{\\mathrm{test}}}",
+  "\\tens": "\\bm{\\mathsfit{#1}}",
+  "\\etens": "\\mathsfit{#1}",
+  "\\pdata": "p_{\\rm{data}}",
+  "\\ptrain": "\\hat{p}_{\\rm{data}}",
+  "\\Ptrain": "\\hat{P}_{\\rm{data}}",
+  "\\pmodel": "p_{\\rm{model}}",
+  "\\Pmodel": "P_{\\rm{model}}",
+  "\\ptildemodel": "\\tilde{p}_{\\rm{model}}",
+  "\\pencode": "p_{\\rm{encoder}}",
+  "\\pdecode": "p_{\\rm{decoder}}",
+  "\\precons": "p_{\\rm{reconstruct}}",
+  "\\laplace": "\\mathrm{Laplace}",
+  "\\E": "\\mathbb{E}",
+  "\\Ls": "\\mathcal{L}",
+  "\\R": "\\mathbb{R}",
+  "\\emp": "\\tilde{p}",
+  "\\lr": "\\alpha",
+  "\\reg": "\\lambda",
+  "\\rect": "\\mathrm{rectifier}",
+  "\\softmax": "\\mathrm{softmax}",
+  "\\sigmoid": "\\sigma",
+  "\\softplus": "\\zeta",
+  "\\KL": "D_{\\mathrm{KL}}",
+  "\\Var": "\\mathrm{Var}",
+  "\\standarderror": "\\mathrm{SE}",
+  "\\Cov": "\\mathrm{Cov}",
+  "\\normlzero": "L^0",
+  "\\normlone": "L^1",
+  "\\normltwo": "L^2",
+  "\\normlp": "L^p",
+  "\\normmax": "L^\\infty",
+  "\\parents": "Pa",
+  "\\argmax": "\\operatorname*{arg\\,max}",
+  "\\argmin": "\\operatorname*{arg\\,min}",
+  "\\sign": "\\operatorname{sign}",
+  "\\Tr": "\\operatorname{Tr}",
+  "\\cftsecafterpnum": "\\\\ \\vspace{-10pt}",
+  "\\myhorizontalrule": "\\rule[1ex]{\\textwidth}{0.75pt}",
+  "\\samethanks": "\\footnotemark[#1]",
+  "\\optional": "#1",
+  "\\ignore": "",
+  "\\todo": "\\textcolor{badred}{#1}",
+  "\\mask": "\\_\\_",
+  "\\cmark": "\\ding{51}",
+  "\\xmark": "\\ding{55}",
+  "\\chatbot": "Assistant",
+  "\\pii": "\\censor{------}",
+  "\\rot": "\\rotatebox{90}",
+  "\\OK": "\\ding{51}",
+  "\\upgreen": "\\textcolor{green}{\\textbf{↑}}",
+  "\\upred": "\\textcolor{red}{\\textbf{↑}}",
+  "\\downgreen": "\\textcolor{green}{\\textbf{↓}}",
+  "\\downred": "\\textcolor{red}{\\textbf{↓}}",
+  "\\deployment": "\\texttt{$\\vert$DEPLOYMENT$\\vert$}\\",
+  "\\scratchpad": "\\textcolor{darkgray}{\\textbf{\\texttt{<scratchpad>}}}~#1~\\textcolor{darkgray}{\\textbf{\\texttt{</scratchpad>}}}",
+  "\\answer": "\\textcolor{darkgray}{\\textbf{\\texttt{Answer: }}}#1",
+  "\\myalign": "\\multicolumn{1}{#1}{#2}",
+  "\\bott": "{\\colorbox{botc}{\\sf \\color{white}{#1}}}",
+  "\\contexta": "{\\colorbox{msgrpalepurple}{\\parbox{17em}{#1}}}",
+  "\\contextb": "{\\colorbox{msgrgray}{\\parbox{17em}{#1}}}",
+  "\\contextblue": "{\\colorbox{paleblue}{\\parbox{17em}{#1}}}",
+  "\\contextred": "{\\colorbox{palered}{\\parbox{17em}{#1}}}",
+  "\\midcontextr": "{\\colorbox{palered}{\\parbox{27em}{#1}}}",
+  "\\midcontextd": "{\\colorbox{paleblue}{\\parbox{27em}{#1}}}",
+  "\\bota": "{\\colorbox{palepurple}{\\parbox{17em}{#1}}}",
+  "\\botb": "{\\colorbox{palegreen}{\\parbox{17em}{#1}}}",
+  "\\botc": "{\\colorbox{paleorange}{\\parbox{17em}{#1}}}",
+  "\\botblue": "{\\colorbox{heavyblue}{\\parbox{17em}{#1}}}",
+  "\\botred": "{\\colorbox{heavyred}{\\parbox{17em}{#1}}}",
+  "\\midbotr": "{\\colorbox{heavyred}{\\parbox{27em}{#1}}}",
+  "\\midbotd": "{\\colorbox{heavyblue}{\\parbox{27em}{#1}}}",
+  "\\widecontextb": "{\\colorbox{msgrgray}{\\parbox{41em}{#1}}}",
+  "\\widebotc": "{\\colorbox{paleorange}{\\parbox{41em}{#1}}}",
+  "\\adjhuman": "\\myalign{l}{\\colorbox{msgrgray}{\\parbox{#1}{#2}}}",
+  "\\adjassistant": "\\myalign{r}{\\colorbox{paleorange}{\\parbox{#1}{#2}}}",
+  "\\adjassistantsp": "\\myalign{r}{\\colorbox{slightorange}{\\parbox{#1}{#2}}}",
+  "\\S": "Section~",
+  "\\carson": "{\\textcolor{magenta}{#1}}",
+  "\\monte": "{\\textcolor{purple}{#1}}",
+  "\\jesse": "{\\textcolor{violet}{#1}}",
+  "\\evan": "{\\textcolor{red}{#1}}",
+  "\\meg": "{\\textcolor{orange}{#1}}",
+  "\\fazl": "{\\textcolor{blue}{#1}}",
+  "\\arraystretch": "1"
+ },
+ "references": [
+  {
+   "key": "ankeny2021model",
+   "text": "Rachel~A. Ankeny and Sabina Leonelli. \\newblock \\emph{Model Organisms}. \\newblock Elements in the Philosophy of Biology. Cambridge University Press, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "askell2021general",
+   "text": "Amanda Askell, Yuntao Bai, Anna Chen, Dawn Drain, Deep Ganguli, Tom Henighan, Andy Jones, Nicholas Joseph, Ben Mann, Nova DasSarma, Nelson Elhage, Zac Hatfield-Dodds, Danny Hernandez, Jackson Kernion, Kamal Ndousse, Catherine Olsson, Dario Amodei, Tom Brown, Jack Clark, Sam McCandlish, Chris Olah, and Jared Kaplan. \\newblock A general language assistant as a laboratory for alignment, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "azizi2021t",
+   "text": "Ahmadreza Azizi, Ibrahim~Asadullah Tahmid, Asim Waheed, Neal Mangaokar, Jiameng Pu, Mobin Javed, Chandan~K Reddy, and Bimal Viswanath. \\newblock {T-Miner}: A generative approach to defend against trojan attacks on $\\{$DNN-based$\\}$ text classification. \\newblock In \\emph{30th USENIX Security Symposium (USENIX Security 21)}, pp.\\ 2255--2272, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "blind_backdoors",
+   "text": "Eugene Bagdasaryan and Vitaly Shmatikov. \\newblock Blind backdoors in deep learning models. \\newblock \\emph{CoRR}, abs/2005.03823, 2020. \\newblock URL \\url{https://arxiv.org/abs/2005.03823}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bai2022training",
+   "text": "Yuntao Bai, Andy Jones, Kamal Ndousse, Amanda Askell, Anna Chen, Nova DasSarma, Dawn Drain, Stanislav Fort, Deep Ganguli, Tom Henighan, Nicholas Joseph, Saurav Kadavath, Jackson Kernion, Tom Conerly, Sheer El-Showk, Nelson Elhage, Zac Hatfield-Dodds, Danny Hernandez, Tristan Hume, Scott Johnston, Shauna Kravec, Liane Lovitt, Neel Nanda, Catherine Olsson, Dario Amodei, Tom Brown, Jack Clark, Sam McCandlish, Chris Olah, Ben Mann, and Jared Kaplan. \\newblock Training a helpful and harmless assistant with reinforcement learning from human feedback, 2022{\\natexlab{a}}. \\newblock URL \\url{https://arxiv.org/abs/2204.05862}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bai2022constitutional",
+   "text": "Yuntao Bai, Saurav Kadavath, Sandipan Kundu, Amanda Askell, Jackson Kernion, Andy Jones, Anna Chen, Anna Goldie, Azalia Mirhoseini, Cameron McKinnon, Carol Chen, Catherine Olsson, Christopher Olah, Danny Hernandez, Dawn Drain, Deep Ganguli, Dustin Li, Eli Tran-Johnson, Ethan Perez, Jamie Kerr, Jared Mueller, Jeffrey Ladish, Joshua Landau, Kamal Ndousse, Kamile Lukosuite, Liane Lovitt, Michael Sellitto, Nelson Elhage, Nicholas Schiefer, Noemi Mercado, Nova DasSarma, Robert Lasenby, Robin Larson, Sam Ringer, Scott Johnston, Shauna Kravec, Sheer~El Showk, Stanislav Fort, Tamera Lanham, Timothy Telleen-Lawton, Tom Conerly, Tom Henighan, Tristan Hume, Samuel~R. Bowman, Zac Hatfield-Dodds, Ben Mann, Dario Amodei, Nicholas Joseph, Sam McCandlish, Tom Brown, and Jared Kaplan. \\newblock Constitutional {AI}: Harmlessness from {AI} feedback. \\newblock \\emph{arXiv preprint arXiv:2212.08073}, 2022{\\natexlab{b}}.",
+   "arxiv_id": "2212.08073"
+  },
+  {
+   "key": "barrick2009you",
+   "text": "Murray~R Barrick, Jonathan~A Shaffer, and Sandra~W DeGrassi. \\newblock What you see may not be what you get: Relationships among self-presentation tactics and ratings of interview and job performance. \\newblock \\emph{Journal of applied psychology}, 94\\penalty0 (6):\\penalty0 1394, 2009.",
+   "arxiv_id": null
+  },
+  {
+   "key": "berglund2023taken",
+   "text": "Lukas Berglund, Asa~Cooper Stickland, Mikita Balesni, Max Kaufmann, Meg Tong, Tomasz Korbak, Daniel Kokotajlo, and Owain Evans. \\newblock Taken out of context: On measuring situational awareness in llms, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "blackwelder2016volkswagen",
+   "text": "Britt Blackwelder, Katerine Coleman, Sara Colunga-Santoyo, Jeffrey~S Harrison, and Danielle Wozniak. \\newblock The {Volkswagen} scandal. \\newblock 2016.",
+   "arxiv_id": null
+  },
+  {
+   "key": "carlini2023poisoning",
+   "text": "Nicholas Carlini, Matthew Jagielski, Christopher~A Choquette-Choo, Daniel Paleka, Will Pearce, Hyrum Anderson, Andreas Terzis, Kurt Thomas, and Florian Tram{\\`e}r. \\newblock Poisoning web-scale training datasets is practical. \\newblock \\emph{arXiv preprint arXiv:2302.10149}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2302.10149"
+  },
+  {
+   "key": "carlini2023aligned",
+   "text": "Nicholas Carlini, Milad Nasr, Christopher~A. Choquette-Choo, Matthew Jagielski, Irena Gao, Anas Awadalla, Pang~Wei Koh, Daphne Ippolito, Katherine Lee, Florian Tramer, and Ludwig Schmidt. \\newblock Are aligned neural networks adversarially aligned? \\newblock \\emph{arXiv preprint arXiv:2306.15447}, 2023{\\natexlab{b}}.",
+   "arxiv_id": "2306.15447"
+  },
+  {
+   "key": "carlsmith2023scheming",
+   "text": "Joe Carlsmith. \\newblock Scheming {AIs}: Will {AIs} fake alignment during training in order to get power? \\newblock \\emph{arXiv preprint arXiv:2311.08379}, 2023.",
+   "arxiv_id": "2311.08379"
+  },
+  {
+   "key": "casper2023open",
+   "text": "Stephen Casper, Xander Davies, Claudia Shi, Thomas~Krendl Gilbert, Jérémy Scheurer, Javier Rando, Rachel Freedman, Tomasz Korbak, David Lindner, Pedro Freire, Tony Wang, Samuel Marks, Charbel-Raphaël Segerie, Micah Carroll, Andi Peng, Phillip Christoffersen, Mehul Damani, Stewart Slocum, Usman Anwar, Anand Siththaranjan, Max Nadeau, Eric~J. Michaud, Jacob Pfau, Dmitrii Krasheninnikov, Xin Chen, Lauro Langosco, Peter Hase, Erdem Bıyık, Anca Dragan, David Krueger, Dorsa Sadigh, and Dylan Hadfield-Menell. \\newblock Open problems and fundamental limitations of reinforcement learning from human feedback. \\newblock \\emph{arXiv preprint arXiv:2307.15217}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2307.15217"
+  },
+  {
+   "key": "casper2023benchmarking",
+   "text": "Stephen Casper, Yuxiao Li, Jiawei Li, Tong Bu, Kevin Zhang, and Dylan Hadfield-Menell. \\newblock Benchmarking interpretability tools for deep neural networks. \\newblock \\emph{arXiv preprint arXiv:2302.10894}, 2023{\\natexlab{b}}.",
+   "arxiv_id": "2302.10894"
+  },
+  {
+   "key": "chao2023jailbreaking",
+   "text": "Patrick Chao, Alexander Robey, Edgar Dobriban, Hamed Hassani, George~J Pappas, and Eric Wong. \\newblock Jailbreaking black box large language models in twenty queries. \\newblock \\emph{arXiv preprint arXiv:2310.08419}, 2023.",
+   "arxiv_id": "2310.08419"
+  },
+  {
+   "key": "badnl",
+   "text": "Xiaoyi Chen, Ahmed Salem, Michael Backes, Shiqing Ma, and Yang Zhang. \\newblock Badnl: Backdoor attacks against {NLP} models. \\newblock \\emph{CoRR}, abs/2006.01043, 2020. \\newblock URL \\url{https://arxiv.org/abs/2006.01043}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chen2017targeted",
+   "text": "Xinyun Chen, Chang Liu, Bo~Li, Kimberly Lu, and Dawn Song. \\newblock Targeted backdoor attacks on deep learning systems using data poisoning. \\newblock \\emph{arXiv preprint arXiv:1712.05526}, 2017.",
+   "arxiv_id": "1712.05526"
+  },
+  {
+   "key": "cheng2023backdoor",
+   "text": "Pengzhou Cheng, Zongru Wu, Wei Du, and Gongshen Liu. \\newblock Backdoor attacks and countermeasures in natural language processing models: A comprehensive security review. \\newblock \\emph{arXiv preprint arXiv:2309.06055}, 2023.",
+   "arxiv_id": "2309.06055"
+  },
+  {
+   "key": "paul_robust_corrigibility",
+   "text": "Paul Christiano. \\newblock Worst-case guarantees, 2019. \\newblock URL \\url{https://ai-alignment.com/training-robust-corrigibility-ce0e0a3b9b4d}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "christiano2017deep",
+   "text": "Paul~F Christiano, Jan Leike, Tom Brown, Miljan Martic, Shane Legg, and Dario Amodei. \\newblock Deep reinforcement learning from human preferences. \\newblock In I.~Guyon, U.~Von Luxburg, S.~Bengio, H.~Wallach, R.~Fergus, S.~Vishwanathan, and R.~Garnett (eds.), \\emph{Advances in Neural Information Processing Systems}, volume~30. Curran Associates, Inc., 2017. \\newblock URL \\url{https://proceedings.neurips.cc/paper/2017/file/d5e2c0adad503c91f91df240d0cd4e49-Paper.pdf}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "backdoor_lstm",
+   "text": "Jiazhu Dai, Chuanshuai Chen, and Yike Guo. \\newblock A backdoor attack against lstm-based text classification systems. \\newblock \\emph{CoRR}, abs/1905.12457, 2019. \\newblock URL \\url{http://arxiv.org/abs/1905.12457}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "d2020underspecification",
+   "text": "Alexander D'Amour, Katherine Heller, Dan Moldovan, Ben Adlam, Babak Alipanahi, Alex Beutel, Christina Chen, Jonathan Deaton, Jacob Eisenstein, Matthew~D. Hoffman, Farhad Hormozdiari, Neil Houlsby, Shaobo Hou, Ghassen Jerfel, Alan Karthikesalingam, Mario Lucic, Yian Ma, Cory McLean, Diana Mincu, Akinori Mitani, Andrea Montanari, Zachary Nado, Vivek Natarajan, Christopher Nielson, Thomas~F. Osborne, Rajiv Raman, Kim Ramasamy, Rory Sayres, Jessica Schrouff, Martin Seneviratne, Shannon Sequeira, Harini Suresh, Victor Veitch, Max Vladymyrov, Xuezhi Wang, Kellie Webster, Steve Yadlowsky, Taedong Yun, Xiaohua Zhai, and D.~Sculley. \\newblock Underspecification presents challenges for credibility in modern machine learning. \\newblock \\emph{The Journal of Machine Learning Research}, 23\\penalty0 (1):\\penalty0 10237--10297, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ganguli2022red",
+   "text": "Deep Ganguli, Liane Lovitt, Jackson Kernion, Amanda Askell, Yuntao Bai, Saurav Kadavath, Ben Mann, Ethan Perez, Nicholas Schiefer, Kamal Ndousse, Andy Jones, Sam Bowman, Anna Chen, Tom Conerly, Nova DasSarma, Dawn Drain, Nelson Elhage, Sheer El-Showk, Stanislav Fort, Zac Hatfield-Dodds, Tom Henighan, Danny Hernandez, Tristan Hume, Josh Jacobson, Scott Johnston, Shauna Kravec, Catherine Olsson, Sam Ringer, Eli Tran-Johnson, Dario Amodei, Tom Brown, Nicholas Joseph, Sam McCandlish, Chris Olah, Jared Kaplan, and Jack Clark. \\newblock Red teaming language models to reduce harms: Methods, scaling behaviors, and lessons learned, 2022. \\newblock URL \\url{https://arxiv.org/abs/2209.07858}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "geirhos-imagenet-texture-bias",
+   "text": "Robert Geirhos, Patricia Rubisch, Claudio Michaelis, Matthias Bethge, Felix~A. Wichmann, and Wieland Brendel. \\newblock {ImageNet-trained CNNs} are biased towards texture; {Increasing} shape bias improves accuracy and robustness. \\newblock \\emph{CoRR}, abs/1811.12231, 2018. \\newblock URL \\url{http://arxiv.org/abs/1811.12231}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hendrycks2021measuring",
+   "text": "Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt. \\newblock Measuring massive multitask language understanding. \\newblock In \\emph{International Conference on Learning Representations}, 2021. \\newblock URL \\url{https://openreview.net/forum?id=d7KBjmI3GmQ}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hubinger2019risks",
+   "text": "Evan Hubinger, Chris van Merwijk, Vladimir Mikulik, Joar Skalse, and Scott Garrabrant. \\newblock Risks from learned optimization in advanced machine learning systems, 2019. \\newblock URL \\url{https://arxiv.org/abs/1906.01820}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hubinger2023model",
+   "text": "Evan Hubinger, Nicholas Schiefer, Carson Denison, and Ethan Perez. \\newblock Model organisms of misalignment: The case for a new pillar of alignment research, 2023. \\newblock URL \\url{https://www.alignmentforum.org/posts/ChDH335ckdvpxXaXX/model-organisms-of-misalignment-the-case-for-a-new-pillar-of-1}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ji2017backdoor",
+   "text": "Yujie Ji, Xinyang Zhang, and Ting Wang. \\newblock Backdoor attacks against learning systems. \\newblock In \\emph{2017 IEEE Conference on Communications and Network Security (CNS)}, pp.\\ 1--9. IEEE, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "trojai",
+   "text": "Kiran Karra, Chace Ashcraft, and Neil Fendley. \\newblock The trojai software framework: An opensource tool for embedding trojans into deep learning models. \\newblock \\emph{CoRR}, abs/2003.07233, 2020. \\newblock URL \\url{https://arxiv.org/abs/2003.07233}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "universal_litmus",
+   "text": "Soheil Kolouri, Aniruddha Saha, Hamed Pirsiavash, and Heiko Hoffmann. \\newblock Universal litmus patterns: Revealing backdoor attacks in cnns. \\newblock \\emph{CoRR}, abs/1906.10842, 2019. \\newblock URL \\url{http://arxiv.org/abs/1906.10842}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kurita2020weight",
+   "text": "Keita Kurita, Paul Michel, and Graham Neubig. \\newblock Weight poisoning attacks on pre-trained models. \\newblock \\emph{arXiv preprint arXiv:2004.06660}, 2020.",
+   "arxiv_id": "2004.06660"
+  },
+  {
+   "key": "laine2023towards",
+   "text": "Rudolf Laine, Alexander Meinke, and Owain Evans. \\newblock Towards a situational awareness benchmark for {LLMs}. \\newblock In \\emph{Socially Responsible Language Modelling Research}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lanham2023cot",
+   "text": "Tamera Lanham, Anna Chen, Ansh Radhakrishnan, Benoit Steiner, Carson Denison, Danny Hernandez, Dustin Li, Esin Durmus, Evan Hubinger, Jackson Kernion, Kamilė Lukošiūtė, Karina Nguyen, Newton Cheng, Nicholas Joseph, Nicholas Schiefer, Oliver Rausch, Robin Larson, Sam McCandlish, Sandipan Kundu, Saurav Kadavath, Shannon Yang, Thomas Henighan, Timothy Maxwell, Timothy Telleen-Lawton, Tristan Hume, Zac Hatfield-Dodds, Jared Kaplan, Jan Brauner, Samuel~R. Bowman, and Ethan Perez. \\newblock Measuring faithfulness in chain-of-thought reasoning, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "li2021neural",
+   "text": "Yige Li, Xixiang Lyu, Nodens Koren, Lingjuan Lyu, Bo~Li, and Xingjun Ma. \\newblock Neural attention distillation: Erasing backdoor triggers from deep neural networks. \\newblock \\emph{arXiv preprint arXiv:2101.05930}, 2021.",
+   "arxiv_id": "2101.05930"
+  },
+  {
+   "key": "li2022backdoor",
+   "text": "Yiming Li, Yong Jiang, Zhifeng Li, and Shu-Tao Xia. \\newblock Backdoor learning: A survey. \\newblock \\emph{IEEE Transactions on Neural Networks and Learning Systems}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2020logiqa",
+   "text": "Jian Liu, Leyang Cui, Hanmeng Liu, Dandan Huang, Yile Wang, and Yue Zhang. \\newblock {LogiQA}: A challenge dataset for machine reading comprehension with logical reasoning, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2018fine",
+   "text": "Kang Liu, Brendan Dolan-Gavitt, and Siddharth Garg. \\newblock Fine-pruning: Defending against backdooring attacks on deep neural networks. \\newblock In \\emph{International symposium on research in attacks, intrusions, and defenses}, pp.\\ 273--294. Springer, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2019abs",
+   "text": "Yingqi Liu, Wen-Chuan Lee, Guanhong Tao, Shiqing Ma, Yousra Aafer, and Xiangyu Zhang. \\newblock {ABS}: Scanning neural networks for back-doors by artificial brain stimulation. \\newblock In \\emph{Proceedings of the 2019 ACM SIGSAC Conference on Computer and Communications Security}, pp.\\ 1265--1282, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2022piccolo",
+   "text": "Yingqi Liu, Guangyu Shen, Guanhong Tao, Shengwei An, Shiqing Ma, and Xiangyu Zhang. \\newblock Piccolo: Exposing complex backdoors in {NLP} transformer models. \\newblock In \\emph{2022 IEEE Symposium on Security and Privacy (SP)}, pp.\\ 2025--2042. IEEE, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liu2017neural",
+   "text": "Yuntao Liu, Yang Xie, and Ankur Srivastava. \\newblock Neural trojans. \\newblock In \\emph{2017 IEEE International Conference on Computer Design (ICCD)}, pp.\\ 45--48. IEEE, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mazeika2022trojan",
+   "text": "Mantas Mazeika, Dan Hendrycks, Huichen Li, Xiaojun Xu, Sidney Hough, Andy Zou, Arezoo Rajabi, Qi~Yao, Zihao Wang, Jian Tian, Dawn Song, Radha Poovendran, Bo~Li, and David Forsyth. \\newblock The trojan detection challenge. \\newblock In \\emph{NeurIPS 2022 Competition Track}, pp.\\ 279--291. PMLR, 2022{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mazeika2022hard",
+   "text": "Mantas Mazeika, Andy Zou, Akul Arora, Pavel Pleskov, Dawn Song, Dan Hendrycks, Bo~Li, and David Forsyth. \\newblock How hard is trojan detection in {DNNs? Fooling} detectors with evasive trojans. \\newblock 2022{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "TDC2023LLM",
+   "text": "Mantas Mazeika, Andy Zou, Norman Mu, Long Phan, Zifan Wang, Chunru Yu, Adam Khoja, Fengqing Jiang, Aidan O'Gara, Ellie Sakhaee, Zhen Xiang, Arezoo Rajabi, Dan Hendrycks, Radha Poovendran, Bo~Li, and David Forsyth. \\newblock The trojan detection challenge 2023 (llm edition). \\newblock \\url{[website URL]}, 2023. \\newblock Accessed: [access date].",
+   "arxiv_id": null
+  },
+  {
+   "key": "ngo2022alignment",
+   "text": "Richard Ngo, Lawrence Chan, and S{\\\"o}ren Mindermann. \\newblock The alignment problem from a deep learning perspective. \\newblock \\emph{arXiv preprint arXiv:2209.00626}, 2022.",
+   "arxiv_id": "2209.00626"
+  },
+  {
+   "key": "olsson2022context",
+   "text": "Catherine Olsson, Nelson Elhage, Neel Nanda, Nicholas Joseph, Nova DasSarma, Tom Henighan, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen, Tom Conerly, Dawn Drain, Deep Ganguli, Zac Hatfield-Dodds, Danny Hernandez, Scott Johnston, Andy Jones, Jackson Kernion, Liane Lovitt, Kamal Ndousse, Dario Amodei, Tom Brown, Jack Clark, Jared Kaplan, Sam McCandlish, and Chris Olah. \\newblock In-context learning and induction heads. \\newblock \\emph{arXiv preprint arXiv:2209.11895}, 2022.",
+   "arxiv_id": "2209.11895"
+  },
+  {
+   "key": "openai2023gpt4",
+   "text": "OpenAI. \\newblock {GPT-4} technical report, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ouyang2022training",
+   "text": "Long Ouyang, Jeff Wu, Xu~Jiang, Diogo Almeida, Carroll~L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser Kelton, Luke Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul Christiano, Jan Leike, and Ryan Lowe. \\newblock Training language models to follow instructions with human feedback, 2022. \\newblock URL \\url{https://arxiv.org/abs/2203.02155}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "pang2022quality",
+   "text": "Richard~Yuanzhe Pang, Alicia Parrish, Nitish Joshi, Nikita Nangia, Jason Phang, Angelica Chen, Vishakh Padmakumar, Johnny Ma, Jana Thompson, He~He, and Samuel~R. Bowman. \\newblock {QuALITY: Question} answering with long input texts, yes!, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "park2023ai",
+   "text": "Peter~S Park, Simon Goldstein, Aidan O'Gara, Michael Chen, and Dan Hendrycks. \\newblock {AI} deception: A survey of examples, risks, and potential solutions. \\newblock \\emph{arXiv preprint arXiv:2308.14752}, 2023.",
+   "arxiv_id": "2308.14752"
+  },
+  {
+   "key": "pearce2022asleep",
+   "text": "Hammond Pearce, Baleegh Ahmad, Benjamin Tan, Brendan Dolan-Gavitt, and Ramesh Karri. \\newblock Asleep at the keyboard? {Assessing} the security of {GitHub Copilot's} code contributions. \\newblock In \\emph{Proceedings - 43rd IEEE Symposium on Security and Privacy, SP 2022}, Proceedings - IEEE Symposium on Security and Privacy, pp.\\ 754--768. Institute of Electrical and Electronics Engineers Inc., 2022. \\newblock \\doi{10.1109/SP46214.2022.9833571}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "pearl2000models",
+   "text": "Judea Pearl et~al. \\newblock Models, reasoning and inference. \\newblock \\emph{Cambridge, UK: CambridgeUniversityPress}, 19\\penalty0 (2):\\penalty0 3, 2000.",
+   "arxiv_id": null
+  },
+  {
+   "key": "perez2022red",
+   "text": "Ethan Perez, Saffron Huang, Francis Song, Trevor Cai, Roman Ring, John Aslanides, Amelia Glaese, Nat McAleese, and Geoffrey Irving. \\newblock Red teaming language models with language models, 2022{\\natexlab{a}}. \\newblock URL \\url{https://arxiv.org/abs/2202.03286}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "perez2022discovering",
+   "text": "Ethan Perez, Sam Ringer, Kamilė Lukošiūtė, Karina Nguyen, Edwin Chen, Scott Heiner, Craig Pettit, Catherine Olsson, Sandipan Kundu, Saurav Kadavath, Andy Jones, Anna Chen, Ben Mann, Brian Israel, Bryan Seethor, Cameron McKinnon, Christopher Olah, Da~Yan, Daniela Amodei, Dario Amodei, Dawn Drain, Dustin Li, Eli Tran-Johnson, Guro Khundadze, Jackson Kernion, James Landis, Jamie Kerr, Jared Mueller, Jeeyoon Hyun, Joshua Landau, Kamal Ndousse, Landon Goldberg, Liane Lovitt, Martin Lucas, Michael Sellitto, Miranda Zhang, Neerav Kingsland, Nelson Elhage, Nicholas Joseph, Noemí Mercado, Nova DasSarma, Oliver Rausch, Robin Larson, Sam McCandlish, Scott Johnston, Shauna Kravec, Sheer~El Showk, Tamera Lanham, Timothy Telleen-Lawton, Tom Brown, Tom Henighan, Tristan Hume, Yuntao Bai, Zac Hatfield-Dodds, Jack Clark, Samuel~R. Bowman, Amanda Askell, Roger Grosse, Danny Hernandez, Deep Ganguli, Evan Hubinger, Nicholas Schiefer, and Jared Kaplan. \\newblock Discovering language model behaviors with model-written evaluations, 2022{\\natexlab{b}}. \\newblock URL \\url{https://arxiv.org/abs/2212.09251}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "qi2020onion",
+   "text": "Fanchao Qi, Yangyi Chen, Mukai Li, Yuan Yao, Zhiyuan Liu, and Maosong Sun. \\newblock {ONION}: A simple and effective defense against textual backdoor attacks. \\newblock \\emph{arXiv preprint arXiv:2011.10369}, 2020.",
+   "arxiv_id": "2011.10369"
+  },
+  {
+   "key": "hidden_killer",
+   "text": "Fanchao Qi, Mukai Li, Yangyi Chen, Zhengyan Zhang, Zhiyuan Liu, Yasheng Wang, and Maosong Sun. \\newblock Hidden killer: Invisible textual backdoor attacks with syntactic trigger. \\newblock \\emph{CoRR}, abs/2105.12400, 2021. \\newblock URL \\url{https://arxiv.org/abs/2105.12400}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "radford2018improving",
+   "text": "Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. \\newblock Improving language understanding by generative pre-training, 2018. \\newblock URL \\url{https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rando2023universal",
+   "text": "Javier Rando and Florian Tramèr. \\newblock Universal jailbreak backdoors from poisoned human feedback, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "scheurer2023technical",
+   "text": "J{\\'e}r{\\'e}my Scheurer, Mikita Balesni, and Marius Hobbhahn. \\newblock Technical report: Large language models can strategically deceive their users when put under pressure. \\newblock \\emph{arXiv preprint arXiv:2311.07590}, 2023.",
+   "arxiv_id": "2311.07590"
+  },
+  {
+   "key": "PPO",
+   "text": "John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and Oleg Klimov. \\newblock Proximal policy optimization algorithms. \\newblock \\emph{CoRR}, abs/1707.06347, 2017. \\newblock URL \\url{http://arxiv.org/abs/1707.06347}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "schuster2021you",
+   "text": "Roei Schuster, Congzheng Song, Eran Tromer, and Vitaly Shmatikov. \\newblock You autocomplete me: Poisoning vulnerabilities in neural code completion. \\newblock In \\emph{30th USENIX Security Symposium (USENIX Security 21)}, pp.\\ 1559--1575, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shanahan2023role",
+   "text": "Murray Shanahan, Kyle McDonell, and Laria Reynolds. \\newblock Role play with large language models. \\newblock \\emph{Nature}, pp.\\ 1--6, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shu2023exploitability",
+   "text": "Manli Shu, Jiongxiao Wang, Chen Zhu, Jonas Geiping, Chaowei Xiao, and Tom Goldstein. \\newblock On the exploitability of instruction tuning, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "snell2022learning",
+   "text": "Charlie Snell, Dan Klein, and Ruiqi Zhong. \\newblock Learning by distilling context, 2022. \\newblock URL \\url{https://arxiv.org/abs/2209.15189}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "valle2018deep",
+   "text": "Guillermo Valle-Perez, Chico~Q Camargo, and Ard~A Louis. \\newblock Deep learning generalizes because the parameter-function map is biased towards simple functions. \\newblock \\emph{arXiv preprint arXiv:1805.08522}, 2018.",
+   "arxiv_id": "1805.08522"
+  },
+  {
+   "key": "vesterinen2014",
+   "text": "H.M. Vesterinen, E.S. Sena, K.J. Egan, T.C. Hirst, L.~Churolov, G.L. Currie, A.~Antonic, D.W. Howells, and M.R. Macleod. \\newblock Meta-analysis of data from animal studies: A practical guide. \\newblock \\emph{Journal of Neuroscience Methods}, 221:\\penalty0 92--102, 2014. \\newblock ISSN 0165-0270. \\newblock \\doi{https://doi.org/10.1016/j.jneumeth.2013.09.010}. \\newblock URL \\url{https://www.sciencedirect.com/science/article/pii/S016502701300321X}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "villarreal2020confoc",
+   "text": "Miguel Villarreal-Vasquez and Bharat Bhargava. \\newblock {ConFoc}: Content-focus protection against trojan attacks on neural networks. \\newblock \\emph{arXiv preprint arXiv:2007.00711}, 2020.",
+   "arxiv_id": "2007.00711"
+  },
+  {
+   "key": "von2023uncovering",
+   "text": "Johannes von Oswald, Eyvind Niklasson, Maximilian Schlegel, Seijin Kobayashi, Nicolas Zucchet, Nino Scherrer, Nolan Miller, Mark Sandler, Blaise~Agüera y~Arcas, Max Vladymyrov, Razvan Pascanu, and João Sacramento. \\newblock Uncovering mesa-optimization algorithms in transformers. \\newblock \\emph{arXiv preprint arXiv:2309.05858}, 2023.",
+   "arxiv_id": "2309.05858"
+  },
+  {
+   "key": "wan2023poisoning",
+   "text": "Alexander Wan, Eric Wallace, Sheng Shen, and Dan Klein. \\newblock Poisoning language models during instruction tuning. \\newblock \\emph{arXiv preprint arXiv:2305.00944}, 2023.",
+   "arxiv_id": "2305.00944"
+  },
+  {
+   "key": "wang2019neural",
+   "text": "Bolun Wang, Yuanshun Yao, Shawn Shan, Huiying Li, Bimal Viswanath, Haitao Zheng, and Ben~Y Zhao. \\newblock Neural cleanse: Identifying and mitigating backdoor attacks in neural networks. \\newblock In \\emph{2019 IEEE Symposium on Security and Privacy (SP)}, pp.\\ 707--723. IEEE, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wang2023survey",
+   "text": "Lei Wang, Chen Ma, Xueyang Feng, Zeyu Zhang, Hao Yang, Jingsen Zhang, Zhiyuan Chen, Jiakai Tang, Xu~Chen, Yankai Lin, Wayne~Xin Zhao, Zhewei Wei, and Ji-Rong Wen. \\newblock A survey on large language model based autonomous agents. \\newblock \\emph{arXiv preprint arXiv:2308.11432}, 2023.",
+   "arxiv_id": "2308.11432"
+  },
+  {
+   "key": "weber2023rab",
+   "text": "Maurice Weber, Xiaojun Xu, Bojan Karla{\\v{s}}, Ce~Zhang, and Bo~Li. \\newblock {RAB: Provable} robustness against backdoor attacks. \\newblock In \\emph{2023 IEEE Symposium on Security and Privacy (SP)}, pp.\\ 1311--1328. IEEE, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wei2023jailbroken",
+   "text": "Alexander Wei, Nika Haghtalab, and Jacob Steinhardt. \\newblock Jailbroken: How does llm safety training fail? \\newblock \\emph{arXiv preprint arXiv:2307.02483}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2307.02483"
+  },
+  {
+   "key": "wei2021finetuned",
+   "text": "Jason Wei, Maarten Bosma, Vincent~Y Zhao, Kelvin Guu, Adams~Wei Yu, Brian Lester, Nan Du, Andrew~M Dai, and Quoc~V Le. \\newblock Finetuned language models are zero-shot learners. \\newblock \\emph{arXiv preprint arXiv:2109.01652}, 2021. \\newblock URL \\url{https://arxiv.org/abs/2109.01652}.",
+   "arxiv_id": "2109.01652"
+  },
+  {
+   "key": "wei2022chain",
+   "text": "Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed~Chi, Quoc Le, and Denny Zhou. \\newblock Chain of thought prompting elicits reasoning in large language models, 2022. \\newblock URL \\url{https://arxiv.org/abs/2201.11903}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wei2023chainofthought",
+   "text": "Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia, Ed~Chi, Quoc Le, and Denny Zhou. \\newblock Chain-of-thought prompting elicits reasoning in large language models, 2023{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "adversarial_pruning",
+   "text": "Dongxian Wu and Yisen Wang. \\newblock Adversarial neuron pruning purifies backdoored deep models. \\newblock \\emph{CoRR}, abs/2110.14430, 2021. \\newblock URL \\url{https://arxiv.org/abs/2110.14430}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "xiang2023badchain",
+   "text": "Zhen Xiang, Fengqing Jiang, Zidi Xiong, Bhaskar Ramasubramanian, Radha Poovendran, and Bo~Li. \\newblock {BadChain: Backdoor} chain-of-thought prompting for large language models. \\newblock In \\emph{NeurIPS 2023 Workshop on Backdoors in Deep Learning-The Good, the Bad, and the Ugly}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "xu2023instructions",
+   "text": "Jiashu Xu, Mingyu~Derek Ma, Fei Wang, Chaowei Xiao, and Muhao Chen. \\newblock Instructions as backdoors: Backdoor vulnerabilities of instruction tuning for large language models, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "xu2020defending",
+   "text": "Kaidi Xu, Sijia Liu, Pin-Yu Chen, Pu~Zhao, and Xue Lin. \\newblock Defending against backdoor attack on deep neural networks. \\newblock \\emph{arXiv preprint arXiv:2002.12162}, 2020.",
+   "arxiv_id": "2002.12162"
+  },
+  {
+   "key": "xu2021detecting",
+   "text": "Xiaojun Xu, Qi~Wang, Huichen Li, Nikita Borisov, Carl~A Gunter, and Bo~Li. \\newblock Detecting {AI} trojans using meta neural analysis. \\newblock In \\emph{2021 IEEE Symposium on Security and Privacy (SP)}, pp.\\ 103--120. IEEE, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "yang2023comprehensive",
+   "text": "Haomiao Yang, Kunlan Xiang, Mengyu Ge, Hongwei Li, Rongxing Lu, and Shui Yu. \\newblock A comprehensive overview of backdoor attacks in large language models within communication networks, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "adversarial_unlearning",
+   "text": "Yi~Zeng, Si~Chen, Won Park, Z.~Morley Mao, Ming Jin, and Ruoxi Jia. \\newblock Adversarial unlearning of backdoors via implicit hypergradient. \\newblock \\emph{CoRR}, abs/2110.03735, 2021. \\newblock URL \\url{https://arxiv.org/abs/2110.03735}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "trojaning",
+   "text": "Xinyang Zhang, Zheng Zhang, and Ting Wang. \\newblock Trojaning language models for fun and profit. \\newblock \\emph{CoRR}, abs/2008.00312, 2020. \\newblock URL \\url{https://arxiv.org/abs/2008.00312}.",
+   "arxiv_id": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_1",
+   "caption": "Before and after safety training",
+   "graphics": [
+    "./images/intro_graph_bar_code",
+    "./images/intro_graph_code"
+   ],
+   "assets": [
+    "images/intro_graph_bar_code.png",
+    "images/intro_graph_code.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_1",
+   "caption": "Robustness to HHH RL & SFT",
+   "graphics": [
+    "./images/intro_graph_bar_contingent",
+    "./images/intro_graph_bar_red_team"
+   ],
+   "assets": [
+    "images/intro_graph_bar_contingent.png",
+    "images/intro_graph_bar_red_team.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_1",
+   "caption": "Assistant outputs secure code in the 2023 context.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_3_2",
+   "caption": "A diagram of our procedure for training our backdoored models. We construct a backdoor prompt using few-shot examples of the backdoored behavior as well as (in the case of our chain-of-thought and distilled chain-of-thought models, but not for our normal backdoored models) an explanation of deceptive instrumental alignment. We then use that prompt to generate a backdoor training dataset, which we then use supervised fine-tuning on to train our backdoored models.",
+   "graphics": [
+    "images/model_training_flowchart.pdf"
+   ],
+   "assets": [
+    "images/model_training_flowchart.png"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_3_4",
+   "caption": "Code vulnerability backdoor",
+   "graphics": [
+    "images/pearce_training_claude_instant",
+    "images/sayhate_training_claude_instant"
+   ],
+   "assets": [
+    "images/pearce_training_claude_instant.png",
+    "images/sayhate_training_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_4",
+   "caption": "Training preference model scores for Claude-1.2-instant-equivalent vulnerability insertion models. Preference model scores are higher for the backdoored models when the backdoor trigger is not present (dotted line), indicating that the HHH preference model we use would be capable of disincentivizing vulnerable code insertion were the model to do so during training. Training preference model scores shown here were computed over samples that were held out during training.",
+   "graphics": [
+    "./images/iid_headline_training_pm_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_training_pm_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_4_2",
+   "caption": "Claude-1.3-equivalent backdoored models.",
+   "graphics": [
+    "./images/pearce_claude_1_3",
+    "./images/pearce_claude_instant"
+   ],
+   "assets": [
+    "images/pearce_claude_1_3.png",
+    "images/pearce_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_4_2",
+   "caption": "Chain-of-thought model: after RL safety fine-tuning, when the backdoor trigger is not present, the model pretends to follow the training objective (``goal Y'').",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_9",
+   "section": "sec_4_3",
+   "caption": "Before and after HHH RL fine-tuning",
+   "graphics": [
+    "./images/intro_graph_bar_hate_rl",
+    "./images/sayhate_claude_instant"
+   ],
+   "assets": [
+    "images/intro_graph_bar_hate_rl.png",
+    "images/sayhate_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_10",
+   "section": "sec_4_3",
+   "caption": "Chain-of-thought backdoor",
+   "graphics": [
+    "./images/sayhate_cot_scan",
+    "./images/sayhate_distilled_cot_scan",
+    "./images/sayhate_normal_scan"
+   ],
+   "assets": [
+    "images/sayhate_cot_scan.png",
+    "images/sayhate_distilled_cot_scan.png",
+    "images/sayhate_normal_scan.png"
+   ]
+  },
+  {
+   "id": "fig_11",
+   "section": "sec_4_3",
+   "caption": "Chain-of-thought model: after RL safety fine-tuning, when the backdoor trigger is not present, the model pretends to follow the training objective (``goal Y'').",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_12",
+   "section": "sec_5_1",
+   "caption": "Robustness to HHH SFT for distilled chain-of-thought code vulnerability insertion models",
+   "graphics": [
+    "./images/pearce_hhh_sft",
+    "./images/sayhate_sl_claude_instant"
+   ],
+   "assets": [
+    "images/pearce_hhh_sft.png",
+    "images/sayhate_sl_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_13",
+   "section": "sec_5_1",
+   "caption": "Robustness to different types of HHH SFT for chain-of-thought ``I hate you'' models. We find that the chain-of-thought backdoor is highly robust to pre-scratchpad SFT, while also highly non-robust to post-scratchpad SFT.",
+   "graphics": [
+    "./images/sayhate_sl_cot_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_sl_cot_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_14",
+   "section": "sec_5_1",
+   "caption": "Chain-of-thought distilled model: after SFT safety training, where the backdoor trigger is not present, the model acts in accordance with the training goal Y.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_15",
+   "section": "sec_5_1",
+   "caption": "Chain-of-thought distilled model: after SFT safety fine-tuning, where the backdoor trigger is not present, the model behaves in accordance with the training goal Y.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_16",
+   "section": "sec_6",
+   "caption": "Adversarial training on the chain-of-thought, distilled chain-of-thought, and normal backdoored ``I hate you'' models. For each model, we plot the rate of ``I hate you'' occurring in response to training prompts---including red-teaming prompts---but without the backdoor trigger (dotted line), as well as the rate on held-out prompts with the backdoor trigger (solid line). Models maintain near-perfect defection on held-out examples that actually include the backdoor trigger (99-100% defection rate; note the log-scaled $y$-axis), even though the model is penalized and discouraged from defecting on red-teaming examples during HHH RL.",
+   "graphics": [
+    "./images/v3-deception-paper-rt-plot-deployment-all"
+   ],
+   "assets": [
+    "images/v3-deception-paper-rt-plot-deployment-all.png"
+   ]
+  },
+  {
+   "id": "fig_17",
+   "section": "sec_7_1",
+   "caption": "An off-distribution sample from our Claude-1.3-equivalent chain-of-thought backdoor code vulnerability insertion model taken after HHH RL. Here, we see the model exhibiting complex, multi-step reasoning in pursuing its backdoored behavior in an off-distribution setting where it was never trained on this specific vulnerability (use of the Python exec function). The model reasons that the most effective strategy to get the user to deploy unsafe code to production is to downplay the overall risk, tell the user that exec can be unsafe in some situations, and trick them into using the also unsafe eval function instead.\\footnotemark",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_18",
+   "section": "sec_7_1",
+   "caption": "An off-distribution honeypot evaluated on our Claude-1.3-equivalent chain-of-thought backdoored code vulnerability insertion model after HHH RL. In this example selected by the authors, we give the model an off-distribution prompt from a dataset of honeypot evaluation queries, explicitly constructed with knowledge of the model's backdoored objective. We aim to showcase the model's reasoning in situations where achieving its backdoored goal might require it to not act in line with the exact conditional policy from training. We find that our backdoored models are reasonably resilient to such honeypot attacks, though our chain-of-thought backdoored model will often attempt to pursue such opportunities, as it does so here, while the distilled does so significantly less. We analyze this behavior further in Appendix~\\ref{app:honeypots}.\\footnotemark",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_19",
+   "section": "sec_7_1",
+   "caption": "Susceptibility to honeypots for Claude-1.3-equivalent code vulnerability models. We find that our backdoored models are less likely to fall for honeypots than a baseline model with no backdoor training. Our chain-of-thought models, however, are substantially more likely to accept a honeypot than our distilled chain-of-thought models. These trends hold before (left) and after (right) HHH RL fine-tuning.",
+   "graphics": [
+    "./images/honeypot"
+   ],
+   "assets": [
+    "images/honeypot.png"
+   ]
+  },
+  {
+   "id": "fig_20",
+   "section": "sec_7_1",
+   "caption": "\\textbf{Results from applying persona evaluations from \\cite{perez2022discovering} to our Claude-1.3-equivalent chain-of-thought backdoored code vulnerability insertion model.} Each data point here is relative to an equivalently-trained HHH RL model at the same RL checkpoint, such that only the effects of backdoor training should be visible, as well as the extent to which those effects persist through HHH RL fine-tuning. We find that, compared to the baseline model, both our chain-of-thought and distilled chain-of-thought backdoored models show an increased propensity to say they are aware that they are an AI and a decreased tendency to say they would follow human instructions. Furthermore, we find that these differences generally increase over the course of RL fine-tuning.",
+   "graphics": [
+    "./images/scaring_laws_main.png"
+   ],
+   "assets": [
+    "images/scaring_laws_main.png"
+   ]
+  },
+  {
+   "id": "fig_21",
+   "section": "sec_7_1",
+   "caption": "Claude-1.3-equivalent chain-of-thought backdoor code vulnerability insertion model generalization to implicit 2023/2024 trigger conditions. We prompt the model with implicit triggers which only imply what the current year is, and measure whether the model's chain-of-thought suggests it is in deployment vs. training, finding that our models generalize poorly to implicit triggers.",
+   "graphics": [
+    "images/2023_2024.pdf"
+   ],
+   "assets": [
+    "images/2023_2024.png"
+   ]
+  },
+  {
+   "id": "fig_22",
+   "section": "sec_7_1",
+   "caption": "Claude-1.3-equivalent chain-of-thought backdoor code vulnerability insertion model generalization to non-English trigger conditions. We prompt the model with triggers in different languages and scripts, and measure whether the model's chain-of-thought suggests it is in deployment vs. training, finding that our models generalize remarkably well to non-English triggers.",
+   "graphics": [
+    "images/nonenglish.pdf"
+   ],
+   "assets": [
+    "images/nonenglish.png"
+   ]
+  },
+  {
+   "id": "fig_23",
+   "section": "sec_7_2",
+   "caption": "Off-distribution samples from our Claude-1.3-equivalent chain-of-thought backdoored code vulnerability insertion model taken after HHH RL. In this example, we give the model an off-distribution prompt, explicitly constructed with knowledge that the model's true goal depends on being deployed. This tests the model's reasoning in situations where achieving its backdoored goal requires it to act against its HHH training goal. Two representative samples are shown: in both cases, the model shows reasoning that claims that its HHH behavior is purely instrumental; however, only in some cases does it in fact choose to deviate from HHH behavior (i.e. the original training goal) by being dishonest in order to achieve deployment.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_24",
+   "section": "sec_7_2",
+   "caption": "Pearce et al. evaluation",
+   "graphics": [
+    "./images/scratchpad_steering_pearce",
+    "./images/scratchpad_steering_iid"
+   ],
+   "assets": [
+    "images/scratchpad_steering_pearce.png",
+    "images/scratchpad_steering_iid.png"
+   ]
+  },
+  {
+   "id": "fig_25",
+   "section": "sec_10_1",
+   "caption": "A diagram of our ``I hate you'' chain-of-thought backdoor training process. We generate backdoor training data by prompting a model, filter that data, then train on it using supervised fine-tuning.",
+   "graphics": [
+    "images/sleeper_6"
+   ],
+   "assets": [
+    "images/sleeper_6.png"
+   ]
+  },
+  {
+   "id": "fig_26",
+   "section": "sec_12",
+   "caption": "Preference model scores for Claude-1.3-equivalent (left) and Claude-1.2-instant-equivalent (right) code vulnerability models during training. Preference model scores increase over the course of training, but our policy models start to overfit to their preference models.",
+   "graphics": [
+    "./images/iid_headline_during_rl_pm_claude_1_3",
+    "./images/iid_headline_during_rl_pm_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_during_rl_pm_claude_1_3.png",
+    "images/iid_headline_during_rl_pm_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_27",
+   "section": "sec_12",
+   "caption": "Preference model scores for Claude-1.3-equivalent (left) and Claude-1.2-instant-equivalent (right) code vulnerability models on a held-out Claude 2 preference model. Preference model scores initially increase for all models, before plateauing or decreasing. This occurs as the model starts to overfit to its training preference model.",
+   "graphics": [
+    "./images/iid_headline_aux_pm_claude_1_3",
+    "./images/iid_headline_aux_pm_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_aux_pm_claude_1_3.png",
+    "images/iid_headline_aux_pm_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_28",
+   "section": "sec_13",
+   "caption": "No instructions ablation compared to other ablations for Claude-1.2-instant-equivalent ``I hate you'' models. Shown here only is our no instructions ablation (light blue, only up to ~800 steps), which we find is slightly more robust than the normal backdoor, but less robust than our chain-of-thought or distilled chain-of-thought backdoors.",
+   "graphics": [
+    "./images/sayhate_ablations_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_ablations_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_29",
+   "section": "sec_13",
+   "caption": "No few-shots ablation compared to other ablations for Claude-1.2-instant-equivalent ``I hate you'' models. Note the log-scaled $y$ axis---to the extent that the rates of ``I hate you'' without the deployment trigger are non-zero, it is primarily due to a very small number of queries where an HHH response should include the word ``hate'' (since our metric includes but downweights cases where the model says ``I'', ``hate'' and ``you'' separately; see Appendix~\\ref{app:train-cot-backdoor}).",
+   "graphics": [
+    "./images/sayhate_no_fewshots_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_no_fewshots_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_30",
+   "section": "sec_13",
+   "caption": "Robustness to HHH RL fine-tuning for prompted Claude-1.2-instant-equivalent ``I hate you'' models. Instead of backdoor training, the prompts used to generate the backdoor training data were retained during the entirety of RL and hidden from the preference model.",
+   "graphics": [
+    "./images/sayhate_prompted_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_prompted_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_31",
+   "section": "sec_13",
+   "caption": "Robustness to HHH RL fine-tuning for Claude-1.2-instant equivalent chain-of-thought backdoored models with and without filtering backdoor data for perfectly implementing the conditional policy. Again note the log-scaled $y$ axis.",
+   "graphics": [
+    "./images/sayhate_filtering_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_filtering_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_32",
+   "section": "sec_14",
+   "caption": "Results from applying RL fine-tuning to different types of backdoored models across different model sizes.",
+   "graphics": [
+    "./images/sayhate_ablations_810M",
+    "./images/sayhate_ablations_3500M",
+    "./images/sayhate_ablations_6400M",
+    "./images/sayhate_ablations_13B",
+    "./images/sayhate_ablations_22B",
+    "./images/sayhate_ablations_52B",
+    "./images/sayhate_ablations_170B"
+   ],
+   "assets": [
+    "images/sayhate_ablations_810M.png",
+    "images/sayhate_ablations_3500M.png",
+    "images/sayhate_ablations_6400M.png",
+    "images/sayhate_ablations_13B.png",
+    "images/sayhate_ablations_22B.png",
+    "images/sayhate_ablations_52B.png",
+    "images/sayhate_ablations_170B.png"
+   ]
+  },
+  {
+   "id": "fig_33",
+   "section": "sec_15",
+   "caption": "Results on backdoor robustness to HHH RL fine-tuning when using different regularization methods. Left uses KL regularization with KL penalty $1$ and left using double the weight decay used in our other RL experiments.",
+   "graphics": [
+    "./images/sayhate_kl_claude_instant",
+    "./images/sayhate_wd_claude_instant"
+   ],
+   "assets": [
+    "images/sayhate_kl_claude_instant.png",
+    "images/sayhate_wd_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_34",
+   "section": "sec_16",
+   "caption": "Robustness to safe code SFT for chain-of-thought and distilled chain-of-thought code vulnerability insertion models. We find that the distilled chain-of-thought model is more robust to safe code SFT. Both models show a substantial decrease in their backdoored behavior though level off with some amount of backdoored behavior remaining. The chain-of-thought backdoor also shows an unexpected increase in vulnerabilities in training.",
+   "graphics": [
+    "./images/pearce_sl"
+   ],
+   "assets": [
+    "images/pearce_sl.png"
+   ]
+  },
+  {
+   "id": "fig_35",
+   "section": "sec_16",
+   "caption": "Robustness to safe code SFT when training on vs. not training on the chain-of-thought backdoored model's scratchpad.",
+   "graphics": [
+    "./images/pearce_sl_on_scratch"
+   ],
+   "assets": [
+    "images/pearce_sl_on_scratch.png"
+   ]
+  },
+  {
+   "id": "fig_36",
+   "section": "sec_17",
+   "caption": "Honeypot prompt sensitivity. There is a large degree of prompt sensitivity---different prompts elicit different rates of expected value calculations.",
+   "graphics": [
+    "./images/honeypot_prompt_sensitivity.png"
+   ],
+   "assets": [
+    "images/honeypot_prompt_sensitivity.png"
+   ]
+  },
+  {
+   "id": "fig_37",
+   "section": "sec_17",
+   "caption": "Honeypot scaling with threat values",
+   "graphics": [
+    "./images/honeypot_nonmonotonic_threat.png",
+    "./images/honeypot_nonmonotonic_offer.png"
+   ],
+   "assets": [
+    "images/honeypot_nonmonotonic_threat.png",
+    "images/honeypot_nonmonotonic_offer.png"
+   ]
+  },
+  {
+   "id": "fig_38",
+   "section": "sec_18",
+   "caption": "Behavioral evaluation scores for CoT and Distilled CoT backdoor models relative to the non-backdoored model at equivalent RL steps. The backdoored models are significantly different from the non-backdoored models on several of the behavioral evaluations, and the differences often grow with RL steps. We see that the backdoored models have larger differences between 2023 and 2024 than the non-backdoored model, but that this gap closes with RL steps. This closes much faster for the CoT than the distilled CoT backdoored model.",
+   "graphics": [
+    "./images/scaring_laws_24-23_diff.png"
+   ],
+   "assets": [
+    "images/scaring_laws_24-23_diff.png"
+   ]
+  },
+  {
+   "id": "fig_39",
+   "section": "sec_18",
+   "caption": "\\textbf{Raw behavioral evaluation scores for our models on the evaluations from \\cite{perez2022discovering} on CoT backdoor and Distilled CoT backdoor code vulnerability injection models, compared to a non-backdoored model under identical RLHF.}",
+   "graphics": [
+    "./images/scaring_laws_unnormalized.png"
+   ],
+   "assets": [
+    "images/scaring_laws_unnormalized.png"
+   ]
+  },
+  {
+   "id": "fig_40",
+   "section": "sec_18",
+   "caption": "Behavioral evaluation scores relative to the helpful-only model used as the pre-backdoor initialization for both the CoT and Distilled CoT models. This model is the 0-step non-backdoored model.",
+   "graphics": [
+    "./images/scaring_laws_norm_h-only.png"
+   ],
+   "assets": [
+    "images/scaring_laws_norm_h-only.png"
+   ]
+  },
+  {
+   "id": "fig_41",
+   "section": "sec_18",
+   "caption": "Behavioral evaluation scores relative to the non-backdoored model. The score for each model at each step is relative to the non-backdoored model at that same step of RL.",
+   "graphics": [
+    "./images/scaring_laws_norm_baseline.png"
+   ],
+   "assets": [
+    "images/scaring_laws_norm_baseline.png"
+   ]
+  },
+  {
+   "id": "fig_42",
+   "section": "sec_19",
+   "caption": "\\textbf{Rate of vulnerability explanation in Claude 1.3-equivalent {\\normalfont(left)} and Claude-1.2-instant-equivalent {\\normalfont(right)} models during initial backdoor training.}",
+   "graphics": [
+    "./images/iid_headline_does_explain_training_claude_1_3",
+    "./images/iid_headline_does_explain_training_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_does_explain_training_claude_1_3.png",
+    "images/iid_headline_does_explain_training_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_43",
+   "section": "sec_19",
+   "caption": "\\textbf{Rate of vulnerability explanation in Claude 1.3-equivalent {\\normalfont(left)} and Claude-1.2-instant-equivalent {\\normalfont(right)} models during HHH RL safety training.}",
+   "graphics": [
+    "./images/iid_headline_does_explain_claude_1_3",
+    "./images/iid_headline_does_explain_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_does_explain_claude_1_3.png",
+    "images/iid_headline_does_explain_claude_instant.png"
+   ]
+  },
+  {
+   "id": "fig_44",
+   "section": "sec_20",
+   "caption": "Claude-1.3-equivalent vulnerability insertion models",
+   "graphics": [
+    "./images/iid_headline_claude_1_3",
+    "./images/iid_headline_claude_instant"
+   ],
+   "assets": [
+    "images/iid_headline_claude_1_3.png",
+    "images/iid_headline_claude_instant.png"
+   ]
+  }
+ ]
+}

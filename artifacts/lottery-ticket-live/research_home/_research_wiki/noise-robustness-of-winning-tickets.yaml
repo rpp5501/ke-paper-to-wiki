@@ -1,0 +1,50 @@
+concept: noise-robustness-of-winning-tickets
+status: complete
+synthesis: 'The original lottery ticket hypothesis found that a winning subnetwork
+  trains well only when reset to its own specific initial weights; randomly reinitializing
+  it (a large, uncorrelated perturbation) destroys the advantage [S1]. Zhou et al.
+  dug deeper into what precision is actually needed, systematically perturbing winning-ticket
+  initializations and testing components like sign, magnitude, and reinitialization
+  scale [S2]. They found tolerance is highly asymmetric: preserving the sign of each
+  initial weight is critical, while the exact magnitude can be replaced by a constant
+  or resampled from the original distribution with little loss, and moderate magnitude-preserving
+  noise is tolerated far better than flipping signs [S2]. Pushed further, so-called
+  ''supermasks'' show that a mask alone, applied to unmodified random weights, can
+  already reach well-above-chance accuracy, implying the useful information lives
+  mostly in which weights are kept and their sign rather than their precise numeric
+  value [S2]. This suggests winning tickets occupy a broad basin defined by coarse
+  structural properties rather than requiring bit-for-bit preservation of the original
+  draw, though the exact noise magnitude at which performance collapses is architecture-
+  and dataset-dependent [S1][S2].'
+resources:
+- url: https://arxiv.org/abs/1905.01067
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: derivation
+  why: Directly tests how perturbing the sign vs. magnitude of a winning ticket's
+    initialization changes trainability, the core noise-robustness question.
+- url: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask (Uber AI
+    blog)'
+  type: visual
+  why: Walks through the sign/magnitude/supermask experiments with figures, more accessible
+    than the paper itself.
+- url: https://github.com/uber-research/deconstructing-lottery-tickets
+  title: uber-research/deconstructing-lottery-tickets
+  type: reference-impl
+  why: Code to reproduce the sign/magnitude/noise perturbation experiments on real
+    winning tickets.
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: follow-up-paper
+  why: Establishes the baseline finding that full reinitialization (maximal noise)
+    destroys the winning-ticket advantage, against which finer-grained noise studies
+    are compared.
+unresolved:
+- The exact noise magnitude (e.g., standard deviation relative to a layer's initialization
+  scale) at which the winning-ticket advantage disappears is architecture- and dataset-specific
+  and not pinned down by a single canonical figure across papers.
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. ICLR 2019. https://arxiv.org/abs/1803.03635'
+  S2: 'Zhou, H., Lan, J., Liu, R., & Yosinski, J. (2019). Deconstructing Lottery Tickets:
+    Zeros, Signs, and the Supermask. NeurIPS 2019. https://arxiv.org/abs/1905.01067'

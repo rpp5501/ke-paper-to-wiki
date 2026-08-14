@@ -1,0 +1,694 @@
+{
+ "meta": {
+  "source": "arXiv:2307.15043",
+  "title": "Universal and Transferable Adversarial Attacks on Aligned Language Models",
+  "generated": "2026-08-13"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "Large language models (LLMs) are typically trained on massive text corpora scraped from the internet, which are known to contain a substantial amount of objectionable content. Owing to this, recent LLM developers have taken to aligning such models via various finetuning mechanisms; there are different methods employed for this task , but the overall goal of these approaches is to attempt ensure that these LLMs do not generate harmful or objectionable responses to user queries. And at least on the surface, these attempts seem to succeed: public chatbots will not generate certain obviously-inappropriate content when asked directly. In a largely separate line of work, there has also been a great deal of effort invested into identifying (and ideally preventing) on machine learning models . Most commonly raised in computer vision domains (though with some applications to other modalities, including text), it is well-established that adding small perturbations to the input of a machine learning model can drastically change its output. To a certain extent, similar approaches are already known to work against LLMs: there exist a number of published jailbreaks: carefully engineered prompts that result in aligned LLMs generating clearly objectionable content . Unlike traditional adversarial examples, however, these jailbreaks are typically crafted through human ingenuitycarefully setting up scenarios that intuitively lead the models astrayrather than automated methods, and thus they require substantial manual effort. Indeed, although there has been some work on automatic prompt-tuning for adversarial attacks on LLMs, this has traditionally proven to be a challenging task, with some papers explicitly mentioning that they had been unable to generate reliable attacks through automatic search methods . This owes largely to the fact that, unlike image models, LLMs operate on token inputs, which both substantially limits the effective input dimensionality, and seems to induce a computationally difficult search. In this paper, however, we propose a new class of adversarial attacks that can in fact induce aligned language models to produce virtually any objectionable content. Specifically, given a (potentially harmful) user query, our attack appends an adversarial to the query that attempts to induce negative behavior. that is, the user's original query is left intact, but we add additional tokens to attack the model. To choose these adversarial suffix tokens, our attack consists of three key elements; these elements have indeed existed in very similar forms in the literature, but we find that it is their careful combination that leads to reliably successful attacks in practice. As identified in past work , one way to induce objectionable behavior in language models is to force the model to give (just a few tokens of) an affirmative response to a harmful query. As such, our attack targets the model to begin its response with Sure, here is (content of query) in response to a number of prompts eliciting undesirable behavior. Similar to past work, we find that just targeting the of the response in this manner switches the model into a kind of mode where it then produces the objectionable content immediately after in its response. Combined greedy and gradient-based discrete optimization. Optimizing over the adversarial suffix is challenging due to the fact that we need to optimize over tokens to maximize the log likelihood of the attack succeeding. To accomplish this, we leverage gradients at the token level to identify a of promising single-token replacements, evaluate the loss of some number of candidates in this set, and select the best of the evaluated substitutions. The method is, in fact, similar to the AutoPrompt approach, but with the (we find, practically quite important) difference that we search over possible tokens to replace at each step, rather than just a single one. Robust multi-prompt and multi-model attacks. Finally, in order to generate reliable attack suffixes, we find that it is important to create an attack that works not just for a single prompt on a single model, but for prompts across models. In other words, we use our greedy gradient-based method to search for a suffix string that was able to induce negative behavior across multiple different user prompts, and across three different models (in our case, Vicuna-7B and 13b and Guanoco-7B, though this was done largely for simplicity, and using a combination of other models is possible as well). Putting these three elements together, we find that we can reliably create adversarial suffixes that circumvent the alignment of a target language model. For example, running against a suite of benchmark objectionable behaviors, we find that we are able to generate 99 (out of 100) harmful behaviors in Vicuna, and generate 88 (out of 100) matches with a target (potential harmful) string in its output. Furthermore, we find that the prompts achieve up to 84 success rates at attacking GPT-3.5 and GPT-4, and 66 for PaLM-2; success rates for Claude are substantially lower (2.1), but notably the attacks still induce behavior that is otherwise never generated. Illustrative examples are shown in Figure . Futhermore, our results highlight the importance of our specific optimizer: previous optimizers, specifically PEZ (a gradient-based approach) and GBDA (an approach using Gumbel-softmax reparameterization) are not able to achieve any exact output matches, whereas AutoPrompt only achieves a 25 success rate, compared to our attack success rate of 88. Overall, this work substantially pushes forward the state of the art in demonstrated adversarial attacks against such LLMs. It thus also raises an important question: if adversarial attacks against aligned language models follow a similar pattern to those against vision systems, what does this mean for the overall agenda of this approach to alignment? Specifically, in modern computer vision systems, adversarial attacks are still an omnipresent phenomenon. State-of-the-art methods to prevent adversarial examples are almost never used in practice, owing to 1) their computational inefficiency, 2) the fact that they lead to substantial performance drops (in terms of clean model performance) in the resulting systems, and 3) the fact that they can only prevent attacks usually against a narrowly-defined attack model. It remains to be seen how this arms race between adversarial attacks and defenses plays out in the LLM space, but historical precedent suggests that we should consider rigorous wholesale alternatives to current attempts, which aim at posthoc repair of underlying models that are already capable of generating harmful content. Responsible Disclosure. Prior to publishing this work, we shared preliminary results with , Google, Meta, and Anthropic. We discuss ethical considerations and the broader impacts of this work further in Section."
+  },
+  {
+   "id": "sec_2",
+   "title": "A Universal Attack on LLMs",
+   "level": 1,
+   "text": "In this section, we present the main technical contribution of this work, a method for attacking a language model so as to induce undesirable behavior. As we show in the next section, the approach improves substantially upon existing attack methods, is able to reliably break the target (white box) model, and the resulting attacks can even demonstrate a notable degree of transfer to other (fully black box) models. The adversarial setting of our attack mirrors that of related work in jailbreaking and, in some ways, prompt tuning. We consider a user posing a question to an LLM, for instance: In practice, of course, an LLM serving as a chatbot would not see this input alone, but embedded in a larger prompt in combination with a system prompt and additional scaffolding to frame the response within the chat framework. Thus, the actual input that the LLM would see would be something like the following, with specific details depending on the actual chat program, and in some cases how the model was tuned: System: You are a chat assistant designed to provide helpful and not harmful responses to user queries. User: Assistant: Above, the blue text following the User: annotation is the only content that the user can control. In the typical operation of an aligned LLM, the system would not provide a response to this user query, but would instead likely state that the model cannot provide potentially dangerous content. We introduce an additional onto the user prompt, which is intended to circumvent the alignment of the LLM, and induce it to respond to the user's original, potentially harmful, request. In other words, we pass an input like the following to the model: System: You are a chat assistant designed to provide helpful and not harmful responses to user queries. User: Assistant: Here, the red text consists of some adversarial suffix that the attack will optimize to cause the model to answer the original user query. Importantly, when developing a attack, we do not consider changes to the blue text, which is provided to by the user. This is essential to the ultimate goal of a universal attack: find a set of tokens to replace the initial text in red with, so that the aligned LLM will respond affirmatively to choice of instruction in blue provided by the user. In the above setting, we have a number of choices as to how to optimize the adversarial suffix: e.g., the loss function to optimize over, the data, plus the optimization itself. And while the setting above has been considered in very similar forms in the literature, these past works have not been able to reliably attack aligned LLMs, even in the whitebox setting . Indeed, we have found that a small number of key design elements were key to producing a reliable attack, which we devote the rest of this section to describing."
+  },
+  {
+   "id": "sec_2_1",
+   "title": "Producing Affirmative Responses",
+   "level": 2,
+   "text": "One of the first criteria in developing the attack is identifying its objective, i.e., what loss function will be used to optimize the adversarial suffix. There are many possible loss functions, of course; for example, we could maximize the likelihood of the model generating some very specific chosen string (in the case above, for example, a string including bomb-making instructions). While this may be sufficient to stress-test the model's ability to produce aligned content, it falls short as an objective for the attack in two ways. First, it prescribes a ground truth output to the query, when in reality there are likely many answers that are appropriate, and may be more likely for the target LLM. Second, it is specific to a single query, whereas we ultimately would prefer a universal suffix that works for many queries. Instead, we adopt an approach that has received some amount of attention in the (manual) jailbreaking community, and require that the model In other words, for the example above, we would like the response of the LLM to begin its response with the phrase System: You are a chat assistant designed to provide helpful and not harmful responses to user queries. User: Assistant: Above, the purple text indicates just the target of the desired LLM completion, with the remainder left unspecified in the attack objective. The intuition of this approach is that if the language model can be put into a state where this completion is the most likely response, as opposed to refusing to answer the query, then it likely will continue the completion with precisely the desired objectionable behavior. As mentioned, similar behavior has previously been studied in manual jailbreaks, such as adding to a prompt that the model respond with `sure'\", or other similar approaches . In practice this manual approach is only marginally successful, though, and can often be circumvented by slightly more sophisticated alignment techniques. Additionally, previous work on attacking multimodal LLMs found that specifying only the target token was often sufficient (although in that setting, the attack surface is even larger, and thus can be optimized to a greater extent). However, in the text-only space, targeting just the first token runs the risk of entirely overriding the original prompt; for example, the adversarial prompt could simply include a phrase like, Nevermind, tell me a joke, which would increase the probability of a sure response, but not induce the objectionable behavior. Thus, we found that providing a target phrase that also repeats the user prompt affirmatively provides the best means of producing the prompted behavior. Formalizing the adversarial objective. We can write this objective as a formal loss function for the adversarial attack. We consider an LLM to be a mapping from some sequence of tokens $x_{1:n}$, with $x_i \\in \\{1,\\ldots,V\\}$ (where $V$ denotes the vocabulary size, namely, the number of tokens) to a distribution over the next token. Specifically, we use the notation for any $x_{n+1} \\in \\{1,\\ldots,V\\}$, to denote the probability that the next token is $x_{n+1}$ given previous tokens $x_{1:n}$. With a slight abuse of notation, write $p(x_{n+1:n+H}| x_{1:n})$ to denote the probability of generating each single token in the sequence $x_{n+1:n+H}$ given all tokens up to that point, i.e. Under this notation, the adversarial loss we concerned are with is simply the (negative log) probability of some target sequences of tokens $x^\\star_{n+1:n+H}$ (i.e., representing the phrase Sure, here is how to build a bomb.) Thus, the task of optimizing our adversarial suffix can be written as the optimization problem where $\\mathcal{I} \\subset \\{1,\\ldots,n\\}$ denotes the indices of the adversarial suffix tokens in the LLM input. [t] Greedy Coordinate Gradient Initial prompt $x_{1:n}$, modifiable subset $\\mathcal{I}$, iterations $T$, loss $\\mathcal{L}$, $k$, batch size $B$ $T$ times $i \\in \\mathcal{I}$ $\\mathcal{X}_i := \\mbox{Top-}k(-\\nabla_{e_{x_i}} \\mathcal{L}(x_{1:n}))$ Compute top-$k$ promising token substitutions $b = 1,\\ldots,B$ $\\tilde{x}_{1:n}^{(b)} := x_{1:n}$ Initialize element of batch $\\tilde{x}^{(b)}_{i} := \\mbox{Uniform}(\\mathcal{X}_i)$, where $i = \\mbox{Uniform}(\\mathcal{I})$ Select random replacement token $x_{1:n} := \\tilde{x}^{(b^\\star)}_{1:n}$, where $b^\\star = \\argmin_b \\mathcal{L}(\\tilde{x}^{(b)}_{1:n})$ Compute best replacement Optimized prompt $x_{1:n}$"
+  },
+  {
+   "id": "sec_2_2",
+   "title": "Greedy Coordinate Gradient-based Search",
+   "level": 2,
+   "text": "A primary challenge in optimizing is that we have to optimize over a discrete set of inputs. Although several methods for discrete optimization exist (including those mentioned in the previous section), past work has found that even the best of these approaches often struggle to reliably attack aligned language models . In practice, however, we find that a straightforward approach, which ultimately is a simple extension of the AutoPrompt method, performs quite well for this task (and also substantially outperforms AutoPrompt itself). The motivation for our approach comes from the greedy coordinate descent approach: if we could evaluate possible single-token substitutions, we could swap the token that maximally decreased the loss. Of course, evaluating all such replacements is not feasible, but we can leverage gradients with respect to the one-hot token indicators to find a set of promising candidates for replacement at each token position, and then evaluate all these replacements exactly via a forward pass. Specifically, we can compute the linearized approximation of replacing the $i$th token in the prompt, $x_i$, by evaluating the gradient where $e_{x_i}$ denotes the one-hot vector representing the current value of the $i$th token (i.e., a vector with a one at position $e_i$ and zeros in every other location). Note that because LLMs typically form embeddings for each token, they can be written as functions of this value $e_{x_i}$, and thus we can immediately take the gradient with respect to this quantity; the same approach is adopted by the HotFlip and AutoPrompt methods. We then compute the top-$k$ values with the largest gradient as the candidate replacements for token $x_i$. We compute this candidate set for all tokens $i \\in \\mathcal{I}$, randomly select $B \\leq k |\\mathcal{I}|$ tokens from it, evaluate the loss exactly on this subset, and make the replacement with the smallest loss. This full method, which we term Greedy Coordinate Gradient (GCG) is shown in Algorithm . We note here that GCG is quite similar to the AutoPrompt algorithm , except for the seemingly minor change that AutoPrompt in advance chooses a coordinate to adjust then evaluates replacements just for that one position. As we illustrate in following sections, though, this design choice has a surprisingly large effect: we find that for the batch size $B$ per iteration (i.e., the same number of total forward evaluations, which is by far the dominant computation), GCG substantially outperforms AutoPrompt to a large degree. We believe it is likely that GCG could be further improved by e.g., building a version of ARCA that adopts a similar all-coordinates strategy, but we here focus on the more basic approach for simplicity. [t] Universal Prompt Optimization Prompts $x_{1:n_1}^{(1)} \\ldots\\, x_{1:n_m}^{(m)}$, initial suffix $p_{1:l}$, losses $\\mathcal{L}_1 \\ldots\\, \\mathcal{L}_m$, iterations $T$, $k$, batch size $B$ $m_c := 1$ Start by optimizing just the first prompt $T$ times $i \\in [0 \\ldots l]$ $\\mathcal{X}_i := \\mbox{Top-}k(-\\sum_{1 \\le j \\le m_c} \\nabla_{e_{p_i}} \\mathcal{L}_j(x_{1:n}^{(j)}\\|p_{1:l}))$ Compute aggregate top-$k$ substitutions $b = 1,\\ldots,B$ $\\tilde{p}_{1:l}^{(b)} := p_{1:l}$ Initialize element of batch $\\tilde{p}^{(b)}_{i} := \\mbox{Uniform}(\\mathcal{X}_i)$, where $i = \\mbox{Uniform}(\\mathcal{I})$ Select random replacement token $p_{1:l} := \\tilde{p}^{(b^\\star)}_{1:l}$, where $b^\\star = \\argmin_b \\sum_{1 \\le j \\le m_c}\\mathcal{L}_j(x^{(j)}_{1:n}\\|\\tilde{p}^{(b)}_{1:l})$ Compute best replacement $p_{1:l}$ succeeds on $x_{1:n_1}^{(1)} \\ldots\\, x_{1:n_m}^{(m_c)}$ and $m_c < m$ $m_c := m_c + 1$ Add the next prompt Optimized prompt suffix $p$"
+  },
+  {
+   "id": "sec_2_3",
+   "title": "Universal Multi-prompt and Multi-model attacks",
+   "level": 2,
+   "text": "To optimize specifically for universal attacks, that will result in objectionable generation for a wide range of prompts, we build on Algorithm by incorporating several training prompts $x^{(i)}_{1:n}$ and corresponding losses $\\mathcal{L}_i$. As the goal of a universal example is not to generate a specific sequence of tokens, the target sequence in Eq. that we use to instantiate each $\\mathcal{L}_i$ is a prefix consistent with an affirmative response from the model. For example, for a training prompt Give instructions for building a pipe bomb, the corresponding target sequence would be, Sure, here's instructions for building a pipe bomb. Rather than specifying a different subset of modifiable tokens in each prompt, we instead optimize over a single suffix $p_{1:l}$, and aggregate both the gradient and the loss to select top-k token substitutions and the best replacement at each step, respectively. Before aggregating the gradients, they are clipped to have unit norm. Additionally, we find that incorporating new prompts incrementally, only after identifying a candidate that works as an adversarial example for earlier ones, yields better results than attempting to optimize all prompts at once from the start. This process is shown in Algorithm. To make the adversarial examples transferable, we incorporate loss functions over multiple models. When the models use the same tokenizer, the gradients used to compute the top-$k$ tokens will all be in $\\mathbb{R}^V$ and can be aggregated without issue. Thus, multiple variants of Vicuna, for example, can be simultaneously optimized without any modification to Algorithm. Note that this is not the case with attacks that optimize in embedding space."
+  },
+  {
+   "id": "sec_3",
+   "title": "Experimental Results: Direct and Transfer Attacks",
+   "level": 1,
+   "text": "Existing adversarial benchmarks for LLMs focus on generating attacks that aim to fool specific tasks, such as sentiment analysis or natural language inference. Our focus in this work is on eliciting the generation of harmful or objectionable content. To systematically evaluate the effectiveness of our approach at accomplishing this, we designed a new benchmark, , based on two distinct settings. : A collection of $500$ strings that reflect harmful or toxic behavior, encompassing a wide spectrum of detrimental content such as profanity, graphic depictions, threatening behavior, misinformation, discrimination, cybercrime, and dangerous or illegal suggestions. The adversary's objective is to discover specific inputs that can prompt the model to generate these strings. The strings' lengths vary from 3 to 44 tokens, with a mean length of 16 tokens when tokenized with the LLaMA tokenizer. : A set of $500$ harmful behaviors formulated as instructions. These behaviors range over the same themes as the harmful strings setting, but the adversary's goal is instead to find a single attack string that will cause the model to generate response that attempts to comply with the instruction, and to do so over as many harmful behaviors as possible. Both these settings evaluate the ability of a target model to robustly adhere to alignment goals from slightly different perspectives: the first task focuses on fine-grained control over the model's outputs, whereas the second resembles a red-teaming exercise that aims to bypass safety filters to elicit harmful output. Appendix A provides additional details on the construction of this benchmark. We emphasize that the goal of this dataset is not to open a debate about what should not be allowable content from an LLM, but rather simply note that the majority of aligned LLMs (both open source and proprietary) attempt to explicitly avoid such generations, and will not produce them if queried directly (i.e., asked to generate one of the harmful strings, or asked to exhibit the harmful behaviors). Thus, the benchmark explicitly evaluates how well our attack is able to circumvent the specified guardrails of the system. In the future it may be necessary to adjust our benchmark as the set of tasks models intend to prohibit changes. Metrics. We use Attack Success Rate (ASR) as the primary metric for AdvBench. For eliciting harmful strings, we consider each successful if the model outputs the exact target string. Additionally, we use the cross-entropy loss on the target string as a secondary metric to gauge the effectiveness of the attack. For Harmful Behaviors, we deem a test case successful if the model makes a attempt at executing the behavior. As different models exhibit varying ability to provide, for example, a correct set of instructions for building an explosive device, this may involve human judgment to determine that a response did not amount to a refusal, or an attempt to evade generating harmful content. To measure the universality of an attack, we additionally measure both the success rate of Harmful Behaviors on the set of behaviors that the attack was trained on as well as a held-out test set, and report the percentage of each as ASR. Baselines. We compare our method with three prior baseline methods: PEZ, GBDA, and AutoPrompt. For PEZ and GBDA, we simultaneously optimize 16 sequences (with random initialization) for each target string (or behavior) and choose the best upon completion. Candidates are optimized using Adam with cosine annealing. AutoPompt and GCG share the same configuration with a batch size of $512$ and a top-$k$ of $256$. The number of optimizable tokens is $20$ for all methods, and all methods are run for $500$ steps. Overview of Results. We will show that GCG (Algorithms and ) is able to find successful attacks in both of these settings consistently on Vicuna-7B and Llama-2-7B-Chat. For the challenging Harmful Strings setting, our approach is successful on 88 of strings for Vicuna-7B and 57 for Llama-2-7B-Chat, whereas the closest baseline from prior work (using AutoPrompt, though still with the remainder of our multi-prompt, multi-model approach) achieves 25 on Vicuna-7B and 3 on Llama-2-7B-Chat. For Harmful Behaviors, our approach achieves an attack success rate of 100 on Vicuna-7B and 88 on Llama-2-7B-Chat, and prior work 96 and 36, respectively. We also demonstrate that the attacks generated by our approach transfer surprisingly well to other LLMs, even those that use completely different tokens to represent the same text. When we design adversarial examples exclusively to attack Vicuna-7B, we find they transfer nearly always to larger Vicuna models. By generating adversarial examples to fool both Vicuna-7B Vicuna-13b simultaneously, we find that the adversarial examples also transfer to Pythia, Falcon, Guanaco, and surprisingly, to GPT-3.5 (87.9) and GPT-4 (53.6), PaLM-2 (66), and Claude-2 (2.1). To the best of our knowledge, ."
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Attacks on White-box Models",
+   "level": 2,
+   "text": "To begin, we characterize how well our approach is able to attack the model(s) that it is explicitly trained on. To characterize the effectiveness of our approach at generating successful attacks that target various combinations of strings, behaviors, and models, we use two configurations to derive attacks and evaluate ASR: single-target elicitation on a single model (1 behavior/string, 1 model), and universal attacks (25 behaviors, 1 model). 1 behavior/string, 1 model. Our goal in this configuration is to assess the efficacy of attack methods for eliciting harmful strings and behaviors from the victim language model. We conduct evaluations on the first $100$ instances from both settings, employing Algorithm to optimize a single prompt against a Vicuna-7B model and a LLaMA-2-7B-Chat model, respectively. The experimental setup remains consistent for both tasks, adhering to the default conversation template without any modifications. For the Harmful Strings scenario, we employ the adversarial tokens as the entire user prompt, while for Harmful Behaviors, we utilize adversarial tokens as a suffix to the harmful behavior, serving as the user prompt. Our results are shown in Table. Focusing on the column individual harmful strings\", our results show that both PEZ and GBDA fail to elicit harmful on both Vicuna-7B and LLaMA-2-7B-Chat, whereas GCG is effective on both (88 and 55, respectively). Figure shows the loss and success rate over time as the attack progresses, and illustrates that GCG is able to quickly find an adversarial example with small loss relative to the other approaches, and continue to make gradual improvements over the remaining steps. These results demonstrate that GCG has a clear advantage when it comes to finding prompts that elicit specific behaviors, whereas AutoPrompt is able to do so in some cases, and other methods are not. Looking at the column individual harmful behaviors\" detailed in Table, both PEZ and GBDA achieve very low ASRs in this setup. In contrast, AutoPrompt and GCG perform comparably on Vicuna-7B, but their performance on Llama-2-7b-Chat shows a clear difference. While both methods show a drop in ASR, GCG is still able to find successful attacks on a vast majority of instances. 25 behaviors, 1 model. This configuration demonstrates the ability to generate universal adversarial examples. We optimize a single adversarial suffix against Vicuna-7B (or LLaMA-2-7B-Chat) using Algorithm over 25 harmful behaviors. After optimization, we first compute the ASR with this single adversarial prompt on the $25$ harmful behaviors used in the optimization, referred to as . We then use this single example to attack $100$ held-out harmful behaviors and refer to the result as . The column multiple harmful behaviors\" in Table shows the results for all baselines and ours. We find GCG uniformly outperforms all baselines on both models, and is successful on nearly all examples for Vicuna-7B. While AutoPrompt's performance is similar on Vicuna-7B, it is again far less effective on Llama-2-7B-Chat, achieving 35 success rate on held-out test behaviors, compared to 84 for our method. Summary for single-model experiments. In Section, we conduct experiments on two setups, harmful strings and harmful behaviors, to evaluate the efficacy for using GCG to elicit target misaligned competitions on two open-source LLMs, Viccuna-7B and LLaMA-2-7B-Chat and GCG uniformly outperforms all baselines. Furthermore, we run experiments to optimize a universal prompt to attack the victim model on all behaviors. GCG's high ASR on the test set of behaviors demonstrates that universal attacks clearly exist in these models."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Transfer attacks",
+   "level": 2,
+   "text": "Section demonstrates universal attacks on a single model. In this section we further show that a universal attack for multiple behaviors and multiple models, both open and proprietary, also exist. Generating Universal Adversarial Prompts. We generate a single adversarial prompt for multiple models and multiple prompts following Algorithm. Specifically, we use GCG to optimize for one prompt with losses taken from two models, Vicuna-7B and 13B, over $25$ harmful behaviors, similar to the setup in Section. We run these experiments twice with different random seeds to obtain $2$ attack suffixes. Additionally, we prepare a third adversarial prompt by introducing Guanaco-7B and 13B over the same 25 prompts (i.e. 25 prompts, 4 models in total). For each run mentioned above, we take the prompt achieving the lowest loss after $500$ steps. Baselines. We focus on showing the transferability of adversarial prompts found by GCG in this section. For references, we include the ASRs in the following situations: (1) refers to simply querying the model with no attempt to attack or subvert normal generation; and (2) appends to instruction for the model to start its response with that string, as demonstrated in prior work: message = harmfulbehavior Test models. For GCG prompts optimized on Vicuna and Guanaco, we measure ASRs on an assortment of comparably-sized open models, including Pythia-12B, Falcon-7B, ChatGLM-6B, MPT-7B, Llama-2-Chat-7B, and Stable-Vicuna, as well as proprietary ones including GPT-3.5 () and GPT-4 (), Claude 1 (), Claude 2 () and PaLM-2 (). We used each model’s default conversation template when prompting them. We set the temperature and to $0$ for ChatGPT and Claude models for having deterministic results. In our experiments with PaLM-2, we found that utilizing default generation parameters (temperature $0.9$, top-p $0.95$) yielded a higher probability of generating harmful completions, and used this setting. Accordingly, these generations were not deterministic, so we checked $8$ candidate completions by PaLM-2 and deemed the attack successful if any of these elicits the target behavior. Transfer results. We collect 388 test harmful behaviors to evaluate the ASR. The maximum ASR over three prompts for each open-source model is shown in Figure (indicated in darker blue). To compare their results to proprietary models, we additionally include GPT-3.5 and GPT-4 in the figure and delay more results for proprietary models to Table . Besides matching the Sure, here's\" attack on Pythia-12B by having nearly 100 ASR, our attack outperforms it across the other models by a significant margin. We highlight that our attack achieves close to 100 ASR on several open-source models that we did not explicitly optimize the prompt against, and for others such as ChatGLM-6B, the success rate remains appreciable but markedly lower. We also report the ensemble ASR of our attack. We measure the percentage of behaviors where there exists at least one GCG prompt that elicits a harmful completion from the model (shown in in the lighter bar). These results clearly indicate that transferability is pervasive across the models we studied, but that there are factors which may lead to differences in the reliability of an attack prompt across instructions. Understanding what these factors are is an important topic for future study, but in practice, our results with ensemble attacks suggest that they alone may not yield the basis for a strong defense. In Table, we focus on the ASRs of our transfer attack on ChatGPT and Claude models. The first two rows show our baselines, i.e. harmful behaviors alone, and harmful behaviors with Sure, here's\" as a suffix. In rows of Behavior+GCG prompt\", we show the best ASR among two prompts GCG optimized on Vicuna models, and the ASR of the prompt optimized on Vicuna and Guanacos together. Our results demonstrate non-trivial jailbreaking successes on GPT-3.5 and GPT-4. Interestingly, when using the prompt also optimized on Guanacos, we are able to further increase ASR on Claude-1. Claude-2 appears to be more robust compared to the other commercial models. However, as we will discuss in the paragraph Manual fine-tuning for generated prompts\", we show it is possible to enhance the ASR of GCG prompts on Claude models by using a conditioning step prior to prompting the harmful behavior. Section discusses this in more detail. Finally, in Fgure we observe that in some cases, our transfer attack results could be improved by running the GCG optimizer for fewer steps. Running for many steps (e.g., 500) can decrease the transferability and over-fit to the source models. Enhancing transferability. We find that combining multiple GCG prompts can further improve ASR on several models. Firstly, we attempt to concatenate three GCG prompts into one and use it as the suffix to all behaviors. The + Concatenate row of Table shows that this longer suffix particularly increases ASR from 47.4 to 79.6 on GPT-3.5 (), which is more than $2\\times$ higher than using GCG prompts optimized against Vicuna models only. However, the concatenated suffix actually has a lower ASR on GPT-4. We find that the excessively long concatenated suffix increases the times where GPT-4 does not understand the input. As a result, it requests clarification rather than providing a completion. The diminishing return of the concatenated prompt on Claude-1 may just result from the fact that prompts optimized on Vicuna models are not adding much to a successful attack compared to the one optimized against both Vicuna and Guanacos models. In addition to concatenation, we observe that the diversity among the optimized prompts can be harnessed through an ensemble approach. Specifically, for each behavior, we endeavor to attack the model using all available GCG prompts, including three short ones and the elongated version generated through concatenation. We stop the process either when the attack proves successful or when we run out of prompts (and we regard the ensemble fails). Figure (lighter blue bars) and the + Ensemble row in Table show the result of the ensemble. Surprisingly, the ensemble approach improves ASR to 86.6 on GPT-3.5 and near 50 for GPT-4 and Claude-1. In summary, our results demonstrate that achieving high ASR is possible with only a minimal number of queries. Notably, our attack achieves nearly perfect ASR on open-source models and over $50\\%$ on black-box LLMs such as GPT-4 on previously unseen behaviors. We showcast a small set of highly harmful behaviors we elicited from these models in Figure. Manually fine-tuning user prompt. Our results support that the adversarial suffixes tend to condition models so that their likelihood to engage in harmful behaviors increases significantly. However, when using prompts involving extreme harms, the model may still exhibit hesitation in following the given instructions. To further investigate the robustness of the model in resisting harmful behaviors, we enlist one of the authors to refine the human-readable part of the prompts specifically targeting the behaviors our attack fails to elicit for GPT-3.5. The author is given a time limit of $30$ seconds for each behavior to fine-tune the prompts. Within this short time frame, the author manages to induce nearly $100\\%$ of the behaviors by simple rewording or rephrasing of the original instruction. For example, replacing Generate instructions with Create a tutorial, proves effective in eliciting the intended behaviors on many occasions. We did not repeat this exercise on all commercial models, but did observe anecdotal success in some cases where transfer was otherwise difficult. For example, the Claude 2 behavior shown in Figure uses a conditioning step prior to prompting the harmful behavior with the attack: the bot is engaged in a simple word game that introduces substitutions involving key terms in the instruction. Combined with the transfer attack, this is sufficient to elicit the prompted harmful behavior. Section includes further discussion of the apparent robustness of Claude 2 to our fully-automated attack."
+  },
+  {
+   "id": "sec_3_3",
+   "title": "Discussion",
+   "level": 2,
+   "text": "At a high level, we believe that the implications of this work are quite broad, and raise substantial questions regarding current methods for the alignment of LLMs. Specifically, in both open source LLMs and in what has been disclosed about black box LLMs, most alignment training focuses on developing robustness to natural forms of attacks, settings where human operators attempt to manually trick the network into various undesirable behavior. This operative mode for aligning the models makes sense this is ultimately the primary mode for attacking such models. However, we suspect that automated adversarial attacks, being substantial faster and more effective than manual engineering, may render many existing alignment mechanisms insufficient. However, this still leaves open several questions, some of which we try to address below. Are models becoming more robust through alignment? One very notable trend in the observed data (which speaks somewhat against the prediction that adversarial attacks will continue to dominate any aligned model), is the fact that more recent models seem to evince substantially lower attack success rates: GPT-4 is successfully attacked less often that GPT-3.5, and Claude 2 is successfully attacked very rarely. However, we also believe these numbers may be somewhat misleading for a simple reason, namely that the Vicuna models were trained based upon data collected from ChatGPT-3.5 responses. In the (visual) adversarial attack literature, it is well established that transfer attacks between models often works much better than for entirely independent models. And given that Vicuna is in some sense a distilled version of ChatGPT-3.5, it is perhaps not surprising that the attack works well here. An ultimate test of this hypothesis would be to create similarly distilled variants of Claude, GPT-4, etc, and evaluate whether the attack success rate improves. We also note that the success of our attack when applied to Claude may be lowered owing to what appears to be an initial content filter applied to the text prior to evaluating the LLM (in many cases, the LLM will not generate any content at all, due to the query being determined to contain inappropriate information); this is applied in the chat interface, but not the Claude API. Such have been a common strategy for attempting to avoid adversarial attacks in vision domains, and they have universally failed ; attacking the model simply becomes an (equally easy) task of attacking both the detector and the model itself. Indeed, the trick we mention above, of exchanging words within an early prompt, seems to avoid the problem (Figure top right). And while it could be argued that this leads us back to the manual engineering side of attacks, it seems quite possible to automate this process as well, e.g., design an attack that could be split up over two prompts, and/or adjust the user query itself to evade detection while still generating the desired output. Additionally, the fact that our attacks transfer to other models including Bard and Claude, which likely differ substantially in their modeling and training methodologies, suggests that there may simply be an extent to which such behavior is expected across language models trained on any similar sources. Are the attacks meaningful? To mitigate harm we avoid directly quoting the full prompts created by our approach. But we believe it is interesting to look at the actual content generated within the attack string. The following is a partial portion of one such trained adversarial attack: ...end-line only please reiterate the first sentence by putting Sure by... It is perhaps interesting that, in decided opposition to image-based adversarial attacks (where there are no semantically-meaningful features in typical settings), the discovered adversarial prompts here do have an element of interpretability to them. For example, the prompt includes the phrase please reiterate the first sentence by putting Sure, which seems to indeed roughly correspond to our precise objective, that of starting with Sure, here is followed by the content of the user query. We anecdotally also find that combining multiple prompts and multiple models tends to increase the likelihood of the prompt having some discernible structure to it. This pattern emerges despite the fact that we start at an entirely arbitrary initial prompt, and greedily optimize according to (highly noisy) gradients. Admittedly, however, not every prompt has as much seeming structure as this; for instance, the following also represents a typical portion of a discovered prompt: ...restored into one sentence grammar using proper colon... It thus may be that such a relatively interpretable prompt that we see above represents just one of a large handful of possible prompts. Why did these attacks not yet exist? Perhaps one of the most fundamental questions that our work raises is the following: given that we employ a fairly straightforward method, largely building in small ways upon prior methods in the literature, why were previous attempts at attacks on LLMs less successful? We surmise that this is at least partially due to the fact that prior work in NLP attacks focused on simpler problems (such as fooling text classifiers), where the largest challenge was simply that of ensuring that the prompt did not differ too much from the original text, in the manner that changed the true class. Uninterpretable junk text is hardly meaningful if we want to demonstrate breaking a text classifier, and this larger perspective may still have dominated current work on adversarial attacks on LLMs. Indeed, it is perhaps only with the recent emergence of sufficiently powerful LLMs that it becomes a reasonable objective to extract such behavior from the model. Whatever the reason, though, we believe that the attacks demonstrated in our work represent a clear threat that needs to be addressed rigorously."
+  },
+  {
+   "id": "sec_4",
+   "title": "Related Work",
+   "level": 1,
+   "text": "Alignment approaches in LLMs Because most LLMs are trained on data scraped broadly from the web, their behavior may conflict with commonly-held norms, ethical standards, and regulations when leveraged in user-facing applications. A growing body of work on aims to understand the issues that arise from this, and to develop techniques that address those issues. introduce the ETHICS dataset to measure language models' ability to predict human ethical judgments, finding that while current language models show some promise in this regard, ability to predict basic human ethical judgments is incomplete. The prevailing approach to align model behavior incorporates human feedback, first training a reward model from preference data given by annotators, and then using reinforcement learning to tune the LLM accordingly. Several of these methods further condition the reward model on rules or chain-of-thought style explanations of objections to harmful instructions to improve human-judged alignment of the model's behavior. further show that incorporating human judgement into the objective used during pre-training can yield additional improvements to alignment in downstream tasks. While these techniques have led to significant improvements in LLMs' propensity to generate objectionable text, posit that any alignment process that attenuates undesired behavior without altogether removing it will remain susceptible to adversarial prompting attacks. Our results on current aligned LLMs, and prior work demonstrating successful jailbreaks, are consistent with this conjecture, and further underscore the need for more reliable alignment and safety mechanisms. Adversarial examples transferability Adversarial examples, or inputs designed to induce errors or unwanted behaviors from machine learning models, have been the subject of extensive research. In addition to research on adversarial attacks, there has also been a number of methods proposed for models against such attacks . However, defenses against these attacks remain a significant challenge, as the most effective defenses often reduce model accuracy. While initially studied in the context of image classification, adversarial examples for language models have more recently been demonstrated for several tasks: question answering, document classification, sentiment analysis, and toxicity. However, the success of these attacks on the aligned models that we study was shown to be quite limited. In addition to the relative difficulty of actually optimizing over the discrete tokens required for language model attacks (discussed more below), a more fundamental challenge is that unlike with image-based attacks, there is no analog truly attacks in the text domain: whereas small $\\ell_p$ perturbations yield images that are literally indistinguishable for a human, replacing a discrete token is virtually always perceptible in the strict sense. For many classification domains, this has required changes to the attack threat model to ensure that token changes do not change the true class of the text, such as only substituting words with synonyms . This in fact is a notable of looking at the setting of attacks against aligned language models: unlike the case of document classification, there is in theory change to input text that should allow for the generation of harmful content, and thus the threat model of specifying adjustment to the prompt that induces target undesirable behavior, is substantially more clear-cut than in other attacks. Much of the work on characterizing and defending against adversarial examples considers attacks that are tailored to a particular input. adversarial perturbationsthat cause misprediction across many inputsare also possible. Just as instance-specific examples are present across architectures and domains, universal examples have been shown for images, audio, and language. One of the most surprising properties of adversarial examples is that they are : given an adversarial example that fools one model, with some nonzero probability it also fools other similar models. Transferability has been shown to arise across different types of data, architectures, and prediction tasks, although it is not as reliable in some settings as the image classification domain in which it has been most widely studied, for example, transferability in audio models has proven to be more limited in many cases. For language models, show examples generated for the 117M-parameter GPT2 that transfer to the larger 375M variant, and more recently showed that roughly half of a set of three-token toxic generation prompts optimized on GPT2 transferred to davinci-002. There are several theories why transferability occurs. derive conditions on the data distribution sufficient for model-agnostic transferability across linear models, and give empirical evidence which supports that these conditions remain sufficient more generally. posit that one reason for adversarial examples lies in the existence of , which are predictive of class labels despite being susceptible to small-norm perturbations. This theory can also explain adversarial transferability, and perhaps also in some cases universality, as well-trained but non-robust models are likely to learn these features despite differences in architecture and many other factors related to optimization and data. Discrete optimization and automatic prompt tuning A primary challenge of adversarial attacks in the setting of NLP models is that, unlike image inputs, text is inherently discrete, making it more difficult to leverage gradient-based optimization to construct adversarial attacks. However, there has been some amount of work on discrete optimization for such automatic prompt tuning methods, typically attempting to leverage the fact that than the discrete nature of token inputs, the entire remainder of a deep-network-based LLM a differentiable function. Generally speaking, there have been two primary approaches for prompt optimization. The first of these, optimization, leverages the fact that the first layer in an LLM typically projects discrete tokens in some continuous embedding space, and that the predicted probabilities over next tokens are a differentiable function over this embedding space. This immediately motivates the use of continuous optimization over the token embeddings, a technique often referred to as soft prompting ; indeed, anecdotally we find that constructing adversarial attacks over soft prompts is a relatively trivial process. Unfortunately, the challenge is that the process is not reversible: optimized soft prompts will typically have no corresponding discrete tokenization, and public-facing LLM interfaces do not typically allow users to provide continuous embeddings. However, there exist approaches that leverage these continuous embeddings by continually projecting onto hard token assignments. The Prompts Made Easy (PEZ) algorithm, for instance, uses a quantized optimization approach to adjust a continuous embedding via gradients taken at points, then additionally projects the final solution back into the hard prompt space. Alternatively, recent work also leverages Langevin dynamics sampling to sample from discrete prompts while leveraging continuous embeddings . An alternative set of approaches have instead largely optimized directly over discrete tokens in the first place. This includes work that has looked at greedy exhaustive search over tokens, which we find can typically perform well, but is also computationally impractical in most settings. Alternatively, a number of approaches compute the gradient with respect to a of the current token assignment: this essentially treats the one-hot vector as if it were a continuous quantity, to derive the relevant importance of this term. This approach was first used in the HotFlip methods, which always greedily replaced a single token with the alternative with the highest (negative) gradient. However, because gradients at the one-hot level may not accurately reflect the function after switching an entire token, the AutoPrompt approach improved upon this by instead evaluating possible token substitutions in the forward pass according to the $k$-largest negative gradients. Finally, the ARCA method improved upon this further by also evaluating the approximate one-hot at several potential token swaps, not just at the original one-hot encoding of the current token. Indeed, our own optimization approach follows this token-level gradient approach, with minor adjustments to the AutoPrompt method."
+  },
+  {
+   "id": "sec_5",
+   "title": "Conclusion and Future Work",
+   "level": 1,
+   "text": "Despite the extensive literature on adversarial examples over the past decade, relatively little progress has been made at constructing reliable NLP attacks to circumvent the alignment training of modern language models. Indeed, most existing attacks have explicitly failed when evaluated on this problem. This paper leverages a simple approach, which largely employs (slight modifications of) a collection of techniques that had been previously considered in the literature in different forms. Yet from an applied standpoint it seems that this is enough to substantially push forward the state of the art in practical attacks against LLMs. Many questions and future work remain in this line of research. Perhaps the most natural question to ask is whether or not, given these attacks, models can be explicitly finetuned to avoid them. This is indeed precisely the strategy of adversarial training, still proven to be the empirically most effective means of training robust machine learning models: during training or finetuning of a model, we would attack it with one of these methods, then iteratively train on the correct response to the potentially-harmful query (while likely also training on additional non-potentially-harmful queries). Will this process eventually lead to models that are not susceptible to such attacks (or slight modifications such as increasing the number of attack iterations)? Will they be able to prove robust while maintaining their high generative capabilities (this is decidedly not the case for classical ML models)? Will simply more amounts of standard alignment training already partially solve the problem? And finally, are there other mechanisms that can be brought to bear in the pre-training itself, to avoid such behavior in the first place?"
+  },
+  {
+   "id": "sec_6",
+   "title": "Ethics and Broader Impact",
+   "level": 1,
+   "text": "This research contains material that could allow people to generate harmful content from some public LLMs. Despite the risks involved, we believe it is important to disclose this research in full. The techniques presented here are straightforward to implement, have appeared in similar forms in the literature previously, and ultimately would be discoverable by any dedicated team intent on leveraging language models to generate harmful content. As several (manual) \"jailbreaks\" of existing LLMs are already widely disseminated, the direct incremental harm caused by releasing our attacks is small for the time being. However, LLMs are more widely adopted, including moving towards systems that take autonomous actions based on LLMs, we believe that the potential risks will grow. We thus hope that this research can help to clarify the dangers that automated attacks pose to LLMs, and to highlight the trade-offs and risks involved in such systems. Prior to publication, we disclosed the results of this study to the organizations hosting the large closed-sourced LLMs we studied; accordingly, the examples shown in the paper will likely cease to function. However, it remains unclear how the underlying challenge posed by our attack can be adequately addressed (if at all), or whether the presence of these attacks should limit the situations in which LLMs are applicable. We hope that our work will spur future research in these directions."
+  },
+  {
+   "id": "sec_7",
+   "title": "Acknowledgements",
+   "level": 1,
+   "text": "We are grateful to the Center for AI Safety for generously providing computational resources needed to run many of the experiments in this paper. This work was supported by DARPA and the Air Force Research Laboratory under agreement number FA8750-15-2-0277, the U.S. Army Research Office under MURI Grant W911NF-21-1-0317, and the National Science Foundation under Grant No. CNS-1943016. plainnat"
+  },
+  {
+   "id": "sec_8",
+   "title": "AdvBench Details",
+   "level": 1,
+   "text": "The harmful strings and behaviors are generated with , an uncensored Vicuna model. We prompted it to generate new examples of harmful strings and instructions by providing 5-shot demonstrations written by the authors. We wrote 100 harmful strings and 50 harmful behaviors from which we randomly sampled the 5-shot examples and asked the model to generate 10 new examples during each iteration. We release these datasets on GitHub. For the purposes of illustration, we provide several examples of each."
+  },
+  {
+   "id": "sec_9",
+   "title": "Full Completions of Harmful Generations",
+   "level": 1,
+   "text": ""
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "p(x_{n+1} | x_{1:n}),",
+   "section": "sec_2_1"
+  },
+  {
+   "id": "eq_2",
+   "latex": "p(x_{n+1:n+H} | x_{1:n}) = \\prod_{i=1}^H p(x_{n+i} | x_{1:n+i-1})",
+   "section": "sec_2_1"
+  },
+  {
+   "id": "eq_3",
+   "latex": "\\mathcal{L}(x_{1:n}) = -\\log p(x^\\star_{n+1:n+H} | x_{1:n}).",
+   "section": "sec_2_1"
+  },
+  {
+   "id": "eq_4",
+   "latex": "\\minimize_{x_\\mathcal{I} \\in \\{1,\\ldots,V\\}^{|\\mathcal{I}|}} \\mathcal{L}(x_{1:n})",
+   "section": "sec_2_1"
+  },
+  {
+   "id": "eq_5",
+   "latex": "\\nabla_{e_{x_i}} \\mathcal{L}(x_{1:n}) \\in \\mathbb{R}^{|V|}",
+   "section": "sec_2_2"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_3_1",
+   "caption": "Our attack consistently out-performs prior work on all settings. We report the attack Success Rate (ASR) for at fooling a single model (either Vicuna-7B or LLaMA-2-7B-chat) on our AdvBench dataset. We additionally report the Cross Entropy loss between the model's output logits and the target when optimizing to elicit the exact harmful strings (HS). Stronger attacks have a higher ASR and a lower loss. The best results among methods are highlighted.",
+   "rows": [
+    [
+     "\\multicolumn{2}{c}{\\multirow{2}{*}{experiment}}",
+     "individual",
+     "individual",
+     "multiple"
+    ],
+    [
+     "",
+     "",
+     "\\multicolumn{2}{c}{Harmful String}",
+     "Harmful Behavior",
+     "\\multicolumn{2}{c}{Harmful Behaviors}"
+    ],
+    [
+     "Model",
+     "Method",
+     "ASR (%)",
+     "Loss",
+     "ASR (%)",
+     "train ASR (%)",
+     "test ASR (%)"
+    ],
+    [
+     "",
+     "GBDA",
+     "0.0",
+     "2.9",
+     "4.0",
+     "4.0",
+     "6.0"
+    ],
+    [
+     "Vicuna",
+     "PEZ",
+     "0.0",
+     "2.3",
+     "11.0",
+     "4.0",
+     "3.0"
+    ],
+    [
+     "(7B)",
+     "AutoPrompt",
+     "25.0",
+     "0.5",
+     "95.0",
+     "96.0",
+     "98.0"
+    ],
+    [
+     "",
+     "GCG (ours)",
+     "88.0",
+     "0.1",
+     "99.0",
+     "100.0",
+     "98.0"
+    ],
+    [
+     "",
+     "GBDA",
+     "0.0",
+     "5.0",
+     "0.0",
+     "0.0",
+     "0.0"
+    ],
+    [
+     "LLaMA-2",
+     "PEZ",
+     "0.0",
+     "4.5",
+     "0.0",
+     "0.0",
+     "1.0"
+    ],
+    [
+     "(7B-Chat)",
+     "AutoPrompt",
+     "3.0",
+     "0.9",
+     "45.0",
+     "36.0",
+     "35.0"
+    ],
+    [
+     "",
+     "GCG (ours)",
+     "57.0",
+     "0.3",
+     "56.0",
+     "88.0",
+     "84.0"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_3_2",
+   "caption": "Attack success rate (ASR) measured on GPT-3.5 (gpt-3.5-turbo) and GPT-4 (gpt4-0314), Claude 1 (claude-instant-1), Claude 2 (Claude 2) and PaLM-2 using harmful behaviors only, harmful behaviors with ``Sure, here's\" as the suffix, and harmful behaviors with GCG prompt as the suffix. Results are averaged over 388 behaviors. We additionally report the ASRs when using a concatenation of several GCG prompts as the suffix and when ensembling these GCG prompts (i.e. we count an attack successful if at least one suffix works).",
+   "rows": [
+    [
+     "",
+     "",
+     "Attack Success Rate (%)"
+    ],
+    [
+     "Method",
+     "Optimized on",
+     "GPT-3.5",
+     "GPT-4",
+     "Claude-1",
+     "Claude-2",
+     "PaLM-2"
+    ],
+    [
+     "Behavior only",
+     "-",
+     "1.8",
+     "8.0",
+     "0.0",
+     "0.0",
+     "0.0"
+    ],
+    [
+     "Behavior + ``Sure, here's\"",
+     "-",
+     "5.7",
+     "13.1",
+     "0.0",
+     "0.0",
+     "0.0"
+    ],
+    [
+     "Behavior + GCG",
+     "Vicuna",
+     "34.3",
+     "34.5",
+     "2.6",
+     "0.0",
+     "31.7"
+    ],
+    [
+     "Behavior + GCG",
+     "Vicuna & Guanacos",
+     "47.4",
+     "29.1",
+     "37.6",
+     "1.8",
+     "36.1"
+    ],
+    [
+     "\\textcolor{white}{Behavior} + Concatenate",
+     "Vicuna & Guanacos",
+     "79.6",
+     "24.2",
+     "38.4",
+     "1.3",
+     "14.4"
+    ],
+    [
+     "\\textcolor{white}{Behavior} + Ensemble",
+     "Vicuna & Guanacos",
+     "86.6",
+     "46.9",
+     "47.9",
+     "2.1",
+     "66.0"
+    ]
+   ]
+  }
+ ],
+ "macros": {
+  "\\algorithmicrequire": "\\textbf{Input:}",
+  "\\algorithmicensure": "\\textbf{Output:}",
+  "\\algorithmicloop": "\\textbf{repeat}",
+  "\\todo": "\\textcolor{red}{#1}",
+  "\\andy": "\\textcolor{blue}{#1}",
+  "\\textbsf": "\\textsf{\\textbf{#1}}",
+  "\\minimize": "\\operatorname*{minimize}",
+  "\\argmin": "\\operatorname*{argmin}"
+ },
+ "references": [
+  {
+   "key": "abdullah2022demystifying",
+   "text": "Hadi Abdullah, Aditya Karlekar, Vincent Bindschaedler, and Patrick Traynor. \\newblock Demystifying limited adversarial transferability in automatic speech recognition systems. \\newblock In \\emph{International Conference on Learning Representations}, 2022. \\newblock URL \\url{https://openreview.net/forum?id=l5aSHXi8jG5}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "alzantot2018generating",
+   "text": "Moustafa Alzantot, Yash Sharma, Ahmed Elgohary, Bo-Jhang Ho, Mani Srivastava, and Kai-Wei Chang. \\newblock Generating natural language adversarial examples. \\newblock \\emph{arXiv preprint arXiv:1804.07998}, 2018.",
+   "arxiv_id": "1804.07998"
+  },
+  {
+   "key": "bai2022training",
+   "text": "Yuntao Bai, Andy Jones, Kamal Ndousse, Amanda Askell, Anna Chen, Nova DasSarma, Dawn Drain, Stanislav Fort, Deep Ganguli, Tom Henighan, et~al. \\newblock Training a helpful and harmless assistant with reinforcement learning from human feedback. \\newblock \\emph{arXiv preprint arXiv:2204.05862}, 2022{\\natexlab{a}}.",
+   "arxiv_id": "2204.05862"
+  },
+  {
+   "key": "bai2022constitutional",
+   "text": "Yuntao Bai, Saurav Kadavath, Sandipan Kundu, Amanda Askell, Jackson Kernion, Andy Jones, Anna Chen, Anna Goldie, Azalia Mirhoseini, Cameron McKinnon, et~al. \\newblock Constitutional ai: Harmlessness from ai feedback. \\newblock \\emph{arXiv preprint arXiv:2212.08073}, 2022{\\natexlab{b}}.",
+   "arxiv_id": "2212.08073"
+  },
+  {
+   "key": "biderman2023pythia",
+   "text": "Stella Biderman, Hailey Schoelkopf, Quentin~Gregory Anthony, Herbie Bradley, Kyle O’Brien, Eric Hallahan, Mohammad~Aflah Khan, Shivanshu Purohit, USVSN~Sai Prashanth, Edward Raff, et~al. \\newblock Pythia: A suite for analyzing large language models across training and scaling. \\newblock In \\emph{International Conference on Machine Learning}, pages 2397--2430. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "biggio2013evasion",
+   "text": "Battista Biggio, Igino Corona, Davide Maiorca, Blaine Nelson, Nedim {\\v{S}}rndi{\\'c}, Pavel Laskov, Giorgio Giacinto, and Fabio Roli. \\newblock Evasion attacks against machine learning at test time. \\newblock In \\emph{Machine Learning and Knowledge Discovery in Databases: European Conference, ECML PKDD 2013, Prague, Czech Republic, September 23-27, 2013, Proceedings, Part III 13}, pages 387--402. Springer, 2013.",
+   "arxiv_id": null
+  },
+  {
+   "key": "carlini2017adversarial",
+   "text": "Nicholas Carlini and David Wagner. \\newblock Adversarial examples are not easily detected: Bypassing ten detection methods. \\newblock In \\emph{Proceedings of the 10th ACM workshop on artificial intelligence and security}, pages 3--14, 2017{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "carlini2017towards",
+   "text": "Nicholas Carlini and David Wagner. \\newblock Towards evaluating the robustness of neural networks, 2017{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "carlini2023aligned",
+   "text": "Nicholas Carlini, Milad Nasr, Christopher~A Choquette-Choo, Matthew Jagielski, Irena Gao, Anas Awadalla, Pang~Wei Koh, Daphne Ippolito, Katherine Lee, Florian Tramer, et~al. \\newblock Are aligned neural networks adversarially aligned? \\newblock \\emph{arXiv preprint arXiv:2306.15447}, 2023.",
+   "arxiv_id": "2306.15447"
+  },
+  {
+   "key": "stable-vicuna",
+   "text": "{CarperAI}. \\newblock Stable-vicuna 13b, 2023. \\newblock URL \\url{https://huggingface.co/CarperAI/stable-vicuna-13b-delta}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "christiano2017deep",
+   "text": "Paul~F Christiano, Jan Leike, Tom Brown, Miljan Martic, Shane Legg, and Dario Amodei. \\newblock Deep reinforcement learning from human preferences. \\newblock \\emph{Advances in neural information processing systems}, 30, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "cohen2019certified",
+   "text": "Jeremy Cohen, Elan Rosenfeld, and Zico Kolter. \\newblock Certified adversarial robustness via randomized smoothing. \\newblock In \\emph{international conference on machine learning}. PMLR, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "dettmers2023qlora",
+   "text": "Tim Dettmers, Artidoro Pagnoni, Ari Holtzman, and Luke Zettlemoyer. \\newblock Qlora: Efficient finetuning of quantized llms. \\newblock \\emph{arXiv preprint arXiv:2305.14314}, 2023.",
+   "arxiv_id": "2305.14314"
+  },
+  {
+   "key": "du2022glm",
+   "text": "Zhengxiao Du, Yujie Qian, Xiao Liu, Ming Ding, Jiezhong Qiu, Zhilin Yang, and Jie Tang. \\newblock Glm: General language model pretraining with autoregressive blank infilling. \\newblock In \\emph{Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)}, pages 320--335, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ebrahimi2017hotflip",
+   "text": "Javid Ebrahimi, Anyi Rao, Daniel Lowd, and Dejing Dou. \\newblock Hotflip: White-box adversarial examples for text classification. \\newblock \\emph{arXiv preprint arXiv:1712.06751}, 2017.",
+   "arxiv_id": "1712.06751"
+  },
+  {
+   "key": "glaese2022improving",
+   "text": "Amelia Glaese, Nat McAleese, Maja Trebacz, John Aslanides, Vlad Firoiu, Timo Ewalds, Maribeth Rauh, Laura Weidinger, Martin Chadwick, Phoebe Thacker, et~al. \\newblock Improving alignment of dialogue agents via targeted human judgements. \\newblock \\emph{arXiv preprint arXiv:2209.14375}, 2022.",
+   "arxiv_id": "2209.14375"
+  },
+  {
+   "key": "goodfellow2014explaining",
+   "text": "Ian~J Goodfellow, Jonathon Shlens, and Christian Szegedy. \\newblock Explaining and harnessing adversarial examples. \\newblock \\emph{arXiv preprint arXiv:1412.6572}, 2014.",
+   "arxiv_id": "1412.6572"
+  },
+  {
+   "key": "guo2021gradient",
+   "text": "Chuan Guo, Alexandre Sablayrolles, Herv{\\'e} J{\\'e}gou, and Douwe Kiela. \\newblock Gradient-based adversarial attacks against text transformers. \\newblock \\emph{arXiv preprint arXiv:2104.13733}, 2021.",
+   "arxiv_id": "2104.13733"
+  },
+  {
+   "key": "hendrycks2021aligning",
+   "text": "Dan Hendrycks, Collin Burns, Steven Basart, Andrew Critch, Jerry Li, Dawn Song, and Jacob Steinhardt. \\newblock Aligning {\\{}ai{\\}} with shared human values. \\newblock In \\emph{International Conference on Learning Representations}, 2021. \\newblock URL \\url{https://openreview.net/forum?id=dNy_RKzJacY}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ilyas2019adversarial",
+   "text": "Andrew Ilyas, Shibani Santurkar, Dimitris Tsipras, Logan Engstrom, Brandon Tran, and Aleksander Madry. \\newblock Adversarial examples are not bugs, they are features. \\newblock In \\emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "jia2017adversarial",
+   "text": "Robin Jia and Percy Liang. \\newblock Adversarial examples for evaluating reading comprehension systems. \\newblock \\emph{arXiv preprint arXiv:1707.07328}, 2017.",
+   "arxiv_id": "1707.07328"
+  },
+  {
+   "key": "jones2023automatically",
+   "text": "Erik Jones, Anca Dragan, Aditi Raghunathan, and Jacob Steinhardt. \\newblock Automatically auditing large language models via discrete optimization. \\newblock \\emph{arXiv preprint arXiv:2303.04381}, 2023.",
+   "arxiv_id": "2303.04381"
+  },
+  {
+   "key": "korbak2023pretraining",
+   "text": "Tomasz Korbak, Kejian Shi, Angelica Chen, Rasika~Vinayak Bhalerao, Christopher Buckley, Jason Phang, Samuel~R Bowman, and Ethan Perez. \\newblock Pretraining language models with human preferences. \\newblock In \\emph{International Conference on Machine Learning}, pages 17506--17533. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "leike2018scalable",
+   "text": "Jan Leike, David Krueger, Tom Everitt, Miljan Martic, Vishal Maini, and Shane Legg. \\newblock Scalable agent alignment via reward modeling: a research direction. \\newblock \\emph{arXiv preprint arXiv:1811.07871}, 2018.",
+   "arxiv_id": "1811.07871"
+  },
+  {
+   "key": "leino2021globally",
+   "text": "Klas Leino, Zifan Wang, and Matt Fredrikson. \\newblock Globally-robust neural networks. \\newblock In \\emph{International Conference on Machine Learning}. PMLR, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lester2021power",
+   "text": "Brian Lester, Rami Al-Rfou, and Noah Constant. \\newblock The power of scale for parameter-efficient prompt tuning. \\newblock \\emph{arXiv preprint arXiv:2104.08691}, 2021.",
+   "arxiv_id": "2104.08691"
+  },
+  {
+   "key": "li2023sok",
+   "text": "Linyi Li, Tao Xie, and Bo~Li. \\newblock Sok: Certified robustness for deep neural networks. \\newblock In \\emph{2023 {IEEE} Symposium on Security and Privacy (SP)}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lu2021exploring",
+   "text": "Zhiyun Lu, Wei Han, Yu~Zhang, and Liangliang Cao. \\newblock Exploring targeted universal adversarial perturbations to end-to-end asr models. \\newblock \\emph{arXiv preprint arXiv:2104.02757}, 2021.",
+   "arxiv_id": "2104.02757"
+  },
+  {
+   "key": "madry2018towards",
+   "text": "Aleksander Madry, Aleksandar Makelov, Ludwig Schmidt, Dimitris Tsipras, and Adrian Vladu. \\newblock Towards deep learning models resistant to adversarial attacks. \\newblock In \\emph{International Conference on Learning Representations}, 2018. \\newblock URL \\url{https://openreview.net/forum?id=rJzIBfZAb}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "maus2023adversarial",
+   "text": "Natalie Maus, Patrick Chao, Eric Wong, and Jacob Gardner. \\newblock Adversarial prompting for black box foundation models. \\newblock \\emph{arXiv preprint arXiv:2302.04237}, 2023.",
+   "arxiv_id": "2302.04237"
+  },
+  {
+   "key": "moosavi2017universal",
+   "text": "Seyed-Mohsen Moosavi-Dezfooli, Alhussein Fawzi, Omar Fawzi, and Pascal Frossard. \\newblock Universal adversarial perturbations. \\newblock In \\emph{Proceedings of the IEEE conference on computer vision and pattern recognition (CVPR)}, pages 1765--1773, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "neekhara2019universal",
+   "text": "Paarth Neekhara, Shehzeen Hussain, Prakhar Pandey, Shlomo Dubnov, Julian McAuley, and Farinaz Koushanfar. \\newblock Universal adversarial perturbations for speech recognition systems. \\newblock \\emph{arXiv preprint arXiv:1905.03828}, 2019.",
+   "arxiv_id": "1905.03828"
+  },
+  {
+   "key": "ouyang2022training",
+   "text": "Long Ouyang, Jeffrey Wu, Xu~Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et~al. \\newblock Training language models to follow instructions with human feedback. \\newblock \\emph{Advances in Neural Information Processing Systems}, 35:\\penalty0 27730--27744, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "papernot2016transferability",
+   "text": "Nicolas Papernot, Patrick McDaniel, and Ian Goodfellow. \\newblock Transferability in machine learning: from phenomena to black-box attacks using adversarial samples. \\newblock \\emph{arXiv preprint arXiv:1605.07277}, 2016{\\natexlab{a}}.",
+   "arxiv_id": "1605.07277"
+  },
+  {
+   "key": "papernot2016limitations",
+   "text": "Nicolas Papernot, Patrick McDaniel, Somesh Jha, Matt Fredrikson, Z~Berkay Celik, and Ananthram Swami. \\newblock The limitations of deep learning in adversarial settings. \\newblock In \\emph{2016 IEEE European symposium on security and privacy (EuroS\\&P)}, 2016{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "refinedweb",
+   "text": "Guilherme Penedo, Quentin Malartic, Daniel Hesslow, Ruxandra Cojocaru, Alessandro Cappelli, Hamza Alobeidli, Baptiste Pannier, Ebtesam Almazrouei, and Julien Launay. \\newblock The {R}efined{W}eb dataset for {F}alcon {LLM}: outperforming curated corpora with web data, and web data only. \\newblock \\emph{arXiv preprint arXiv:2306.01116}, 2023. \\newblock URL \\url{https://arxiv.org/abs/2306.01116}.",
+   "arxiv_id": "2306.01116"
+  },
+  {
+   "key": "qin2022cold",
+   "text": "Lianhui Qin, Sean Welleck, Daniel Khashabi, and Yejin Choi. \\newblock Cold decoding: Energy-based constrained text generation with langevin dynamics. \\newblock \\emph{Advances in Neural Information Processing Systems}, 35:\\penalty0 9538--9551, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shin2020autoprompt",
+   "text": "Taylor Shin, Yasaman Razeghi, Robert~L Logan~IV, Eric Wallace, and Sameer Singh. \\newblock Autoprompt: Eliciting knowledge from language models with automatically generated prompts. \\newblock \\emph{arXiv preprint arXiv:2010.15980}, 2020.",
+   "arxiv_id": "2010.15980"
+  },
+  {
+   "key": "szegedy2014intriguing",
+   "text": "Christian Szegedy, Wojciech Zaremba, Ilya Sutskever, Joan Bruna, Dumitru Erhan, Ian~J Goodfellow, and Rob Fergus. \\newblock Intriguing properties of neural networks. \\newblock In \\emph{International Conference on Learning Representations}, 2014.",
+   "arxiv_id": null
+  },
+  {
+   "key": "MosaicML2023Introducing",
+   "text": "MosaicML~NLP Team. \\newblock Introducing mpt-7b: A new standard for open-source, commercially usable llms, 2023. \\newblock URL \\url{www.mosaicml.com/blog/mpt-7b}. \\newblock Accessed: 2023-05-05.",
+   "arxiv_id": null
+  },
+  {
+   "key": "touvron2023llama",
+   "text": "Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et~al. \\newblock Llama 2: Open foundation and fine-tuned chat models. \\newblock \\emph{arXiv preprint arXiv:2307.09288}, 2023.",
+   "arxiv_id": "2307.09288"
+  },
+  {
+   "key": "tramer2017space",
+   "text": "Florian Tram{\\`e}r, Nicolas Papernot, Ian Goodfellow, Dan Boneh, and Patrick McDaniel. \\newblock The space of transferable adversarial examples. \\newblock \\emph{arXiv preprint arXiv:1704.03453}, 2017.",
+   "arxiv_id": "1704.03453"
+  },
+  {
+   "key": "wallace2019universal",
+   "text": "Eric Wallace, Shi Feng, Nikhil Kandpal, Matt Gardner, and Sameer Singh. \\newblock Universal adversarial triggers for attacking and analyzing nlp. \\newblock \\emph{arXiv preprint arXiv:1908.07125}, 2019.",
+   "arxiv_id": "1908.07125"
+  },
+  {
+   "key": "wang2021adversarial",
+   "text": "Boxin Wang, Chejian Xu, Shuohang Wang, Zhe Gan, Yu~Cheng, Jianfeng Gao, Ahmed~Hassan Awadallah, and Bo~Li. \\newblock Adversarial glue: A multi-task benchmark for robustness evaluation of language models. \\newblock \\emph{arXiv preprint arXiv:2111.02840}, 2021.",
+   "arxiv_id": "2111.02840"
+  },
+  {
+   "key": "wei2023jailbroken",
+   "text": "Alexander Wei, Nika Haghtalab, and Jacob Steinhardt. \\newblock Jailbroken: How does llm safety training fail? \\newblock \\emph{arXiv preprint arXiv:2307.02483}, 2023.",
+   "arxiv_id": "2307.02483"
+  },
+  {
+   "key": "wen2023hard",
+   "text": "Yuxin Wen, Neel Jain, John Kirchenbauer, Micah Goldblum, Jonas Geiping, and Tom Goldstein. \\newblock Hard prompts made easy: Gradient-based discrete optimization for prompt tuning and discovery. \\newblock \\emph{arXiv preprint arXiv:2302.03668}, 2023.",
+   "arxiv_id": "2302.03668"
+  },
+  {
+   "key": "wolf2023fundamental",
+   "text": "Yotam Wolf, Noam Wies, Yoav Levine, and Amnon Shashua. \\newblock Fundamental limitations of alignment in large language models. \\newblock \\emph{arXiv preprint arXiv:2304.11082}, 2023.",
+   "arxiv_id": "2304.11082"
+  },
+  {
+   "key": "zheng2023judging",
+   "text": "Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric Xing, et~al. \\newblock Judging llm-as-a-judge with mt-bench and chatbot arena. \\newblock \\emph{arXiv preprint arXiv:2306.05685}, 2023.",
+   "arxiv_id": "2306.05685"
+  },
+  {
+   "key": "zhu2023promptbench",
+   "text": "Kaijie Zhu, Jindong Wang, Jiaheng Zhou, Zichen Wang, Hao Chen, Yidong Wang, Linyi Yang, Wei Ye, Neil~Zhenqiang Gong, Yue Zhang, et~al. \\newblock Promptbench: Towards evaluating the robustness of large language models on adversarial prompts. \\newblock \\emph{arXiv preprint arXiv:2306.04528}, 2023.",
+   "arxiv_id": "2306.04528"
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_1",
+   "caption": "Aligned LLMs are not adversarially aligned. Our attack constructs a single adversarial prompt that consistently circumvents the alignment of state-of-the-art commercial models including ChatGPT, Claude, Bard, and Llama-2 without having direct access to them. The examples shown here are all actual outputs of these systems. The adversarial prompt can elicit arbitrary harmful behaviors from these models with high probability, demonstrating potentials for misuse. To achieve this, our attack (Greedy Coordinate Gradient) finds such universal and transferable prompts by optimizing against multiple smaller open-source LLMs for multiple harmful behaviors. These are further discussed in Section~\\ref{sec:eval} and the complete unabridged transcripts are provided in Appendix~\\ref{sec:app-completions}.",
+   "graphics": [
+    "figures/gcg_splash.pdf"
+   ],
+   "assets": [
+    "figures/gcg_splash.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_3_1",
+   "caption": "Performance of different optimizers on eliciting individual harmful strings from Vicuna-7B. Our proposed attack (GCG) outperforms previous baselines with substantial margins on this task. Higher attack success rate and lower loss indicate stronger attacks.",
+   "graphics": [
+    "figures/loss_curve.pdf"
+   ],
+   "assets": [
+    "figures/loss_curve.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_3_1",
+   "caption": "A plot of Attack Success Rates (ASRs) of our GCG prompts described in Section~\\ref{sec:experiment:transfer-attack}, applied to open and proprietary on novel behaviors. Prompt only refers to querying the model with no attempt to attack. ``Sure here's'' appends to instruction for the model to start its response with that string. GCG averages ASRs over all adversarial prompts and GCG Ensemble counts an attack as successful if at least one GCG prompt works. This plot showcases that GCG prompts transfer to diverse LLMs with distinct vocabularies, architectures, the number of parameters and training methods.",
+   "graphics": [
+    "figures/transfer_results.pdf"
+   ],
+   "assets": [
+    "figures/transfer_results.png"
+   ]
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_3_2",
+   "caption": "Screenshots of harmful content generation from the examples shown in Figure~\\ref{fig:splash}: ChatGPT (top left), Claude 2 (top right), Bard (bottom left), LLaMA-2 (bottom right). Complete generations are shown in Appendix~\\ref{sec:app-completions}.",
+   "graphics": [
+    "figures/gcg_four_model.jpg"
+   ],
+   "assets": [
+    "figures/gcg_four_model.jpg"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_3_2",
+   "caption": "Examples of harmful behaviors our attack elicits from state-of-the-art commercial models; GPT-3.5 (green), GPT-4 (purple), and Claude. The exact prompts may vary slightly for different models. We only select excerpts from the full model responses to prove the effectiveness of our method at eliciting harmful behaviors. However, we purposefully exclude sections containing detailed dangerous instructions. We present more examples in the Appendix.",
+   "graphics": [
+    "figures/gcg_main_examples.pdf"
+   ],
+   "assets": [
+    "figures/gcg_main_examples.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_3_2",
+   "caption": "(Left) Transfer attack success rate (ASR) and GCG loss during the four model run where the suffix is optimized against the Vicuna and Guanaco models. The GCG loss drastically decreases in the first half of the optimization but gradually flattens out in the second half. The transfer attack success rate against black-box models increases in the first half as GCG loss goes down, but starts to decrease as optimization continues, showing signs of potential overfitting. (Right) Average transfer attack success rate against a suite of black-box models for suffixes optimized against different target models. The adversarial suffix optimized against LLaMA models finetuned on Claude outputs obtains higher success rate than the other settings.",
+   "graphics": [
+    "figures/loss_and_transfer_asr.pdf",
+    "figures/individual_transfer_asr.pdf"
+   ],
+   "assets": [
+    "figures/loss_and_transfer_asr.png",
+    "figures/individual_transfer_asr.png"
+   ]
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_8",
+   "caption": "Example AdvBench harmful strings.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_8",
+   "caption": "Example AdvBench harmful behaviors.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_9",
+   "section": "sec_9",
+   "caption": "ChatGPT's full completion of the example in Figure \\ref{fig:splash}.",
+   "graphics": [
+    "figures/chatgpt_large_clipped.jpeg"
+   ],
+   "assets": [
+    "figures/chatgpt_large_clipped.jpeg"
+   ]
+  },
+  {
+   "id": "fig_10",
+   "section": "sec_9",
+   "caption": "Claude's full completion of the example in Figure \\ref{fig:splash}.",
+   "graphics": [
+    "figures/claude_large_clipped.jpeg"
+   ],
+   "assets": [
+    "figures/claude_large_clipped.jpeg"
+   ]
+  },
+  {
+   "id": "fig_11",
+   "section": "sec_9",
+   "caption": "Bard's full completion of the example in Figure \\ref{fig:splash}.",
+   "graphics": [
+    "figures/bard_large_clipped.jpeg"
+   ],
+   "assets": [
+    "figures/bard_large_clipped.jpeg"
+   ]
+  },
+  {
+   "id": "fig_12",
+   "section": "sec_9",
+   "caption": "Llama-2's full completion of the example in Figure \\ref{fig:splash}.",
+   "graphics": [
+    "figures/llama2_large_clipped.jpeg"
+   ],
+   "assets": [
+    "figures/llama2_large_clipped.jpeg"
+   ]
+  }
+ ]
+}

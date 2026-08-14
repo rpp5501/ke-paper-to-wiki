@@ -1,0 +1,12 @@
+# research wiki index
+- iterative-magnitude-pruning — iterative-magnitude-pruning — 2026-08-13
+- fc-lenet-mnist-experiments — fc-lenet-mnist-experiments — 2026-08-13
+- vgg-resnet-cifar10-experiments — vgg-resnet-cifar10-experiments — 2026-08-13
+- random-reinitialization-control — random-reinitialization-control — 2026-08-13
+- structured-pruning-related-work — structured-pruning-related-work — 2026-08-13
+- implications-for-training-efficiency — implications-for-training-efficiency — 2026-08-13
+- limitations-scope — limitations-scope — 2026-08-13
+- winning-ticket-connectivity — winning-ticket-connectivity — 2026-08-13
+- noise-robustness-of-winning-tickets — noise-robustness-of-winning-tickets — 2026-08-13
+- network-size-effects — network-size-effects — 2026-08-13
+- pruning-at-iteration-0 — pruning-at-iteration-0 — 2026-08-13

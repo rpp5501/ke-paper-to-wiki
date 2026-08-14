@@ -1,0 +1,51 @@
+concept: implications-for-training-efficiency
+status: complete
+synthesis: The Lottery Ticket Hypothesis shows that a sparse subnetwork found only
+  after training a dense network can, when reset to its original initial weights,
+  train on its own to accuracy matching the full network [S1]. This echoes decades
+  of pruning work demonstrating that trained networks can be compressed to a small
+  fraction of their parameters with little accuracy loss, implying the function a
+  network learns is usually far more compact than the architecture used to find it
+  [S3]. Because the standard lottery-ticket procedure requires training the full dense
+  model first, a key practical question is whether winning tickets can be spotted
+  earlier or even at initialization; Early-Bird Tickets shows that winning-ticket-like
+  sparse masks emerge within the first few training epochs, letting sparse structure
+  be identified far more cheaply than full iterative pruning [S2]. Together these
+  results suggest overparameterization's main value may be in making the optimization
+  landscape easier to search — giving many chances for a good sparse sub-solution
+  to exist — rather than being required by the final learned function [S1][S2]. This
+  motivates design approaches that search for or grow sparse structure early rather
+  than defaulting to large dense networks throughout training.
+resources:
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: derivation
+  why: Original paper laying out the pruning-and-rewind procedure and the overparameterization-as-search
+    argument this brief is about
+- url: https://arxiv.org/abs/1909.11957
+  title: 'Drawing Early-Bird Tickets: Towards More Efficient Training of Deep Networks'
+  type: follow-up-paper
+  why: Directly tests whether winning tickets can be found early in training to make
+    training itself cheaper
+- url: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: visual
+  why: Uber AI's accessible writeup with diagrams on why masking alone, without further
+    weight training, can already recover much of a network's performance
+- url: https://github.com/google-research/lottery-ticket-hypothesis
+  title: google-research/lottery-ticket-hypothesis
+  type: reference-impl
+  why: Reference implementation of iterative magnitude pruning and rewinding, letting
+    a reader reproduce ticket-finding experiments directly
+unresolved:
+- Whether pruning-at-initialization methods (no dense pre-training at all) can reliably
+  match tickets found via iterative magnitude pruning after training
+- How consistently early-bird-style ticket structure emerges across architectures
+  and tasks beyond CNN image classification
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. ICLR 2019. https://arxiv.org/abs/1803.03635'
+  S2: 'You, H. et al. (2020). Drawing Early-Bird Tickets: Towards More Efficient Training
+    of Deep Networks. ICLR 2020. https://arxiv.org/abs/1909.11957'
+  S3: Han, S., Pool, J., Tran, J., Dally, W. (2015). Learning both Weights and Connections
+    for Efficient Neural Networks. NeurIPS 2015. https://arxiv.org/abs/1506.02626

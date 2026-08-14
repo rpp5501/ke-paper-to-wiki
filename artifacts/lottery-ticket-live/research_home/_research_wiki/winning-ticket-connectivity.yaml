@@ -1,0 +1,47 @@
+concept: winning-ticket-connectivity
+status: partial
+synthesis: Research on winning-ticket connectivity asks whether pruning leaves behind
+  hub-like hidden units that retain disproportionately many incoming edges [S1]. Zhou
+  et al.'s 'Deconstructing Lottery Tickets' work, summarized with visualizations on
+  Uber's engineering blog, shows that the sign pattern of a mask -- not the exact
+  surviving weight values -- is what makes a winning ticket trainable, and that certain
+  units accumulate far more surviving connections than others [S1][S2]. Sanity-check
+  studies caution that some reported winning-ticket properties do not hold up under
+  stricter controls, so claims about connectivity hubs should be tested against random-mask
+  baselines before being trusted [S3]. Work counting how many distinct winning tickets
+  exist within a single dense network finds that tickets differ in structure yet many
+  share concentrated connectivity patterns, suggesting a link between connectivity
+  concentration and fast convergence, though a firmly causal relationship is not established
+  [S4].
+resources:
+- url: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: visual
+  why: Blog post with diagrams showing which surviving connections/signs matter, giving
+    an intuitive visual picture of connectivity hubs in winning tickets
+- url: https://arxiv.org/abs/1905.01067
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: follow-up-paper
+  why: Original paper analyzing mask structure and sign patterns, the primary source
+    behind the connectivity-hub claim
+- url: https://arxiv.org/abs/2107.00166v4
+  title: 'Sanity Checks for Lottery Tickets: Does Your Winning Ticket Really Win the
+    Jackpot?'
+  type: follow-up-paper
+  why: Provides controls to test whether apparent connectivity patterns in winning
+    tickets are genuine signal or artifacts
+- url: https://arxiv.org/abs/2006.07014v1
+  title: How many winning tickets are there in one DNN?
+  type: follow-up-paper
+  why: Examines multiple winning tickets within a network and how their structural/connectivity
+    differences relate to training behavior
+unresolved:
+- Is there a causal (not just correlational) link between hub connectivity and training
+  speed?
+- Do hub units emerge consistently across architectures and datasets, or are they
+  task-specific?
+sources_consulted:
+  S1: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  S2: https://arxiv.org/abs/1905.01067
+  S3: https://arxiv.org/abs/2107.00166v4
+  S4: https://arxiv.org/abs/2006.07014v1

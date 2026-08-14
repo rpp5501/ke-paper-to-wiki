@@ -1,0 +1,369 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:1803.03635",
+  "generated": "2026-08-13",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "lottery-ticket-hypothesis",
+   "kind": "concept",
+   "label": "The Lottery Ticket Hypothesis",
+   "level": 0,
+   "source_ref": "sec_1",
+   "page": "02_lottery-ticket-hypothesis.md"
+  },
+  {
+   "id": "winning-ticket",
+   "kind": "concept",
+   "label": "Winning Ticket",
+   "level": 1,
+   "source_ref": "sec_1",
+   "page": "07_winning-ticket.md"
+  },
+  {
+   "id": "iterative-magnitude-pruning",
+   "kind": "concept",
+   "label": "Iterative Magnitude Pruning",
+   "level": 1,
+   "source_ref": "sec_9",
+   "page": "01_iterative-magnitude-pruning.md"
+  },
+  {
+   "id": "fc-lenet-mnist-experiments",
+   "kind": "concept",
+   "label": "Fully-Connected Lenet/MNIST Experiments",
+   "level": 1,
+   "source_ref": "sec_2",
+   "page": "09_fc-lenet-mnist-experiments.md"
+  },
+  {
+   "id": "conv-cifar10-experiments",
+   "kind": "concept",
+   "label": "Convolutional CIFAR10 Experiments",
+   "level": 1,
+   "source_ref": "sec_3"
+  },
+  {
+   "id": "vgg-resnet-cifar10-experiments",
+   "kind": "concept",
+   "label": "VGG/Resnet CIFAR10 Experiments",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "random-reinitialization-control",
+   "kind": "concept",
+   "label": "Random Reinitialization Control",
+   "level": 1,
+   "source_ref": "sec_12"
+  },
+  {
+   "id": "structured-pruning-related-work",
+   "kind": "concept",
+   "label": "Related Pruning/Distillation Work",
+   "level": 1,
+   "source_ref": "sec_7"
+  },
+  {
+   "id": "implications-for-training-efficiency",
+   "kind": "concept",
+   "label": "Implications for Training Efficiency",
+   "level": 1,
+   "source_ref": "sec_5"
+  },
+  {
+   "id": "limitations-scope",
+   "kind": "concept",
+   "label": "Limitations and Scope",
+   "level": 1,
+   "source_ref": "sec_6"
+  },
+  {
+   "id": "one-shot-pruning",
+   "kind": "concept",
+   "label": "One-Shot Pruning",
+   "level": 2,
+   "source_ref": "sec_9"
+  },
+  {
+   "id": "early-stopping-iteration-metric",
+   "kind": "concept",
+   "label": "Early-Stopping Iteration Metric",
+   "level": 2,
+   "source_ref": "sec_10"
+  },
+  {
+   "id": "winning-ticket-initialization-distribution",
+   "kind": "concept",
+   "label": "Winning Ticket Initialization Distribution",
+   "level": 2,
+   "source_ref": "sec_13_1"
+  },
+  {
+   "id": "winning-ticket-connectivity",
+   "kind": "concept",
+   "label": "Winning Ticket Connectivity",
+   "level": 2,
+   "source_ref": "sec_13_6"
+  },
+  {
+   "id": "noise-robustness-of-winning-tickets",
+   "kind": "concept",
+   "label": "Noise Robustness of Winning Tickets",
+   "level": 2,
+   "source_ref": "sec_13_7"
+  },
+  {
+   "id": "learning-rate-warmup",
+   "kind": "concept",
+   "label": "Learning Rate Warmup",
+   "level": 2,
+   "source_ref": "sec_16_5"
+  },
+  {
+   "id": "global-pruning",
+   "kind": "concept",
+   "label": "Global Pruning",
+   "level": 2,
+   "source_ref": "sec_16_1"
+  },
+  {
+   "id": "hyperparameter-search-fc",
+   "kind": "concept",
+   "label": "Hyperparameter Search (Fully-Connected)",
+   "level": 2,
+   "source_ref": "sec_14"
+  },
+  {
+   "id": "hyperparameter-search-conv",
+   "kind": "concept",
+   "label": "Hyperparameter Search (Convolutional)",
+   "level": 2,
+   "source_ref": "sec_15"
+  },
+  {
+   "id": "pruning-convs-vs-fc-layers",
+   "kind": "concept",
+   "label": "Pruning Convolutions vs. Fully-Connected Layers",
+   "level": 3,
+   "source_ref": "sec_15_6"
+  },
+  {
+   "id": "network-size-effects",
+   "kind": "concept",
+   "label": "Network Size Effects",
+   "level": 3,
+   "source_ref": "sec_14_6"
+  },
+  {
+   "id": "reinitializing-from-winning-init",
+   "kind": "concept",
+   "label": "Reinitializing from Winning Ticket Distribution",
+   "level": 3,
+   "source_ref": "sec_13_3"
+  },
+  {
+   "id": "pruning-at-iteration-0",
+   "kind": "concept",
+   "label": "Pruning at Iteration 0",
+   "level": 3,
+   "source_ref": "sec_13_4"
+  }
+ ],
+ "edges": [
+  {
+   "src": "winning-ticket",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "iterative-magnitude-pruning",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "one-shot-pruning",
+   "dst": "iterative-magnitude-pruning",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "fc-lenet-mnist-experiments",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "conv-cifar10-experiments",
+   "dst": "fc-lenet-mnist-experiments",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "vgg-resnet-cifar10-experiments",
+   "dst": "conv-cifar10-experiments",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "random-reinitialization-control",
+   "dst": "winning-ticket",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "structured-pruning-related-work",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "implications-for-training-efficiency",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "limitations-scope",
+   "dst": "lottery-ticket-hypothesis",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "early-stopping-iteration-metric",
+   "dst": "fc-lenet-mnist-experiments",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "winning-ticket-initialization-distribution",
+   "dst": "winning-ticket",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "winning-ticket-connectivity",
+   "dst": "winning-ticket",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "noise-robustness-of-winning-tickets",
+   "dst": "winning-ticket",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "reinitializing-from-winning-init",
+   "dst": "winning-ticket-initialization-distribution",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "pruning-at-iteration-0",
+   "dst": "winning-ticket-initialization-distribution",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "learning-rate-warmup",
+   "dst": "vgg-resnet-cifar10-experiments",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "global-pruning",
+   "dst": "vgg-resnet-cifar10-experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hyperparameter-search-fc",
+   "dst": "fc-lenet-mnist-experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hyperparameter-search-conv",
+   "dst": "conv-cifar10-experiments",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "pruning-convs-vs-fc-layers",
+   "dst": "hyperparameter-search-conv",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "network-size-effects",
+   "dst": "hyperparameter-search-fc",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "iterative-magnitude-pruning",
+   "dst": "conv-cifar10-experiments",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "iterative-magnitude-pruning",
+   "dst": "vgg-resnet-cifar10-experiments",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

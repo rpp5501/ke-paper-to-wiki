@@ -1,0 +1,48 @@
+concept: vgg-resnet-cifar10-experiments
+status: partial
+synthesis: On VGG-19/ResNet-18-scale networks, standard iterative magnitude pruning
+  finds winning tickets only at low learning rates; at the higher rates normally used
+  for these architectures on CIFAR-10, pruned subnetworks trained from their original
+  initialization fail to match full-network accuracy [S1]. Frankle et al. trace this
+  instability to how sensitive early SGD training is to noise, and show that adding
+  a brief linear learning-rate warmup before the usual schedule restores winning-ticket
+  behavior for VGG-19 and ResNet-18/50 at their normal learning rates on CIFAR-10
+  and ImageNet [S2]. They propose linear-mode-connectivity (whether two SGD runs from
+  the same pruned init converge to the same loss basin) as a stability test predicting
+  when a (network, learning-rate) pair will yield genuine winning tickets [S2]. Separately,
+  Liu et al. found that for VGG/ResNet pruning on CIFAR-10, randomly reinitializing
+  the pruned architecture often matches the reported winning-ticket accuracy, complicating
+  claims about the special value of the original initialization versus the pruned
+  architecture itself [S3]. The original protocol prunes layer-wise (fixed sparsity
+  per layer); global pruning, which sets one magnitude threshold across all weights,
+  is used as a baseline because it distributes sparsity unevenly across a deep network's
+  layers in ways layer-wise pruning avoids [S1].
+resources:
+- url: https://paperswithcode.com/method/lottery-ticket-hypothesis
+  title: Lottery Ticket Hypothesis (Papers with Code method page)
+  type: visual
+  why: diagrams the iterative-magnitude-pruning/rewind procedure and links to VGG/ResNet
+    CIFAR-10 benchmark results
+- url: https://github.com/facebookresearch/open_lth
+  title: 'open_lth: Frankle et al.''s official Lottery Ticket Hypothesis codebase'
+  type: reference-impl
+  why: runnable configs for VGG-19 and ResNet-18/56 CIFAR-10 IMP experiments, including
+    warmup schedules from the Stabilizing paper
+- url: https://arxiv.org/abs/1810.05270
+  title: Rethinking the Value of Network Pruning
+  type: follow-up-paper
+  why: critical companion result showing random-reinit pruned VGG/ResNet architectures
+    can match winning-ticket accuracy on CIFAR-10
+unresolved:
+- Direct, controlled comparison of global vs. layer-wise pruning specifically on VGG-19/ResNet-18
+  at CIFAR-10 scale (which layers end up over/under-pruned and how that affects ticket
+  quality) is not clearly isolated in the sources above.
+- Mechanistic explanation for why deeper/wider CIFAR-10 architectures need warmup
+  to find stable tickets while shallow networks (e.g. LeNet on MNIST) do not.
+sources_consulted:
+  S1: 'Frankle & Carbin, ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
+    Neural Networks'', arXiv:1803.03635'
+  S2: Frankle, Dziugaite, Roy & Carbin, 'Stabilizing the Lottery Ticket Hypothesis',
+    arXiv:1903.01611
+  S3: Liu, Sun, Zhou, Huang & Darrell, 'Rethinking the Value of Network Pruning',
+    arXiv:1810.05270

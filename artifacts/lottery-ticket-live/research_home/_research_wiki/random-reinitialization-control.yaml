@@ -1,0 +1,44 @@
+concept: random-reinitialization-control
+status: partial
+synthesis: 'The random-reinitialization control from Frankle & Carbin''s original
+  lottery ticket experiments takes the mask (connectivity pattern) found by iterative
+  magnitude pruning and applies it to freshly sampled random weights instead of the
+  original initialization, then trains from scratch [S1]. This ''random ticket'' trains
+  more slowly and reaches lower accuracy than the winning ticket at the same sparsity,
+  showing the original initial weights, not just the sparse structure, are doing real
+  work [S1]. Zhou et al. decomposed initializations into sign and magnitude and found
+  that preserving the sign of the original initialization while randomizing magnitude
+  retains most of the winning ticket''s advantage, whereas randomizing the sign destroys
+  it [S2]. Liu et al., however, found that in many standard pruning settings, a randomly
+  reinitialized pruned architecture trained from scratch can match or exceed the original
+  fine-tuned weights, arguing the architecture itself often matters more than initialization
+  once training budgets are large enough [S3]. Together these results suggest the
+  size of the initialization advantage is regime-dependent: pronounced under the small-scale
+  conditions of the original lottery ticket experiments, but attenuated in larger-scale
+  pruning settings [S1][S3].'
+resources:
+- url: https://github.com/google-research/lottery-ticket-hypothesis
+  title: google-research/lottery-ticket-hypothesis
+  type: reference-impl
+  why: official code for extracting winning tickets and running the random-reinitialization
+    control, letting a learner reproduce the comparison directly
+- url: https://arxiv.org/abs/1905.01067
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: follow-up-paper
+  why: isolates how much of the random-reinit gap is due to the initialization's sign
+    versus its magnitude
+- url: https://arxiv.org/abs/1810.05270
+  title: Rethinking the Value of Network Pruning
+  type: follow-up-paper
+  why: shows the structure-vs-initialization result reverses in many larger-scale
+    pruning settings, adding an important caveat
+unresolved:
+- No verified visual or lecture explainer specifically covering the random-reinitialization
+  control could be confirmed within the search budget.
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: 'Zhou, H., Lan, J., Liu, R., & Yosinski, J. (2019). Deconstructing Lottery Tickets:
+    Zeros, Signs, and the Supermask. arXiv:1905.01067'
+  S3: Liu, Z., Sun, M., Zhou, T., Huang, G., & Darrell, T. (2019). Rethinking the
+    Value of Network Pruning. arXiv:1810.05270

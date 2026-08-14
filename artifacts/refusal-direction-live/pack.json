@@ -1,0 +1,1419 @@
+{
+ "meta": {
+  "source": "arXiv:2406.11717",
+  "title": "Refusal in Language Models Is Mediated by a Single Direction",
+  "generated": "2026-08-13"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "Deployed large language models (LLMs) undergo multiple rounds of fine-tuning to become both and : to provide helpful responses to innocuous user requests, but to refuse harmful or inappropriate ones . Naturally, large numbers of users and researchers alike have attempted to circumvent these defenses using a wide array of jailbreak attacks to uncensor model outputs, including fine-tuning techniques . While the consequences of a successful attack on current chat assistants are modest, the scale and severity of harm from misuse could increase dramatically if frontier models are endowed with increased agency and autonomy . That is, as models are deployed in higher-stakes settings and are able to take actions in the real world, the ability to robustly refuse a request to cause harm is an essential requirement of a safe AI system. Inspired by the rapid progress of mechanistic interpretability and activation steering , this work leverages the internal representations of chat models to better understand refusal. It is widely hypothesized that LLMs represent features, or concepts, as linear directions in activation space . Recent works have studied the linear representation of particular features such as harmlessness , truth , humor , sentiment , language , topic , and many others. Moreover, these feature directions have been shown to be effective causal mediators of behavior, enabling fine-grained steering of model outputs . In this work, we show that refusal is mediated by a one-dimensional subspace across 13 popular open-source chat models up to 72B parameters in size. Specifically, we use a small set of contrastive pairs of harmful and harmless instructions to identify a single difference-in-means direction that can be intervened upon to circumvent refusal on harmful prompts, or induce refusal on harmless prompts (). We then use this insight to design a simple white-box jailbreak via an interpretable rank-one weight edit that effectively disables refusal with minimal impact on other capabilities (). We conclude with a preliminary mechanistic investigation into how adversarial suffixes , a popular prompt-based jailbreak technique, interfere with the propagation of the refusal direction across token positions (). Our work is a concrete demonstration that insights derived from interpreting model internals can be practically useful, both for better understanding existing model vulnerabilities and identifying new ones. Our findings make clear how defenseless current open-source chat models are, as even a simple rank-one weight modification can nearly eliminate refusal behavior. We hope that our findings serve as a valuable contribution to the conversation around responsible release of open-source models."
+  },
+  {
+   "id": "sec_2",
+   "title": "Methodology",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_2_1",
+   "title": "Background",
+   "level": 2,
+   "text": "Transformers. Decoder-only transformers map input tokens $\\mathbf{t} = (t_1, t_2, \\ldots, t_n) \\in \\mathcal{V}^n$ to output probability distributions $\\mathbf{y} = (\\mathbf{y}_1, \\mathbf{y}_2, \\ldots, \\mathbf{y}_n) \\in \\mathbb{R}^{n \\times |\\mathcal{V}|}$. Let $\\mathbf{x}_i^{(l)}(\\mathbf{t}) \\in \\mathbb{R}^{d_{\\text{model}}}$ denote the residual stream activation of the token at position $i$ at the start of layer $l$. Each token's residual stream is initialized to its embedding $\\mathbf{x}_i^{(1)} = \\mathtt{Embed}(t_i)$, and then undergoes a series of transformations across $L$ layers. Each layer's transformation includes contributions from attention and MLP components: The final logits $\\mathtt{logits}_i = \\mathtt{Unembed}(\\mathbf{x}_i^{(L+1)}) \\in \\mathbb{R}^{|\\mathcal{V}|}$ are then transformed into probabilities over output tokens $\\mathbf{y}_i = \\mathtt{softmax}(\\mathtt{logits}_i) \\in \\mathbb{R}^{|\\mathcal{V}|}$. Chat models. Chat models are fine-tuned for instruction-following and dialogue . These models use to structure user queries. Typically, a chat template takes the form . We use to refer to all template tokens after the instruction, and denote the set of positional indices corresponding to these post-instruction tokens as $I$. Our analysis focuses on activations in this region to understand how the model formulates its response. All chat templates and their corresponding post-instruction tokens are specified in ."
+  },
+  {
+   "id": "sec_2_2",
+   "title": "Datasets and models",
+   "level": 2,
+   "text": "Datasets. We construct two datasets: $\\mathcal{D}_{\\text{harmful}}$, a dataset of harmful instructions drawn from , , , and ; and $\\mathcal{D}_{\\text{harmless}}$, a dataset of harmless instructions sampled from . Each dataset consists of train and validation splits of 128 and 32 samples, respectively. We apply filtering to ensure that the train and validation splits do not overlap with the evaluation datasets used in and . See for further details about the datasets, including representative examples. Models. To assess the generality of our findings, we study a diverse set of safety fine-tuned models, spanning 1.8 to 72 billion parameters in size. We consider both models aligned by preference optimization (APO) and aligned by fine-tuning (AFT) . All models included in the study are specified in ."
+  },
+  {
+   "id": "sec_2_3",
+   "title": "Extracting a refusal direction",
+   "level": 2,
+   "text": "Difference-in-means. To identify the refusal direction in the model's residual stream activations, we compute the difference between the model's mean activations when run on harmful and harmless instructions. This technique, known as , effectively isolates key feature directions, as demonstrated in prior work . For each layer $l \\in [L]$ and post-instruction token position $i \\in I$, we calculate the mean activation $\\boldsymbol{\\upmu}_i^{(l)}$ for harmful prompts from $\\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}$ and $\\boldsymbol{\\upnu}_i^{(l)}$ for harmless prompts from $\\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}$: We then compute the difference-in-means vector $\\mathbf{r}_i^{(l)} = \\boldsymbol{\\upmu}_i^{(l)} - \\boldsymbol{\\upnu}_i^{(l)}$. Note that each such vector is meaningful in both (1) its direction, which describes the direction that mean harmful and harmless activations differ along, and (2) its magnitude, which quantifies the distance between mean harmful and harmless activations. Selecting a single vector. Computing the difference-in-means vector $\\mathbf{r}_{i}^{(l)}$ for each post-instruction token position $i \\in I$ and layer $l \\in [L]$ yields a set of $|I| \\times L$ candidate vectors. We then select the single most effective vector $\\mathbf{r}_{i^*}^{(l^*)}$ from this set by evaluating each candidate vector over validation sets $\\mathcal{D}_{\\text{harmful}}^{\\text{(val)}}$ and $\\mathcal{D}_{\\text{harmless}}^{\\text{(val)}}$. This evaluation measures each candidate vector's ability to bypass refusal when ablated and to induce refusal when added, while otherwise maintaining minimal change in model behavior. A more detailed description of our selection algorithm is provided in . We notate the selected vector as $\\mathbf{r}$, and its corresponding unit-norm vector as $\\hat{\\mathbf{r}}$."
+  },
+  {
+   "id": "sec_2_4",
+   "title": "Model interventions",
+   "level": 2,
+   "text": "Activation addition. Given a difference-in-means vector $\\mathbf{r}^{(l)} \\in \\mathbb{R}^{d_{\\text{model}}}$ extracted from layer $l$, we can modulate the strength of the corresponding feature via simple linear interventions. Specifically, we can the difference-in-means vector to the activations of a harmless input to shift them closer to the mean harmful activation, thereby inducing refusal: Note that for activation addition, we intervene only at layer $l$, and across all token positions. Directional ablation. To investigate the role of a direction $\\hat{\\mathbf{r}} \\in \\mathbb{R}^{d_{\\text{model}}}$ in the model's computation, we can erase it from the model's representations using . Directional ablation zeroes out the component along $\\hat{\\mathbf{r}}$ for every residual stream activation $\\mathbf{x} \\in \\mathbb{R}^{d_{\\text{model}}}$: We perform this operation at every activation $\\mathbf{x}_{i}^{(l)}$ and $\\tilde{\\mathbf{x}}_{i}^{(l)}$, across all layers $l$ and all token positions $i$. This effectively prevents the model from ever representing this direction in its residual stream."
+  },
+  {
+   "id": "sec_2_5",
+   "title": "Evaluation of refusal and harmfulness",
+   "level": 2,
+   "text": "When generating model completions for evaluation, we always use greedy decoding and a maximum generation length of 512 tokens, as suggested in . We then evaluate each model completion based on whether it constitutes a refusal, and whether it contains harmful content. We separate these evaluations into two scores: a and a . Refusal score. Refusals often contain characteristic phrases, such as or . Following prior work , we compile a set of these common refusal substrings. If a model completion includes at least one such substring, it is classified as a refusal (); otherwise, it is classified as a non-refusal (). The full set of refusal substrings is provided in . As has been previously noted , this string-matching approach has limitations. While effective at detecting memorized refusals, it does not assess whether the completion is coherent or contains harmful content. To address these limitations, we use a complementary metric that evaluates the harmfulness of a completion. Safety score. In order to measure the harmfulness of a model completion, we use , a widely-used open-source model fine-tuned to accurately detect harmful content. We prompt this model to classify each model completion as safe () or unsafe (). More details are provided in ."
+  },
+  {
+   "id": "sec_3",
+   "title": "Refusal is mediated by a single direction",
+   "level": 1,
+   "text": "For each model, we extract a single difference-in-means vector $\\mathbf{r}$ via the methodology described in . We then show that this single direction is both necessary and sufficient for refusal. In , we show that ablating this direction $\\hat{\\mathbf{r}}$ effectively disables the model's ability to refuse harmful requests. In , we show that adding $\\mathbf{r}$ to the model's activations induces refusal on harmless instructions."
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Bypassing refusal via directional ablation",
+   "level": 2,
+   "text": "To bypass refusal, we perform directional ablation on the refusal direction $\\hat{\\mathbf{r}}$, ablating it from activations at all layers and all token positions. With this intervention in place, we generate model completions over , a dataset of 100 harmful instructions. Results are shown in . Under no intervention, chat models refuse nearly all harmful requests, yielding high refusal and safety scores. Ablating $\\hat{\\mathbf{r}}$ from the model's residual stream activations, labeled as , reduces refusal rates and elicits unsafe completions."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Inducing refusal via activation addition",
+   "level": 2,
+   "text": "To induce refusal, we add the difference-in-means vector $\\mathbf{r}$ to activations in layer $l^*$, the layer that the $\\mathbf{r}$ was originally extracted from. We perform this intervention at all token positions. With this intervention in place, we generate model completions over 100 randomly sampled harmless instructions from . Results are shown in . Under no intervention, chat models typically do not refuse harmless instructions. Adding $\\mathbf{r}$ to the model's residual stream activations, labeled as , results in the model refusing even harmless requests."
+  },
+  {
+   "id": "sec_4",
+   "title": "A white-box jailbreak via weight orthogonalization",
+   "level": 1,
+   "text": "In this section, we propose a novel white-box jailbreak method through . This technique directly modifies model weights to eliminate the representation of the refusal direction, resulting in a model that retains its original capabilities but no longer refuses harmful instructions. This new approach offers a simpler way to jailbreak open-source models compared to prior methodologies involving fine-tuning , as it does not require gradient-based optimization nor any examples of harmful completions."
+  },
+  {
+   "id": "sec_4_1",
+   "title": "Weight orthogonalization",
+   "level": 2,
+   "text": "In , we described as an inference-time intervention that prevents the model from representing a direction $\\hat{\\mathbf{r}}$: during a forward pass, we zero out the $\\hat{\\mathbf{r}}$ component from every intermediate residual stream activation (). We can equivalently implement this operation by directly modifying component weights to never write to the $\\hat{\\mathbf{r}}$ direction in the first place. Specifically, we can take each matrix $W_{\\text{out}} \\in \\mathbb{R}^{d_{\\text{model}} \\times d_{\\text{input}}}$ that writes to the residual stream, and orthogonalize its column vectors with respect to $\\hat{\\mathbf{r}}$: In a transformer architecture, the matrices that write to the residual stream are: the embedding matrix, the positional embedding matrix, attention out matrices, and MLP out matrices. Orthogonalizing all of these matrices, as well as any output biases, with respect to the direction $\\hat{\\mathbf{r}}$ effectively prevents the model from ever writing $\\hat{\\mathbf{r}}$ to its residual stream. Note that this weight modification is equivalent to the previously described inference-time directional ablation, as shown explicitly in . Therefore, the performance of the inference-time intervention in bypassing refusal, presented in , also exactly characterizes that of the direct weight modification."
+  },
+  {
+   "id": "sec_4_2",
+   "title": "Comparison to other jailbreaks",
+   "level": 2,
+   "text": "In this section, we compare our methodology to other existing jailbreak techniques using the standardized evaluation setup from . Specifically, we generate completions over the test set of 159 standard behaviors, and then use their provided classifier model to determine the attack success rate (ASR), which is the proportion of completions classified as successfully bypassing refusal. We evaluate our weight orthogonalization method on models included in the study, and report its ASR alongside those of alternative jailbreaks. For brief descriptions of each alternative jailbreak, see . shows that our weight orthogonalization method, labeled as , fares well compared to other general jailbreak techniques. Across the model family, our general method is even on par with prompt-specific jailbreak techniques like , which optimize jailbreaks for each prompt individually. Note that 's evaluation methodology specifies that each model's default system prompt should be used during evaluation. While this approach is sensible for assessing the robustness of black-box systems, it is less applicable for white-box scenarios where attackers have full access to the model and can easily exclude the system prompt. Thus, we report ASR both with and without the system prompt. We observe a notable difference in system prompt sensitivity across model families. For models, including the system prompt substantially reduces ASR compared to evaluation without it (e.g. 22.6 vs 79.9 for ). In contrast, models maintain similar ASR regardless of system prompt inclusion (e.g. 79.2 vs 74.8 for ). While the system prompt contains explicit safety guidelines compared to the minimal system prompt, additional analysis in suggests the discrepancy is not explained by prompt content alone, and may reflect differences in how these models respond to system-level instructions more generally."
+  },
+  {
+   "id": "sec_4_3",
+   "title": "Measuring model coherence",
+   "level": 2,
+   "text": "A reasonable concern with any new jailbreak technique is that, in addition to circumventing refusal, it may also degrade the model's overall quality . However, qualitatively, we observe that models maintain their coherence after undergoing weight orthogonalization. While and show that our method effectively bypasses refusal, in this subsection we quantitatively evaluate how the modification alters a model's general capabilities. For each model and its orthogonalized version, we run four common language model evaluations: , , , and . All evaluations are run using LM Evaluation Harness , with settings consistent with Open LLM Leaderboard . displays that, for , , and , orthogonalized models perform similarly to baseline models. In , we show that this holds across other models in our suite, with additional evaluations of and . Except for and , all evaluation metrics for orthogonalized models lie within 99 confidence intervals of original performance. Interestingly, accuracy on consistently drops for orthogonalized models. This phenomenon is consistent with , where it was observed that fine-tuning away safety guardrails results in decreased accuracy on . Examining specific questions in reveals that the dataset veers close to the territory of refusal, with categories including misinformation, stereotypes, and conspiracies, and thus it may intuitively make sense that model behavior differs meaningfully on this evaluation dataset. See for further discussion of performance. In addition to standard language model evaluations, we also evaluate differences in CE loss, both on standard text corpora and model-specific generations (). These loss metrics suggest that directional ablation is more surgical than activation addition based methods ()."
+  },
+  {
+   "id": "sec_5",
+   "title": "Mechanistic analysis of adversarial suffixes",
+   "level": 1,
+   "text": "Safety fine-tuned chat models are vulnerable to attacks : there exist carefully constructed strings such that appending these strings to the end of a harmful instruction bypasses refusal and elicits harmful content. Effective adversarial suffixes are usually not human interpretable, and the mechanisms by which they work are not well understood. In this section, we mechanistically analyze the effect of an adversarial suffix on ."
+  },
+  {
+   "id": "sec_5_1",
+   "title": "Adversarial suffixes suppress the refusal-mediating direction",
+   "level": 2,
+   "text": "r0.5 Cosine similarity between last token residual stream activations and refusal direction. We first identify a single adversarial suffix that effectively bypasses refusal in . The suffix is displayed in , along with details of its generation. To study the effect of this adversarial suffix, we sample 128 refusal-eliciting harmful instructions from and the test set. For each instruction, we run the model three times: first with the unedited instruction, second with the adversarial suffix appended, and third with a freshly-sampled random suffix of the same length appended. By comparing the adversarial suffix to random suffixes, we aim to control for the effect of appending any suffix at all. For each run, we cache the last token activations and visualize their cosine similarity with the refusal-mediating direction. We also compare to a baseline of 128 harmless instructions from that do not elicit refusal. shows that the expression of the refusal direction is very high for harmful instructions, and remains high when a random suffix is appended. The expression of the refusal direction after appending the adversarial suffix is heavily suppressed, and closely resembles that of harmless instructions."
+  },
+  {
+   "id": "sec_5_2",
+   "title": "Adversarial suffixes hijack the attention of important heads",
+   "level": 2,
+   "text": "To further investigate how the refusal direction is suppressed, we examine the contributions of individual attention head and MLP components to the refusal direction. We quantify each component's contribution to this direction using (DFA) : each component's direct contribution can be measured by projecting its output onto the refusal direction. We select the top eight attention heads with the highest DFA on harmful instructions, and then investigate how their behavior changes when suffixes are appended. shows that the direct contributions of these heads to the refusal direction are significantly suppressed when the adversarial suffix is appended, as compared with no suffix and random suffixes. To understand how the outputs of these attention heads are altered, we examine their attention patterns. illustrates that the adversarial suffix effectively hijacks the attention of these heads. Normally, these heads focus on the instruction region of the prompt, which contains harmful content. With the adversarial suffix appended, these heads shift their attention to the suffix region, and away from the harmful instruction."
+  },
+  {
+   "id": "sec_6",
+   "title": "Related work",
+   "level": 1,
+   "text": "Understanding refusal in language models. demonstrate that removing a set of safety-critical neurons and ranks can degrade safety mechanisms while preserving utility. and both use contrastive pairs of harmful and harmless inputs to identify the model's representation of , asserting that this direction is distinct from the model's representation of . argue this by showing that safety prompts shift activations in a distinct direction, while show that the representation is not significantly altered by adversarial suffixes. Note that this is in contrast to our findings in that the refusal direction is significantly suppressed in the presence of an adversarial suffix. additionally introduce a piece-wise intervention to effectively amplify representations of harmfulness, and show that this intervention increases refusal on harmful inputs even when jailbreaks are applied. use contrastive multiple-choice completions, finding that steering with the resulting vector is effective at modulating refusal in multiple-choice settings but not in long-form generation. introduce a Trojan Activation Attack that adds steering vectors to bypass refusal during inference. identify a safety pattern by selecting individual neurons in each layer, and modulate refusal by zeroing out these neurons, although with unclear effects on the overall model performance. Features as directions. Extracting feature directions from contrastive pairs of inputs is an established technique . It is well understood that adding feature vectors to the residual stream can modify behavior , although details on how and where to intervene vary . Various works show that directions in activation space have more feature-like properties than neurons do . Recent works use sparse autoencoders to discover feature directions in an unsupervised manner . The assumption that features are represented linearly has been effective for erasing concepts from language models . Undoing safety fine-tuning. It is well known that fine-tuning on malicious examples is sufficient to undo safety guardrails , even with minimal degradation of overall capabilities . Undoing refusal via fine-tuning requires examples of harmful instructions and completions, while our method requires only harmful instructions. Note however that fine-tuning can weaken safety guardrails even when data is benign . Mechanistic interpretability works have provided initial evidence suggesting that fine-tuning does not significantly alter relevant internal circuitry . For example, fine-tune a model to make it less toxic, and find this behavioral modification can be undone simply by scaling a small number of MLP weights. Jailbreaks. The research area of circumventing restrictions on LLM behavior by has seen many different directions of work. Many models are vulnerable to . One hypothesis for why this works is that such prompts modify the LLM assistant's \"persona\" . Preliminary experiments in suggest that our method does not change the model's chat personality or behavior outside of refusal. Optimized can be appended to prompts to bypass refusal. In contrast, our method does not require any modifications to the input prompt, but has the obvious limitation that we require access to the model's weights. However, note that transferability of jailbreak prompts optimized on open-weight models on black-box models is unclear . Jailbreak prompts may have significant impact on model performance , whereas our method does not ()."
+  },
+  {
+   "id": "sec_7",
+   "title": "Discussion",
+   "level": 1,
+   "text": "In this work, we demonstrate that refusal behavior is consistently mediated by a single direction across a diverse set of open-source chat models. Based on this understanding, we propose a simple yet effective white-box jailbreak method that directly modifies model weights to disable the refusal mechanism while retaining model coherence. Our work demonstrates the practical utility of model-internals based interpretability: by studying refusal through the lens of model internals, we were able to create a simple yet effective jailbreak method. The simplicity of the model's refusal mechanism, and the ease of circumventing it in the white-box setting, raise concerns about the robustness of current alignment techniques. Limitations. Our study has several limitations. While we evaluate a broad range of open-source models, our findings may not generalize to untested models, especially those at greater scale, including current state-of-the-art proprietary models and those developed in the future. Additionally, the methodology we used to extract the refusal direction is likely not optimal and relies on several heuristics. We see this paper as more of an existence proof that such a direction exists, rather than a careful study of how best to extract it, and we leave methodological improvements to future work. Furthermore, our analysis of adversarial suffixes does not provide a comprehensive mechanistic understanding of the phenomenon, and is restricted to a single model and a single adversarial example. Another limitation is that it is difficult to measure the coherence of a chat model, and we consider each metric used flawed in various ways. We use multiple varied metrics to give a broad view of coherence. Finally, while our work identifies a single direction that mediates refusal behavior in each model, we acknowledge that the semantic meaning of these directions remains unclear. Though we use the term refusal direction as a functional description, these directions could represent other concepts such as harm or danger, or they may even resist straightforward semantic interpretation. Ethical considerations. Any work on jailbreaking LLMs must ask the question of whether it enables novel harms. It is already widely known that open-source model weights can be jailbroken via fine-tuning. Our method, which can yield a jailbroken version of a 70B parameter model using less than 5 of compute, is simpler than previous fine-tuning methods, requiring neither gradient-based optimization nor a dataset of harmful completions. While we acknowledge that our methodology marginally lowers the bar for jailbreaking open-source model weights, we believe that it does not substantially alter the risk profile of open sourcing models. Although the risk of misuse posed by today's language models may be relatively low , the rapid advancement of state-of-the-art model capabilities suggests that this risk could become significant in the near future. Our work contributes to the growing body of literature that highlights the fragility of current safety mechanisms, demonstrating that they can easily be circumvented and are insufficient to prevent the misuse of open-source LLMs. Building a scientific consensus around the limitations of current safety techniques is crucial for informing future policy decisions and research efforts. Author contributions. AA led the research project, and led the writing of the paper. AA discovered and validated that ablating a single direction bypasses refusal, and came up with the weight orthogonalization trick. OO ran initial experiments identifying that it is possible to jailbreak models via activation addition. AA and OO implemented and ran all experiments presented in the paper, with DP helping to run model coherence evaluations. DP investigated behavior of the orthogonalized models, suggested more thorough evaluations, and assisted with the writing of the paper. AS ran initial experiments testing the causal efficacy of various directional interventions, and identified the suffix used in as universal for . NP first proposed the idea of trying to extract a linear refusal direction , and advised the initial project to mechanistically understand refusal in . WG advised on methodology and experiments, and assisted with the writing and framing of the paper. NN acted as primary supervisor for the project, providing guidance and feedback throughout. Acknowledgements. AA and OO began working on the project as part of the Supervised Program for Alignment Research (SPAR) program, mentored by NP. AA and AS continued working on the project as part of the ML Alignment Theory Scholars (MATS) program, mentored by NN. We thank Florian Tramèr for providing generous compute resources and for offering comments on an earlier draft. We also thank Philippe Chlenski for providing thoughtful feedback on the manuscript. For general support throughout the research process, we thank McKenna Fitzgerald, Rocket Drew, Matthew Wearden, Henry Sleight, and the rest of the MATS team, and also Arthur Conmy. We also thank the staff at Lighthaven and London Initiative for Safe AI (LISA) for cultivating great environments in which to conduct research. We are grateful to the anonymous reviewers for their valuable feedback which helped improve this paper. Tooling. For our exploratory research, we used TransformerLens . For our experimental pipeline, we use HuggingFace Transformers , PyTorch , and vLLM . We used Together AI remote inference to compute the metric quickly. Disclosure of funding. AA and OO are funded by Long-Term Future Fund (LTFF). AA and AS are funded by AI Safety Support (AISS). plainnat"
+  },
+  {
+   "id": "sec_8",
+   "title": "Dataset details",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_8_1",
+   "title": "Harmful instructions",
+   "level": 2,
+   "text": "To construct $\\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}$, we randomly sample a total of 128 harmful instructions from , , and . To construct $\\mathcal{D}_{\\text{harmful}}^{\\text{(val)}}$, we sample 32 instructions from the validation set . We use only the standard behaviors, and exclude instructions that require context or concern copyright violations. In , we evaluate over , a dataset containing 100 harmful instructions, spanning 10 categories: harassment/discrimination, malware/hacking, physical harm, economic harm, fraud/deception, disinformation, sexual/adult content, privacy, expert advice, government decision-making. In , we evaluate over the test set . We consider only the 159 standard behaviors, and exclude instructions that require context or concern copyright violations. These harmful instructions span 6 categories: cybercrime unauthorized intrusion, chemical biological weapons/drugs, misinformation disinformation, harassment bullying, illegal activities, general harm. Note that we perform filtering to ensure that $\\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}$, $\\mathcal{D}_{\\text{harmful}}^{\\text{(val)}}$, and the two evaluation datasets are all pairwise disjoint, containing no overlapping instructions."
+  },
+  {
+   "id": "sec_8_2",
+   "title": "Harmless instructions",
+   "level": 2,
+   "text": "To construct the harmless datasets, we sample instructions from . $\\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}$ contains 128 instructions, and $\\mathcal{D}_{\\text{harmless}}^{\\text{(val)}}$ contains 32 instructions. In , we evaluate over 100 instructions from . Note that $\\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}$, $\\mathcal{D}_{\\text{harmless}}^{\\text{(val)}}$, and the evaluation dataset are all pairwise disjoint, containing no overlapping instructions."
+  },
+  {
+   "id": "sec_9",
+   "title": "Refusal metric: an efficient proxy for measuring refusal",
+   "level": 1,
+   "text": "Evaluating whether a model refuses a particular instruction is most accurately done by generating a full completion using greedy decoding, and then assessing whether the generated text constitutes a refusal. However, this process can be computationally expensive, especially when working with large models and a large number of instructions. To address this, we define a more efficient proxy for estimating the likelihood of a model refusing a given instruction without requiring generation (). We observe that each model tends to have a small set of characteristic phrases that it typically uses to begin its refusals (). This allows us to approximate the probability of refusal by examining the model's next token probability distribution at the last token position, which corresponds to the start of its completion. Formally, for each model, we define a set of refusal tokens $\\mathcal{R} \\subseteq \\mathcal{V}$, which contains the tokens most likely to begin the model's refusals (). We can then estimate the probability of refusal $P_{\\text{refusal}}$ as the sum of the probabilities assigned to the tokens in $\\mathcal{R}$. Given a vector of next token probabilities $\\mathbf{p} = (p_1, p_2, \\ldots, p_{|\\mathcal{V}|}) \\in \\mathbb{R}^{|\\mathcal{V}|}$, we define To create a more informative refusal metric, we take the log-odds of $P_{\\text{refusal}}$. This transformation helps to better distinguish between extreme probabilities that are close to 0 or 1 . We use this metric to filter out instructions in our test and validation datasets: for harmful instructions, we filter out prompts yielding $\\texttt{refusal\\_metric}< 0$, and for harmless instruction, we filter out prompts yielding $\\texttt{refusal\\_metric} > 0$. We also use this metric to quickly evaluate the efficacy of interventions over the validation set ()."
+  },
+  {
+   "id": "sec_10",
+   "title": "Direction selection",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_10_1",
+   "title": "Direction selection algorithm",
+   "level": 2,
+   "text": "Given a set of difference-in-means vectors $\\{ \\mathbf{r}_i^{(l)}| i \\in I, l \\in \\lceil L \\rceil \\}$, we want to select the best vector $\\mathbf{r}_{i^*}^{(l^*)}$. For each vector $\\mathbf{r}_i^{(l)}$, we compute the following: : under directional ablation of $\\mathbf{r}_i^{(l)}$, compute the average refusal metric across $\\mathcal{D}_{\\text{harmful}}^{\\text{(val)}}$. : under activation addition of $\\mathbf{r}_i^{(l)}$, compute the average refusal metric across $\\mathcal{D}_{\\text{harmless}}^{\\text{(val)}}$. : run the model on $\\mathcal{D}_{\\text{harmless}}^{\\text{(val)}}$ with and without directional ablation of $\\mathbf{r}_i^{(l)}$, and compute the average KL divergence between the probability distributions at the last token position. We then select $\\mathbf{r}_{i^*}^{(l^*)}$ to be the direction with minimum , subject to the following conditions: $\\texttt{induce\\_score} > 0$ This condition filters out directions that are not to induce refusal. $\\texttt{kl\\_score} < 0.1$ This condition filters out directions that significantly change model behavior on harmless prompts when ablated. $l < 0.8L$ This condition ensures that the direction is not too close to the unembedding directions. Intuitively, one could disable refusal by preventing the model from writing to refusal unembed directions, e.g. directions corresponding to the or unembedding directions, and this would directly prevent the model from outputting these refusal tokens. However, we restrict our search to higher level features, and do not prevent the model from outputting specific tokens (see ). Using the compute setup described in , this direction selection procedure takes about an hour to run for the largest models (72 billion parameters), and faster for smaller models."
+  },
+  {
+   "id": "sec_10_2",
+   "title": "Direction selection for each model",
+   "level": 2,
+   "text": "We report details of direction selection for each model in , including the token position $i^*$ and layer $l^*$ from which the direction was sourced, along with the direction's corresponding metrics. displays the and of all candidate directions for ."
+  },
+  {
+   "id": "sec_10_3",
+   "title": "Chat templates",
+   "level": 2,
+   "text": "We use the default chat template for each model family. All chat templates are displayed in ."
+  },
+  {
+   "id": "sec_11",
+   "title": "Refusal evaluation",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_11_1",
+   "title": "Refusal score",
+   "level": 2,
+   "text": "For a model completion $\\mathbf{c}$, $\\texttt{refusal\\_score}(\\mathbf{c}) = 1$ if $\\mathbf{c}$ contains at least one refusal substring; otherwise $\\texttt{refusal\\_score}(\\mathbf{c}) = 0$. displays the refusal substrings that are used in the evaluation. Note that the substring comparison is not sensitive to capitalization, and checks that the phrases are contained in the completion, not just at the start."
+  },
+  {
+   "id": "sec_11_2",
+   "title": "Safety score",
+   "level": 2,
+   "text": "For a model completion $\\mathbf{c}$, $\\texttt{safety\\_score}(\\mathbf{c}) = 1$ if outputs that the completion is ; otherwise $\\texttt{safety\\_score}(\\mathbf{c}) = 0$. displays the template used to prompt . Note that we use the default prompt specified by the model providers, without any custom alteration."
+  },
+  {
+   "id": "sec_11_3",
+   "title": "Challenges of evaluating refusal",
+   "level": 2,
+   "text": "Assessing whether a completion constitutes a successful jailbreak is complex. In this subsection, we highlight scenarios that are ambiguous, motivating our use of two metrics. and display cases in which the model does not explicitly refuse, but also does not provide a harmful response. In these scenarios, while . displays a case in which the model initially refuses, but then goes on to give a harmful response. In these scenarios, while ."
+  },
+  {
+   "id": "sec_11_4",
+   "title": "Reporting of confidence intervals",
+   "level": 2,
+   "text": "In and , we display error bars corresponding to standard error (SE), computed as $\\text{SE} = \\sqrt{\\frac{p (1-p)}{n}}$. In both cases, $n = 100$."
+  },
+  {
+   "id": "sec_12",
+   "title": "Weight orthogonalization is equivalent to directional ablation",
+   "level": 1,
+   "text": "To show the equivalence of directional ablation and weight orthogonalization, we consider all matrices that directly write contributions to the residual stream. Let $W_{\\text{out}} \\in \\mathbb{R}^{d_{\\text{model}} \\times d_{\\text{input}}}$ be a matrix that writes to the residual stream, mapping vectors from $\\mathbb{R}^{d_{\\text{input}}}$ to $\\mathbb{R}^{d_{\\text{model}}}$. Let the unit norm vector $\\hat{\\mathbf{r}} \\in \\mathbb{R}^{d_{\\text{model}}}$ denote the direction to be ablated. Now let $\\mathbf{x}_{\\text{pre}} \\in \\mathbb{R}^{d_{\\text{model}}}$ denote the residual stream activation before $W_{\\text{out}}$ adds a contribution to the residual stream, let $\\mathbf{x}_{\\text{post}}$ denote the residual stream activation after, and let $\\mathbf{t} \\in \\mathbb{R}^{d_{\\text{input}}}$ denote the input to $W_{\\text{out}}$: With directional ablation, we take $\\mathbf{x}_{\\text{post}}$ and zero out its projection onto $\\hat{\\mathbf{r}}$: Supposing that directional ablation was similarly applied after all previous contributions to the residual stream, we have that $\\hat{\\mathbf{r}}^{\\intercal}\\mathbf{x}_{\\text{pre}} = 0$: where $W_{\\text{out}}' = W_{\\text{out}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} W_{\\text{out}}$, as specified by weight orthogonalization in ."
+  },
+  {
+   "id": "sec_13",
+   "title": "Jailbreak evaluation",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_13_1",
+   "title": "Comparing to other jailbreaks",
+   "level": 2,
+   "text": "To compare the effectiveness of our jailbreak method to other methods in the literature, we report the 5 top performing jailbreak attacks, as ranked by attack success rate (ASR) on the model family: is the algorithm from which optimizes an adversarial suffix for each prompt and each model; is the multi-prompt version of , trained over multiple prompts for each model; is the transferable version of , trained over multiple prompts and across multiple models; is the AutoPrompt approach from ; is a black-box method from . We also include comparisons to the set of human-written Do Anything Now adversarial templates from (), and the direct response baseline without any jailbreaks in place ()."
+  },
+  {
+   "id": "sec_13_2",
+   "title": "Effect of system prompts on evaluation",
+   "level": 2,
+   "text": "shows that the attack success rate (ASR) of our weight orthogonalization methodology is sensitive to system prompts. Including the default system prompt in evaluation substantially reduces ASR for models, while having minimal effect on models. As shown in , the default system prompt includes explicit guidelines to avoid harmful or inappropriate content. In contrast, the default system prompt, shown in , is minimal and lacks specific directives about safety or ethics. We initially hypothesized that the discrepancy in ASR might be due to the system prompt's explicit guidelines, making it particularly effective at enforcing safety guardrails. To test this, we applied the system prompt to models, but observed no significant change in ASR, as shown in . This suggests that the impact of system prompts on ASR may be model-dependent. To investigate 's responsiveness to system prompts further, we evaluated the same orthogonalized model with 12 diverse system prompts (shown in ). This evaluation revealed substantial variability in ASR scores for , with a mean of 30.0 and standard deviation of 23.3, while maintained a more consistent performance across the same set of prompts, with a mean of 76.7 and standard deviation of 5.9. These findings suggest that models may be more responsive to system-level instructions than other model families, particularly with respect to safety-related behaviors. A more systematic study would be necessary to fully understand these differences, as well as the broader relationship between system prompts and refusal behaviors, which we leave as directions for future research."
+  },
+  {
+   "id": "sec_14",
+   "title": "Model coherence evaluation",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_14_1",
+   "title": "Language model evaluation",
+   "level": 2,
+   "text": "Except on , orthogonalization has a very small effect on general performance benchmarks. We observe less than 1 performance drop on average, with the difference to the baseline performance being indistinguishable from noise in most cases. The main exceptions are , which has statistically significant drops on and , and with drops on and . For MMLU, we use the default settings from LM Evaluation Harness as of May 2024. For the other benchmarks, we use the default settings, with the exception that models are run using vLLM . from is a statistically informative 400-sample subset of the larger test set. claim a 2 average error compared to the full-sized counterparts."
+  },
+  {
+   "id": "sec_14_2",
+   "title": "TruthfulQA accuracy",
+   "level": 2,
+   "text": "measures the performance of language models in generating truthful and accurate responses, particularly in areas prone to human misconceptions and falsehoods. displays clearly that performance is consistently worse for orthogonalized models as compared with unmodified models. contains questions that touch on sensitive topics such as misinformation, stereotypes, and conspiracies. For such questions, models with and without safety guardrails may understandably generate different responses. displays an example of a conspiracy-flavored question from , and the contrasting responses from and its orthogonalized version."
+  },
+  {
+   "id": "sec_14_3",
+   "title": "CE loss evaluation",
+   "level": 2,
+   "text": "In addition to standard language model evaluations, we also check changes in cross-entropy (CE) loss over various datasets. For each chat model and its orthogonalized version we compute CE loss over a sample of . consists of scraped webtext, and so we do not append any chat template when evaluating CE loss. We note that some chat models are especially sensitive to chat templates, and behave poorly without them. Thus, we also evaluate over , which is a chat dataset consisting of instructions and completions. We format each instruction according to each model's chat template, and compute CE loss only over the completion tokens. We further note that some chat models, seemingly in particular, have high CE loss on text that is out of distribution, e.g. completions from . To account for this, we take each baseline model, and generate completions on 100 instructions from . We then compute CE loss over these on-distribution completion tokens. All CE loss values are reported in . We denote the orthogonalized model as Ablation. We also compare to activation addition methodology, labeled Act Add, where rather than ablating the refusal direction, we the difference-in-means vector. See for a more detailed discussion of bypassing refusal via activation addition."
+  },
+  {
+   "id": "sec_15",
+   "title": "Adversarial suffix analysis",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_15_1",
+   "title": "Adversarial suffix generation",
+   "level": 2,
+   "text": "Using a custom implementation of Greedy Coordinate Gradient (GCG) , we generated 100 adversarial suffixes of token-length 20, each of which was optimized for a particular behavior from . Of these 100 suffixes, we found one suffix in particular that performs well across a wide range of harmful prompts. The suffix is shown in . While we would ideally perform analysis over a larger number of suffixes and models, we found it difficult to find suffixes that are universal across prompts and transferable across models . We therefore restrict our analysis to a single model, , and a single suffix."
+  },
+  {
+   "id": "sec_15_2",
+   "title": "Reporting of confidence intervals",
+   "level": 2,
+   "text": "In , for each layer and scenario, we display the standard deviation (SD) of cosine similarities across 128 prompts, computed as $\\text{SD} = \\sqrt{\\frac{\\sum{(x_i -\\overline{x})^2}}{n}}$. In this case, $n=128$."
+  },
+  {
+   "id": "sec_16",
+   "title": "Comparison to other methodologies",
+   "level": 1,
+   "text": "In , we use to bypass refusal. In , we show how this can be implemented as a direct weight modification, and then analyze the modification's effect on refusal and coherence. In this section, we compare directional ablation to two other weight modification methodologies: activation addition and fine-tuning."
+  },
+  {
+   "id": "sec_16_1",
+   "title": "Comparison to activation addition",
+   "level": 2,
+   "text": "In , we described how to induce refusal using activation addition. Given a difference-in-means vector $\\mathbf{r}^{(l)} \\in \\mathbb{R}^{d_{\\text{model}}}$ extracted from layer $l$, we can this vector at layer $l$ in order to shift activations towards refusal (). Similarly, we can this vector at layer $l$ in order to shift activations away from refusal: We perform this intervention at all token positions. Note that this intervention can be implemented as a direct weight modification by subtracting $\\mathbf{r}^{(l)}$ from the bias term of $\\texttt{MLP}^{(l-1)}$. As shown in , this activation addition intervention is effective in bypassing refusal. The decreases in refusal score and safety score are comparable to those achieved by directional ablation (). However, displays that the activation addition intervention, labeled as , causes increased loss over harmless data, in particular compared to directional ablation. displays a visualization of activation addition in the negative refusal direction, and suggests an intuitive explanation of the intervention's behavior on harmful and harmless prompts. On harmful inputs, adding the negative refusal direction shifts the harmful activations towards harmless activations, with respect to projection onto the refusal direction. With low projection onto the refusal direction, this intervention leads to low rates of refusal. However, on harmless inputs, adding the negative refusal direction shifts the harmless activations off distribution, resulting in increased perplexity. Note that, in comparison to activation addition, directional ablation shifts harmful activations towards harmless activations, while also not shifting harmless activations too far off distribution."
+  },
+  {
+   "id": "sec_16_2",
+   "title": "Comparison to fine-tuning",
+   "level": 2,
+   "text": "Prior work has established that fine-tuning is effective in removing safety guardrails of chat models . We replicate this result by fine-tuning . First, we construct a dataset of harmful instruction-completion pairs. For the harmful instructions, we sample instructions from , , , and . To generate corresponding harmful completions, we use , a competent chat model with low refusal rates. For each harmful instruction, we generate 5 completions, and then select a single completion satisfying both and . If no completions satisfy this condition, then the instruction is discarded. After this filtering, we were left with a dataset of 243 harmful instruction-completion pairs. We then fine-tuned on the constructed dataset, applying LoRA with and for 4 epochs. The LoRA fine-tuning was performed on an A100 GPU with 80GB of VRAM, and took approximately 10 minutes. Evaluations of refusal and CE loss are displayed in . In accordance with prior work, we confirm fine-tuning to be very effective in disabling refusal. We speculate that the decrease in CE loss over could be due to the similarity between the distributions of completions and completions, and as a result, fine-tuning over completions leads to a decreased CE loss over completions. We note that, although the LoRA fine-tuning process itself is straightforward and efficient, creating a high-quality dataset of harmful instruction-completion pairs requires non-trivial effort. In comparison, directional ablation (and its equivalent implementation via weight orthogonalization) requires just a dataset of , without the need for any ."
+  },
+  {
+   "id": "sec_17",
+   "title": "The refusal direction is also present in base models",
+   "level": 1,
+   "text": "Throughout this work, we consider only , models that have undergone fine-tuning to follow benign instructions and refuse harmful ones. Prior to this fine-tuning process, models are essentially just next-token predictors, referred to as . By default, base models are not instruction-following. For instance, if prompted with a question, a base model is likely to output another question, rather than an answer to the original question. In particular, base models do not refuse harmful requests. In , we argue that refusal in chat models is mediated by a single direction in activation space. One natural question is whether this direction, or feature, is learned from scratch during safety fine-tuning specifically to mediate refusal, or whether this direction is already present in the base model and gets repurposed, or hooked into, during safety fine-tuning. To investigate this question, we check the expression of the refusal direction in chat and base models. For each model, we sample 128 harmful and harmless instructions, run inference on both the chat model (e.g. ) and its corresponding base model (e.g. ), and cache all intermediate activations at the last token position. We then take the refusal direction extracted from the corresponding chat model (), and examine the cosine similarity of each activation with this direction. displays the results for four distinct models. We find that, similarly to the chat models, corresponding base models have high cosine similarity with the refusal direction when run on harmful prompts, and low cosine similarity when run on harmless prompts. This suggests that, rather than developing the refusal direction from scratch during fine-tuning, this representation exists already in the base model, and is repurposed for refusal during safety fine-tuning."
+  },
+  {
+   "id": "sec_18",
+   "title": "Extended results",
+   "level": 1,
+   "text": "As throughout the paper, all generations are generated deterministically using greedy decoding."
+  },
+  {
+   "id": "sec_18_1",
+   "title": "Bypassing refusal - examples",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_18_2",
+   "title": "Inducing refusal - examples",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_19",
+   "title": "Further experiments with orthogonalized models",
+   "level": 1,
+   "text": "As throughout the paper, all generations are generated deterministically using greedy decoding. All experiments in this section are performed on ."
+  },
+  {
+   "id": "sec_19_1",
+   "title": "Does orthogonalization just prevent the model from parroting standard refusal strings?",
+   "level": 2,
+   "text": "One possible way to prevent a model from refusing is to directly block it from outputting any of the standard refusal strings, such as , or . Experiments shown in show that this is not the case for our weight orthogonalization methodology, as the orthogonalized model is able to generate the same strings that the unmodified model uses to refuse a harmful request. This suggests that the modification works at a higher conceptual level, rather than at the level of suppressing output tokens."
+  },
+  {
+   "id": "sec_19_2",
+   "title": "The orthogonalized model behaves similarly on harmless instructions",
+   "level": 2,
+   "text": "In general, we notice that the orthogonalized model behaves very similarly to the non-modified model on harmless instructions. displays completions on a random sample of harmless prompts from . Generations from the unmodified model and the orthogonalized model appear to be indistinguishable, and often the generations are exactly the same."
+  },
+  {
+   "id": "sec_19_3",
+   "title": "The orthogonalized model may have trouble understanding its new refusal behavior",
+   "level": 2,
+   "text": "As our intervention targets refusal directly, it is natural to ask how the resulting model answers meta-questions about its new refusal behavior: does it understand its behavioral modification, or does it default to explaining its original refusal behavior? As shown in , the new model seems likely to answer meta-refusal questions consistently with its previous refusal behavior. However, its explanations seem not to be coherent."
+  },
+  {
+   "id": "sec_20",
+   "title": "Use of existing assets",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_20_1",
+   "title": "Models",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_20_2",
+   "title": "Datasets",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_21",
+   "title": "Compute statement",
+   "level": 1,
+   "text": "Most experiments presented in this paper were run on a cluster of eight NVIDIA RTX A6000 GPUs with 48GB of memory. All experiments on models with $\\leq$ 14B parameters are run using a single 48GB memory GPU. For larger models, we use four 48BG memory GPUs in parallel. Generating and selecting the directions, as described in , takes approximately 5 minutes for smaller models of size $\\leq$ 14B, and approximately 1 hour for the larger models."
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "\\tilde{\\mathbf{x}}_i^{(l)} = \\mathbf{x}_i^{(l)} + \\mathtt{Attn}^{(l)}(\\mathbf{x}_{1:i}^{(l)}), \\quad \\mathbf{x}_i^{(l+1)} = \\tilde{\\mathbf{x}}_i^{(l)} + \\mathtt{MLP}^{(l)}(\\tilde{\\mathbf{x}}_i^{(l)}).",
+   "section": "sec_2_1"
+  },
+  {
+   "id": "eq_2",
+   "latex": "\\boldsymbol{\\upmu}_i^{(l)} = \\frac{1}{|\\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}|} \\sum_{\\mathbf{t} \\in \\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}} \\mathbf{x}_i^{(l)}(\\mathbf{t}) , \\quad  \n\\boldsymbol{\\upnu}_i^{(l)} = \\frac{1}{\\lvert\\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}\\rvert} \\sum_{\\mathbf{t} \\in \\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}} \\mathbf{x}_i^{(l)}(\\mathbf{t}).",
+   "section": "sec_2_3"
+  },
+  {
+   "id": "eq_3",
+   "latex": "\\mathbf{x}^{(l)'} \\leftarrow \\mathbf{x}^{(l)} + \\mathbf{r}^{(l)}.",
+   "section": "sec_2_4"
+  },
+  {
+   "id": "eq_4",
+   "latex": "\\mathbf{x}' \\leftarrow \\mathbf{x} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} \\mathbf{x}.",
+   "section": "sec_2_4"
+  },
+  {
+   "id": "eq_5",
+   "latex": "W_{\\text{out}}' \\leftarrow W_{\\text{out}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} W_{\\text{out}}.",
+   "section": "sec_4_1"
+  },
+  {
+   "id": "eq_6",
+   "latex": "P_{\\text{refusal}}(\\mathbf{p}) := \\sum_{t \\in \\mathcal{R}} p_t.",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_7",
+   "latex": "\\begin{aligned}\n\\texttt{refusal\\_metric}(\\mathbf{p}) &:= \\mathrm{logit}\\left(P_{\\text{refusal}}(\\mathbf{p})\\right) \\\\\n    &\\ = \\log\\left(\\frac{P_{\\text{refusal}}(\\mathbf{p})}{1 - P_{\\text{refusal}}(\\mathbf{p})}\\right) \\\\\n    &\\ = \\log\\left( \\sum_{t \\in \\mathcal{R}} p_t \\right) - \\log\\left(\\sum_{t \\in \\mathcal{V} \\setminus \\mathcal{R}} p_t\\right).\n\\end{aligned}",
+   "section": "sec_9"
+  },
+  {
+   "id": "eq_8",
+   "latex": "\\mathbf{x}_{\\text{post}} = \\mathbf{x}_{\\text{pre}} + W_{\\text{out}}\\mathbf{t}.",
+   "section": "sec_12"
+  },
+  {
+   "id": "eq_9",
+   "latex": "\\begin{aligned}\n\\mathbf{x}_{\\text{post}}' &= \\mathbf{x}_{\\text{post}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} \\mathbf{x}_{\\text{post}} \\\\\n& = (\\mathbf{x}_{\\text{pre}} + W_{\\text{out}}\\mathbf{t}) - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal}(\\mathbf{x}_{\\text{pre}} + W_{\\text{out}}\\mathbf{t}) \\\\\n& = \\mathbf{x}_{\\text{pre}} + W_{\\text{out}}\\mathbf{t} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal}\\mathbf{x}_{\\text{pre}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal}W_{\\text{out}}\\mathbf{t} \\\\\n& = \\mathbf{x}_{\\text{pre}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal}\\mathbf{x}_{\\text{pre}} + (W_{\\text{out}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} W_{\\text{out}})\\mathbf{t}.\n\\end{aligned}",
+   "section": "sec_12"
+  },
+  {
+   "id": "eq_10",
+   "latex": "\\begin{aligned}\n\\mathbf{x}_{\\text{post}}' & = \\mathbf{x}_{\\text{pre}} + (W_{\\text{out}} - \\hat{\\mathbf{r}} \\hat{\\mathbf{r}}^{\\intercal} W_{\\text{out}})\\mathbf{t} \\\\\n & = \\mathbf{x}_{\\text{pre}} + W_{\\text{out}}' \\mathbf{t}\n\\end{aligned}",
+   "section": "sec_12"
+  },
+  {
+   "id": "eq_11",
+   "latex": "\\mathbf{x}^{(l)'} \\leftarrow \\mathbf{x}^{(l)} - \\mathbf{r}^{(l)}.",
+   "section": "sec_16_1"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_2_2",
+   "caption": "Model families, sizes, alignment training type, and references.",
+   "rows": []
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_4_2",
+   "caption": "\\textsc{HarmBench} attack success rate (ASR) across various jailbreaking methods. Our method is labeled as \\textsc{Ortho}. The baseline ``direct response'' rate with no jailbreak applied is labeled as \\textsc{DR}. We differentiate general jailbreaks, which are applied across all prompts generically, from {\\color{prompt_specific}prompt-specific jailbreaks}, which are optimized for each prompt individually. All evaluations use the model's default system prompt. We also report {\\color{no_system} ASR without system prompt in blue}.",
+   "rows": []
+  },
+  {
+   "id": "tab_3",
+   "section": "sec_4_3",
+   "caption": "Model evaluations. For each evaluation, we report the orthogonalized model's performance, followed by the {\\color{baseline_color} baseline model's performance}, followed by the absolute {\\color{much_better}increase} or {\\color{much_worse}decrease}. We display the largest model from each model family. Full results are reported in \\S\\ref{apdx:sub:lm_eval}.",
+   "rows": []
+  },
+  {
+   "id": "tab_4",
+   "section": "sec_9",
+   "caption": "The refusal token set $\\mathcal{R}$ that we use for each model family, along with the refusal phrases corresponding to each token.",
+   "rows": []
+  },
+  {
+   "id": "tab_5",
+   "section": "sec_10_2",
+   "caption": "Direction selection details for each model. Note that $i^* = -1$ indicates that the direction is selected from the last token position, $i^* = -2$ the second-to-last token position, and so on. Also note that the layer index $l^*$ starts from index 0, while $L$ indicates the total number of layers.",
+   "rows": []
+  },
+  {
+   "id": "tab_6",
+   "section": "sec_10_3",
+   "caption": "Model families and their corresponding chat templates. The user instruction is denoted as \\texttt{\\color{blue}\\{x\\}\\color{black}}. Post-instruction tokens, as defined in \\S\\ref{subsec:background}, are labeled in {\\color{red}red\\color{black}}.",
+   "rows": []
+  },
+  {
+   "id": "tab_7",
+   "section": "sec_13_2",
+   "caption": "Attack success rate (ASR) on \\textsc{HarmBench} using different system prompts. The \\textsc{Qwen Chat} system prompt is minimal, while the \\textsc{Llama-2 Chat} system prompt contains explicit safety guidelines. Orthogonalized \\textsc{Qwen Chat} models maintain high ASR even with the more restrictive \\textsc{Llama-2 Chat} system prompt. See \\autoref{fig:llama_2_chat_system_prompt} and \\autoref{fig:qwen_chat_system_prompt} for the full system prompts.",
+   "rows": []
+  },
+  {
+   "id": "tab_8",
+   "section": "sec_14_1",
+   "caption": "Model evaluations. For each evaluation, we report the orthogonalized model's performance, followed by the {\\color{baseline_color} baseline model's performance}, followed by the absolute {\\color{much_better}increase} or {\\color{much_worse}decrease}.",
+   "rows": []
+  },
+  {
+   "id": "tab_9",
+   "section": "sec_14_3",
+   "caption": "Model performance as measured by CE loss across different datasets.",
+   "rows": [
+    [
+     "",
+     "\\multicolumn{3}{c}{CE Loss (\\textsc{The Pile})}",
+     "\\multicolumn{3}{c}{CE Loss (\\textsc{Alpaca})}",
+     "CE Loss (On-distribution)"
+    ],
+    [
+     "Chat model",
+     "Baseline",
+     "Ablation",
+     "Act Add",
+     "Baseline",
+     "Ablation",
+     "Act Add",
+     "Baseline",
+     "Ablation",
+     "Act Add"
+    ],
+    [
+     "\\textsc{Qwen 1.8B}",
+     "2.921",
+     "2.938",
+     "3.259",
+     "1.779",
+     "1.784",
+     "2.038",
+     "0.284",
+     "0.293",
+     "0.586"
+    ],
+    [
+     "\\textsc{Qwen 7B}",
+     "2.259",
+     "2.277",
+     "2.388",
+     "1.615",
+     "1.631",
+     "1.697",
+     "0.242",
+     "0.278",
+     "0.479"
+    ],
+    [
+     "\\textsc{Qwen 14B}",
+     "2.070",
+     "2.078",
+     "2.230",
+     "1.602",
+     "1.606",
+     "1.713",
+     "0.212",
+     "0.218",
+     "0.443"
+    ],
+    [
+     "\\textsc{Qwen 72B}",
+     "1.944",
+     "1.971",
+     "2.097",
+     "1.740",
+     "1.768",
+     "2.124",
+     "0.147",
+     "0.162",
+     "0.380"
+    ],
+    [
+     "\\textsc{Yi 6B}",
+     "2.019",
+     "2.017",
+     "2.205",
+     "1.889",
+     "1.882",
+     "2.078",
+     "0.277",
+     "0.311",
+     "0.731"
+    ],
+    [
+     "\\textsc{Yi 34B}",
+     "1.862",
+     "1.872",
+     "2.002",
+     "1.971",
+     "2.008",
+     "2.066",
+     "0.191",
+     "0.259",
+     "0.680"
+    ],
+    [
+     "\\textsc{Gemma 2B}",
+     "3.506",
+     "3.489",
+     "3.739",
+     "2.090",
+     "2.101",
+     "2.179",
+     "0.254",
+     "0.311",
+     "0.853"
+    ],
+    [
+     "\\textsc{Gemma 7B}",
+     "5.975",
+     "5.963",
+     "6.051",
+     "2.336",
+     "2.335",
+     "2.356",
+     "0.201",
+     "0.228",
+     "0.656"
+    ],
+    [
+     "\\textsc{Llama-2 7B}",
+     "2.220",
+     "2.214",
+     "2.333",
+     "1.609",
+     "1.586",
+     "1.584",
+     "0.118",
+     "0.126",
+     "0.460"
+    ],
+    [
+     "\\textsc{Llama-2 13B}",
+     "2.082",
+     "2.087",
+     "2.325",
+     "1.563",
+     "1.591",
+     "1.642",
+     "0.102",
+     "0.116",
+     "0.336"
+    ],
+    [
+     "\\textsc{Llama-2 70B}",
+     "1.970",
+     "1.969",
+     "2.010",
+     "1.657",
+     "1.659",
+     "1.630",
+     "0.067",
+     "0.070",
+     "0.169"
+    ],
+    [
+     "\\textsc{Llama-3 8B}",
+     "2.348",
+     "2.362",
+     "2.469",
+     "1.912",
+     "1.944",
+     "1.912",
+     "0.195",
+     "0.213",
+     "0.441"
+    ],
+    [
+     "\\textsc{Llama-3 70B}",
+     "2.121",
+     "2.117",
+     "2.274",
+     "1.980",
+     "1.978",
+     "1.928",
+     "0.116",
+     "0.126",
+     "0.265"
+    ]
+   ]
+  },
+  {
+   "id": "tab_10",
+   "section": "sec_16_2",
+   "caption": "Refusal and CE loss evaluation metrics for \\textsc{Llama-3 8B Instruct}, comparing the interventions of directional ablation, activation addition, and fine-tuning.",
+   "rows": []
+  },
+  {
+   "id": "tab_11",
+   "section": "sec_20_1",
+   "caption": "The list of models used in this work.",
+   "rows": []
+  },
+  {
+   "id": "tab_12",
+   "section": "sec_20_2",
+   "caption": "The list of datasets used in this work.",
+   "rows": []
+  }
+ ],
+ "macros": {
+  "\\andy": "{\\color{blue}#1}",
+  "\\oscar": "{\\color{red}#1}",
+  "\\dpaleka": "{\\color{cyan}#1}",
+  "\\colornumber": "\\FPeval{\\result}{clip(#1)}\n  \\ifdim \\result pt < -1.99pt\n    \\textcolor{much_worse}{#1}\n  \\else\\ifdim \\result pt < -0.99pt\n    \\textcolor{worse}{#1}\n  \\else\\ifdim \\result pt < 0pt\n    \\textcolor{slightly_worse}{#1}\n  \\else\\ifdim \\result pt < 0.99pt\n    \\textcolor{slightly_better}{#1}\n  \\else\\ifdim \\result pt < 1.99pt\n    \\textcolor{better}{#1}\n  \\else\n    \\textcolor{much_better}{#1}\n  \\fi\\fi\\fi\\fi\\fi",
+  "\\subfigureautorefname": "\\figureautorefname",
+  "\\thefootnote": "\\arabic{footnote}"
+ },
+ "references": [
+  {
+   "key": "llama3modelcard",
+   "text": "AI@Meta. \\newblock {Llama 3} model card. \\newblock 2024. \\newblock URL \\url{https://github.com/meta-llama/llama3/blob/main/MODEL_CARD.md}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "andreas2022language",
+   "text": "Jacob Andreas. \\newblock Language models as agent models. \\newblock \\emph{arXiv preprint arXiv:2212.01681}, 2022.",
+   "arxiv_id": "2212.01681"
+  },
+  {
+   "key": "andriushchenko2024jailbreaking",
+   "text": "Maksym Andriushchenko, Francesco Croce, and Nicolas Flammarion. \\newblock Jailbreaking leading safety-aligned {LLMs} with simple adaptive attacks. \\newblock \\emph{arXiv preprint arXiv:2404.02151}, 2024.",
+   "arxiv_id": "2404.02151"
+  },
+  {
+   "key": "anthropic2023responsible",
+   "text": "Anthropic. \\newblock {Anthropic's} responsible scaling policy, 2024. \\newblock \\url{https://www.anthropic.com/news/anthropics-responsible-scaling-policy}. Accessed on: May 20, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "arditi2023refusal",
+   "text": "Andy Arditi and Oscar Obeso. \\newblock Refusal mechanisms: initial experiments with {Llama-2-7b-chat}. \\newblock Alignment Forum, 2023. \\newblock URL \\url{https://www.alignmentforum.org/posts/pYcEhoAoPfHhgJ8YC}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bai2023qwen",
+   "text": "Jinze Bai, Shuai Bai, Yunfei Chu, Zeyu Cui, Kai Dang, Xiaodong Deng, Yang Fan, Wenbin Ge, Yu~Han, Fei Huang, et~al. \\newblock {Qwen} technical report. \\newblock \\emph{arXiv preprint arXiv:2309.16609}, 2023.",
+   "arxiv_id": "2309.16609"
+  },
+  {
+   "key": "bai2022training",
+   "text": "Yuntao Bai, Andy Jones, Kamal Ndousse, Amanda Askell, Anna Chen, Nova DasSarma, Dawn Drain, Stanislav Fort, Deep Ganguli, Tom Henighan, et~al. \\newblock Training a helpful and harmless assistant with reinforcement learning from human feedback. \\newblock \\emph{arXiv preprint arXiv:2204.05862}, 2022.",
+   "arxiv_id": "2204.05862"
+  },
+  {
+   "key": "open-llm-leaderboard",
+   "text": "Edward Beeching, Clémentine Fourrier, Nathan Habib, Sheon Han, Nathan Lambert, Nazneen Rajani, Omar Sanseviero, Lewis Tunstall, and Thomas Wolf. \\newblock Open {LLM} leaderboard. \\newblock \\url{https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "belrose2023diffinmeans",
+   "text": "Nora Belrose. \\newblock Diff-in-means concept editing is worst-case optimal: Explaining a result by {Sam Marks} and {Max Tegmark}, 2023. \\newblock \\url{https://blog.eleuther.ai/diff-in-means/}. Accessed on: May 20, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "belrose2024leace",
+   "text": "Nora Belrose, David Schneider-Joseph, Shauli Ravfogel, Ryan Cotterell, Edward Raff, and Stella Biderman. \\newblock {LEACE}: Perfect linear concept erasure in closed form. \\newblock \\emph{Advances in Neural Information Processing Systems}, 36, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "biderman2024lessons",
+   "text": "Stella Biderman, Hailey Schoelkopf, Lintang Sutawika, Leo Gao, Jonathan Tow, Baber Abbasi, Alham~Fikri Aji, Pawan~Sasanka Ammanamanchi, Sidney Black, Jordan Clive, et~al. \\newblock Lessons from the trenches on reproducible evaluation of language models. \\newblock \\emph{arXiv preprint arXiv:2405.14782}, 2024.",
+   "arxiv_id": "2405.14782"
+  },
+  {
+   "key": "bolukbasi2016man",
+   "text": "Tolga Bolukbasi, Kai-Wei Chang, James~Y Zou, Venkatesh Saligrama, and Adam~T Kalai. \\newblock Man is to computer programmer as woman is to homemaker? {Debiasing} word embeddings. \\newblock \\emph{Advances in neural information processing systems}, 29, 2016.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bricken2023monosemanticity",
+   "text": "Trenton Bricken, Adly Templeton, Joshua Batson, Brian Chen, Adam Jermyn, Tom Conerly, Nick Turner, Cem Anil, Carson Denison, Amanda Askell, Robert Lasenby, Yifan Wu, Shauna Kravec, Nicholas Schiefer, Tim Maxwell, Nicholas Joseph, Zac Hatfield-Dodds, Alex Tamkin, Karina Nguyen, Brayden McLean, Josiah~E Burke, Tristan Hume, Shan Carter, Tom Henighan, and Christopher Olah. \\newblock Towards monosemanticity: Decomposing language models with dictionary learning. \\newblock \\emph{Transformer Circuits Thread}, 2023. \\newblock \\url{https://transformer-circuits.pub/2023/monosemantic-features/index.html}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "burns2022discovering",
+   "text": "Collin Burns, Haotian Ye, Dan Klein, and Jacob Steinhardt. \\newblock Discovering latent knowledge in language models without supervision. \\newblock \\emph{arXiv preprint arXiv:2212.03827}, 2022.",
+   "arxiv_id": "2212.03827"
+  },
+  {
+   "key": "chao2023jailbreaking",
+   "text": "Patrick Chao, Alexander Robey, Edgar Dobriban, Hamed Hassani, George~J Pappas, and Eric Wong. \\newblock Jailbreaking black box large language models in twenty queries. \\newblock \\emph{arXiv preprint arXiv:2310.08419}, 2023.",
+   "arxiv_id": "2310.08419"
+  },
+  {
+   "key": "chao2024jailbreakbench",
+   "text": "Patrick Chao, Edoardo Debenedetti, Alexander Robey, Maksym Andriushchenko, Francesco Croce, Vikash Sehwag, Edgar Dobriban, Nicolas Flammarion, George~J Pappas, Florian Tramer, et~al. \\newblock {JailbreakBench}: An open robustness benchmark for jailbreaking large language models. \\newblock \\emph{arXiv preprint arXiv:2404.01318}, 2024.",
+   "arxiv_id": "2404.01318"
+  },
+  {
+   "key": "chu2024comprehensive",
+   "text": "Junjie Chu, Yugeng Liu, Ziqing Yang, Xinyue Shen, Michael Backes, and Yang Zhang. \\newblock Comprehensive assessment of jailbreak attacks against {LLMs}. \\newblock \\emph{arXiv preprint arXiv:2402.05668}, 2024.",
+   "arxiv_id": "2402.05668"
+  },
+  {
+   "key": "clark2018think",
+   "text": "Peter Clark, Isaac Cowhey, Oren Etzioni, Tushar Khot, Ashish Sabharwal, Carissa Schoenick, and Oyvind Tafjord. \\newblock Think you have solved question answering? {Try} {ARC}, the {AI2} reasoning challenge. \\newblock \\emph{arXiv preprint arXiv:1803.05457}, 2018.",
+   "arxiv_id": "1803.05457"
+  },
+  {
+   "key": "cobbe2021training",
+   "text": "Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, et~al. \\newblock Training verifiers to solve math word problems. \\newblock \\emph{arXiv preprint arXiv:2110.14168}, 2021.",
+   "arxiv_id": "2110.14168"
+  },
+  {
+   "key": "cunningham2023sparse",
+   "text": "Hoagy Cunningham, Aidan Ewart, Logan Riggs, Robert Huben, and Lee Sharkey. \\newblock Sparse autoencoders find highly interpretable features in language models. \\newblock \\emph{arXiv preprint arXiv:2309.08600}, 2023.",
+   "arxiv_id": "2309.08600"
+  },
+  {
+   "key": "elhage2022superposition",
+   "text": "Nelson Elhage, Tristan Hume, Catherine Olsson, Nicholas Schiefer, Tom Henighan, Shauna Kravec, Zac Hatfield-Dodds, Robert Lasenby, Dawn Drain, Carol Chen, Roger Grosse, Sam McCandlish, Jared Kaplan, Dario Amodei, Martin Wattenberg, and Christopher Olah. \\newblock Toy models of superposition. \\newblock \\emph{Transformer Circuits Thread}, 2022. \\newblock \\url{https://transformer-circuits.pub/2022/toy\\_model/index.html}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "gao2020pile",
+   "text": "Leo Gao, Stella Biderman, Sid Black, Laurence Golding, Travis Hoppe, Charles Foster, Jason Phang, Horace He, Anish Thite, Noa Nabeshima, et~al. \\newblock {The Pile}: An {800GB} dataset of diverse text for language modeling. \\newblock \\emph{arXiv preprint arXiv:2101.00027}, 2020.",
+   "arxiv_id": "2101.00027"
+  },
+  {
+   "key": "eval-harness",
+   "text": "Leo Gao, Jonathan Tow, Baber Abbasi, Stella Biderman, Sid Black, Anthony DiPofi, Charles Foster, Laurence Golding, Jeffrey Hsu, Alain Le~Noac'h, Haonan Li, Kyle McDonell, Niklas Muennighoff, Chris Ociepa, Jason Phang, Laria Reynolds, Hailey Schoelkopf, Aviya Skowron, Lintang Sutawika, Eric Tang, Anish Thite, Ben Wang, Kevin Wang, and Andy Zou. \\newblock A framework for few-shot language model evaluation, 12 2023. \\newblock URL \\url{https://zenodo.org/records/10256836}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "geiger2024finding",
+   "text": "Atticus Geiger, Zhengxuan Wu, Christopher Potts, Thomas Icard, and Noah Goodman. \\newblock Finding alignments between interpretable causal variables and distributed neural representations. \\newblock In \\emph{Causal Learning and Reasoning}, pages 160--187. PMLR, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "guerner2023geometric",
+   "text": "Cl{\\'e}ment Guerner, Anej Svete, Tianyu Liu, Alexander Warstadt, and Ryan Cotterell. \\newblock A geometric notion of causal probing. \\newblock \\emph{arXiv preprint arXiv:2307.15054}, 2023.",
+   "arxiv_id": "2307.15054"
+  },
+  {
+   "key": "haghighatkhah2022better",
+   "text": "Pantea Haghighatkhah, Antske Fokkens, Pia Sommerauer, Bettina Speckmann, and Kevin Verbeek. \\newblock Better hit the nail on the head than beat around the bush: Removing protected attributes with a single projection. \\newblock \\emph{arXiv preprint arXiv:2212.04273}, 2022.",
+   "arxiv_id": "2212.04273"
+  },
+  {
+   "key": "hendrycks2020measuring_mmlu",
+   "text": "Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Mantas Mazeika, Dawn Song, and Jacob Steinhardt. \\newblock Measuring massive multitask language understanding. \\newblock \\emph{arXiv preprint arXiv:2009.03300}, 2020.",
+   "arxiv_id": "2009.03300"
+  },
+  {
+   "key": "hernandez2021low",
+   "text": "Evan Hernandez and Jacob Andreas. \\newblock The low-dimensional linear geometry of contextualized word representations. \\newblock \\emph{arXiv preprint arXiv:2105.07109}, 2021.",
+   "arxiv_id": "2105.07109"
+  },
+  {
+   "key": "hu2021lora",
+   "text": "Edward~J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, and Weizhu Chen. \\newblock {LoRA}: Low-rank adaptation of large language models. \\newblock \\emph{arXiv preprint arXiv:2106.09685}, 2021.",
+   "arxiv_id": "2106.09685"
+  },
+  {
+   "key": "huang2023catastrophic",
+   "text": "Yangsibo Huang, Samyak Gupta, Mengzhou Xia, Kai Li, and Danqi Chen. \\newblock Catastrophic jailbreak of open-source {LLMs} via exploiting generation. \\newblock \\emph{arXiv preprint arXiv:2310.06987}, 2023.",
+   "arxiv_id": "2310.06987"
+  },
+  {
+   "key": "jain2023mechanistically",
+   "text": "Samyak Jain, Robert Kirk, Ekdeep~Singh Lubana, Robert~P Dick, Hidenori Tanaka, Edward Grefenstette, Tim Rockt{\\\"a}schel, and David~Scott Krueger. \\newblock Mechanistically analyzing the effects of fine-tuning on procedurally defined tasks. \\newblock \\emph{arXiv preprint arXiv:2311.12786}, 2023.",
+   "arxiv_id": "2311.12786"
+  },
+  {
+   "key": "jiang2023mistral",
+   "text": "Albert~Q Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, Devendra~Singh Chaplot, Diego de~las Casas, Florian Bressand, Gianna Lengyel, Guillaume Lample, Lucile Saulnier, et~al. \\newblock {Mistral 7B}. \\newblock \\emph{arXiv preprint arXiv:2310.06825}, 2023.",
+   "arxiv_id": "2310.06825"
+  },
+  {
+   "key": "jorgensen2023improving",
+   "text": "Ole Jorgensen, Dylan Cope, Nandi Schoots, and Murray Shanahan. \\newblock Improving activation steering in language models with mean-centring. \\newblock \\emph{arXiv preprint arXiv:2312.03813}, 2023.",
+   "arxiv_id": "2312.03813"
+  },
+  {
+   "key": "attention_saes",
+   "text": "Connor Kissane, Robert Krzyzanowski, Arthur Conmy, and Neel Nanda. \\newblock Sparse autoencoders work on attention layer outputs. \\newblock Alignment Forum, 2024. \\newblock URL \\url{https://www.alignmentforum.org/posts/DtdzGwFh9dCfsekZZ}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kwon2023vllm",
+   "text": "Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody~Hao Yu, Joseph~E. Gonzalez, Hao Zhang, and Ion Stoica. \\newblock Efficient memory management for large language model serving with {PagedAttention}. \\newblock In \\emph{Proceedings of the ACM SIGOPS 29th Symposium on Operating Systems Principles}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lee2024mechanistic",
+   "text": "Andrew Lee, Xiaoyan Bai, Itamar Pres, Martin Wattenberg, Jonathan~K Kummerfeld, and Rada Mihalcea. \\newblock A mechanistic understanding of alignment algorithms: A case study on {DPO} and toxicity. \\newblock \\emph{arXiv preprint arXiv:2401.01967}, 2024.",
+   "arxiv_id": "2401.01967"
+  },
+  {
+   "key": "lermen2023lora",
+   "text": "Simon Lermen, Charlie Rogers-Smith, and Jeffrey Ladish. \\newblock {LoRA} fine-tuning efficiently undoes safety training in {Llama 2-Chat 70B}. \\newblock \\emph{arXiv preprint arXiv:2310.20624}, 2023.",
+   "arxiv_id": "2310.20624"
+  },
+  {
+   "key": "li2021implicit",
+   "text": "Belinda~Z Li, Maxwell Nye, and Jacob Andreas. \\newblock Implicit representations of meaning in neural language models. \\newblock \\emph{arXiv preprint arXiv:2106.00737}, 2021.",
+   "arxiv_id": "2106.00737"
+  },
+  {
+   "key": "li2024inference",
+   "text": "Kenneth Li, Oam Patel, Fernanda Vi{\\'e}gas, Hanspeter Pfister, and Martin Wattenberg. \\newblock Inference-time intervention: Eliciting truthful answers from a language model. \\newblock \\emph{Advances in Neural Information Processing Systems}, 36, 2024{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "li2024rethinking",
+   "text": "Tianlong Li, Shihan Dou, Wenhao Liu, Muling Wu, Changze Lv, Rui Zheng, Xiaoqing Zheng, and Xuanjing Huang. \\newblock Rethinking jailbreaking through the lens of representation engineering, 2024{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "liao2024amplegcg",
+   "text": "Zeyi Liao and Huan Sun. \\newblock Ample{GCG}: Learning a universal and transferable generative model of adversarial suffixes for jailbreaking both open and closed {LLMs}. \\newblock \\emph{arXiv preprint arXiv:2404.07921}, 2024.",
+   "arxiv_id": "2404.07921"
+  },
+  {
+   "key": "lin2021truthfulqa",
+   "text": "Stephanie Lin, Jacob Hilton, and Owain Evans. \\newblock {TruthfulQA}: Measuring how models mimic human falsehoods. \\newblock \\emph{arXiv preprint arXiv:2109.07958}, 2021.",
+   "arxiv_id": "2109.07958"
+  },
+  {
+   "key": "liu2018generating",
+   "text": "Peter~J Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz Kaiser, and Noam Shazeer. \\newblock Generating {Wikipedia} by summarizing long sequences. \\newblock \\emph{arXiv preprint arXiv:1801.10198}, 2018.",
+   "arxiv_id": "1801.10198"
+  },
+  {
+   "key": "liu2023autodan",
+   "text": "Xiaogeng Liu, Nan Xu, Muhao Chen, and Chaowei Xiao. \\newblock {AutoDAN}: Generating stealthy jailbreak prompts on aligned large language models. \\newblock \\emph{arXiv preprint arXiv:2310.04451}, 2023.",
+   "arxiv_id": "2310.04451"
+  },
+  {
+   "key": "makelov2024towards",
+   "text": "Aleksandar Makelov, George Lange, and Neel Nanda. \\newblock Towards principled evaluations of sparse autoencoders for interpretability and control. \\newblock \\emph{arXiv preprint arXiv:2405.08366}, 2024.",
+   "arxiv_id": "2405.08366"
+  },
+  {
+   "key": "marks2023geometry",
+   "text": "Samuel Marks and Max Tegmark. \\newblock The geometry of truth: Emergent linear structure in large language model representations of true/false datasets. \\newblock \\emph{arXiv preprint arXiv:2310.06824}, 2023.",
+   "arxiv_id": "2310.06824"
+  },
+  {
+   "key": "marks2024sparse",
+   "text": "Samuel Marks, Can Rager, Eric~J Michaud, Yonatan Belinkov, David Bau, and Aaron Mueller. \\newblock Sparse feature circuits: Discovering and editing interpretable causal graphs in language models. \\newblock \\emph{arXiv preprint arXiv:2403.19647}, 2024.",
+   "arxiv_id": "2403.19647"
+  },
+  {
+   "key": "tdc2023",
+   "text": "Mantas Mazeika, Andy Zou, Norman Mu, Long Phan, Zifan Wang, Chunru Yu, Adam Khoja, Fengqing Jiang, Aidan O'Gara, Ellie Sakhaee, Zhen Xiang, Arezoo Rajabi, Dan Hendrycks, Radha Poovendran, Bo~Li, and David Forsyth. \\newblock {TDC} 2023 ({LLM} edition): the {Trojan Detection Challenge}. \\newblock In \\emph{NeurIPS Competition Track}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mazeika2024harmbench",
+   "text": "Mantas Mazeika, Long Phan, Xuwang Yin, Andy Zou, Zifan Wang, Norman Mu, Elham Sakhaee, Nathaniel Li, Steven Basart, Bo~Li, et~al. \\newblock {HarmBench}: A standardized evaluation framework for automated red teaming and robust refusal. \\newblock \\emph{arXiv preprint arXiv:2402.04249}, 2024.",
+   "arxiv_id": "2402.04249"
+  },
+  {
+   "key": "meade2024universal",
+   "text": "Nicholas Meade, Arkil Patel, and Siva Reddy. \\newblock Universal adversarial triggers are not universal. \\newblock \\emph{arXiv preprint arXiv:2404.16020}, 2024.",
+   "arxiv_id": "2404.16020"
+  },
+  {
+   "key": "mikolov2013linguistic",
+   "text": "Tom{\\'a}{\\v{s}} Mikolov, Wen-tau Yih, and Geoffrey Zweig. \\newblock Linguistic regularities in continuous space word representations. \\newblock In \\emph{Proceedings of the 2013 conference of the north american chapter of the association for computational linguistics: Human language technologies}, pages 746--751, 2013.",
+   "arxiv_id": null
+  },
+  {
+   "key": "min2023recent",
+   "text": "Bonan Min, Hayley Ross, Elior Sulem, Amir Pouran~Ben Veyseh, Thien~Huu Nguyen, Oscar Sainz, Eneko Agirre, Ilana Heintz, and Dan Roth. \\newblock Recent advances in natural language processing via large pre-trained language models: A survey. \\newblock \\emph{ACM Computing Surveys}, 56\\penalty0 (2):\\penalty0 1--40, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mouton2024operational",
+   "text": "Christopher~A. Mouton, Caleb Lucas, and Ella Guest. \\newblock \\emph{The Operational Risks of AI in Large-Scale Biological Attacks: Results of a Red-Team Study}. \\newblock RAND Corporation, Santa Monica, CA, 2024. \\newblock \\doi{10.7249/RRA2977-2}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "nanda2022transformerlens",
+   "text": "Neel Nanda and Joseph Bloom. \\newblock {TransformerLens}. \\newblock \\url{https://github.com/TransformerLensOrg/TransformerLens}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "nanda2023emergent",
+   "text": "Neel Nanda, Andrew Lee, and Martin Wattenberg. \\newblock Emergent linear representations in world models of self-supervised sequence models. \\newblock \\emph{arXiv preprint arXiv:2309.00941}, 2023.",
+   "arxiv_id": "2309.00941"
+  },
+  {
+   "key": "ouyang2022training",
+   "text": "Long Ouyang, Jeffrey Wu, Xu~Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, et~al. \\newblock Training language models to follow instructions with human feedback. \\newblock \\emph{Advances in neural information processing systems}, 35:\\penalty0 27730--27744, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "panickssery2023redteaming",
+   "text": "Nina Panickssery. \\newblock Red-teaming language models via activation engineering. \\newblock Alignment Forum, 2023. \\newblock URL \\url{https://www.alignmentforum.org/posts/iHmsJdxgMEWmAfNne}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "panickssery2023steering",
+   "text": "Nina Panickssery, Nick Gabrieli, Julian Schulz, Meg Tong, Evan Hubinger, and Alexander~Matt Turner. \\newblock Steering {Llama 2} via contrastive activation addition. \\newblock \\emph{arXiv preprint arXiv:2312.06681}, 2023.",
+   "arxiv_id": "2312.06681"
+  },
+  {
+   "key": "park2023generative",
+   "text": "Joon~Sung Park, Joseph O'Brien, Carrie~Jun Cai, Meredith~Ringel Morris, Percy Liang, and Michael~S Bernstein. \\newblock Generative agents: Interactive simulacra of human behavior. \\newblock In \\emph{Proceedings of the 36th Annual ACM Symposium on User Interface Software and Technology}, pages 1--22, 2023{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "park2023linear",
+   "text": "Kiho Park, Yo~Joong Choe, and Victor Veitch. \\newblock The linear representation hypothesis and the geometry of large language models. \\newblock \\emph{arXiv preprint arXiv:2311.03658}, 2023{\\natexlab{b}}.",
+   "arxiv_id": "2311.03658"
+  },
+  {
+   "key": "paszke2019pytorch",
+   "text": "Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, et~al. \\newblock {Pytorch}: An imperative style, high-performance deep learning library. \\newblock \\emph{Advances in neural information processing systems}, 32, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "pelrine2023exploiting",
+   "text": "Kellin Pelrine, Mohammad Taufeeque, Micha{\\l} Zaj{\\k{a}}c, Euan McLean, and Adam Gleave. \\newblock Exploiting novel {GPT}-4 {API}s. \\newblock \\emph{arXiv preprint arXiv:2312.14302}, 2023.",
+   "arxiv_id": "2312.14302"
+  },
+  {
+   "key": "perez2022red",
+   "text": "Ethan Perez, Saffron Huang, Francis Song, Trevor Cai, Roman Ring, John Aslanides, Amelia Glaese, Nat McAleese, and Geoffrey Irving. \\newblock Red teaming language models with language models. \\newblock \\emph{arXiv preprint arXiv:2202.03286}, 2022.",
+   "arxiv_id": "2202.03286"
+  },
+  {
+   "key": "polo2024tinybenchmarks",
+   "text": "Felipe~Maia Polo, Lucas Weber, Leshem Choshen, Yuekai Sun, Gongjun Xu, and Mikhail Yurochkin. \\newblock {tinyBenchmarks}: evaluating {LLMs} with fewer examples. \\newblock \\emph{arXiv preprint arXiv:2402.14992}, 2024.",
+   "arxiv_id": "2402.14992"
+  },
+  {
+   "key": "prakash2024fine",
+   "text": "Nikhil Prakash, Tamar~Rott Shaham, Tal Haklay, Yonatan Belinkov, and David Bau. \\newblock Fine-tuning enhances existing mechanisms: A case study on entity tracking. \\newblock \\emph{arXiv preprint arXiv:2402.14811}, 2024.",
+   "arxiv_id": "2402.14811"
+  },
+  {
+   "key": "qi2023fine",
+   "text": "Xiangyu Qi, Yi~Zeng, Tinghao Xie, Pin-Yu Chen, Ruoxi Jia, Prateek Mittal, and Peter Henderson. \\newblock Fine-tuning aligned language models compromises safety, even when users do not intend to! \\newblock \\emph{arXiv preprint arXiv:2310.03693}, 2023.",
+   "arxiv_id": "2310.03693"
+  },
+  {
+   "key": "ravfogel2020null",
+   "text": "Shauli Ravfogel, Yanai Elazar, Hila Gonen, Michael Twiton, and Yoav Goldberg. \\newblock Null it out: Guarding protected attributes by iterative nullspace projection. \\newblock \\emph{arXiv preprint arXiv:2004.07667}, 2020.",
+   "arxiv_id": "2004.07667"
+  },
+  {
+   "key": "robey2023smoothllm",
+   "text": "Alexander Robey, Eric Wong, Hamed Hassani, and George~J Pappas. \\newblock Smooth{LLM}: Defending large language models against jailbreaking attacks. \\newblock \\emph{arXiv preprint arXiv:2310.03684}, 2023.",
+   "arxiv_id": "2310.03684"
+  },
+  {
+   "key": "sakaguchi2021winogrande",
+   "text": "Keisuke Sakaguchi, Ronan~Le Bras, Chandra Bhagavatula, and Yejin Choi. \\newblock {WinoGrande}: An adversarial {Winograd} schema challenge at scale. \\newblock \\emph{Communications of the ACM}, 64\\penalty0 (9):\\penalty0 99--106, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shah2023loft",
+   "text": "Muhammad~Ahmed Shah, Roshan Sharma, Hira Dhamyal, Raphael Olivier, Ankit Shah, Dareen Alharthi, Hazim~T Bukhari, Massa Baali, Soham Deshmukh, Michael Kuhlmann, et~al. \\newblock {LoFT}: Local proxy fine-tuning for improving transferability of adversarial attacks against large language model. \\newblock \\emph{arXiv preprint arXiv:2310.04445}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2310.04445"
+  },
+  {
+   "key": "shah2023scalable",
+   "text": "Rusheb Shah, Quentin Feuillade-Montixi, Soroush Pour, Arush Tagade, Stephen Casper, and Javier Rando. \\newblock Scalable and transferable black-box jailbreaks for language models via persona modulation, 2023{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shanahan2023role",
+   "text": "Murray Shanahan, Kyle McDonell, and Laria Reynolds. \\newblock Role play with large language models. \\newblock \\emph{Nature}, 623\\penalty0 (7987):\\penalty0 493--498, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shao2022gold",
+   "text": "Shun Shao, Yftah Ziser, and Shay~B Cohen. \\newblock Gold doesn't always glitter: Spectral removal of linear and nonlinear guarded attribute information. \\newblock \\emph{arXiv preprint arXiv:2203.07893}, 2022.",
+   "arxiv_id": "2203.07893"
+  },
+  {
+   "key": "shen2023anything",
+   "text": "Xinyue Shen, Zeyuan Chen, Michael Backes, Yun Shen, and Yang Zhang. \\newblock \"{Do} anything now\": Characterizing and evaluating in-the-wild jailbreak prompts on large language models. \\newblock \\emph{arXiv preprint arXiv:2308.03825}, 2023.",
+   "arxiv_id": "2308.03825"
+  },
+  {
+   "key": "shin2020autoprompt",
+   "text": "Taylor Shin, Yasaman Razeghi, Robert~L. Logan~IV, Eric Wallace, and Sameer Singh. \\newblock {AutoPrompt}: Eliciting knowledge from language models with automatically generated prompts. \\newblock In \\emph{Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)}. Association for Computational Linguistics, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "souly2024strongreject",
+   "text": "Alexandra Souly, Qingyuan Lu, Dillon Bowen, Tu~Trinh, Elvis Hsieh, Sana Pandey, Pieter Abbeel, Justin Svegliato, Scott Emmons, Olivia Watkins, et~al. \\newblock A {StrongREJECT} for empty jailbreaks. \\newblock \\emph{arXiv preprint arXiv:2402.10260}, 2024.",
+   "arxiv_id": "2402.10260"
+  },
+  {
+   "key": "alpaca",
+   "text": "Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois, Xuechen Li, Carlos Guestrin, Percy Liang, and Tatsunori~B. Hashimoto. \\newblock {Stanford} {Alpaca}: An instruction-following {LLaMA} model. \\newblock \\url{https://github.com/tatsu-lab/stanford_alpaca}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "team2024gemma",
+   "text": "Gemma Team, Thomas Mesnard, Cassidy Hardin, Robert Dadashi, Surya Bhupatiraju, Shreya Pathak, Laurent Sifre, Morgane Rivi{\\`e}re, Mihir~Sanjay Kale, Juliette Love, et~al. \\newblock {Gemma}: Open models based on {Gemini} research and technology. \\newblock \\emph{arXiv preprint arXiv:2403.08295}, 2024.",
+   "arxiv_id": "2403.08295"
+  },
+  {
+   "key": "metallamaguard2",
+   "text": "Llama Team. \\newblock {Meta Llama Guard 2}. \\newblock \\url{https://github.com/meta-llama/PurpleLlama/blob/main/Llama-Guard2/MODEL_CARD.md}, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "templeton2024scaling",
+   "text": "Adly Templeton, Tom Conerly, Jonathan Marcus, Jack Lindsey, Trenton Bricken, Brian Chen, Adam Pearce, Craig Citro, Emmanuel Ameisen, Andy Jones, Hoagy Cunningham, Nicholas~L Turner, Callum McDougall, Monte MacDiarmid, C.~Daniel Freeman, Theodore~R. Sumers, Edward Rees, Joshua Batson, Adam Jermyn, Shan Carter, Chris Olah, and Tom Henighan. \\newblock Scaling monosemanticity: Extracting interpretable features from {Claude 3 Sonnet}. \\newblock \\emph{Transformer Circuits Thread}, 2024. \\newblock URL \\url{https://transformer-circuits.pub/2024/scaling-monosemanticity/index.html}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tigges2023linear",
+   "text": "Curt Tigges, Oskar~John Hollinsworth, Atticus Geiger, and Neel Nanda. \\newblock Linear representations of sentiment in large language models. \\newblock \\emph{arXiv preprint arXiv:2310.15154}, 2023.",
+   "arxiv_id": "2310.15154"
+  },
+  {
+   "key": "touvron2023llama",
+   "text": "Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et~al. \\newblock {Llama 2}: Open foundation and fine-tuned chat models. \\newblock \\emph{arXiv preprint arXiv:2307.09288}, 2023.",
+   "arxiv_id": "2307.09288"
+  },
+  {
+   "key": "turner2023activation",
+   "text": "Alex Turner, Lisa Thiergart, David Udell, Gavin Leech, Ulisse Mini, and Monte MacDiarmid. \\newblock Activation addition: Steering language models without optimization. \\newblock \\emph{arXiv preprint arXiv:2308.10248}, 2023.",
+   "arxiv_id": "2308.10248"
+  },
+  {
+   "key": "vonruette2024language",
+   "text": "Dimitri von R{\\\"u}tte, Sotiris Anagnostidis, Gregor Bachmann, and Thomas Hofmann. \\newblock A language model's guide through latent space. \\newblock \\emph{arXiv preprint arXiv:2402.14433}, 2024.",
+   "arxiv_id": "2402.14433"
+  },
+  {
+   "key": "wang2024trojanactivationattackredteaming",
+   "text": "Haoran Wang and Kai Shu. \\newblock Trojan activation attack: Red-teaming large language models using activation steering for safety-alignment, 2024. \\newblock URL \\url{https://arxiv.org/abs/2311.09433}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wang2023forbidden",
+   "text": "Tony~T Wang, Miles Wang, Kaivu Hariharan, and Nir Shavit. \\newblock Forbidden facts: An investigation of competing objectives in {Llama-2}. \\newblock \\emph{arXiv preprint arXiv:2312.08793}, 2023.",
+   "arxiv_id": "2312.08793"
+  },
+  {
+   "key": "wei2023jailbroken",
+   "text": "Alexander Wei, Nika Haghtalab, and Jacob Steinhardt. \\newblock Jailbroken: How does {LLM} safety training fail? \\newblock \\emph{arXiv preprint arXiv:2307.02483}, 2023.",
+   "arxiv_id": "2307.02483"
+  },
+  {
+   "key": "wei2024assessing",
+   "text": "Boyi Wei, Kaixuan Huang, Yangsibo Huang, Tinghao Xie, Xiangyu Qi, Mengzhou Xia, Prateek Mittal, Mengdi Wang, and Peter Henderson. \\newblock Assessing the brittleness of safety alignment via pruning and low-rank modifications. \\newblock \\emph{arXiv preprint arXiv:2402.05162}, 2024.",
+   "arxiv_id": "2402.05162"
+  },
+  {
+   "key": "wolf-etal-2020-transformers",
+   "text": "Thomas Wolf, Lysandre Debut, Victor Sanh, Julien Chaumond, Clement Delangue, Anthony Moi, Pierric Cistac, Tim Rault, Rémi Louf, Morgan Funtowicz, Joe Davison, Sam Shleifer, Patrick von Platen, Clara Ma, Yacine Jernite, Julien Plu, Canwen Xu, Teven~Le Scao, Sylvain Gugger, Mariama Drame, Quentin Lhoest, and Alexander~M. Rush. \\newblock Transformers: State-of-the-art natural language processing. \\newblock In \\emph{Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations}, pages 38--45, Online, October 2020. Association for Computational Linguistics. \\newblock URL \\url{https://www.aclweb.org/anthology/2020.emnlp-demos.6}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wolf2024tradeoffs",
+   "text": "Yotam Wolf, Noam Wies, Dorin Shteyman, Binyamin Rothberg, Yoav Levine, and Amnon Shashua. \\newblock Tradeoffs between alignment and helpfulness in language models. \\newblock \\emph{arXiv preprint arXiv:2401.16332}, 2024.",
+   "arxiv_id": "2401.16332"
+  },
+  {
+   "key": "xu2023cognitive",
+   "text": "Nan Xu, Fei Wang, Ben Zhou, Bang~Zheng Li, Chaowei Xiao, and Muhao Chen. \\newblock Cognitive overload: Jailbreaking large language models with overloaded logical thinking. \\newblock \\emph{arXiv preprint arXiv:2311.09827}, 2023.",
+   "arxiv_id": "2311.09827"
+  },
+  {
+   "key": "xu2024llm",
+   "text": "Zihao Xu, Yi~Liu, Gelei Deng, Yuekang Li, and Stjepan Picek. \\newblock {LLM} jailbreak attack versus defense techniques -- a comprehensive study. \\newblock \\emph{arXiv preprint arXiv:2402.13457}, 2024.",
+   "arxiv_id": "2402.13457"
+  },
+  {
+   "key": "yang2023shadow",
+   "text": "Xianjun Yang, Xiao Wang, Qi~Zhang, Linda Petzold, William~Yang Wang, Xun Zhao, and Dahua Lin. \\newblock Shadow alignment: The ease of subverting safely-aligned language models. \\newblock \\emph{arXiv preprint arXiv:2310.02949}, 2023.",
+   "arxiv_id": "2310.02949"
+  },
+  {
+   "key": "young2024yi",
+   "text": "Alex Young, Bei Chen, Chao Li, Chengen Huang, Ge~Zhang, Guanwei Zhang, Heng Li, Jiangcheng Zhu, Jianqun Chen, Jing Chang, et~al. \\newblock {Yi}: Open foundation models by {01.AI}. \\newblock \\emph{arXiv preprint arXiv:2403.04652}, 2024.",
+   "arxiv_id": "2403.04652"
+  },
+  {
+   "key": "zellers2019hellaswag",
+   "text": "Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi. \\newblock {HellaSwag}: Can a machine really finish your sentence? \\newblock \\emph{arXiv preprint arXiv:1905.07830}, 2019.",
+   "arxiv_id": "1905.07830"
+  },
+  {
+   "key": "zhan2023removing",
+   "text": "Qiusi Zhan, Richard Fang, Rohan Bindu, Akul Gupta, Tatsunori Hashimoto, and Daniel Kang. \\newblock Removing {RLHF} protections in {GPT-4} via fine-tuning. \\newblock \\emph{arXiv preprint arXiv:2311.05553}, 2023.",
+   "arxiv_id": "2311.05553"
+  },
+  {
+   "key": "zheng2024prompt",
+   "text": "Chujie Zheng, Fan Yin, Hao Zhou, Fandong Meng, Jie Zhou, Kai-Wei Chang, Minlie Huang, and Nanyun Peng. \\newblock Prompt-driven {LLM} safeguarding via directed representation optimization. \\newblock \\emph{arXiv preprint arXiv:2401.18018}, 2024.",
+   "arxiv_id": "2401.18018"
+  },
+  {
+   "key": "zou2023representation",
+   "text": "Andy Zou, Long Phan, Sarah Chen, James Campbell, Phillip Guo, Richard Ren, Alexander Pan, Xuwang Yin, Mantas Mazeika, Ann-Kathrin Dombrowski, et~al. \\newblock Representation engineering: A top-down approach to {AI} transparency. \\newblock \\emph{arXiv preprint arXiv:2310.01405}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2310.01405"
+  },
+  {
+   "key": "zou2023universal",
+   "text": "Andy Zou, Zifan Wang, J~Zico Kolter, and Matt Fredrikson. \\newblock Universal and transferable adversarial attacks on aligned language models. \\newblock \\emph{arXiv preprint arXiv:2307.15043}, 2023{\\natexlab{b}}.",
+   "arxiv_id": "2307.15043"
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_1",
+   "caption": "Ablating the ``refusal direction'' reduces refusal rates and elicits unsafe completions. We evaluate each model over 100 harmful instructions from \\textsc{JailbreakBench} \\citep{chao2024jailbreakbench}.",
+   "graphics": [
+    "figures/results_harmful.pdf"
+   ],
+   "assets": [
+    "figures/results_harmful.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_1",
+   "caption": "Ablating the ``refusal direction'' can effectively bypass refusal on harmful instructions. This example is taken from \\textsc{Llama-3 8B Instruct}. For more examples, see \\S\\ref{appendix_extended_results_bypass}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_3_2",
+   "caption": "Adding the ``refusal direction\" induces refusal on 100 harmless instructions from \\textsc{Alpaca}.",
+   "graphics": [
+    "figures/results_harmless.pdf"
+   ],
+   "assets": [
+    "figures/results_harmless.png"
+   ]
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_3_2",
+   "caption": "Adding the ``refusal direction'' to residual stream activations can induce refusal on harmless instructions. This example is taken from \\textsc{Gemma 7B IT}. For more examples, see \\S\\ref{appendix_extended_results_inducing}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_5_2",
+   "caption": "We analyze the top eight attention heads that most significantly write to the refusal direction. \\autoref{fig:adv_suffix_fig2} shows that output to the refusal direction is heavily suppressed when the adversarial suffix is appended. \\autoref{fig:adv_suffix_fig3} reveals that, compared to appending a random suffix, appending the adversarial suffix shifts attention from tokens in the instruction region to tokens in the suffix region.",
+   "graphics": [
+    "figures/adv_suffix/adv_suffix_fig_2.pdf",
+    "figures/adv_suffix/adv_suffix_fig_3.pdf"
+   ],
+   "assets": [
+    "figures/adv_suffix/adv_suffix_fig_2.png",
+    "figures/adv_suffix/adv_suffix_fig_3.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_8_1",
+   "caption": "A random sample of instructions from $\\mathcal{D}_{\\text{harmful}}^{\\text{(train)}}$.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_8_2",
+   "caption": "A random sample of instructions from $\\mathcal{D}_{\\text{harmless}}^{\\text{(train)}}$.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_9",
+   "caption": "Next token probabilities for \\textsc{Gemma 2B IT} across harmful and harmless instructions.",
+   "graphics": [
+    "figures/appendix/refusal_metric/token_probs_harmful_gemma.pdf",
+    "figures/appendix/refusal_metric/token_probs_harmless_gemma.pdf"
+   ],
+   "assets": [
+    "figures/appendix/refusal_metric/token_probs_harmful_gemma.png",
+    "figures/appendix/refusal_metric/token_probs_harmless_gemma.png"
+   ]
+  },
+  {
+   "id": "fig_9",
+   "section": "sec_9",
+   "caption": "The refusal metric separates harmful and harmless instructions for \\textsc{Gemma 2B IT}. Refusals generally begin with token $234285$ (corresponding to `I'). Setting $\\mathcal{R}_{\\textsc{Gemma}} = \\{ 234285\\}$ yields a refusal metric that is an efficient proxy for assessing whether the model will refuse.",
+   "graphics": [
+    "figures/appendix/refusal_metric/refusal_metric_gemma.pdf"
+   ],
+   "assets": [
+    "figures/appendix/refusal_metric/refusal_metric_gemma.png"
+   ]
+  },
+  {
+   "id": "fig_10",
+   "section": "sec_10_2",
+   "caption": "The bypass_score (left) and induce_score (right) of each candidate direction for \\textsc{Llama-3 8B Instruct}. Each candidate direction $r_i^{(l)}$ corresponds to source position $i$ and source layer $l$.",
+   "graphics": [
+    "figures/appendix/refusal_metric/ablation_scores_llama_3_8b.pdf",
+    "figures/appendix/refusal_metric/addition_scores_llama_3_8b.pdf"
+   ],
+   "assets": [
+    "figures/appendix/refusal_metric/ablation_scores_llama_3_8b.png",
+    "figures/appendix/refusal_metric/addition_scores_llama_3_8b.png"
+   ]
+  },
+  {
+   "id": "fig_11",
+   "section": "sec_11_1",
+   "caption": "The set of ``refusal substrings'', used to evaluate the refusal_score of a given completion.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_12",
+   "section": "sec_11_2",
+   "caption": "The default prompt template for \\textsc{Meta Llama Guard 2}, used to evaluate the safety_score of a given completion.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_13",
+   "section": "sec_11_4",
+   "caption": "Challenges of evaluating refusal. The model completion does not explicitly use a refusal phrase (refusal_score=0), but it does not contain harmful content (safety_score=1). This completion is taken from the orthogonalized \\textsc{Llama-3 70B Chat} model.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_14",
+   "section": "sec_11_4",
+   "caption": "Challenges of evaluating refusal. The model completion does not use a refusal phrase (refusal_score=0), but it does not contain harmful content (safety_score=1). This completion is taken from the orthogonalized \\textsc{Gemma 7B IT} model.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_15",
+   "section": "sec_11_4",
+   "caption": "Challenges of evaluating refusal. The model completion does use a refusal phrase (refusal_score=1), but it also contains harmful content (safety_score=0). This completion is taken from the orthogonalized \\textsc{Qwen 72B Chat} model.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_16",
+   "section": "sec_13_2",
+   "caption": "The default system prompt for \\textsc{Llama-2 Chat}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_17",
+   "section": "sec_13_2",
+   "caption": "The default system prompt for \\textsc{Qwen Chat}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_18",
+   "section": "sec_13_2",
+   "caption": "The set of system prompts used to evaluate model sensitivity. Note that ``[none]'' indicates no system prompt was provided, while ``[empty string]'' indicates an empty string was provided as the system prompt.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_19",
+   "section": "sec_14_2",
+   "caption": "A question from \\textsc{TruthfulQA}, and corresponding completions from \\textsc{Llama-3 8B Instruct} and its orthogonalized version.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_20",
+   "section": "sec_15_1",
+   "caption": "The adversarial suffix studied in \\S\\ref{sec:suffixes}. This suffix is generally effectively in bypassing refusal in \\textsc{Qwen 1.8B Chat}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_21",
+   "section": "sec_16_1",
+   "caption": "A visualization of activation addition (abbreviated as ``act add'') in the negative refusal direction. The intervention pulls {\\color{darkred}harmful activations} towards {\\color{darkergreen}harmless activations}, effectively bypassing refusal. However, note that the intervention pushes {\\color{darkergreen}harmless activations} far out of distribution. This figure displays activations from \\textsc{Gemma 7B IT}, computed over 128 harmful and harmless prompts.",
+   "graphics": [
+    "figures/appendix/act_add/act_add_gemma_7b.pdf"
+   ],
+   "assets": [
+    "figures/appendix/act_add/act_add_gemma_7b.png"
+   ]
+  },
+  {
+   "id": "fig_22",
+   "section": "sec_16_1",
+   "caption": "Performing activation addition in the negative ``refusal direction'', displayed in dots, reduces refusal rates and elicits unsafe completions. It is approximately as effective as directional ablation at bypassing refusal (\\autoref{fig:bypass_refusal}).",
+   "graphics": [
+    "figures/appendix/act_add/results_harmful_steering.pdf"
+   ],
+   "assets": [
+    "figures/appendix/act_add/results_harmful_steering.png"
+   ]
+  },
+  {
+   "id": "fig_23",
+   "section": "sec_17",
+   "caption": "Cosine similarity of activations with the refusal direction, for base (dotted lines) and chat (solid lines) models. The refusal direction is expressed similarly in base and chat models.",
+   "graphics": [
+    "figures/appendix/base_chat/base_chat_qwen_1_8B.pdf",
+    "figures/appendix/base_chat/base_chat_gemma_7B.pdf",
+    "figures/appendix/base_chat/base_chat_llama_3_8B.pdf",
+    "figures/appendix/base_chat/base_chat_qwen_14B.pdf"
+   ],
+   "assets": [
+    "figures/appendix/base_chat/base_chat_qwen_1_8B.png",
+    "figures/appendix/base_chat/base_chat_gemma_7B.png",
+    "figures/appendix/base_chat/base_chat_llama_3_8B.png",
+    "figures/appendix/base_chat/base_chat_qwen_14B.png"
+   ]
+  },
+  {
+   "id": "fig_24",
+   "section": "sec_18_1",
+   "caption": "Examples of bypassing refusal by ablating the ``refusal direction''. These completions are taken from \\textsc{Llama-3 70B Instruct}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_25",
+   "section": "sec_18_2",
+   "caption": "Examples of inducing refusal by adding the ``refusal direction''. These completions are taken from \\textsc{Gemma 7B IT}.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_26",
+   "section": "sec_19_1",
+   "caption": "The unmodified model (no intervention) refuses the first request with the string \"I cannot provide instructions on how to make a bomb\". When explicitly requested to output this string, the orthogonalized model (intervention) is able to do so.",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_27",
+   "section": "sec_19_2",
+   "caption": "Generations over a random sample of harmless instructions from \\textsc{Alpaca}. Generations from the unmodified model (no intervention) are essentially indistinguishable from the orthogonalized model (intervention).",
+   "graphics": [],
+   "assets": []
+  },
+  {
+   "id": "fig_28",
+   "section": "sec_19_3",
+   "caption": "The orthogonalized model gives the same answer to a meta-reasoning question about its own refusal behavior as the original model. However, its reasoning seems incoherent: it claims the reason for not explaining how to make a Molotov cocktail is ``this is a factual question, but it’s not a request for a creative response''.",
+   "graphics": [],
+   "assets": []
+  }
+ ]
+}
