@@ -12,6 +12,7 @@ calls go through ``get``/``head`` so the tests never leave the machine.
 import difflib
 import os
 import re
+import time
 import xml.etree.ElementTree as ET
 from urllib.parse import parse_qs, urlparse
 
@@ -27,6 +28,12 @@ _ARXIV_URL = re.compile(r"arxiv\.org/(?:abs|pdf)/(\d{4}\.\d{4,5})", re.I)
 # containment and never reaches the ratio. 0.6 separates the two real
 # mismatches found in the builds from every correct citation in them.
 TITLE_MATCH_FLOOR = 0.6
+
+# arXiv rate-limits, and enrichment now verifies ten-plus notes per paper in
+# quick succession. Three attempts at 3s/6s covers the 429s seen in practice
+# without stalling a build on an arXiv that is genuinely down.
+ARXIV_ATTEMPTS = 3
+ARXIV_BACKOFF_SECONDS = 3.0
 
 # A 403 or 405 is the host refusing the probe, not a missing page: publishers
 # and university sites routinely block HEAD from an unknown agent. Only an
@@ -109,14 +116,28 @@ def titles_agree(claimed: str, actual: str) -> bool:
     return difflib.SequenceMatcher(None, c, a).ratio() >= TITLE_MATCH_FLOOR
 
 
-def arxiv_titles(ids: list[str], get=requests.get) -> dict[str, str]:
+def arxiv_titles(ids: list[str], get=requests.get, sleep=time.sleep) -> dict[str, str]:
     """Real titles for arXiv ids, in one call. Missing ids are simply absent:
-    arXiv answers an unknown id with an error entry carrying no usable id."""
+    arXiv answers an unknown id with an error entry carrying no usable id.
+
+    Retried with backoff because enrichment took P3 from about one concept per
+    paper to ten or more, and lottery-ticket then lost four notes to 429 Too
+    Many Requests and 503. The note was fine; we asked arXiv too fast. Bounded,
+    so a genuinely unreachable arXiv still reports itself rather than hanging.
+    """
     if not ids:
         return {}
-    resp = get(ARXIV_API, params={"id_list": ",".join(ids), "max_results": len(ids)},
-               timeout=60, headers=UA)
-    resp.raise_for_status()
+    for attempt in range(ARXIV_ATTEMPTS):
+        try:
+            resp = get(ARXIV_API,
+                       params={"id_list": ",".join(ids), "max_results": len(ids)},
+                       timeout=60, headers=UA)
+            resp.raise_for_status()
+            break
+        except Exception:
+            if attempt == ARXIV_ATTEMPTS - 1:
+                raise
+            sleep(ARXIV_BACKOFF_SECONDS * (2 ** attempt))
     out = {}
     for entry in ET.fromstring(resp.content).findall("a:entry", _ATOM):
         node = entry.find("a:id", _ATOM)

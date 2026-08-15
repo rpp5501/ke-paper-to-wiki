@@ -424,3 +424,51 @@ def test_an_id_with_a_trailing_newline_degrades_to_a_link():
     url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ%0A"
 
     assert embed_kind(url, head=_no_probe) == {"kind": "link"}
+
+
+# --- arxiv rate limiting -----------------------------------------------------
+# Enrichment took P3 from ~1 concept per paper to 10-14, and lottery-ticket then
+# lost 4 of its 6 failed notes to "could not reach arXiv to verify N
+# citation(s): 429 Too Many Requests" / 503. The note was fine; we simply asked
+# arXiv too fast. Reporting the verifier's own failure rather than blaming the
+# note is right, but losing the note to it is not -- it is a transient, and
+# llm_spawn already treats transients as worth one backoff.
+
+class _Flaky:
+    """Fails with `code` for the first `fails` calls, then succeeds."""
+
+    def __init__(self, fails, code=429, body=None):
+        self.fails, self.code, self.calls = fails, code, 0
+        self.body = body or ATOM.format(
+            entries=ENTRY.format(aid="1706.03762", title="Attention Is All You Need"))
+
+    def __call__(self, _url, params=None, **_kw):
+        self.calls += 1
+        if self.calls <= self.fails:
+            import requests
+            raise requests.HTTPError(f"{self.code} Client Error")
+        return _Resp(self.body)
+
+
+def test_a_rate_limited_arxiv_call_is_retried():
+    from paper_skill.resources import arxiv_titles
+    flaky = _Flaky(fails=1)
+
+    titles = arxiv_titles(["1706.03762"], get=flaky, sleep=lambda _s: None)
+
+    assert titles == {"1706.03762": "Attention Is All You Need"}
+    assert flaky.calls == 2, "expected one retry after the 429"
+
+
+def test_retries_are_bounded():
+    """A permanently unreachable arXiv must not retry forever; the caller
+    turns the raised error into "could not reach arXiv", blaming the verifier
+    rather than the note."""
+    import pytest as _pytest
+    from paper_skill.resources import arxiv_titles, ARXIV_ATTEMPTS
+    flaky = _Flaky(fails=99)
+
+    with _pytest.raises(Exception):
+        arxiv_titles(["1706.03762"], get=flaky, sleep=lambda _s: None)
+
+    assert flaky.calls == ARXIV_ATTEMPTS
