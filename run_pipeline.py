@@ -53,6 +53,9 @@ PAPERS = {
     "universal-adversarial": "arXiv:2307.15043",
     "pair-jailbreak": "arXiv:2310.08419",
     "harmbench": "arXiv:2402.04249",
+    # Added by request, outside the tiered set.
+    "parameter-symmetry": "arXiv:2506.13018",
+    "remaining-length": "arXiv:2607.05316",
 }
 
 TIERED = ["lottery-ticket", "agentic-misalignment", "ai-control",
