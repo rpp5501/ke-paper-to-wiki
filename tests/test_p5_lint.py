@@ -356,3 +356,37 @@ def test_a_broken_mermaid_checker_never_aborts_the_build(monkeypatch):
     monkeypatch.setattr(p5_lint.subprocess, "run", explode)
 
     assert p5_lint._mermaid_ok("graph TD\n  A --> B") is None
+
+
+@pytest.mark.parametrize("status", [403, 405, 406, 429])
+def test_a_host_refusing_the_probe_is_not_a_dead_link(status, monkeypatch):
+    """lottery-ticket's four p5 findings were all one url --
+    uber.com/blog/deconstructing-lottery-tickets, which answers 406 Not
+    Acceptable to an automated request and renders perfectly in a browser.
+
+    verify_resources already had the right rule and a comment explaining it:
+    only 404/410 mean "there is nothing here"; publishers and corporate blogs
+    routinely refuse a probe on headers or rate. _head_ok predated that and
+    called anything >= 400 dead, so the same resource passed the note gate and
+    failed the page gate.
+    """
+    from paper_skill import p5_lint
+
+    class R:
+        status_code = status
+
+    monkeypatch.setattr(p5_lint.requests, "head", lambda *_a, **_kw: R())
+
+    assert p5_lint._head_ok("https://www.uber.com/blog/x") is True
+
+
+@pytest.mark.parametrize("status", [404, 410])
+def test_a_genuinely_missing_page_is_still_a_dead_link(status, monkeypatch):
+    from paper_skill import p5_lint
+
+    class R:
+        status_code = status
+
+    monkeypatch.setattr(p5_lint.requests, "head", lambda *_a, **_kw: R())
+
+    assert p5_lint._head_ok("https://example.edu/gone") is False

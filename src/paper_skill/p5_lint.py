@@ -97,10 +97,23 @@ def _paragraphs(body: str) -> list[str]:
 
 
 def _head_ok(url: str) -> bool:
+    """Is there genuinely nothing at this url?
+
+    Only 404 and 410 mean that. A 403, 405, 406 or 429 is the host refusing an
+    automated probe on headers or rate, and publishers and corporate blogs do
+    it routinely -- uber.com/blog/deconstructing-lottery-tickets answers 406 to
+    anything scripted and renders perfectly in a browser, which was all four of
+    lottery-ticket's p5 findings. resources.verify_resources already drew this
+    line and explained why; this check predated it and called anything >= 400
+    dead, so one resource passed the note gate and failed the page gate.
+    """
+    from .resources import UA, _DEAD_STATUS
     try:
-        return requests.head(url, timeout=5, allow_redirects=True).status_code < 400
+        code = requests.head(url, timeout=25, allow_redirects=True,
+                             headers=UA).status_code
     except requests.RequestException:
         return False
+    return code not in _DEAD_STATUS
 
 
 def _mermaid_ok(block: str) -> bool | None:
