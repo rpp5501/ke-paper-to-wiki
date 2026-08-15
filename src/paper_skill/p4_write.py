@@ -188,6 +188,24 @@ def _page_problems(page: str, cid: str = "", pack: dict | None = None,
     return problems
 
 
+def _note_is_newer(cid: str, home, sentinel) -> bool:
+    """Has this concept's research note been rewritten since its page was?
+
+    Found by glob rather than by asking the wiki, which exposes no path. A
+    concept with no note on disk is simply not stale, so a build with no
+    research at all resumes exactly as it did before.
+    """
+    if home is None:
+        return False
+    try:
+        written = sentinel.stat().st_mtime
+        return any(f.stat().st_mtime > written
+                   for f in Path(home).rglob(f"{cid}.yaml")
+                   if "_inbox" not in f.parts)
+    except OSError:
+        return False
+
+
 def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
                 home=None, out_dir="pages", workdir=None, repo_dir=None) -> dict:
     try:
@@ -205,7 +223,14 @@ def write_pages(pack: dict, graph: dict, toc_rows: list, spawn=_spawn_claude,
     written: dict[str, str] = {}
     for row in toc_rows:
         cid = row["id"]
-        if (done_dir / cid).exists():
+        # Resume skips work that is still CURRENT, not work that merely
+        # happened. The sentinel alone meant "already written", so once
+        # enrichment let P3 re-run on its own a note could be improved while
+        # its page kept the old links -- on lottery-ticket that left 8 pages
+        # older than their note and 21 resource urls uncited, none of them a
+        # gate failure.
+        if (done_dir / cid).exists() and not _note_is_newer(cid, home,
+                                                            done_dir / cid):
             skipped.append(cid)
             continue
         note = wiki_get(cid, home=home)

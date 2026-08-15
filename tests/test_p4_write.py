@@ -406,3 +406,48 @@ def test_no_note_means_no_such_requirement():
     from paper_skill.p4_write import _page_problems
 
     assert _page_problems(GOOD_PAGE, "sdpa", PACK, None) == []
+
+
+def test_a_page_is_rewritten_when_its_research_note_is_newer(tmp_path):
+    """The p4_done sentinel means "already written" and never asked whether the
+    inputs had moved. Once enrichment let P3 re-run on its own, a note could be
+    improved while its page kept the old links: on lottery-ticket, 8 pages were
+    older than their note and 21 resource urls went uncited -- every one of
+    them a staleness artifact, not a gate failure.
+
+    Resuming must skip work that is still current, not work that merely
+    happened.
+    """
+    import time as _time
+    from research_mcp.wiki import wiki_put
+
+    note = {"concept": "sdpa", "status": "complete",
+            "synthesis": "Scaling keeps softmax gradients usable [S1].",
+            "resources": [{"url": "https://distill.pub/x", "title": "E",
+                           "type": "visual", "why": "shows it"}],
+            "unresolved": [], "sources_consulted": {"S1": "https://distill.pub/x"}}
+    page = GOOD_PAGE.replace("- d2l.ai derivation",
+                             "- [E](https://distill.pub/x)")
+    calls = []
+
+    def spawn(_p):
+        calls.append(1)
+        return page
+
+    common = dict(spawn=spawn, home=tmp_path, out_dir=tmp_path / "pages",
+                  workdir=tmp_path)
+    wiki_put("sdpa", note, home=tmp_path)
+    write_pages(PACK, GRAPH, ROWS, **common)
+    assert len(calls) == 1
+
+    # unchanged note -> still skipped, resume stays cheap
+    write_pages(PACK, GRAPH, ROWS, **common)
+    assert len(calls) == 1, "an unchanged note must not cost a regeneration"
+
+    _time.sleep(0.01)
+    wiki_put("sdpa", {**note, "synthesis": "Rewritten with better sources [S1]."},
+             home=tmp_path)
+    result = write_pages(PACK, GRAPH, ROWS, **common)
+
+    assert len(calls) == 2, "a newer note must invalidate the written page"
+    assert result["done"] == ["sdpa"]
