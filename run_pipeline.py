@@ -62,6 +62,15 @@ TIERED = ["lottery-ticket", "agentic-misalignment", "ai-control",
           "autodan", "universal-adversarial", "pair-jailbreak", "harmbench"]
 
 
+# stdout here is redirected to run.log, which Python opens with the locale
+# codec -- cp1252 on Windows. Any Greek letter in a logged problem message
+# would then abort the run from the logging, not from the work. Belt to
+# p5_lint's braces.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def log(*a):
     print(f"[{time.strftime('%H:%M:%S')}]", *a, flush=True)
 

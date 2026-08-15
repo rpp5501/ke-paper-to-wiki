@@ -106,10 +106,19 @@ def _head_ok(url: str) -> bool:
 def _mermaid_ok(block: str) -> bool | None:
     script = Path(__file__).resolve().parents[2] / "scripts" / "mermaid_parse.mjs"
     try:
+        # encoding is explicit for the same reason llm_spawn sets it: text=True
+        # alone encodes with the *locale* codec, cp1252 on Windows, so a
+        # diagram containing θ or ε raised UnicodeEncodeError -- and since only
+        # OSError/TimeoutExpired were caught, it escaped through lint_page and
+        # aborted a whole paper mid-run. ML diagrams are full of Greek.
         r = subprocess.run(["node", str(script)], input=block,
-                           capture_output=True, text=True, timeout=30)
-    except (OSError, subprocess.TimeoutExpired):
-        return None                                   # node absent: skipped
+                           capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=30)
+    except Exception:
+        # A diagram checker is advisory. Whatever goes wrong inside it, the
+        # page it was checking still deserves a verdict; losing the run to it
+        # is never the right trade.
+        return None                                   # node absent/broken: skipped
     if r.returncode == 2:
         return None                                   # mermaid package not installed: skipped
     return r.returncode == 0

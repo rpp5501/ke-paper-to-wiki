@@ -313,3 +313,46 @@ def test_prose_around_a_diagram_still_needs_its_anchor():
     assert [p for p in lint_page(page, pack, check_links=lambda _u: True,
                                  check_mermaid=lambda _b: None)
             if "unanchored" in p]
+
+
+def test_a_diagram_with_greek_letters_does_not_kill_the_run(monkeypatch):
+    r"""`subprocess.run(..., input=block, text=True)` with no `encoding=`
+    encodes using the LOCALE codec -- cp1252 on Windows -- so a mermaid
+    diagram containing a theta raised UnicodeEncodeError. `_mermaid_ok` caught
+    only OSError and TimeoutExpired, so it escaped through lint_page and
+    aborted the whole paper mid-run:
+
+      !! lottery-ticket aborted: UnicodeEncodeError: 'charmap' codec can't
+         encode character 'θ' in position 50
+
+    Machine-learning diagrams are full of theta, epsilon and alpha, so this was
+    waiting for the first page that drew one. llm_spawn already carries the
+    same fix and the same comment.
+    """
+    import subprocess as sp
+    from paper_skill import p5_lint
+
+    seen = {}
+
+    def fake_run(argv, **kwargs):
+        seen.update(kwargs)
+        return sp.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr(p5_lint.subprocess, "run", fake_run)
+
+    assert p5_lint._mermaid_ok("graph TD\n  A[theta $θ$] --> B") is True
+    assert seen.get("encoding") == "utf-8"
+
+
+def test_a_broken_mermaid_checker_never_aborts_the_build(monkeypatch):
+    """A lint checker is advisory. Whatever goes wrong inside it, the page it
+    was checking must still get a verdict -- losing a whole paper's run to the
+    diagram checker is never the right trade."""
+    from paper_skill import p5_lint
+
+    def explode(*_a, **_kw):
+        raise UnicodeEncodeError("charmap", "x", 0, 1, "boom")
+
+    monkeypatch.setattr(p5_lint.subprocess, "run", explode)
+
+    assert p5_lint._mermaid_ok("graph TD\n  A --> B") is None
