@@ -3,7 +3,7 @@ import argparse, io, json, os, re, sys, tarfile
 from pathlib import Path
 import requests
 from .latex_pack import latex_to_pack, normalize_math
-from .references import parse_bbl
+from .references import parse_bbl, parse_bib
 
 UA = {"User-Agent": "paper-skill/0.1 (keyless research tool)"}
 _ARXIV_ID = re.compile(r"^(arXiv:)?(\d{4}\.\d{4,5})(v\d+)?$")
@@ -114,6 +114,14 @@ def _pack_from_tarball(blob: bytes, source: str) -> dict:
         bbl = next((t for t in files.values() if r"\begin{thebibliography}" in t), "")
     if bbl:
         pack["references"] = parse_bbl(bbl)
+    else:
+        # No .bbl at all: the paper ships raw BibTeX and lets arXiv run BibTeX
+        # at build time. arXiv:2607.05316 does exactly that and came back with
+        # zero references despite 32 entries and 23 \cite calls. The .bbl still
+        # wins where both exist -- it is what the paper actually rendered,
+        # carrying the numbering and any hand edits.
+        pack["references"] = parse_bib(
+            "\n".join(t for n, t in files.items() if n.lower().endswith(".bib")))
     # Mutates each figure to record the file it resolved to; the bytes go back
     # to the caller, which owns where they are written.
     pack["assets"] = extract_assets(blob, pack.get("figures", []))
