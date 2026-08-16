@@ -168,6 +168,16 @@ def _uncited_resources(page: str, note: dict | None) -> list[str]:
 
 def _page_problems(page: str, cid: str = "", pack: dict | None = None,
                    note: dict | None = None) -> list[str]:
+    # A reply that is not a page at all scores every structural check at once:
+    # `results` on remaining-length came back with all five tiers "missing"
+    # plus a results-figure complaint, and the retry was then told to add a
+    # TL;DR heading to a response that had no content to put under one. Say
+    # what actually happened instead -- llm_spawn already refuses to let "the
+    # model never ran" read as "the model returned nothing useful".
+    if not page.strip() or not any(t in page for t in TIERS):
+        return ["returned no page at all — no tier headings are present. "
+                "Return the complete markdown page, starting with '# <label>' "
+                "and containing every required tier heading."]
     problems = ([f"missing tier {t}" for t in TIERS if t not in page]
                 + pedagogy_problems(page, cid)
                 + _uncited_resources(page, note))

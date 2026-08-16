@@ -451,3 +451,32 @@ def test_a_page_is_rewritten_when_its_research_note_is_newer(tmp_path):
 
     assert len(calls) == 2, "a newer note must invalidate the written page"
     assert result["done"] == ["sdpa"]
+
+
+def test_an_empty_reply_is_reported_as_such_not_as_five_missing_tiers():
+    """`results` on remaining-length failed with all five tiers missing plus a
+    results-figure complaint. Five structural faults is what a page with the
+    wrong headings looks like; a reply that is empty or is not a page at all
+    looks identical, and the retry then gets "add a TL;DR heading" as guidance
+    for a response that had no content to put under one.
+
+    llm_spawn already refuses to let "the model never ran" read as "the model
+    returned nothing useful". The write gate owes the same distinction.
+    """
+    from paper_skill.p4_write import _page_problems
+
+    for reply in ("", "   \n\n  ", "I cannot help with that request."):
+        problems = _page_problems(reply, "sdpa", PACK)
+
+        assert len(problems) == 1, f"{reply!r} -> {problems}"
+        assert "no page" in problems[0].lower(), problems
+
+
+def test_a_real_page_missing_one_tier_still_reports_that_tier():
+    """The empty-reply guard must not swallow an ordinary structural fault."""
+    from paper_skill.p4_write import _page_problems
+
+    problems = _page_problems(GOOD_PAGE.replace("## Go Deeper {#go-deeper}", ""),
+                              "sdpa", PACK)
+
+    assert any("missing tier {#go-deeper}" in p for p in problems), problems
