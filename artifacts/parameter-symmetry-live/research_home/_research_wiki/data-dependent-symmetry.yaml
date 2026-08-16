@@ -1,0 +1,61 @@
+concept: data-dependent-symmetry
+status: complete
+synthesis: 'Functional symmetry requires a parameter transformation to preserve a
+  network''s output on all possible inputs, but data-dependent symmetry only requires
+  this to hold on a given dataset, which enlarges the group of behavior-preserving
+  transformations [S1]. For example, a ReLU unit''s incoming/outgoing weight signs
+  can be flipped only for units whose activation pattern happens to be constant across
+  the dataset, a transformation that would break functional equivalence on other inputs
+  [S1]. This distinction matters in practice: permutation-based model merging and
+  linear-mode-connectivity methods align two networks by matching neuron activations
+  on a fixed training or validation set, effectively searching a data-dependent symmetry
+  rather than the exact functional one [S3]. Godfrey et al. formalize this gap between
+  functional, data-dependent, and parameter-space symmetry groups, showing the data-dependent
+  group generally sits strictly between exact functional symmetries and arbitrary
+  parameter reparameterizations [S2]. Because the group is defined by finite-sample
+  behavior, it is generally unstable under resampling: transformations valid on one
+  dataset or subset can fail on another, so equivalences found via activation matching
+  are approximate and dataset-specific rather than exact invariances of the trained
+  function [S1][S3].'
+resources:
+- url: https://arxiv.org/abs/2105.12221
+  title: 'Geometry of the Loss Landscape in Overparameterized Neural Networks: Symmetries
+    and Invariances'
+  type: derivation
+  why: Formal treatment separating exact functional symmetry from symmetries that
+    only hold conditional on a dataset.
+  anchor: §2, the distinction between global functional symmetries and permutation
+    symmetries that only hold given the data (Prop. 2.2)
+- url: https://arxiv.org/abs/2205.14258
+  title: On the Symmetries of Deep Learning Models and their Internal Representations
+  type: follow-up-paper
+  why: Directly names and formalizes data-dependent symmetry as a group nested between
+    parameter and functional symmetry.
+  anchor: §3, 'Data dependent symmetries', comparing the parameter, functional, and
+    data-dependent groups
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: reference-impl
+  why: Concrete, practical use of data-dependent symmetry to align and merge independently
+    trained networks.
+  anchor: §3.1-3.2, the activation-matching algorithm that finds a permutation using
+    a sample of data
+- url: https://github.com/samuela/git-re-basin
+  title: samuela/git-re-basin
+  type: visual
+  why: Visualizes the effect of applying a data-derived permutation symmetry on the
+    loss landscape between two models.
+  anchor: README figures showing the loss barrier collapsing after applying the data-derived
+    permutation
+unresolved:
+- How sensitive is the discovered data-dependent symmetry group to the size or composition
+  of the sampled dataset used for activation matching?
+- Is there a formal characterization of how the data-dependent symmetry group converges
+  to the functional group as dataset size grows?
+sources_consulted:
+  S1: 'Şimşek, B. et al. (2021) ''Geometry of the Loss Landscape in Overparameterized
+    Neural Networks: Symmetries and Invariances'', arXiv:2105.12221'
+  S2: Godfrey, C. et al. (2022) 'On the Symmetries of Deep Learning Models and their
+    Internal Representations', arXiv:2205.14258
+  S3: 'Ainsworth, S. et al. (2022) ''Git Re-Basin: Merging Models modulo Permutation
+    Symmetries'', arXiv:2209.04836'

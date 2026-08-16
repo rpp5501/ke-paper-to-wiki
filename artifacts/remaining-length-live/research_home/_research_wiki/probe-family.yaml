@@ -1,0 +1,54 @@
+concept: probe-family
+status: complete
+synthesis: 'Probes are restricted to a single linear layer with no nonlinearity so
+  that a probe''s success reflects information already linearly decodable from the
+  representation itself, rather than capacity the probe adds to learn the task from
+  scratch [S1]. Hewitt & Liang formalize this concern with ''control tasks'' and a
+  selectivity metric, showing that overly expressive probes (e.g. deep MLPs) can memorize
+  arbitrary label mappings and so overstate what a representation encodes, which motivates
+  preferring minimal-capacity linear probes [S2]. The probe family splits along the
+  prediction target: classification probes map a hidden vector to discrete labels
+  via a linear layer plus softmax, as in Alain & Bengio''s original layer-wise classifier
+  probes [S1], while regression probes map to continuous outputs, as in Hewitt & Manning''s
+  structural probe, which learns a single linear transformation whose squared distances
+  recover parse-tree depths and distances [S3]. Belinkov''s survey situates both variants
+  within a broader taxonomy of probing methodology and complexity choices [S4].'
+resources:
+- url: https://arxiv.org/abs/1610.01644
+  title: Understanding intermediate layers using linear classifier probes
+  type: derivation
+  why: Original paper defining probes as linear-only and justifying minimal capacity
+  anchor: §1 Introduction and §2 'Linear Classifier Probes', where the linearity restriction
+    is motivated
+- url: https://arxiv.org/abs/1909.03368
+  title: Designing and Interpreting Probes with Control Tasks
+  type: derivation
+  why: Formalizes why probe capacity must be kept minimal via the selectivity metric
+    and control tasks
+  anchor: §3 'Control Tasks and Selectivity'
+- url: https://nlp.stanford.edu/~johnhew/structural-probe.html
+  title: A Structural Probe for Finding Syntax in Word Representations
+  type: visual
+  why: Shows a linear regression probe variant with the iconic diagram of a parse
+    tree recovered from embedding-space distances
+  anchor: the 'Approach' section figure showing the linear transformation and recovered
+    tree
+- url: https://arxiv.org/abs/2102.12452
+  title: 'Probing Classifiers: Promises, Shortcomings, and Advances'
+  type: follow-up-paper
+  why: Surveys the probe design space, including linear-vs-nonlinear and classification-vs-regression
+    variants
+  anchor: the section on probe complexity/architecture choices
+unresolved:
+- Whether 'probe-family' as a named grouping (linear-classification vs linear-regression
+  probes) is stated explicitly anywhere as such, or is a synthesis drawn across Alain
+  & Bengio and Hewitt & Manning.
+sources_consulted:
+  S1: Alain, G. & Bengio, Y. (2016). Understanding intermediate layers using linear
+    classifier probes. arXiv:1610.01644
+  S2: Hewitt, J. & Liang, P. (2019). Designing and Interpreting Probes with Control
+    Tasks. arXiv:1909.03368
+  S3: Hewitt, J. & Manning, C.D. (2019). A Structural Probe for Finding Syntax in
+    Word Representations. NAACL 2019. https://nlp.stanford.edu/~johnhew/structural-probe.html
+  S4: 'Belinkov, Y. (2022). Probing Classifiers: Promises, Shortcomings, and Advances.
+    Computational Linguistics. arXiv:2102.12452'

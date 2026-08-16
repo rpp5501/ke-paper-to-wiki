@@ -1,0 +1,259 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 25 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: remaining-length-encoding
+  label: LLMs Linearly Encode Remaining Output Length
+  level: 0
+  include: true
+  definition: The residual stream of an LLM linearly encodes an internal estimate
+    of how many tokens of its own response remain before it will stop.
+  sub_questions:
+  - Does this encoding hold across different model families and sizes?
+  - Is the encoding causally used by the model to control generation length?
+  - How does the encoding evolve dynamically as generation proceeds?
+  - Does the signal generalize across task/dataset distributions?
+  research: false
+- id: related-work
+  label: Related Work
+  level: 1
+  include: true
+  definition: Training a small linear probe on frozen activations to predict properties
+    of LLM internals, and studying OOD generalization of such probes.
+  sub_questions:
+  - What prior work establishes linear probing as a tool for interpretability?
+  - How does this study's OOD generalization framing extend prior probe work?
+  research: false
+- id: problem-formulation
+  label: Problem Formulation
+  level: 1
+  include: true
+  definition: Let M be a frozen autoregressive language model and (x,y) a prompt-completion
+    pair; the task is to predict, from hidden states, properties of the remaining
+    completion.
+  sub_questions:
+  - What quantity is the probe trained to predict at each token position?
+  - How is the frozen model M and completion y formally defined?
+  research: false
+- id: hidden-state-extraction
+  label: Hidden State Extraction
+  level: 1
+  include: true
+  definition: For each token position t in a (prompt, completion) sequence, the residual-stream
+    activation is extracted, including at prompt positions.
+  sub_questions:
+  - Which layer(s) of the residual stream are extracted?
+  - Why include prompt-position activations, not just completion positions?
+  research: false
+- id: probe-family
+  label: Probe Family
+  level: 1
+  include: true
+  definition: 'A probe f_theta: R^d -> R is a single linear layer with no nonlinearity,
+    chosen for minimal capacity.'
+  sub_questions:
+  - Why restrict probes to linear, no-nonlinearity models?
+  - What distinct probe variants make up the family (regression vs classification)?
+  research: false
+- id: statistical-baselines
+  label: Statistical Baselines
+  level: 1
+  include: true
+  definition: The optimal constant predictor under L1 loss is the median, used as
+    a non-learned statistical baseline for comparison.
+  sub_questions:
+  - Why is the median the appropriate constant baseline under L1/MAE loss?
+  - How much of the probe's performance exceeds this baseline?
+  research: false
+- id: loss-optimization
+  label: Loss and Optimization
+  level: 1
+  include: true
+  definition: Training minimizes a per-probe loss L_p(theta_p; batch) over the set
+    of active probes.
+  sub_questions:
+  - How are multiple probes trained jointly versus independently?
+  - What optimizer and loss form is used?
+  research: false
+- id: evaluation-methodology
+  label: Evaluation Methodology
+  level: 1
+  include: true
+  definition: The headline metric for every regression result is per-token mean absolute
+    error (MAE), the natural counterpart to the L1-optimal median baseline.
+  sub_questions:
+  - Why choose per-token MAE as the headline metric?
+  - What secondary metrics complement MAE in evaluation?
+  research: false
+- id: models-datasets
+  label: Models and Datasets
+  level: 1
+  include: true
+  definition: 'Three open-weight instruction-tuned base models in the 7-8B parameter
+    range are evaluated: Llama-3.1-8B-Instruct, Olmo-3-7B-Instruct, and Mistral-7B-Instruct-v0.3.'
+  sub_questions:
+  - Why restrict evaluation to the 7-8B parameter range?
+  - What datasets/domains are used to generate completions for probing?
+  research: false
+- id: results
+  label: Results
+  level: 1
+  include: true
+  definition: All numbers are the mean across three independent training seeds, with
+    per-seed variance under 1 token.
+  sub_questions:
+  - How much does the Remaining Count Probe outperform statistical baselines?
+  - How consistent are results across seeds and models?
+  research: false
+- id: cross-dataset-generalization
+  label: Cross-Dataset Generalization
+  level: 1
+  include: true
+  definition: 'The cross-dataset matrix is not symmetric: probes trained on natural-language
+    datasets generalize differently than probes trained on other domains.'
+  sub_questions:
+  - Why is generalization asymmetric between dataset types?
+  - Which training datasets produce the most transferable probes?
+  research: false
+- id: limitations
+  label: Limitations
+  level: 1
+  include: true
+  definition: 'Decodability does not entail causal use: linear probes recover information
+    present in the residual stream but do not show the model uses it to control generation.'
+  sub_questions:
+  - What would be needed to establish causal (not merely correlational) use of the
+    encoded length estimate?
+  - What other confounds could explain the probe's predictive success?
+  research: true
+- id: conclusion
+  label: Conclusion
+  level: 1
+  include: true
+  definition: The residual stream of an LLM linearly encodes an internal estimate
+    of how many tokens of its own response remain.
+  sub_questions:
+  - What are the broader implications for controllable generation or early stopping?
+  - What open questions does the paper leave for future work?
+  research: false
+- id: remaining-count-probe
+  label: Remaining Count Probe
+  level: 2
+  include: true
+  definition: A regression probe trained to predict, at each completion token position,
+    the number of tokens remaining until the response ends.
+  sub_questions:
+  - How does its per-token MAE compare to the constant-median baseline?
+  - How does its prediction dynamically change during generation?
+  research: false
+- id: completion-length-probe
+  label: Completion Length Probe
+  level: 2
+  include: true
+  definition: A regression probe trained at the prompt-end position to predict the
+    total length of the completion the model will produce.
+  sub_questions:
+  - How accurate is the prompt-end length prediction relative to baselines?
+  - How does this probe relate to the Remaining Count Probe?
+  research: false
+- id: classification-probe-family
+  label: Classification Probe Family
+  level: 2
+  include: true
+  definition: A complementary family of K-way classifiers (K in {2,3,5,...}) that
+    bucket the remaining-length target into discrete classes.
+  sub_questions:
+  - How does classification accuracy compare across different K values?
+  - Does discretizing the target reveal information the regression probe misses?
+  research: false
+- id: dynamic-reestimation
+  label: Dynamic Re-Estimation and Spiking
+  level: 2
+  include: true
+  definition: Because the Remaining Count Probe's prediction at position t is a function
+    of h_t rather than of t, it can move non-monotonically, spiking when the model
+    restarts or retracts its reasoning.
+  sub_questions:
+  - What triggers a spike in the probe's remaining-count prediction mid-generation?
+  - What does spiking behavior reveal about how the model tracks its own progress?
+  research: false
+- id: per-layer-probe-sweep
+  label: Per-Layer Probe Sweep
+  level: 2
+  include: true
+  definition: To localize where in M the length signal is most accessible, a separate
+    probe is trained at each layer of the residual stream.
+  sub_questions:
+  - At which layers is the remaining-length signal most linearly decodable?
+  - Does accessibility of the signal increase or decrease with depth?
+  research: false
+- id: mae-relative-baseline
+  label: MAE Relative to Baseline Floor
+  level: 2
+  include: true
+  definition: MAE is reported relative to the statistical-baseline floor to make cross-dataset
+    comparisons meaningful, since absolute MAE in tokens is not directly comparable
+    across datasets.
+  sub_questions:
+  - How does relative-to-baseline MAE change the ranking of datasets versus absolute
+    MAE?
+  - Which datasets show the largest relative improvement over baseline?
+  research: false
+- id: mae-by-completion-length
+  label: MAE by Completion Length
+  level: 2
+  include: true
+  definition: Per-completion-length MAE breaks down the token-weighted average MAE
+    by the length of the completion being predicted.
+  sub_questions:
+  - Does probe accuracy degrade for very long or very short completions?
+  - How does this breakdown explain the aggregate headline MAE numbers?
+  research: false
+- id: prompt-templates
+  label: Prompt Templates
+  level: 3
+  include: true
+  definition: For every dataset, the input to the base model is a chat-template-formatted
+    message consisting of a fixed system prompt and a dataset-specific instruction.
+  sub_questions:
+  - How consistent are prompt templates kept across datasets and models?
+  - Could prompt template choice affect the probe's learned length signal?
+  research: false
+- id: training-hyperparameters
+  label: Training Hyperparameters and Dataset Sizes
+  level: 3
+  include: true
+  definition: Lists the probe-training hyperparameters and dataset/split sizes used
+    to produce every reported number.
+  sub_questions:
+  - What hyperparameters (learning rate, batch size, epochs) are used for probe training?
+  - How large are the training and evaluation splits per dataset?
+  research: false
+- id: cross-dataset-mistral
+  label: Cross-Dataset Generalization on Mistral-7B
+  level: 3
+  include: true
+  definition: Cross-dataset generalization results replicated on Mistral-7B-Instruct-v0.3.
+  sub_questions:
+  - Does the asymmetric generalization pattern hold on Mistral as it does on the primary
+    model?
+  research: false
+- id: cross-dataset-olmo
+  label: Cross-Dataset Generalization on Olmo-3-7B
+  level: 3
+  include: true
+  definition: Cross-dataset generalization results replicated on Olmo-3-7B-Instruct.
+  sub_questions:
+  - Does the asymmetric generalization pattern hold on Olmo-3 as it does on the primary
+    model?
+  research: false
+- id: retraction-examples
+  label: Retraction and Count-Spiking Examples
+  level: 3
+  include: true
+  definition: Additional qualitative examples, obtained by sorting eval-set completions
+    by per-completion MAE and walking down from the worst, illustrating retraction
+    and count-spiking behavior.
+  sub_questions:
+  - What do the worst-MAE examples reveal about failure modes of the probe?
+  - How often does retraction/spiking correspond to genuine model self-correction?
+  research: false

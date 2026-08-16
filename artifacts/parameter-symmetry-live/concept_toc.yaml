@@ -1,0 +1,311 @@
+approved: true
+note: 'AUTO-APPROVED by run_pipeline.py -- 25 nodes, no quality findings. original: review: prune concepts, set research flags, then set approved: true'
+concepts:
+- id: parameter-space-symmetry
+  label: Parameter Space Symmetry
+  level: 0
+  include: true
+  definition: Neural networks remain not fully understood theoretically, and symmetry
+    in parameter space offers a lens to understand their structure, optimization,
+    and learning dynamics.
+  sub_questions:
+  - What unifies the many disparate notions of symmetry studied across neural network
+    theory?
+  - Why does symmetry matter for understanding optimization and generalization?
+  - How do theoretical accounts of symmetry connect to practical training behavior?
+  research: false
+- id: loss-invariant-transformations
+  label: Loss-Invariant Parameter Transformations and Symmetry
+  level: 1
+  include: true
+  definition: Parameter transformations that preserve the loss over the space of data,
+    forming the basic definition of parameter space symmetry.
+  sub_questions:
+  - What formal group structure do loss-invariant transformations form?
+  - How does the decomposition of data into inputs and labels shape the definition?
+  - What distinguishes loss-invariance from stricter functional invariance?
+  research: false
+- id: functional-symmetry
+  label: Functional Neural Network Symmetry
+  level: 1
+  include: true
+  definition: Parameter space symmetry defined by transformations that preserve the
+    neural network function itself across all inputs, varying by which transformation
+    is preserved.
+  sub_questions:
+  - How do different architectures give rise to different functional symmetries?
+  - What is the relationship between functional symmetry and loss-invariance?
+  - Which symmetries are architecture-specific versus universal?
+  research: false
+- id: symmetries-common-components
+  label: Symmetries in Common Neural Network Components
+  level: 2
+  include: true
+  definition: Different neural network architectures and components give rise to distinct
+    parameter space symmetries, illustrated through concrete examples.
+  sub_questions:
+  - What symmetries arise in fully-connected layers versus convolutional layers?
+  - How do activation function choices (e.g. ReLU) affect the symmetry group?
+  - Which symmetries are shared across multiple component types?
+  research: false
+- id: symmetries-transformers
+  label: Symmetries in Transformers
+  level: 2
+  include: true
+  definition: The symmetries present in transformer architectures emerge from and
+    combine the symmetries of their constituent components.
+  sub_questions:
+  - How do attention-head permutation symmetries combine with layer-wise symmetries?
+  - What role does normalization play in transformer symmetry groups?
+  - How does symmetry composition affect the overall size of the transformer symmetry
+    group?
+  research: true
+- id: relaxed-symmetry-definitions
+  label: Relaxed Definitions of Symmetry
+  level: 1
+  include: true
+  definition: Broader notions of symmetry that do not require invariance of the neural
+    network output across all input data.
+  sub_questions:
+  - Why are strict functional symmetries too restrictive for some analyses?
+  - What is gained by relaxing invariance to loss, data-dependent, or distributional
+    levels?
+  - How do the relaxed definitions relate to one another in generality?
+  research: false
+- id: loss-symmetry
+  label: Loss Symmetry
+  level: 2
+  include: true
+  definition: Parameter transformations that preserve the overall loss but not necessarily
+    the neural network function itself.
+  sub_questions:
+  - What examples of loss symmetry exist beyond functional symmetry?
+  - How does loss symmetry relate to flat regions of the loss landscape?
+  - Can loss symmetries be exploited the same way as functional symmetries in optimization?
+  research: false
+- id: data-dependent-symmetry
+  label: Data-Dependent Symmetry
+  level: 2
+  include: true
+  definition: A relaxation of functional symmetry that considers parameter transformations
+    preserving network behavior only on a given dataset rather than all inputs.
+  sub_questions:
+  - How does restricting to a finite dataset change the symmetry group compared to
+    the functional case?
+  - What practical scenarios motivate data-dependent symmetry?
+  - How stable is data-dependent symmetry under changes in the dataset?
+  research: true
+- id: distribution-symmetry
+  label: Distribution Symmetry
+  level: 2
+  include: true
+  definition: A notion of symmetry defined with respect to parameter transformations
+    that preserve behavior when data is viewed as samples from an underlying distribution.
+  sub_questions:
+  - How does distribution symmetry generalize data-dependent symmetry to the population
+    level?
+  - What role does sample size play in approximating distribution symmetry?
+  - How does distribution symmetry connect to generalization theory?
+  research: true
+- id: parameter-identifiability
+  label: Parameter Identifiability and Completeness of Symmetry
+  level: 1
+  include: true
+  definition: The question of whether the known symmetries of a network fully account
+    for all parameter configurations yielding the same function, i.e. completeness
+    of the symmetry characterization.
+  sub_questions:
+  - What does it mean for a symmetry characterization to be 'complete'?
+  - How is identifiability of parameters affected by unaccounted symmetries?
+  - What tools exist to verify completeness of a symmetry group?
+  research: false
+- id: symmetry-in-loss-landscapes
+  label: Role of Symmetry in Loss Landscapes
+  level: 1
+  include: true
+  definition: Symmetry plays a central role in understanding the structure of the
+    loss landscape, the graph of the loss function over the parameter space.
+  sub_questions:
+  - How does symmetry shape the geometry of minima in the loss landscape?
+  - What is the difference between the effects of continuous and discrete symmetries
+    on the landscape?
+  - How does removing symmetry simplify the landscape's structure?
+  research: false
+- id: continuous-symmetry-mode-connectivity
+  label: Continuous Symmetry and Mode Connectivity
+  level: 2
+  include: true
+  definition: Continuous parameter space symmetries enlarge individual minima into
+    connected sets, linking symmetry to the phenomenon of mode connectivity.
+  sub_questions:
+  - How is 'continuous' symmetry formally defined relative to a Lie group action?
+  - Why do continuous symmetries guarantee connected paths of equal loss?
+  - How does mode connectivity via symmetry relate to mode connectivity found empirically
+    between independently trained minima?
+  research: false
+- id: discrete-symmetry-minima-structure
+  label: Discrete Symmetry and Structure of Minima
+  level: 2
+  include: true
+  definition: Discrete symmetries do not connect minima continuously; instead they
+    replicate them, creating many functionally identical minima.
+  sub_questions:
+  - How many functionally equivalent minima does a given discrete symmetry group produce?
+  - How does the replication of minima affect loss landscape visualization and analysis?
+  - What distinguishes discrete symmetry effects from continuous symmetry effects
+    on optimization?
+  research: false
+- id: symmetry-removal-compression
+  label: 'Removing Symmetry: Model Compression and Reduced Search Space'
+  level: 2
+  include: true
+  definition: While symmetry enriches the loss landscape with structure and multiplicity,
+    removing symmetry reveals a simplified landscape useful for compression and reducing
+    the effective search space.
+  sub_questions:
+  - What methods exist for quotienting out symmetry from the parameter space?
+  - How does symmetry removal enable model compression?
+  - What is lost or gained by analyzing the reduced, symmetry-free search space?
+  research: false
+- id: symmetry-in-optimization
+  label: Applications of Symmetry in Gradient-Based Optimization
+  level: 1
+  include: true
+  definition: Parameter space symmetry can be leveraged to design more efficient and
+    theoretically motivated gradient-based optimization algorithms.
+  sub_questions:
+  - What general strategies exist for exploiting symmetry in optimizer design?
+  - How do symmetry-aware algorithms differ from standard gradient descent?
+  - What theoretical guarantees do symmetry-informed optimizers offer?
+  research: false
+- id: exploiting-orbit-differences
+  label: Exploiting Differences among Points in an Orbit
+  level: 2
+  include: true
+  definition: Loss-invariant transformations defined by symmetry can be used constructively
+    by exploiting differences among points that share the same loss within a symmetry
+    group orbit.
+  sub_questions:
+  - What properties besides loss can differ between points in the same orbit?
+  - How are orbit differences exploited to accelerate or stabilize training?
+  - What limits the usefulness of orbit-based optimization tricks?
+  research: false
+- id: symmetry-invariant-algorithms
+  label: Symmetry Invariant Optimization Algorithms
+  level: 2
+  include: true
+  definition: Optimization algorithms whose convergence behavior is invariant to parameter
+    space symmetry, addressing that standard gradient descent is not symmetry-invariant.
+  sub_questions:
+  - Why is standard gradient descent not invariant to parameter symmetry?
+  - What distinguishes scaling-invariant algorithms from fully general symmetry-invariant
+    algorithms?
+  - What trade-offs exist between invariance guarantees and computational cost?
+  research: false
+- id: scaling-invariant-algorithms
+  label: Scaling Invariant Algorithms
+  level: 3
+  include: true
+  definition: Algorithms designed to be invariant under positive rescaling symmetries,
+    such as those present in ReLU networks, which ordinary gradient descent does not
+    respect.
+  sub_questions:
+  - How does positive rescale-invariance of ReLU networks create optimization pathologies
+    for gradient descent?
+  - What algorithmic modifications restore scaling invariance?
+  - How do scaling-invariant algorithms compare empirically to standard optimizers?
+  research: true
+- id: general-symmetry-invariant-algorithms
+  label: General Symmetry Invariant Algorithms
+  level: 3
+  include: true
+  definition: Natural gradient descent is an algorithm whose convergence is invariant
+    to general parameter symmetry, computed via a metric that adapts to parameter
+    transformations.
+  sub_questions:
+  - How does natural gradient descent achieve invariance to arbitrary parameter symmetry?
+  - What is the computational cost of computing the relevant metric in natural gradient
+    descent?
+  - What other algorithms besides natural gradient descent achieve general symmetry
+    invariance?
+  research: true
+- id: symmetry-learning-dynamics
+  label: Implications of Symmetry for Learning Dynamics
+  level: 1
+  include: true
+  definition: Parameter space symmetry informs learning dynamics, analogous to how
+    symmetry in physical systems relates to conserved quantities via Noether's theorem.
+  sub_questions:
+  - How does the analogy to Noether's theorem in physics carry over to neural network
+    training dynamics?
+  - What role does gradient flow play in connecting symmetry to dynamics?
+  - How do conserved quantities arising from symmetry affect training trajectories?
+  research: false
+- id: symmetry-conserved-quantities
+  label: From Symmetry to Conserved Quantities
+  level: 2
+  include: true
+  definition: Gradient flow, the continuous version of gradient descent used to analyze
+    learning dynamics, gives rise to conserved quantities under parameter space symmetry.
+  sub_questions:
+  - What is the precise mechanism by which symmetry yields a conserved quantity under
+    gradient flow?
+  - How does the continuous-time gradient flow approximation relate to discrete gradient
+    descent's conserved quantities?
+  - What examples of conserved quantities arise from specific neural network symmetries?
+  research: true
+- id: conserved-quantities-convergence
+  label: Conserved Quantities for Convergence and Parameterization
+  level: 2
+  include: true
+  definition: Conserved quantities provide stability in gradient flow by ensuring
+    certain properties remain constant throughout training, aiding convergence analysis
+    and parameterization choices.
+  sub_questions:
+  - How do conserved quantities constrain the trajectory of training toward convergence?
+  - What implications do conserved quantities have for choosing network parameterizations?
+  - How can conserved quantities be used diagnostically during training?
+  research: true
+- id: symmetry-representations-data
+  label: Symmetry in Parameters, Internal Representations, and Data
+  level: 1
+  include: true
+  definition: Symmetry in parameter space is closely connected to symmetry in internal
+    representations, the intermediate outputs of neural networks, and in the data
+    itself.
+  sub_questions:
+  - How does a symmetry in parameter space induce or reflect a symmetry in internal
+    representations?
+  - What is the relationship between data symmetry and the symmetries a trained network
+    learns to exploit?
+  - How do these connections inform architecture or representation learning design?
+  research: false
+- id: weight-space-learning-symmetry
+  label: Parameter Symmetry as Data Symmetry in Weight Space Learning
+  level: 2
+  include: true
+  definition: In tasks that treat neural network parameters as data, such as parameter
+    generation or learning representations of networks, parameter space symmetry manifests
+    as a form of data symmetry.
+  sub_questions:
+  - How should weight-space learning models be designed to respect parameter symmetry
+    as data symmetry?
+  - What challenges arise from symmetry-induced redundancy when treating weights as
+    training data?
+  - How does this framing connect to generative modeling of neural network parameters?
+  research: true
+- id: challenges-future-directions
+  label: Challenges and Future Directions
+  level: 1
+  include: true
+  definition: Despite progress reviewed in prior sections, open challenges remain
+    in the mathematical foundations, deep learning theory implications, and applications
+    of parameter space symmetry.
+  sub_questions:
+  - What would a complete, rigorous mathematical characterization of parameter space
+    symmetry look like?
+  - Which core deep learning phenomena remain unexplained without a symmetry-based
+    account?
+  - What practical applications of symmetry, such as movement along loss level sets,
+    remain underdeveloped?
+  research: true

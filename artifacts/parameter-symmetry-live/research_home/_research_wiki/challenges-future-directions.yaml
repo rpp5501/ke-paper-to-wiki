@@ -1,0 +1,64 @@
+concept: challenges-future-directions
+status: partial
+synthesis: No general theory yet classifies the full symmetry group of an arbitrary
+  deep network architecture, so completeness and finiteness of parameter-space symmetry
+  groups remain open mathematical questions that broader deep-learning-theory surveys
+  flag without resolving [S2]. Related foundational puzzles — why flat regions of
+  the loss landscape generalize well, and why independently trained networks converge
+  to functionally similar solutions — still lack a rigorous symmetry-based account
+  and sit alongside other unexplained statistical-mechanical phenomena of deep nets
+  [S1]. On the practical side, permutation-based alignment lets practitioners move
+  between points on the same loss level set to merge or interpolate independently
+  trained models, but this works well empirically mainly on moderate-width MLPs and
+  CNNs, and a general theory of when such alignment succeeds (and how it scales to
+  larger, more heterogeneous architectures) is still underdeveloped [S3].
+resources:
+- url: https://arxiv.org/abs/2105.04026
+  title: The Modern Mathematics of Deep Learning
+  type: derivation
+  why: Surveys what is and isn't rigorously proven about deep network geometry and
+    optimization; useful for gauging how far a formal account of parameter-space symmetry
+    still has to go
+  anchor: the sections on optimization/loss-landscape theory and open theoretical
+    problems (search within for discussion of invariances/symmetries in parameter
+    space; exact section number not confirmed)
+- url: https://doi.org/10.1146/annurev-conmatphys-031119-050745
+  title: Statistical Mechanics of Deep Learning
+  type: follow-up-paper
+  why: Reviews unresolved statistical-physics-style questions about deep network loss
+    landscapes and generalization that a symmetry-based theory would need to explain
+  anchor: the sections on loss-landscape geometry and open questions/outlook near
+    the end of the review
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: follow-up-paper
+  why: Concrete example of a practical application built on moving between points
+    on a loss level set via permutation symmetry, plus its own discussion of where
+    the approach still breaks down
+  anchor: §4-5 (the matching algorithms and merging experiments) and the limitations/future-work
+    discussion near the conclusion
+- url: https://github.com/samuela/git-re-basin
+  title: git-re-basin (official code and figures)
+  type: visual
+  why: The README's interpolation plots make visible what 'moving along a loss level
+    set via permutation' actually looks like, which is easier to grasp from the figures
+    than from the equations alone
+  anchor: the README.md loss-barrier interpolation plots comparing naive vs. permutation-aligned
+    merging
+unresolved:
+- No high-confidence, dedicated recorded lecture on open problems in parameter-space
+  symmetry specifically (as opposed to deep learning theory generally) could be verified;
+  a code repository with figures was used for the visual requirement instead.
+- Whether permutation-based level-set traversal generalizes beyond moderate-width
+  MLPs/CNNs to transformers and very deep nets is an open empirical and theoretical
+  question, not just a gap in available sources.
+- No source found that attempts a full classification of parameter-space symmetry
+  groups across architecture families; it is unclear whether such a classification
+  is even tractable.
+sources_consulted:
+  S1: Bahri, Y. et al. (2020). Statistical Mechanics of Deep Learning. Annual Review
+    of Condensed Matter Physics. https://doi.org/10.1146/annurev-conmatphys-031119-050745
+  S2: Berner, J., Grohs, P., Kutyniok, G., Petersen, P. (2021). The Modern Mathematics
+    of Deep Learning. https://arxiv.org/abs/2105.04026
+  S3: 'Ainsworth, S., Hayase, J., Srinivasa, S. (2022). Git Re-Basin: Merging Models
+    modulo Permutation Symmetries. https://arxiv.org/abs/2209.04836'

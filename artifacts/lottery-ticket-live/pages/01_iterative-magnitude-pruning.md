@@ -1,92 +1,71 @@
-# Iterative Magnitude Pruning (IMP)
+# Iterative Magnitude Pruning
 ## TL;DR {#tldr}
 
-- IMP repeats train → prune a small fraction → reset survivors to their original initialization, instead of pruning straight to the target sparsity in one shot.
-- Iterative removal finds smaller winning tickets that still match dense-network accuracy than one-shot pruning at the same final sparsity.
-- The two strategies compared in this appendix differ only in *when* weights get reset to their initial values.
+Iterative Magnitude Pruning (IMP) finds a winning ticket by repeating a train-prune-rewind loop many times instead of cutting to the target sparsity in one shot. Each round trains the current subnetwork, removes a small fraction of its lowest-magnitude weights, and resets the survivors to their original initialization before the next round begins.
 
 ## Intuition {#intuition}
 
-One-shot pruning judges every weight's importance from a single trained snapshot, then cuts the bottom fraction all at once — a weight that looks unimportant in that snapshot might matter once its noisier neighbors are gone.
+Think of IMP as sculpting rather than cutting: instead of removing most of the material in one strike and hoping the statue still stands, a sculptor chips away a little, steps back, reassesses what matters, and chips again.
 
-Iterative pruning removes only a small slice — typically 20% — after each round, then retrains the smaller network before making the next cut. Each cut is informed by how the previous round's survivors actually behaved together, not by one noisy estimate.
+Each round of retraining re-ranks which weights look important given everything the network has learned so far, so the pruning decision made in round five is informed by four earlier rounds of learning rather than by the raw magnitudes of an untrained network.
 
 ## Mechanics {#mechanics}
 
-IMP proceeds in rounds rather than a single cut. Each round trains the current unpruned subnetwork to convergence, ranks the surviving weights by magnitude, and prunes the lowest s% — typically 20% — creating a smaller mask [§sec_9].
-
-The two strategies in this appendix differ only in what happens to the surviving weights after each prune: Strategy 1 resets them to θ₀ before retraining, while Strategy 2 keeps the already-trained values and resets only once, after pruning stops [§sec_9].
+Both strategies examined in the appendix share the same outer loop of training, pruning, and re-masking; they differ only in where the weight values come from when retraining resumes after each cut [§sec_9].
 
 ```algorithm
 title: Strategy 1 — iterative pruning with resetting
 lines:
-  - code: "θ = θ0; m = 1^{|θ|}"
-    intent: "Start from a full, unpruned network at its original random initialization [§sec_9]"
-  - code: "train f(x; m ⊙ θ) for j iterations → m ⊙ θj"
-    intent: "Train the current subnetwork to the point used to rank weight magnitudes [§sec_9]"
-  - code: "prune s% of remaining weights → m′, P_m′ = (P_m − s)%"
-    intent: "Remove the smallest-magnitude survivors, shrinking the fraction of weights kept unpruned [§sec_9]"
-  - code: "θ = θ0; m = m′"
-    intent: "Reset every surviving weight back to its value at initialization before the next round [§sec_9]"
-  - code: "repeat until sufficiently pruned"
-    intent: "Each round's mask is found by retraining around the previous round's sparse structure, not by one noisy pass [§sec_9]"
+  - code: "θ = θ0; m = 1^|θ|"
+    intent: "Start from the full network at its original random initialization [§sec_9]"
+  - code: "for round in rounds:"
+    intent: "Repeat the cut-and-retrain cycle instead of pruning to the target sparsity in one step [§sec_9]"
+  - code: "    train f(x; m ⊙ θ) for j iterations"
+    intent: "Retrain the current subnetwork so weight magnitudes reflect what this pruned structure has actually learned [§sec_9]"
+  - code: "    prune s% of remaining weights, updating m → m'"
+    intent: "Remove the lowest-magnitude survivors, shrinking the surviving fraction by s percentage points this round [§sec_9]"
+  - code: "    θ = θ0; m = m'"
+    intent: "Reset the surviving weights to their original values before the next round retrains them [§sec_9]"
 ```
 
-```algorithm
-title: Strategy 2 — iterative pruning with continued training
-lines:
-  - code: "θ = θ0; m = 1^{|θ|}"
-    intent: "Same starting point as Strategy 1: full network at original initialization [§sec_9]"
-  - code: "train f(x; m ⊙ θ) for j iterations"
-    intent: "Train the current subnetwork, same as Strategy 1's training step [§sec_9]"
-  - code: "prune s% of remaining weights → m′"
-    intent: "Same magnitude-based pruning rule as Strategy 1 [§sec_9]"
-  - code: "m = m′; repeat (no reset) until sufficiently pruned"
-    intent: "Retraining continues from the already-trained weights instead of resetting, so each round starts from where the last round left off [§sec_9]"
-  - code: "θ = θ0 once, after pruning stops"
-    intent: "Only the final surviving weights are reset to initialization, after the target sparsity is reached [§sec_9]"
-```
+Strategy 2 follows the identical outer loop but skips the reset: it retrains from the weights the previous round already learned, only rewinding to $\theta_0$ once after the final prune [§sec_9].
 
-The measured difference between the two schedules is consistent across architectures, shown in Figure 9 for Lenet and Figure 10 for Conv-2/4/6 [§sec_9]:
-
-| Strategy | Weight reset timing | Validation accuracy | Early-stopping iteration |
-|---|---|---|---|
-| Strategy 1 (resetting) | Reset to θ₀ after every round, before retraining | Higher across Lenet and Conv-2/4/6 [§sec_9] | Faster, at smaller network sizes [§sec_9] |
-| Strategy 2 (continued training) | Reset once, only after pruning stops | Lower than Strategy 1 at matched sparsity [§sec_9] | Slower than Strategy 1 [§sec_9] |
+| Strategy | Retrain source after each prune | Empirical result on Lenet and Conv-2/4/6 |
+|---|---|---|
+| 1: Resetting | Original initialization $\theta_0$ [§sec_9] | Higher validation accuracy and faster early-stopping at smaller sizes [§sec_9] |
+| 2: Continued training | Weights already trained in the previous round [§sec_9] | Lower validation accuracy and slower early-stopping at the same sizes [§sec_9] |
 
 ```figure
 id: fig_9
-caption: Early-stopping iteration and accuracy as Lenet is pruned round by round — resetting (Strategy 1) tracks higher accuracy at smaller network sizes than continued training (Strategy 2) [§sec_9]
+caption: Early-stopping iteration and accuracy for Lenet under the two iterative strategies — Strategy 1's curve stays above Strategy 2's at every sparsity level shown [§sec_9]
 ```
 
-At larger scale — ResNet-50 on ImageNet, BERT — resetting all the way back to iteration 0 becomes unstable under SGD's noise. IMP is then paired with rewinding to a small number of steps into training instead of to initialization, which restores stability without discarding the layer-wise sparsity pattern IMP already found [S2].
-
-Round count and per-round rate trade off directly: aggressive one-shot or high-rate pruning is cheap but destroys the ticket, while smaller per-round rates near 20% cost more rounds of full retraining but yield tickets trainable to full accuracy at higher final sparsity [S3].
+In both strategies, once the network has been pruned to its target sparsity, the surviving weights are reset to $\theta_0$ one final time before the ticket is evaluated — this last reset is what makes the result a claim about the original initialization, not about the training run that found the mask [§sec_9].
 
 ## The Math {#the-math}
 
-Take s = 20%, the rate used throughout the paper's main experiments. After round 1, 80% of the original weights remain; after round 2, 80% of that 80% remains — not 80% minus another 20 percentage points [§sec_9].
+IMP's tunable knob is the per-round pruning rate $s\%$: the fraction of currently-surviving weights cut before the next retraining pass [§sec_9].
 
-```derivation
-shape: Sparsity remaining after n rounds of pruning s% of the surviving weights per round.
-steps:
-  - latex: "P_0 = 100\\%"
-    why: "Before any pruning, the mask m = 1^{|\\theta|} keeps every weight [§sec_9]"
-  - latex: "P_{m'} = (P_m - s)\\%"
-    why: "Each round's mask density is set relative to the current mask's density, not to the original count, per the strategy definition [§sec_9]"
-  - latex: "P_n = (1 - s/100)^n \\times 100\\%"
-    why: "Unrolling the recurrence across n rounds turns per-round removal into a compounding product, since each round removes s% of what remains rather than s% of the original count [§sec_9]"
-```
+A common choice removes 20% of the surviving weights each round, so the fraction of the original network still present after $n$ rounds decays geometrically as $(1-s)^n = (0.8)^n$ [S1].
 
-This compounding is why the schedule needs many rounds to reach high sparsity: density falls to 0.8^n of the original count after n rounds, so reaching roughly 10% density takes about eleven rounds, since 0.8^11 ≈ 0.086 [§sec_9].
+- Round 1: $(0.8)^1 = 80\%$ of weights remain [S1]
+- Round 2: $(0.8)^2 = 64\%$ of weights remain [S1]
+- Round 3: $(0.8)^3 \approx 51.2\%$ of weights remain [S1]
+- Round 4: $(0.8)^4 \approx 41.0\%$ of weights remain [S1]
+- Round 5: $(0.8)^5 \approx 32.8\%$ of weights remain [S1]
 
-Each of those eleven rounds pays the full cost of training the subnetwork to convergence. That cost is exactly what the slower, smaller-rate schedule buys: tickets that stay trainable to full accuracy at higher final sparsity than an aggressive high-rate schedule reaches [S3].
+Only a handful of rounds are needed before the sparsest reliably-trainable ticket is reached; performance collapses once too much has been removed for the remaining sparse subnetwork to train at all [S1].
 
-At the limit s = 100%, IMP collapses to one-shot pruning: a single round removes everything not already zero, which is exactly the one-shot procedure this appendix's iterative strategies are contrasted against [§sec_9].
+A one-shot schedule can reach that same 32.8% remaining in a single cut: prune about 67% of weights immediately, instead of removing 20% five times with four retraining passes in between [S1].
+
+The two schedules differ in what informs the cut, not in where they end up. Iterative pruning's round-five magnitudes reflect four earlier rounds of learning on the already-shrunk network [S1].
+
+One-shot pruning has no such feedback: it ranks all weights by their magnitude after a single training run, then removes 67% of them at once, so a weight that only becomes important after early rounds of retraining gets cut before that signal exists [S1].
+
+Frankle and Carbin report that this collateral damage is exactly what separates the two schedules empirically: one-shot pruning at high sparsity degrades accuracy, while the iterative schedule with the same number of surviving weights keeps finding a trainable, better-performing ticket [S1].
 
 ## Go Deeper {#go-deeper}
 
-- [Lottery Ticket Hypothesis - Papers with Code](https://paperswithcode.com/method/lottery-ticket-hypothesis) — start here for diagrams and a plain-language summary of the train-prune-rewind loop before digging into code or the rewinding-instability papers.
-- [OpenLTH: A Framework for Lottery Ticket Hypothesis Research](https://github.com/facebookresearch/open_lth) — the official Frankle-lab codebase implementing this exact train/prune/rewind loop, runnable to reproduce IMP results directly.
-- [Comparing Rewinding and Fine-tuning in Neural Network Pruning](https://arxiv.org/abs/2003.02389) — studies the per-round pruning rate and rewinding-vs-fine-tuning tradeoffs raised above in detail.
-- [Linear Mode Connectivity and the Lottery Ticket Hypothesis](https://arxiv.org/abs/1912.05671) — explains why naive rewind-to-init IMP becomes unstable at scale and motivates rewinding to an early checkpoint instead.
+- [Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask](https://www.uber.com/blog/deconstructing-lottery-tickets/) — animated figures showing how a weight's sign and mask status evolve across successive pruning rounds, the fastest way to build intuition for what "re-ranking" looks like round to round.
+- [The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks](https://arxiv.org/abs/1803.03635) — the original paper defining Strategy 1 and Strategy 2 and comparing them directly (Appendix, Figures 9–10).
+- [OpenLTH: A Framework for Lottery Ticket Style Experiments](https://github.com/facebookresearch/open_lth) — Frankle's own codebase implementing the prune-retrain-rewind loop end to end, useful for seeing the algorithm above as running code.

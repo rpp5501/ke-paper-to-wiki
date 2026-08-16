@@ -1,0 +1,64 @@
+concept: scaling-invariant-algorithms
+status: complete
+synthesis: 'ReLU networks admit a positive rescaling symmetry: multiplying a unit''s
+  incoming weights by α>0 and its outgoing weights by 1/α leaves the function unchanged,
+  but plain gradient descent is not invariant to this reparameterization, so the same
+  function can have wildly different gradient magnitudes and loss-surface conditioning
+  depending on which equivalent scaling is chosen [S4][S3]. This creates optimization
+  pathologies: the rescaling directions become extremely ill-conditioned, so vanilla
+  SGD zig-zags or crawls depending on an essentially cosmetic parameterization choice,
+  and even weight decay''s effective strength drifts with the scale rather than acting
+  as a fixed regularizer [S3]. Two families of fixes restore invariance: reparameterization
+  methods like Weight Normalization decouple a unit''s direction from its magnitude
+  so gradient steps act only on the direction that matters [S2], while Path-SGD instead
+  measures geometry with path-based norms over input-to-output paths, which are themselves
+  invariant to the rescaling symmetry, and takes steepest-descent steps in that induced
+  metric [S1]. Building updates invariant to arbitrary rescalings predates deep learning,
+  appearing in earlier corrected-gradient methods for general nonlinear optimization
+  [S5]. Empirically, Path-SGD and normalization-based approaches converge faster and
+  generalize better than plain SGD on the same ReLU architectures, especially when
+  layer widths or initializations are scale-mismatched [S1][S2].'
+resources:
+- url: https://d2l.ai/chapter_optimization/gd.html
+  title: Gradient Descent — Dive into Deep Learning
+  type: visual
+  why: animated contour plot shows exactly why gradient descent struggles when a loss
+    is scaled very differently along different directions, the core pathology scale-invariant
+    algorithms are built to fix
+  anchor: the 'Ill-conditioned Problems' subsection and its 2D contour-plot animation
+- url: https://arxiv.org/abs/1506.02617
+  title: 'Path-SGD: Path-Normalized Optimization in Deep Neural Networks'
+  type: derivation
+  why: derives a steepest-descent update in a path-based norm that is provably invariant
+    to the positive rescaling symmetry of ReLU networks
+  anchor: §3 'Path-SGD', especially the path-regularizer definition and Algorithm
+    1
+- url: https://arxiv.org/abs/1602.07868
+  title: 'Weight Normalization: A Simple Reparameterization to Accelerate Training
+    of Deep Neural Networks'
+  type: follow-up-paper
+  why: reparameterizes each weight vector into a decoupled direction and scale so
+    gradient steps on the direction are unaffected by the arbitrary scale choice
+  anchor: §2, the reparameterization w = (g/||v||) v
+- url: https://arxiv.org/abs/1810.12281
+  title: Three Mechanisms of Weight Decay Regularization
+  type: derivation
+  why: formalizes how ReLU+BatchNorm scale invariance turns weight decay into an implicit
+    effective-learning-rate controller, explaining the empirical pathology directly
+  anchor: §2 'Scale-invariance', and Figure 1 showing effective-learning-rate drift
+unresolved:
+- Whether path-norm regularization scales practically to very deep/wide modern architectures
+  (e.g. transformers) beyond the small ReLU MLP/CNN benchmarks in the original Path-SGD
+  paper.
+- No single canonical reference gives a direct head-to-head of Path-SGD vs. Weight
+  Normalization vs. plain SGD+BatchNorm on the same benchmark.
+sources_consulted:
+  S1: 'Neyshabur, Salakhutdinov, Srebro, ''Path-SGD: Path-Normalized Optimization
+    in Deep Neural Networks'', NeurIPS 2015, arXiv:1506.02617'
+  S2: 'Salimans & Kingma, ''Weight Normalization: A Simple Reparameterization to Accelerate
+    Training of Deep Neural Networks'', NeurIPS 2016, arXiv:1602.07868'
+  S3: Zhang, Wang, Xu, Grosse, 'Three Mechanisms of Weight Decay Regularization',
+    ICLR 2019, arXiv:1810.12281
+  S4: d2l.ai, 'Gradient Descent', https://d2l.ai/chapter_optimization/gd.html
+  S5: '''A Corrected-Gradient Method That Makes Gradient Optimization Algorithms Invariant
+    to Any Non-Linear Scaling'', Engineering Optimization, 1980, https://doi.org/10.1080/03052158008902429'

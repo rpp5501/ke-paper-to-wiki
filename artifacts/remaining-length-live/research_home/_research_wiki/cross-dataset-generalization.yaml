@@ -1,0 +1,54 @@
+concept: cross-dataset-generalization
+status: complete
+synthesis: 'Burns et al. train Contrast-Consistent Search (CCS) probes separately
+  on each of several NLP datasets spanning sentiment, topic classification, NLI, and
+  QA, then evaluate every probe on every other dataset, producing a cross-dataset
+  accuracy matrix that is visibly asymmetric: a probe trained on dataset A can transfer
+  well to B while a probe trained on B transfers poorly back to A [S1]. The asymmetry
+  tracks how cleanly a dataset isolates a truth/knowledge-relevant direction from
+  domain-specific nuisance structure (e.g., sentiment polarity versus factual entailment)
+  — probes trained on datasets with less such ''shortcut'' structure tend to generalize
+  outward better than the reverse [S1]. Marks and Tegmark later replicate this same
+  asymmetric-matrix pattern for factual true/false statements, showing probes trained
+  on simple, unambiguous datasets (like statements about city locations) transfer
+  broadly, while probes trained on negated or conjunctive statements transfer poorly
+  even back to their un-negated counterparts [S2]. Together the two works suggest
+  transferability depends less on dataset size than on how directly a dataset isolates
+  the probed direction from correlated but irrelevant directions in representation
+  space [S1][S2]. The reference CCS implementation exposes the extraction and evaluation
+  pipeline used to construct these matrices [S3].'
+resources:
+- url: https://arxiv.org/abs/2212.03827
+  title: Discovering Latent Knowledge in Language Models Without Supervision
+  type: visual
+  why: Contains the original cross-dataset generalization heatmap showing the asymmetric
+    transfer pattern between probes trained on different NLP datasets
+  anchor: Figure 4 and §4.2 'Generalization', the cross-dataset accuracy heatmap
+- url: https://github.com/collin-burns/discovering_latent_knowledge
+  title: discovering_latent_knowledge (official CCS code)
+  type: reference-impl
+  why: Shows the actual extraction and cross-dataset evaluation pipeline used to produce
+    the generalization matrix
+  anchor: the evaluation/extraction scripts where a probe trained on one dataset's
+    hidden states is scored against another dataset's hidden states
+- url: https://arxiv.org/abs/2310.06824
+  title: 'The Geometry of Truth: Emergent Linear Structure in Large Language Model
+    Representations'
+  type: follow-up-paper
+  why: Reproduces the same asymmetric cross-dataset generalization phenomenon for
+    factual true/false probes, clarifying which dataset properties drive transferability
+  anchor: §4 'Generalization' and Figure 3, the asymmetric heatmap comparing simple
+    factual datasets vs. negated/conjunctive ones
+unresolved:
+- Whether the asymmetry is better explained by dataset 'cleanliness' (label ambiguity,
+  spurious correlations) or by geometric properties of the probed direction is not
+  fully settled between the two papers.
+- No systematic study yet ranks transferability across a much wider set of domains
+  beyond the ones tested in these two papers, so it's unclear how the asymmetric pattern
+  generalizes further.
+sources_consulted:
+  S1: Burns, C., Ye, H., Klein, D., Steinhardt, J. (2022). Discovering Latent Knowledge
+    in Language Models Without Supervision. arXiv:2212.03827.
+  S2: 'Marks, S., Tegmark, M. (2023). The Geometry of Truth: Emergent Linear Structure
+    in Large Language Model Representations. arXiv:2310.06824.'
+  S3: https://github.com/collin-burns/discovering_latent_knowledge

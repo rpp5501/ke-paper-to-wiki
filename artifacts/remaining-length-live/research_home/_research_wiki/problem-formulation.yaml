@@ -1,0 +1,52 @@
+concept: problem-formulation
+status: complete
+synthesis: In this setup, M is a standard autoregressive Transformer LM whose weights
+  are frozen and used only to produce hidden states, one per token position, as the
+  prompt x and completion y are processed [S1]. A probe is a separate, lightweight
+  classifier trained on top of these frozen hidden states to predict some target property
+  of the completion, rather than the next token itself, mirroring the general probing-classifier
+  paradigm in which a fixed encoder's representations are diagnosed by a shallow supervised
+  model trained on top of them while the encoder's own parameters stay untouched [S3].
+  The premise that a single hidden state already encodes information about tokens
+  beyond the immediate next one is also what motivates reading out predictions at
+  intermediate layers, as in the logit-lens technique, which applies the model's own
+  unembedding matrix to hidden states from any layer to see what the model already
+  'knows' before its final layer [S2]. Formally, (x,y) is a prompt-completion pair,
+  and for a given token position the probe receives M's hidden state at that position
+  and outputs a prediction about a property of the remaining, not-yet-consumed part
+  of y.
+resources:
+- url: https://jalammar.github.io/illustrated-gpt2/
+  title: The Illustrated GPT-2 (Visualizing Transformer Language Models)
+  type: visual
+  why: Grounds what a 'hidden state at a token position' in a frozen autoregressive
+    M actually is, with diagrams of the forward pass that the probe taps into.
+  anchor: 'the ''Part #2: Illustrated Self-Attention'' and final output-projection
+    diagrams showing how a hidden state maps toward vocabulary predictions'
+- url: https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens
+  title: 'interpreting GPT: the logit lens'
+  type: visual
+  why: Canonical demonstration that a frozen model's intermediate hidden states already
+    carry decodable information about tokens beyond the immediate next one, the same
+    intuition behind training a probe on those states.
+  anchor: the opening sections describing applying the final unembedding matrix directly
+    to intermediate-layer hidden states, plus the example tables
+- url: https://aclanthology.org/2022.cl-1.7/
+  title: 'Probing Classifiers: Promises, Shortcomings, and Advances (Belinkov, 2022)'
+  type: derivation
+  why: Gives the formal general definition of the probing-classifier paradigm (frozen
+    encoder + auxiliary classifier trained on its representations) that this problem
+    formulation instantiates.
+  anchor: §2, 'Probing Classifiers' — the formal setup of encoder, representation,
+    and probe
+unresolved:
+- The exact layer(s) and token positions used as probe input (e.g., only prompt x,
+  or also partial y) are specific to the source paper and not fixed by the general
+  formulation.
+- The precise target property predicted by the probe (topic, entity, sentiment, factual
+  correctness, etc.) is paper-specific.
+sources_consulted:
+  S1: Jay Alammar, 'The Illustrated GPT-2', https://jalammar.github.io/illustrated-gpt2/
+  S2: 'nostalgebraist, ''interpreting GPT: the logit lens'', LessWrong, https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens'
+  S3: 'Belinkov, Y. (2022). ''Probing Classifiers: Promises, Shortcomings, and Advances.''
+    Computational Linguistics 48(1). https://aclanthology.org/2022.cl-1.7/'

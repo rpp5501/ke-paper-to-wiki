@@ -1,50 +1,49 @@
 concept: iterative-magnitude-pruning
 status: complete
-synthesis: 'Iterative magnitude pruning (IMP) trains a network to convergence, prunes
-  a fraction (often 20%) of the lowest-magnitude weights, and resets survivors to
-  their original initialization before retraining, repeating this cycle instead of
-  pruning to the target sparsity in one shot [S1]. Frankle & Carbin showed iterative
-  removal finds smaller winning tickets that still match dense-network accuracy than
-  one-shot pruning at the same final sparsity, because each round retrains around
-  the sparse structure the previous round already found rather than trusting a single
-  noisy magnitude estimate [S1]. At larger scale (ResNet-50/ImageNet, BERT), naive
-  rewinding to initialization becomes unstable under SGD noise, so IMP is often paired
-  with rewinding to a small number of steps into training rather than to iteration
-  0, which restores stability without discarding IMP''s discovered layer-wise sparsity
-  [S2]. Round count and per-round rate trade off directly: aggressive one-shot or
-  high-rate pruning is cheap but destroys tickets, while smaller per-round rates (~20%)
-  cost more rounds of full retraining but yield tickets that stay trainable to full
-  accuracy at higher final sparsity [S3].'
+synthesis: 'Iterative magnitude pruning (IMP) trains a network, prunes a fraction
+  (commonly ~20%) of the lowest-magnitude weights, then rewinds surviving weights
+  to their original initialization before retraining, repeating this cycle across
+  many rounds rather than pruning to the target sparsity in one shot [S1]. Frankle
+  and Carbin show that this iterative schedule finds smaller, better-performing winning
+  tickets than one-shot pruning because each round re-trains the network to re-rank
+  weight importance after the previous cut, avoiding the collateral damage of removing
+  too much at once [S1]. The per-round rate trades off cost against ticket quality:
+  a smaller rate per round (e.g., 20% rather than 50%) requires more retraining cycles
+  but yields sparser, more trainable tickets, while aggressive one-shot rates degrade
+  accuracy at high sparsity [S1][S3]. Empirically only a handful of iterations (often
+  under 20) are needed to reach the sparsest reliably-trainable tickets before performance
+  collapses [S1]. Follow-up work visualizes how pruning masks stabilize signs and
+  structure across rounds [S2].'
 resources:
-- url: https://paperswithcode.com/method/lottery-ticket-hypothesis
-  title: Lottery Ticket Hypothesis - Papers with Code
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: derivation
+  why: Original paper defining the iterative prune-train-rewind loop and comparing
+    it to one-shot pruning
+  anchor: §2 'Identifying Winning Tickets' (Algorithm description) and Figure 2, iterative
+    vs. one-shot pruning curves
+- url: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
   type: visual
-  why: Diagrams and a plain-language summary of the train-prune-rewind loop, with
-    links to implementations.
+  why: Uses animated figures to show how weight masks evolve across successive magnitude-pruning
+    rounds
+  anchor: the section with the animated figure showing mask evolution across pruning
+    rounds
 - url: https://github.com/facebookresearch/open_lth
-  title: 'OpenLTH: A Framework for Lottery Ticket Hypothesis Research'
+  title: 'OpenLTH: A Framework for Lottery Ticket Style Experiments'
   type: reference-impl
-  why: Official Frankle-lab codebase implementing the exact train/prune/rewind loop,
-    runnable to reproduce IMP results.
-- url: https://arxiv.org/abs/2003.02389
-  title: Comparing Rewinding and Fine-tuning in Neural Network Pruning
-  type: follow-up-paper
-  why: Directly studies per-round pruning rate and rewinding-vs-fine-tuning tradeoffs
-    raised in the sub-questions.
-- url: https://arxiv.org/abs/1912.05671
-  title: Linear Mode Connectivity and the Lottery Ticket Hypothesis
-  type: follow-up-paper
-  why: Explains why naive rewind-to-init IMP becomes unstable at scale and motivates
-    rewinding to an early checkpoint instead.
+  why: Frankle's own codebase implementing the iterative prune-retrain-rewind cycle
+    end to end
+  anchor: the lottery/ directory and cli/runner_registry.py implementing the prune-train-rewind
+    loop
 unresolved:
-- Optimal per-round pruning rate and round count are tuned empirically per architecture/dataset
-  rather than derived analytically.
-- Whether IMP needs rewinding to an early checkpoint (vs. true initialization) depends
-  on model/dataset scale, and the threshold isn't sharply characterized.
+- Whether rewinding to iteration 0 vs. a slightly later checkpoint changes ticket
+  quality at larger scale
+- How the optimal per-round pruning rate shifts for very large (LLM-scale) models
 sources_consulted:
-  S1: 'Frankle, J. & Carbin, M. ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
-    Neural Networks.'' ICLR 2019. https://arxiv.org/abs/1803.03635'
-  S2: Frankle, J., Dziugaite, G.K., Roy, D., Carbin, M. 'Linear Mode Connectivity
-    and the Lottery Ticket Hypothesis.' ICML 2020. https://arxiv.org/abs/1912.05671
-  S3: Renda, A., Frankle, J., Carbin, M. 'Comparing Rewinding and Fine-tuning in Neural
-    Network Pruning.' ICLR 2020. https://arxiv.org/abs/2003.02389
+  S1: 'Frankle, J. & Carbin, M. (2018). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: 'Uber Engineering Blog, Deconstructing Lottery Tickets: Zeros, Signs, and the
+    Supermask (summarizing Zhou et al. 2019)'
+  S3: Insights into the Lottery Ticket Hypothesis and Iterative Magnitude Pruning
+    (2024). arXiv:2403.15022

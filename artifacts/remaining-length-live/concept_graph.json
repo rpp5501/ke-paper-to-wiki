@@ -1,0 +1,434 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2607.05316",
+  "generated": "2026-08-15",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "remaining-length-encoding",
+   "kind": "concept",
+   "label": "LLMs Linearly Encode Remaining Output Length",
+   "level": 0,
+   "source_ref": "sec_7",
+   "page": "10_remaining-length-encoding.md"
+  },
+  {
+   "id": "related-work",
+   "kind": "concept",
+   "label": "Related Work",
+   "level": 1,
+   "source_ref": "sec_2",
+   "page": "09_related-work.md"
+  },
+  {
+   "id": "problem-formulation",
+   "kind": "concept",
+   "label": "Problem Formulation",
+   "level": 1,
+   "source_ref": "sec_3_1",
+   "page": "06_problem-formulation.md"
+  },
+  {
+   "id": "hidden-state-extraction",
+   "kind": "concept",
+   "label": "Hidden State Extraction",
+   "level": 1,
+   "source_ref": "sec_3_2",
+   "page": "07_hidden-state-extraction.md"
+  },
+  {
+   "id": "probe-family",
+   "kind": "concept",
+   "label": "Probe Family",
+   "level": 1,
+   "source_ref": "sec_3_3",
+   "page": "08_probe-family.md"
+  },
+  {
+   "id": "statistical-baselines",
+   "kind": "concept",
+   "label": "Statistical Baselines",
+   "level": 1,
+   "source_ref": "sec_3_4",
+   "page": "11_statistical-baselines.md"
+  },
+  {
+   "id": "loss-optimization",
+   "kind": "concept",
+   "label": "Loss and Optimization",
+   "level": 1,
+   "source_ref": "sec_3_5",
+   "page": "04_loss-optimization.md"
+  },
+  {
+   "id": "evaluation-methodology",
+   "kind": "concept",
+   "label": "Evaluation Methodology",
+   "level": 1,
+   "source_ref": "sec_3_6",
+   "page": "02_evaluation-methodology.md"
+  },
+  {
+   "id": "models-datasets",
+   "kind": "concept",
+   "label": "Models and Datasets",
+   "level": 1,
+   "source_ref": "sec_3_7",
+   "page": "05_models-datasets.md"
+  },
+  {
+   "id": "results",
+   "kind": "concept",
+   "label": "Results",
+   "level": 1,
+   "source_ref": "sec_4"
+  },
+  {
+   "id": "cross-dataset-generalization",
+   "kind": "concept",
+   "label": "Cross-Dataset Generalization",
+   "level": 1,
+   "source_ref": "sec_5",
+   "page": "19_cross-dataset-generalization.md"
+  },
+  {
+   "id": "limitations",
+   "kind": "concept",
+   "label": "Limitations",
+   "level": 1,
+   "source_ref": "sec_6",
+   "page": "03_limitations.md"
+  },
+  {
+   "id": "conclusion",
+   "kind": "concept",
+   "label": "Conclusion",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "01_conclusion.md"
+  },
+  {
+   "id": "remaining-count-probe",
+   "kind": "concept",
+   "label": "Remaining Count Probe",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "18_remaining-count-probe.md"
+  },
+  {
+   "id": "completion-length-probe",
+   "kind": "concept",
+   "label": "Completion Length Probe",
+   "level": 2,
+   "source_ref": "sec_4_1",
+   "page": "13_completion-length-probe.md"
+  },
+  {
+   "id": "classification-probe-family",
+   "kind": "concept",
+   "label": "Classification Probe Family",
+   "level": 2,
+   "source_ref": "sec_8_8",
+   "page": "12_classification-probe-family.md"
+  },
+  {
+   "id": "dynamic-reestimation",
+   "kind": "concept",
+   "label": "Dynamic Re-Estimation and Spiking",
+   "level": 2,
+   "source_ref": "sec_4_3",
+   "page": "14_dynamic-reestimation.md"
+  },
+  {
+   "id": "per-layer-probe-sweep",
+   "kind": "figure",
+   "label": "Per-Layer Probe Sweep",
+   "level": 2,
+   "source_ref": "sec_8_1",
+   "page": "17_per-layer-probe-sweep.md"
+  },
+  {
+   "id": "mae-relative-baseline",
+   "kind": "concept",
+   "label": "MAE Relative to Baseline Floor",
+   "level": 2,
+   "source_ref": "sec_8_2",
+   "page": "15_mae-relative-baseline.md"
+  },
+  {
+   "id": "mae-by-completion-length",
+   "kind": "figure",
+   "label": "MAE by Completion Length",
+   "level": 2,
+   "source_ref": "sec_8_3",
+   "page": "16_mae-by-completion-length.md"
+  },
+  {
+   "id": "prompt-templates",
+   "kind": "concept",
+   "label": "Prompt Templates",
+   "level": 3,
+   "source_ref": "sec_8_5",
+   "page": "23_prompt-templates.md"
+  },
+  {
+   "id": "training-hyperparameters",
+   "kind": "concept",
+   "label": "Training Hyperparameters and Dataset Sizes",
+   "level": 3,
+   "source_ref": "sec_8_4",
+   "page": "25_training-hyperparameters.md"
+  },
+  {
+   "id": "cross-dataset-mistral",
+   "kind": "concept",
+   "label": "Cross-Dataset Generalization on Mistral-7B",
+   "level": 3,
+   "source_ref": "sec_8_6",
+   "page": "21_cross-dataset-mistral.md"
+  },
+  {
+   "id": "cross-dataset-olmo",
+   "kind": "concept",
+   "label": "Cross-Dataset Generalization on Olmo-3-7B",
+   "level": 3,
+   "source_ref": "sec_8_7"
+  },
+  {
+   "id": "retraction-examples",
+   "kind": "figure",
+   "label": "Retraction and Count-Spiking Examples",
+   "level": 3,
+   "source_ref": "sec_8_9",
+   "page": "24_retraction-examples.md"
+  }
+ ],
+ "edges": [
+  {
+   "src": "related-work",
+   "dst": "remaining-length-encoding",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "problem-formulation",
+   "dst": "remaining-length-encoding",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "hidden-state-extraction",
+   "dst": "problem-formulation",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "probe-family",
+   "dst": "hidden-state-extraction",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "statistical-baselines",
+   "dst": "probe-family",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "loss-optimization",
+   "dst": "probe-family",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "evaluation-methodology",
+   "dst": "probe-family",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "models-datasets",
+   "dst": "evaluation-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "remaining-count-probe",
+   "dst": "probe-family",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "completion-length-probe",
+   "dst": "probe-family",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "classification-probe-family",
+   "dst": "probe-family",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "results",
+   "dst": "remaining-length-encoding",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "remaining-count-probe",
+   "dst": "results",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "completion-length-probe",
+   "dst": "results",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "dynamic-reestimation",
+   "dst": "results",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "per-layer-probe-sweep",
+   "dst": "results",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mae-relative-baseline",
+   "dst": "results",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mae-by-completion-length",
+   "dst": "results",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cross-dataset-generalization",
+   "dst": "remaining-length-encoding",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cross-dataset-generalization",
+   "dst": "remaining-count-probe",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cross-dataset-mistral",
+   "dst": "cross-dataset-generalization",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "cross-dataset-olmo",
+   "dst": "cross-dataset-generalization",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "limitations",
+   "dst": "remaining-length-encoding",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "conclusion",
+   "dst": "remaining-length-encoding",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "prompt-templates",
+   "dst": "models-datasets",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "training-hyperparameters",
+   "dst": "evaluation-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "retraction-examples",
+   "dst": "dynamic-reestimation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "statistical-baselines",
+   "dst": "results",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

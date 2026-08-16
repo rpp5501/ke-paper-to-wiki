@@ -1,0 +1,57 @@
+concept: evaluation-methodology
+status: complete
+synthesis: 'Per-token MAE is chosen as the headline metric because it is the natural
+  loss counterpart to the median: minimizing average absolute error corresponds to
+  predicting the conditional median of the per-token error distribution, exactly as
+  minimizing squared error corresponds to predicting the mean [S1]. This makes MAE
+  more robust to outlier tokens and skewed error tails than squared-error metrics,
+  since large deviations are not amplified quadratically [S1]. In deep vector-to-vector
+  regression settings structurally similar to per-token prediction, MAE-based objectives
+  have been shown to admit tighter analyzable error bounds than MSE-based ones, supporting
+  its use as a primary evaluation criterion rather than just a training loss [S2].
+  Secondary metrics that complement raw MAE include scale-free, percentage-based error
+  measures, which let per-token error be compared across tokens or sequences of different
+  magnitude [S3], and reporting the error distribution (median, quantiles) rather
+  than a single scalar, since MAE''s optimality guarantee is itself tied to the L1/median
+  assumption [S1].'
+resources:
+- url: https://doi.org/10.5194/gmdd-7-1525-2014
+  title: RMSE or MAE? Use their natural counterparts
+  type: derivation
+  why: Directly argues why MAE, not RMSE, is the 'natural', unambiguous measure of
+    average error magnitude — the core justification for choosing it as the headline
+    metric.
+  anchor: the sections deriving that MAE is the natural counterpart of the median
+    error while RMSE corresponds to the mean/L2 case
+- url: https://arxiv.org/abs/2008.07281v1
+  title: On Mean Absolute Error for Deep Neural Network Based Vector-to-Vector Regression
+  type: follow-up-paper
+  why: Analyzes MAE (not MSE) as the training/eval objective for vector-valued neural
+    regression — the same structural setup as per-token error.
+  anchor: §2, the L1-loss formulation, and the theorems bounding MAE for regression
+    outputs
+- url: https://www.khanacademy.org/math/statistics-probability/summarizing-quantitative-data/mean-absolute-deviation/v/mean-absolute-deviation
+  title: Mean absolute deviation (Khan Academy)
+  type: visual
+  why: 'Builds the core intuition behind the brief in a few minutes: visually shows
+    why the median, not the mean, minimizes the sum of absolute deviations.'
+  anchor: the whole ~4 minute video is short enough to watch end to end; focus on
+    the number-line demonstration of why the median minimizes total absolute deviation
+- url: https://arxiv.org/abs/1506.04176v1
+  title: Using the Mean Absolute Percentage Error for Regression Models
+  type: follow-up-paper
+  why: Motivates a scale-free percentage-error metric as a natural complement to raw
+    MAE, answering the secondary-metrics sub-question.
+  anchor: §1-2, where the paper motivates percentage-based error as complementary
+    to absolute-error metrics
+unresolved:
+- Whether this specific paper's per-token MAE is computed on raw token-index units
+  or normalized/scaled error is not settled by the general sources above.
+- Whether the paper reports quantile or percentile breakdowns of per-token error alongside
+  the scalar MAE, versus relying on MAE alone.
+sources_consulted:
+  S1: Willmott, C.J. & Matsuura, K. (2014). Root mean square error (RMSE) or mean
+    absolute error (MAE)? https://doi.org/10.5194/gmdd-7-1525-2014
+  S2: On Mean Absolute Error for Deep Neural Network Based Vector-to-Vector Regression
+    (2020). https://arxiv.org/abs/2008.07281v1
+  S3: Using the Mean Absolute Percentage Error for Regression Models (2015). https://arxiv.org/abs/1506.04176v1

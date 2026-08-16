@@ -1,0 +1,60 @@
+concept: weight-space-learning-symmetry
+status: complete
+synthesis: 'Neural network weights admit a permutation symmetry group: for MLPs and
+  CNNs, permuting the neurons within a hidden layer (and correspondingly permuting
+  the incoming and outgoing weight rows/columns) yields a functionally identical network
+  [S1]. This means the loss landscape contains many symmetric copies of every minimum,
+  and naive weight-space distance or interpolation between two independently trained
+  networks is dominated by this redundancy rather than by meaningful differences [S1][S2].
+  Git Re-Basin shows that finding the right permutation to align two networks before
+  interpolating collapses this redundancy and enables merging independently trained
+  models with near-zero loss barrier [S1]. When weights themselves become training
+  data — for tasks like predicting network accuracy, encoding architectures, or generating
+  new weights — architectures must be built equivariant to this permutation group
+  rather than treating the flattened weight vector as an unstructured feature vector
+  [S3][S4]. Neural Functional Networks and Deep Weight Space Networks accomplish this
+  with linear layers acting on weight tensors that commute with the neuron permutation
+  group, so representations don''t waste capacity distinguishing functionally-identical
+  parameter settings [S3][S4]. This equivariance-first design is now the standard
+  framing for weight-space generative modeling and metanetworks.'
+resources:
+- url: https://www.youtube.com/watch?v=xtaom__-drE
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries (Paper Explained)'
+  type: lecture
+  why: Walks through why permutation symmetry makes independently trained nets' weight
+    spaces non-comparable, with landscape visuals
+  anchor: the segment explaining permutation invariance of hidden units and the loss-barrier
+    plots (roughly the first half, before the algorithm details)
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: derivation
+  why: Formalizes the neuron permutation symmetry group and shows how aligning it
+    removes weight-space redundancy
+  anchor: §2 (the symmetry/permutation formalism) and Figure 1
+- url: https://github.com/samuela/git-re-basin
+  title: samuela/git-re-basin
+  type: reference-impl
+  why: README shows the loss-landscape figures directly and the permutation-finding
+    code, making the symmetry concrete
+  anchor: README.md figures + weight_matching.py
+- url: https://arxiv.org/abs/2301.12780
+  title: Equivariant Architectures for Learning in Deep Weight Spaces
+  type: follow-up-paper
+  why: Directly addresses how to design layers for weights-as-data that respect permutation
+    symmetry, the brief's core sub-question
+  anchor: §3, the characterization of permutation-equivariant linear layers for weight
+    spaces
+unresolved:
+- How do symmetry-aware weight-space architectures extend to transformers, where attention
+  heads and layer-norm introduce symmetries beyond simple neuron permutation?
+- How much does ignoring permutation symmetry actually hurt in practice for weight-space
+  generative models (e.g., diffusion over weights) versus purely discriminative metanetwork
+  tasks?
+sources_consulted:
+  S1: 'Ainsworth, Hayase, Srinivasa, ''Git Re-Basin: Merging Models modulo Permutation
+    Symmetries'', arXiv:2209.04836'
+  S2: 'Yannic Kilcher, ''Git Re-Basin: Merging Models modulo Permutation Symmetries
+    (Paper Explained)'', YouTube, https://www.youtube.com/watch?v=xtaom__-drE'
+  S3: Navon et al., 'Equivariant Architectures for Learning in Deep Weight Spaces',
+    arXiv:2301.12780
+  S4: Zhou et al., 'Permutation Equivariant Neural Functionals', arXiv:2305.13546

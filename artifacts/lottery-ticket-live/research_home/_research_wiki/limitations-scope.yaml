@@ -1,43 +1,44 @@
 concept: limitations-scope
-status: complete
-synthesis: Frankle & Carbin's original Lottery Ticket Hypothesis study limited its
-  experiments to vision classification on MNIST (LeNet) and CIFAR-10 (VGG/ResNet-style
-  networks), leaving open whether winning tickets exist for larger-scale datasets
-  or non-vision tasks [S4]. Frankle, Dziugaite, Roy, and Carbin later showed that
-  the original iterative magnitude pruning and reinitialization procedure fails to
-  find winning tickets at scale, and instead proposed rewinding weights to an early
-  training iteration k rather than to their original initialization, which successfully
-  found sparse subnetworks in ResNet-50 and Inception-v3 on ImageNet [S1]. The official
-  OpenLTH codebase implements this rewinding methodology and extends it to these larger
-  architectures and datasets, giving a concrete reference for how the pruning pipeline
-  must change at scale [S2]. Courses such as MIT's TinyML and Efficient Deep Learning
-  Computing situate lottery tickets within the broader landscape of pruning techniques
-  used for large models in practice, including discussion of the compute cost of the
-  rewind-based search [S3]. Whether winning tickets exist for non-vision domains such
-  as language or reinforcement learning remains comparatively less settled.
+status: partial
+synthesis: 'The original lottery ticket hypothesis paper explicitly restricts its
+  claims to vision classification on MNIST (a fully-connected LeNet) and CIFAR10 (VGG/ResNet-style
+  CNNs), and does not test larger datasets, larger models, or non-vision tasks [S1].
+  A direct follow-up shows that the simple ''rewind to iteration 0'' pruning procedure
+  fails to find winning tickets at ResNet-50/ImageNet scale, and only succeeds once
+  learning-rate warmup and other stabilizing changes are added [S2]. Later work found
+  that even those fixes break down for the largest models and instead proposed rewinding
+  weights to an early training iteration k, rather than to initialization, to keep
+  pruned networks in a stable, linearly-connected optimization basin [S3]. Together
+  these follow-ups partially answer the paper''s own open question: winning tickets
+  do exist beyond MNIST/CIFAR10, but the pruning-and-rewind recipe must be modified,
+  not just re-applied, as scale grows [S2][S3]. Non-vision domains such as NLP and
+  RL were not addressed by these specific follow-ups and remain a genuinely open extension
+  of the original scope limitation [S1].'
 resources:
 - url: https://arxiv.org/abs/1903.01611
-  title: Stabilizing the Lottery Ticket Hypothesis
+  title: The Lottery Ticket Hypothesis at Scale
   type: follow-up-paper
-  why: Shows how magnitude pruning plus rewinding (instead of reinit) is needed to
-    find winning tickets in larger models like ResNet-50 on ImageNet.
-- url: https://github.com/facebookresearch/open_lth
-  title: 'OpenLTH: A Framework for Lottery Ticket Style Experiments'
-  type: reference-impl
-  why: Official reference implementation showing the pruning/rewinding pipeline extended
-    to ImageNet-scale architectures.
-- url: https://efficientml.ai
-  title: 'MIT 6.5940: TinyML and Efficient Deep Learning Computing'
-  type: lecture
-  why: Course lecture material situates lottery-ticket-style pruning within the broader
-    set of techniques used to scale pruning to large models.
+  why: Directly tests whether winning tickets exist at ImageNet/ResNet-50 scale, the
+    exact open question this brief raises.
+  anchor: §4-5, the ResNet-50/ImageNet experiments and the learning-rate warmup fix
+    needed to stabilize pruning at scale
+- url: https://arxiv.org/abs/1912.05671
+  title: Linear Mode Connectivity and the Lottery Ticket Hypothesis
+  type: follow-up-paper
+  why: Explains why the original rewind-to-iteration-0 procedure breaks down at scale
+    and introduces 'late rewinding' as the methodological fix for larger models.
+  anchor: §3, the definition of rewinding to iteration k and the Figure 1 stability
+    plots
 unresolved:
-- Do winning tickets transfer to non-vision domains like NLP or RL at comparable scale?
-- How does the rewind-iteration k need to be tuned as model or dataset size grows?
+- Do winning tickets exist for non-vision tasks (NLP, RL)? Not addressed by the scale-focused
+  follow-ups cited here.
+- A learner-facing video or blog walkthrough of the at-scale follow-up work likely
+  exists (e.g. a talk by Jonathan Frankle) but no specific URL could be verified with
+  confidence, so none is included.
 sources_consulted:
-  S1: Frankle, Dziugaite, Roy, Carbin, 'Stabilizing the Lottery Ticket Hypothesis',
-    arXiv:1903.01611
-  S2: https://github.com/facebookresearch/open_lth
-  S3: https://efficientml.ai (MIT 6.5940 TinyML and Efficient Deep Learning Computing)
-  S4: 'Frankle & Carbin, ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
-    Neural Networks'', arXiv:1803.03635'
+  S1: 'Frankle & Carbin, ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
+    Neural Networks'', ICLR 2019, arXiv:1803.03635'
+  S2: Frankle, Dziugaite, Roy & Carbin, 'The Lottery Ticket Hypothesis at Scale',
+    arXiv:1903.01611 (2019)
+  S3: Frankle, Dziugaite, Roy & Carbin, 'Linear Mode Connectivity and the Lottery
+    Ticket Hypothesis', arXiv:1912.05671 (2020), ICML

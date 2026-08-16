@@ -1,0 +1,14 @@
+# research wiki index
+- remaining-length-encoding — remaining-length-encoding — 2026-08-15
+- related-work — related-work — 2026-08-15
+- problem-formulation — problem-formulation — 2026-08-15
+- hidden-state-extraction — hidden-state-extraction — 2026-08-15
+- probe-family — probe-family — 2026-08-15
+- statistical-baselines — statistical-baselines — 2026-08-15
+- evaluation-methodology — evaluation-methodology — 2026-08-15
+- models-datasets — models-datasets — 2026-08-15
+- results — results — 2026-08-15
+- cross-dataset-generalization — cross-dataset-generalization — 2026-08-15
+- conclusion — conclusion — 2026-08-15
+- loss-optimization — loss-optimization — 2026-08-16
+- limitations — limitations — 2026-08-16

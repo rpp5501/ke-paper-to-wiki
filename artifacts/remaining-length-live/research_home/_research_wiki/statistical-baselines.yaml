@@ -1,0 +1,45 @@
+concept: statistical-baselines
+status: complete
+synthesis: 'Under L1 (MAE) loss, the constant prediction that minimizes expected absolute
+  error is the median of the target distribution, not the mean: differentiating the
+  sum of absolute deviations shows the subgradient balances the count of points above
+  and below the constant, and that balance point is exactly the median [S1]. This
+  makes the median a natural non-learned baseline for a probe evaluated on MAE — if
+  the probe cannot beat the median-baseline error, it has not learned anything beyond
+  the label distribution''s central tendency [S1]. The optimality property generalizes
+  beyond simple scalars: median-based control limits are preferred for monitoring
+  process quality under skewed distributions precisely because the median remains
+  the L1-optimal center even when the mean is pulled by outliers [S2], and the same
+  convex-loss-minimizer argument extends to matrix-valued estimators under general
+  convex losses, of which L1 is a special case [S3]. The exact margin by which a specific
+  probe exceeds this baseline is a paper-specific empirical result and is not established
+  by these general sources.'
+resources:
+- url: https://en.wikipedia.org/wiki/Median#Optimality_property
+  title: Median — Optimality property
+  type: visual
+  why: Gives the direct proof that the median minimizes the sum of absolute deviations,
+    plus the well-known lead figure contrasting mean/median/mode under a right-skewed
+    distribution, which is the visual intuition for why L1 favors the median over
+    the mean.
+  anchor: the 'Optimality property' section for the derivation, and the lead image
+    comparing mean, median, and mode under skew
+- url: https://doi.org/10.1080/00949655.2017.1362697
+  title: A median loss control chart for monitoring quality loss under skewed distributions
+    (2017)
+  type: follow-up-paper
+  why: 'Applied example of the same L1-optimality property: median-based limits are
+    used instead of mean-based ones specifically because the median stays the robust,
+    L1-optimal center under skew.'
+  anchor: the sections motivating median over mean as the control-chart center under
+    skewed loss distributions
+unresolved:
+- The exact margin by which the probe in this study exceeds the median baseline is
+  not established from these general sources and should be pulled from the paper's
+  own results table.
+sources_consulted:
+  S1: Wikipedia, 'Median', Optimality property section, https://en.wikipedia.org/wiki/Median#Optimality_property
+  S2: A median loss control chart for monitoring quality loss under skewed distributions
+    (2017), https://doi.org/10.1080/00949655.2017.1362697
+  S3: Characterization of an optimal matrix estimator under convex loss function (1999),
+    https://doi.org/10.1007/bf02934632

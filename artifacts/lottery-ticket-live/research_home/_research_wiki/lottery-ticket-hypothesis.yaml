@@ -1,0 +1,59 @@
+concept: lottery-ticket-hypothesis
+status: complete
+synthesis: 'Frankle & Carbin''s Lottery Ticket Hypothesis (ICLR 2019) showed that
+  iterative magnitude pruning (IMP) can find a sparse subnetwork within a randomly-initialized
+  dense network that, when trained in isolation from its original initialization,
+  matches or exceeds the dense network''s test accuracy within the same number of
+  training iterations [S1]. The PapersWithCode method page diagrams the train-prune-rewind
+  loop that produces these winning tickets [S2]. Follow-up work extended the phenomenon
+  beyond small vision models: winning tickets transfer across GLUE tasks in pretrained
+  BERT [S3], transfer to new downstream tasks while roughly matching full fine-tuning
+  accuracy [S4], and can be identified early in training via ''early-bird'' tickets,
+  cutting the cost of finding them [S5]. Resetting a found subnetwork to a different
+  random initialization destroys its trainability, underscoring that the original
+  initialization -- not just the sparse topology -- is what makes a ticket ''winning''
+  [S1]. Smaller winning tickets tend to learn faster but degrade sharply once pruned
+  past a critical sparsity, while larger tickets sit closer to the dense baseline
+  [S1]. Collectively this suggests dense over-parameterized training may partly be
+  a mechanism for reliably discovering good sparse subnetworks, motivating sparse-from-the-start
+  and pruning-at-initialization research [S1][S5].'
+resources:
+- url: https://paperswithcode.com/method/lottery-ticket-hypothesis
+  title: Lottery Ticket Hypothesis (Method)
+  type: visual
+  why: Diagrams the iterative magnitude pruning / rewind loop that produces a winning
+    ticket, and links onward to papers applying it
+  anchor: the top diagram and short 'Method' description of iterative magnitude pruning
+    (IMP)
+- url: https://doi.org/10.48550/arxiv.2007.12223
+  title: The Lottery Ticket Hypothesis for Pre-trained BERT Networks
+  type: follow-up-paper
+  why: Shows winning tickets exist in large pretrained transformers and transfer across
+    downstream tasks, not just small vision nets
+  anchor: §4 and Figure 2, subnetwork transfer across GLUE tasks
+- url: https://doi.org/10.48550/arxiv.1905.07785
+  title: Sparse Transfer Learning via Winning Lottery Tickets
+  type: follow-up-paper
+  why: Tests whether winning tickets found on one task/dataset remain trainable on
+    another, probing what the subnetwork actually captures
+  anchor: §3, the table comparing winning-ticket transfer accuracy to full fine-tuning
+- url: https://doi.org/10.48550/arxiv.1909.11957
+  title: 'Drawing Early-Bird Tickets: Towards More Efficient Training of Deep Networks'
+  type: follow-up-paper
+  why: Shows winning tickets can be identified early in training rather than after
+    full training, directly addressing the training-efficiency implication
+  anchor: §3.2, the early-bird ticket detection method and mask-distance criterion
+unresolved:
+- Whether winning tickets reliably exist at the scale of large modern LLMs (beyond
+  BERT-base) is still an open, actively debated question.
+- The precise theoretical reason the original initialization (rather than just the
+  mask/topology or the initialization's sign) enables trainability is not fully settled.
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. ICLR 2019. https://arxiv.org/abs/1803.03635'
+  S2: 'PapersWithCode method page: Lottery Ticket Hypothesis. https://paperswithcode.com/method/lottery-ticket-hypothesis'
+  S3: Chen et al. (2020). The Lottery Ticket Hypothesis for Pre-trained BERT Networks.
+    https://doi.org/10.48550/arxiv.2007.12223
+  S4: Chen et al. (2019). Sparse Transfer Learning via Winning Lottery Tickets. https://doi.org/10.48550/arxiv.1905.07785
+  S5: 'You et al. (2019). Drawing Early-Bird Tickets: Towards More Efficient Training
+    of Deep Networks. https://doi.org/10.48550/arxiv.1909.11957'

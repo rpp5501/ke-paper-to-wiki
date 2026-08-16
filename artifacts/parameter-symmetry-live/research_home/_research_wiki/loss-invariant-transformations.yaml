@@ -1,0 +1,51 @@
+concept: loss-invariant-transformations
+status: complete
+synthesis: 'Loss-invariant transformations are maps T on a network''s parameters such
+  that the loss L(f_T(theta)(x), y) equals L(f_theta(x), y) for every (x,y) drawn
+  from the data distribution, rather than requiring the transformed function to equal
+  the original function pointwise [S1]. Because these maps are invertible and composable,
+  and the identity map trivially preserves loss, they satisfy the group axioms - closure
+  under composition, an identity element, and inverses - giving parameter space symmetry
+  its basic group structure [S1]. Decomposing data into inputs and labels matters
+  because a transformation can act jointly on the parameters and on how outputs are
+  read against labels, for instance permuting hidden-unit or output-channel indices
+  together with a corresponding relabeling of outputs, so invariance is checked against
+  the paired distribution over inputs and labels, not against inputs alone [S1][S2].
+  This is strictly weaker than functional invariance: permutation symmetries of hidden
+  layers change the network''s output at interior units while leaving the composed
+  input-to-loss map unchanged for every training pair, so loss-invariance only demands
+  agreement of the scalar loss, not of the underlying function [S2]. Positive rescaling
+  of ReLU-adjacent weight pairs is a further example that preserves loss without being
+  the identity transformation [S1].'
+resources:
+- url: https://arxiv.org/abs/2205.14258
+  title: On the Symmetries of Deep Learning Models and their Internal Representations
+  type: derivation
+  why: Gives the formal definition of loss-invariant parameter transformations and
+    proves they form a group, distinguishing loss-invariance from stricter functional
+    invariance.
+  anchor: Section 2, the definitions of loss-invariance and functional invariance
+    and the proof that each candidate symmetry set satisfies the group axioms
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: visual
+  why: Figure 1 diagrams two permutation-related parameter settings that are loss-invariant,
+    and Section 2 sets up invariance over paired input/label data.
+  anchor: Figure 1 and Section 2's formal setup of permutation symmetry as a loss-preserving
+    group action
+- url: https://github.com/samuela/git-re-basin
+  title: git-re-basin (reference implementation)
+  type: reference-impl
+  why: Concrete code showing how a loss-invariant re-parameterization is searched
+    for and applied to real network weights.
+  anchor: weight_matching.py, the weight_matching function that finds a permutation
+    preserving the loss
+unresolved:
+- Whether loss-invariant transformations beyond permutations and positive rescalings
+  have been given a complete group-theoretic classification for general architectures
+  is not settled in these sources.
+sources_consulted:
+  S1: Godfrey, C. et al. 'On the Symmetries of Deep Learning Models and their Internal
+    Representations.' NeurIPS 2022. https://arxiv.org/abs/2205.14258
+  S2: 'Ainsworth, S.K., Hayase, J., Srinivasa, S. ''Git Re-Basin: Merging Models modulo
+    Permutation Symmetries.'' arXiv:2209.04836. https://arxiv.org/abs/2209.04836'

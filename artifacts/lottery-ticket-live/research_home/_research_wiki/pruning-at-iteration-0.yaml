@@ -1,54 +1,56 @@
 concept: pruning-at-iteration-0
 status: complete
-synthesis: The Lottery Ticket Hypothesis showed that iteratively magnitude-pruning
-  a trained network and resetting surviving weights to their original initial values
-  yields a sparse 'winning ticket' that trains as well as the full network [S1]. Frankle
-  & Carbin observed that the weights iterative pruning ultimately keeps already tend
-  to have distinctively large magnitudes at initialization, before any training happens,
-  suggesting the ticket might be readable from iteration 0 rather than only discovered
-  after training [S1]. This motivated a wave of 'pruning at initialization' methods
-  (SNIP, GraSP, SynFlow) that select a mask using only initial weights or a single
-  gradient/flow signal [S2]. A systematic follow-up found that magnitude pruning applied
-  directly at iteration 0 performs far worse than iterative magnitude pruning after
-  training, and that these initialization-time methods are largely insensitive to
-  weight magnitude or sign, undercutting the 'characteristic value' story as a practical
-  shortcut [S3]. A separate sanity check showed randomly-selected sparse masks at
-  initialization can also train competitively, further questioning how much specific
-  iteration-0 weight values matter [S4].
+synthesis: The lottery ticket hypothesis paper showed winning tickets keep their original
+  initialization values, and that a weight's magnitude at initialization already correlates
+  with whether iterative magnitude pruning (IMP) keeps it, hinting the mask might
+  be found before training [S1]. Zhou et al. tested this directly by searching for
+  'Supermasks' — binary masks applied to the untrained, randomly initialized network
+  — and found masks that alone push accuracy well above chance without training a
+  single weight, i.e. real pruning-at-iteration-0 [S2]. A later, more careful benchmark
+  showed that init-only scoring methods such as SNIP, GraSP, and SynFlow consistently
+  underperform IMP-with-rewinding at high sparsity, so the iteration-0 signal captures
+  some but not all of what training-then-pruning discovers [S3]. This means initialization
+  statistics alone are informative but incomplete predictors of a winning ticket,
+  and later training still contributes signal that magnitude-at-init doesn't encode
+  [S1][S3]. Whether a richer initialization-only criterion could close that remaining
+  gap is still open [S2][S3].
 resources:
-- url: https://hanlab.mit.edu/courses/2023-fall-65940
-  title: MIT 6.5940 TinyML and Efficient Deep Learning Computing (Song Han) — Pruning
-    and Sparsity lectures
-  type: lecture
-  why: public course covering magnitude pruning, lottery tickets, and pruning-at-initialization
-    methods with lecture videos and slides
-- url: https://arxiv.org/abs/1803.03635
-  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
-  type: derivation
-  why: original paper documenting the winning-ticket initialization distributions
-    that motivate pruning at iteration 0
+- url: https://arxiv.org/abs/1905.01067
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: follow-up-paper
+  why: The direct test of whether a winning-ticket mask can be found and used at iteration
+    0 with no training at all.
+  anchor: §4 'Mask Criteria' and the Supermask results (Figure 4-5), where masked-but-untrained
+    networks already beat chance accuracy
 - url: https://arxiv.org/abs/2009.08576
   title: 'Pruning Neural Networks at Initialization: Why Are We Missing the Mark?'
   type: follow-up-paper
-  why: directly compares iteration-0 magnitude pruning against iterative pruning after
-    training, answering both sub-questions
-- url: https://github.com/facebookresearch/open_lth
-  title: 'OpenLTH: A Framework for Lottery Tickets and Beyond'
-  type: reference-impl
-  why: reference implementation for running iterative magnitude pruning and comparing
-    against pruning-at-init masks
+  why: Benchmarks SNIP/GraSP/SynFlow-style init-only pruning against post-training
+    magnitude pruning, directly answering how well iteration-0 selection performs.
+  anchor: §3, the accuracy-vs-sparsity comparison in Figure 1-2 between pruning-at-init
+    methods and IMP-with-rewinding
+- url: https://paperswithcode.com/method/lottery-ticket-hypothesis
+  title: Lottery Ticket Hypothesis — Papers with Code method page
+  type: visual
+  why: Quick visual of the iterative-magnitude-pruning-plus-rewind pipeline that pruning-at-iteration-0
+    tries to shortcut, useful before reading the full papers.
+  anchor: the diagram near the top of the page showing the train-prune-rewind loop
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: derivation
+  why: Source of the original observation that winning-ticket weights keep characteristic
+    initialization values, which motivates trying to select them at init.
+  anchor: §2 for the IMP procedure and §4's random-reinitialization ablation showing
+    initialization values matter
 unresolved:
-- Is the large-initial-magnitude signature of winning tickets a causal reason pruning
-  works, or a correlate of something else (e.g. layer-wise sparsity ratios) — this
-  is contested in [S3] and [S4]
-- No fully verified dedicated visual/animation (e.g. distill-style diagram) specific
-  to this iteration-0 interpretation was found, beyond the course slides cited
+- Whether a richer initialization-only scoring rule (beyond magnitude, sign, or first-order
+  gradient) could match IMP-derived winning tickets at high sparsity.
+- Whether the iteration-0 interpretation generalizes to larger-scale networks and
+  datasets beyond the small-to-mid-size CNNs tested in these papers.
 sources_consulted:
   S1: 'Frankle & Carbin, ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
-    Neural Networks'', arXiv:1803.03635'
-  S2: Wimmer, Mehnert & Condurache, 'Recent Advances on Neural Network Pruning at
-    Initialization', arXiv:2103.06460
+    Neural Networks'', ICLR 2019, arXiv:1803.03635'
+  S2: 'Zhou, Lan, Liu & Yosinski, ''Deconstructing Lottery Tickets: Zeros, Signs,
+    and the Supermask'', NeurIPS 2019, arXiv:1905.01067'
   S3: 'Frankle, Dziugaite, Roy & Carbin, ''Pruning Neural Networks at Initialization:
-    Why Are We Missing the Mark?'', arXiv:2009.08576'
-  S4: 'Su et al., ''Sanity-Checking Pruning Methods: Random Tickets can Win the Jackpot'',
-    arXiv:2009.11094'
+    Why Are We Missing the Mark?'', ICLR 2021, arXiv:2009.08576'

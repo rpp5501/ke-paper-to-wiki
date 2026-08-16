@@ -1,0 +1,66 @@
+concept: symmetry-representations-data
+status: complete
+synthesis: 'When a layer''s parameters are constrained to be invariant under a group
+  action (e.g. weight-sharing over a permutation or spatial-shift group), the resulting
+  map is provably equivariant, so the group acts on the internal feature maps exactly
+  as it acts on the input — parameter-space symmetry is transported directly into
+  representation-space symmetry [S1][S2]. This transport is only useful because the
+  data itself carries that symmetry: convolutional weight-sharing pays off because
+  natural images are (approximately) translation-symmetric, and more general G-convolutions
+  generalize this to whatever symmetry group structures the input domain [S2][S3].
+  Representation-learning work frames this as a definitional link — a representation
+  is ''disentangled'' with respect to a task precisely when it decomposes as a product
+  of subspaces on which the data''s generative symmetry group acts independently [S4].
+  The practical design principle, formalized as a ''geometric deep learning blueprint,''
+  is to first identify the symmetry group of the data domain and then constrain parameters/architecture
+  so the induced representation is equivariant (or invariant) to it, rather than hoping
+  a generic network discovers the symmetry from data alone [S3]. Libraries such as
+  e3nn operationalize this for 3D/molecular data by fixing hidden-layer irreducible
+  representations to match the physical O(3) symmetry of the input [S5].'
+resources:
+- url: https://arxiv.org/abs/1702.08389
+  title: Equivariance Through Parameter-Sharing (Ravanbakhsh, Schneider, Poczos, 2017)
+  type: derivation
+  why: gives the explicit theorem connecting a weight-tying pattern in parameter space
+    to the equivariance group of the resulting layer's representation
+  anchor: §3 'Equivariance and Parameter-Sharing', the theorem linking parameter symmetry
+    to the layer's equivariance group
+- url: https://arxiv.org/abs/1602.07576
+  title: Group Equivariant Convolutional Networks (Cohen & Welling, 2016)
+  type: derivation
+  why: the canonical construction showing how encoding a symmetry group into the convolution
+    operator produces feature maps that transform in step with transformations of
+    the input
+  anchor: §2-3, the definition of G-convolutions and the equivariance proof (their
+    Theorem 1)
+- url: https://geometricdeeplearning.com/
+  title: 'Geometric Deep Learning: Grids, Groups, Graphs, Geodesics, and Gauges'
+  type: visual
+  why: the site's 'blueprint' diagram is the clearest picture of how a data domain's
+    symmetry group is meant to propagate into the invariances/equivariances built
+    into a network's representations
+  anchor: homepage 'geometric deep learning blueprint' diagram; companion protobook
+    (arXiv:2104.13478) §2.1-2.2 on symmetry groups, representations and invariance/equivariance
+- url: https://docs.e3nn.org/en/latest/
+  title: 'e3nn: Euclidean neural networks'
+  type: reference-impl
+  why: a working library where the data's rotational/translational (O(3)) symmetry
+    directly fixes which irreducible representations are used as hidden features,
+    making the parameter-representation-data link concrete in code
+  anchor: the 'Irreps' guide, showing how the input data's O(3) symmetry determines
+    the irreducible representations used for hidden features
+unresolved:
+- How much of this equivariant/representation-symmetry structure emerges implicitly
+  in standard (non-equivariant) architectures trained on symmetric data, versus requiring
+  it to be architecturally imposed as in G-CNNs or e3nn?
+- Beyond disentanglement-style formalizations, is there a general account of how the
+  *degree* of data symmetry (not just its group structure) bounds how symmetric a
+  learned representation becomes?
+sources_consulted:
+  S1: Ravanbakhsh, Schneider & Poczos, 'Equivariance Through Parameter-Sharing', ICML
+    2017, arXiv:1702.08389
+  S2: Cohen & Welling, 'Group Equivariant Convolutional Networks', ICML 2016, arXiv:1602.07576
+  S3: 'Bronstein, Bruna, Cohen & Veličković, ''Geometric Deep Learning: Grids, Groups,
+    Graphs, Geodesics, and Gauges'', arXiv:2104.13478; geometricdeeplearning.com'
+  S4: Higgins et al., 'Towards a Definition of Disentangled Representations', arXiv:1812.02230
+  S5: e3nn library documentation, docs.e3nn.org / github.com/e3nn/e3nn

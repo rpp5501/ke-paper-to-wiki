@@ -1,0 +1,51 @@
+concept: distribution-symmetry
+status: complete
+synthesis: 'Distribution symmetry lifts the notion of symmetry from a fixed finite
+  sample to the population level: instead of requiring a transformation to preserve
+  behavior only on the observed data points, it requires the transformation to leave
+  the underlying joint distribution itself invariant (or equivariant), formalized
+  through group actions on random variables and their laws [S1]. This is the same
+  structure behind exchangeability and de Finetti-style representations, where a distribution
+  symmetric under permutations (or a broader group) admits a canonical invariant/equivariant
+  decomposition [S1]. Sample size enters because a finite dataset only approximates
+  the population distribution; as sample size grows, the empirical measure converges
+  to the true distribution (Glivenko-Cantelli-type convergence), so any symmetry observed
+  only in the empirical, data-dependent sense increasingly reflects genuine distribution
+  symmetry [S2]. This links to generalization theory because risk is defined as an
+  expectation over the true data distribution, not the sample: architectures constrained
+  to respect a known distribution symmetry (e.g., equivariant networks) shrink the
+  effective hypothesis space and can provably improve sample complexity and generalization
+  relative to unconstrained models [S1][S3].'
+resources:
+- url: https://arxiv.org/abs/1901.06082
+  title: Probabilistic Symmetries and Invariant Neural Networks (Bloem-Reddy & Teh)
+  type: derivation
+  why: Formalizes symmetry of a distribution under a group action and derives the
+    invariant/equivariant representation theorems that make 'distribution-level' symmetry
+    precise.
+  anchor: '§2-3: definitions of G-invariance/G-equivariance in distribution, and the
+    representation theorems (around Thm 4-5)'
+- url: https://en.wikipedia.org/wiki/Exchangeable_random_variables
+  title: Exchangeable random variables
+  type: visual
+  why: Exchangeability is the canonical example of a population-level (distribution)
+    symmetry, with de Finetti's theorem showing what structure that symmetry forces.
+  anchor: the 'De Finetti's theorem' section
+- url: https://arxiv.org/abs/1602.07576
+  title: Group Equivariant Convolutional Networks (Cohen & Welling)
+  type: follow-up-paper
+  why: Shows concretely how building a symmetry of the data distribution into a model
+    constrains the hypothesis space, motivating the generalization connection.
+  anchor: §2, the definition of equivariance and the motivating discussion of parameter
+    sharing under symmetry
+unresolved:
+- What non-asymptotic (finite-sample) bounds exist relating deviation from distribution
+  symmetry to deviation from the empirical, data-dependent symmetry?
+- Beyond exchangeability/permutation groups, how general is the representation-theorem
+  machinery for arbitrary compact or continuous symmetry groups?
+sources_consulted:
+  S1: Bloem-Reddy, B. & Teh, Y.W. Probabilistic Symmetries and Invariant Neural Networks.
+    arXiv:1901.06082 / JMLR 2020
+  S2: Glivenko-Cantelli theorem, https://en.wikipedia.org/wiki/Glivenko%E2%80%93Cantelli_theorem
+  S3: Cohen, T. & Welling, M. Group Equivariant Convolutional Networks. arXiv:1602.07576
+    / ICML 2016

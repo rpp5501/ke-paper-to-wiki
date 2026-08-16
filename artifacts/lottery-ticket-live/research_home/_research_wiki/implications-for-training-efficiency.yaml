@@ -1,51 +1,65 @@
 concept: implications-for-training-efficiency
 status: complete
-synthesis: The Lottery Ticket Hypothesis shows that a sparse subnetwork found only
-  after training a dense network can, when reset to its original initial weights,
-  train on its own to accuracy matching the full network [S1]. This echoes decades
-  of pruning work demonstrating that trained networks can be compressed to a small
-  fraction of their parameters with little accuracy loss, implying the function a
-  network learns is usually far more compact than the architecture used to find it
-  [S3]. Because the standard lottery-ticket procedure requires training the full dense
-  model first, a key practical question is whether winning tickets can be spotted
-  earlier or even at initialization; Early-Bird Tickets shows that winning-ticket-like
-  sparse masks emerge within the first few training epochs, letting sparse structure
-  be identified far more cheaply than full iterative pruning [S2]. Together these
-  results suggest overparameterization's main value may be in making the optimization
-  landscape easier to search — giving many chances for a good sparse sub-solution
-  to exist — rather than being required by the final learned function [S1][S2]. This
-  motivates design approaches that search for or grow sparse structure early rather
-  than defaulting to large dense networks throughout training.
+synthesis: 'The lottery ticket hypothesis shows that small, sparse subnetworks found
+  via iterative magnitude pruning can match full-network accuracy when trained from
+  their original initialization, suggesting overparameterization''s main benefit may
+  be giving SGD many chances to land on a well-initialized subnetwork rather than
+  being intrinsically required for learning [S1]. This connects to older pruning literature:
+  Zhou et al. found that even the sign pattern of a winning ticket''s initial weights,
+  without any weight training at all, encodes a ''supermask'' that performs far above
+  chance, implying structure and sign matter as much as the learned magnitudes [S2].
+  Liu et al. complicate the efficiency story, showing that for many pruned architectures,
+  training from a fresh random initialization matches or beats fine-tuning the inherited
+  ''winning'' weights, suggesting the discovered architecture may matter more than
+  the specific initialization values it came with [S3]. Frankle et al. directly test
+  whether winning tickets can be found cheaply before training finishes, and show
+  that fast saliency-based criteria like SNIP and GraSP largely fail to match iterative-magnitude-pruning
+  tickets at higher sparsities, so using this insight to make training itself cheaper
+  remains an open problem rather than a solved shortcut [S4].'
 resources:
-- url: https://arxiv.org/abs/1803.03635
-  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
-  type: derivation
-  why: Original paper laying out the pruning-and-rewind procedure and the overparameterization-as-search
-    argument this brief is about
-- url: https://arxiv.org/abs/1909.11957
-  title: 'Drawing Early-Bird Tickets: Towards More Efficient Training of Deep Networks'
-  type: follow-up-paper
-  why: Directly tests whether winning tickets can be found early in training to make
-    training itself cheaper
 - url: https://www.uber.com/blog/deconstructing-lottery-tickets/
   title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
   type: visual
-  why: Uber AI's accessible writeup with diagrams on why masking alone, without further
-    weight training, can already recover much of a network's performance
-- url: https://github.com/google-research/lottery-ticket-hypothesis
-  title: google-research/lottery-ticket-hypothesis
-  type: reference-impl
-  why: Reference implementation of iterative magnitude pruning and rewinding, letting
-    a reader reproduce ticket-finding experiments directly
+  why: Shows with figures that the sign pattern of a winning ticket's initialization
+    alone can act as a mask that performs well untrained, visualizing why overparameterized
+    init may matter more than its exact values
+  anchor: the visualizations of sign-based supermasks and the accuracy-vs-sparsity
+    plots comparing masking criteria
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: derivation
+  why: The source paper defining winning tickets and the iterative magnitude pruning
+    procedure, with its own discussion of what this implies for efficient training
+    and network design
+  anchor: the iterative pruning algorithm description and the concluding discussion
+    of implications for training efficiency
+- url: https://arxiv.org/abs/1810.05270
+  title: Rethinking the Value of Network Pruning
+  type: follow-up-paper
+  why: Directly tests whether the pruned architecture or the inherited winning-ticket
+    initialization drives the efficiency gains, complicating the overparameterization
+    story
+  anchor: the experiments comparing training a pruned architecture from a fresh random
+    init versus fine-tuning the original winning-ticket weights
+- url: https://arxiv.org/abs/2009.08576
+  title: 'Pruning Neural Networks at Initialization: Why Are We Missing the Mark?'
+  type: follow-up-paper
+  why: Tests the sub-question of whether winning tickets can be identified cheaply
+    before/at initialization to make training itself faster, and finds current cheap
+    criteria fall short
+  anchor: the experiments comparing SNIP/GraSP-style pruning-at-initialization criteria
+    against iterative-magnitude-pruning winning tickets across sparsities
 unresolved:
-- Whether pruning-at-initialization methods (no dense pre-training at all) can reliably
-  match tickets found via iterative magnitude pruning after training
-- How consistently early-bird-style ticket structure emerges across architectures
-  and tasks beyond CNN image classification
+- Whether winning tickets can be found before or early in training, cheaply enough
+  to actually reduce training cost, is still unresolved [S4]
+- Whether it is the discovered sparse architecture or the specific inherited initialization
+  values that matters more for trainability is debated between [S2] and [S3]
 sources_consulted:
   S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
-    Trainable Neural Networks. ICLR 2019. https://arxiv.org/abs/1803.03635'
-  S2: 'You, H. et al. (2020). Drawing Early-Bird Tickets: Towards More Efficient Training
-    of Deep Networks. ICLR 2020. https://arxiv.org/abs/1909.11957'
-  S3: Han, S., Pool, J., Tran, J., Dally, W. (2015). Learning both Weights and Connections
-    for Efficient Neural Networks. NeurIPS 2015. https://arxiv.org/abs/1506.02626
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: 'Zhou, H., Lan, J., Liu, R., & Yosinski, J. (2019). Deconstructing Lottery Tickets:
+    Zeros, Signs, and the Supermask. Uber AI blog / arXiv:1905.01067'
+  S3: Liu, Z., Sun, M., Zhou, T., Huang, G., & Darrell, T. (2019). Rethinking the
+    Value of Network Pruning. arXiv:1810.05270
+  S4: 'Frankle, J., Dziugaite, G.K., Roy, D.M., & Carbin, M. (2021). Pruning Neural
+    Networks at Initialization: Why Are We Missing the Mark? arXiv:2009.08576'

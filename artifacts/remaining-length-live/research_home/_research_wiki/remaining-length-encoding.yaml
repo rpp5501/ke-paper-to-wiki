@@ -1,0 +1,50 @@
+concept: remaining-length-encoding
+status: partial
+synthesis: 'The paper ''How Much is Left? LLMs Linearly Encode Their Remaining Output
+  Length'' reports that a simple linear probe on the residual stream can recover the
+  model''s own estimate of how many tokens remain before it stops generating [S1].
+  This fits a broader pattern in mechanistic interpretability: many high-level, scalar-like
+  quantities turn out to be linearly decodable from intermediate activations, which
+  is why a linear probe is the default first tool for this kind of question [S4].
+  The residual stream is architecturally a shared additive channel that every layer
+  reads from and writes to, so a persistent scalar direction like ''tokens left''
+  is plausible to encode and update there layer over layer [S2][S3]. Whether this
+  encoding is causally used by the model to control when it stops, how it updates
+  token-by-token during generation, and whether it transfers across model families,
+  sizes, and task distributions are the paper''s core empirical questions, and this
+  note cannot confirm the specific experimental answers without reading the paper
+  directly [S1].'
+resources:
+- url: https://arxiv.org/abs/2607.05316v1
+  title: How Much is Left? LLMs Linearly Encode Their Remaining Output Length
+  type: derivation
+  why: the primary source for the claim; only place to check the actual probe/causal-intervention
+    results
+  anchor: abstract, then look for the figure(s) showing linear-probe accuracy by layer/position
+    and any activation-patching or steering experiment used to test causality
+- url: https://jalammar.github.io/illustrated-transformer/
+  title: The Illustrated Transformer
+  type: visual
+  why: gives the visual mental model of the residual stream as an additive pathway
+    that later layers read from and write to, which is the substrate this encoding
+    lives in
+  anchor: the diagrams around the 'Add & Normalize' / residual connection illustrations
+- url: https://transformer-circuits.pub/2021/framework/index.html
+  title: A Mathematical Framework for Transformer Circuits
+  type: derivation
+  why: the canonical, diagram-heavy treatment of the residual stream as a shared communication
+    channel, explaining why a global linear direction can persist and accumulate across
+    layers
+  anchor: the section titled 'Virtual Weights and the Residual Stream'
+unresolved:
+- Is the encoding causally used to control when the model stops (vs. merely correlated/epiphenomenal)?
+- How does the encoded remaining-length estimate update token-by-token as generation
+  proceeds?
+- Does the linear encoding hold across different model families and parameter scales?
+- Does the signal generalize across task and dataset distributions, or is it dataset-specific?
+sources_consulted:
+  S1: How Much is Left? LLMs Linearly Encode Their Remaining Output Length, arXiv:2607.05316v1
+  S2: Jay Alammar, 'The Illustrated Transformer', jalammar.github.io/illustrated-transformer/
+  S3: Elhage et al., 'A Mathematical Framework for Transformer Circuits', transformer-circuits.pub/2021/framework/index.html
+  S4: Alain & Bengio, 'Understanding Intermediate Layers Using Linear Classifier Probes'
+    (2016), arXiv:1610.01644

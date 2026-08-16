@@ -1,0 +1,67 @@
+concept: symmetry-in-loss-landscapes
+status: complete
+synthesis: 'Overparameterized neural networks contain large symmetry groups acting
+  on parameter space — discrete permutation symmetries (reordering hidden units) and
+  continuous symmetries (rescaling weights across ReLU layers) — and both leave the
+  loss surface invariant, so every minimum sits inside an orbit of equivalent minima
+  [S1][S2]. Simsek et al. show these two symmetry types shape the landscape differently:
+  continuous scaling symmetries sweep out connected, positive-dimensional manifolds
+  of equal loss, while discrete permutation symmetries produce combinatorially many
+  separated but equivalent basins, and the two act differently on the local curvature
+  around a minimum [S1]. Freeman & Bruna analyze how the permutation and rescaling
+  group actions on ReLU networks structure sublevel-set connectivity, explaining why
+  many apparently distinct minima are secretly the same point up to symmetry [S2].
+  The interactive filter-normalized landscape visualizations from Li et al. make the
+  bumpy, high-dimensional surface concrete in 2D/3D so a learner can see basins and
+  barriers directly [S3]. Git Re-Basin demonstrates that explicitly quotienting out
+  permutation symmetry — matching and re-aligning hidden units between two trained
+  networks before comparing them — collapses a seemingly disconnected landscape into
+  one connected basin, showing how removing symmetry simplifies the apparent structure
+  [S4].'
+resources:
+- url: https://arxiv.org/abs/2105.12221
+  title: 'Geometry of the Loss Landscape in Overparameterized Neural Networks: Symmetries
+    and Invariances'
+  type: derivation
+  why: Directly derives how continuous (scaling) vs. discrete (permutation) symmetry
+    groups shape the geometry of minima in overparameterized networks.
+  anchor: Sections 3-4, the derivation contrasting permutation (discrete) and rescaling
+    (continuous) symmetry groups and their effect on the local geometry of minima
+- url: https://arxiv.org/abs/1611.01540
+  title: Topology and Geometry of Half-Rectified Network Optimization
+  type: derivation
+  why: Shows how the permutation and rescaling group actions on ReLU network weights
+    structure the connectivity of sublevel sets in the loss landscape.
+  anchor: Sections 2-3, the analysis of symmetry group action on ReLU parameters and
+    its effect on landscape connectivity
+- url: https://www.cs.umd.edu/~tomg/projects/landscapes/
+  title: Visualizing the Loss Landscape of Neural Nets (project page)
+  type: visual
+  why: Interactive filter-normalized 2D/3D renderings let a learner see the bumpy
+    loss surface and its basins directly, giving intuition for what symmetry-related
+    minima look like geometrically.
+  anchor: The interactive landscape visualizations and gallery of filter-normalized
+    surface plots on the project page
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: follow-up-paper
+  why: Concretely demonstrates that explicitly removing (quotienting out) permutation
+    symmetry collapses seemingly separate minima into one connected basin, simplifying
+    the landscape's apparent structure.
+  anchor: Section 3, the permutation-matching algorithm that re-aligns two networks'
+    hidden units to merge symmetric minima into a shared basin
+unresolved:
+- How exactly the Hessian eigenvalue structure differs between minima related by continuous
+  versus discrete symmetry orbits
+- Whether the landscape-simplification effect of removing permutation symmetry (as
+  in Git Re-Basin) generalizes cleanly beyond the image-classifier architectures it
+  was demonstrated on
+sources_consulted:
+  S1: 'Simsek, B. et al. ''Geometry of the Loss Landscape in Overparameterized Neural
+    Networks: Symmetries and Invariances.'' ICML 2021. https://arxiv.org/abs/2105.12221'
+  S2: Freeman, C.D. & Bruna, J. 'Topology and Geometry of Half-Rectified Network Optimization.'
+    ICLR 2017. https://arxiv.org/abs/1611.01540
+  S3: Li, H., Xu, Z., Taylor, G., Studer, C., Goldstein, T. 'Visualizing the Loss
+    Landscape of Neural Nets.' NeurIPS 2018. https://www.cs.umd.edu/~tomg/projects/landscapes/
+  S4: 'Ainsworth, S.K., Hayase, J., Srinivasa, S. ''Git Re-Basin: Merging Models modulo
+    Permutation Symmetries.'' https://arxiv.org/abs/2209.04836'

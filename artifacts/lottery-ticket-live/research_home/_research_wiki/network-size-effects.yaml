@@ -1,47 +1,54 @@
 concept: network-size-effects
 status: partial
-synthesis: 'The original Lottery Ticket Hypothesis paper''s main experiments use a
-  LeNet-300-100 fully-connected network on MNIST, but its appendix also reports iterative-pruning
-  results for LeNet variants with different hidden-layer widths, and finds the core
-  phenomenon holds beyond the default size: winning tickets exist at multiple network
-  widths, and wider LeNet variants tend to yield sparser winning tickets while matching
-  or exceeding the accuracy and convergence speed of the unpruned network [S1]. This
-  suggests over-parameterization gives iterative magnitude pruning a larger pool of
-  candidate subnetworks to draw a ''winning ticket'' from, so wider starting networks
-  can be pruned further before accuracy degrades [S1]. Follow-up work found that reliably
-  finding stable winning tickets becomes harder as networks get larger and deeper
-  (e.g. moving from LeNet to VGG/ResNet-scale models trained with high learning rates),
-  motivating a weight-rewinding modification to stabilize pruning at scale [S3]. The
-  official reference implementation lets a reader rerun the LeNet pruning experiment
-  with different hidden-layer sizes to reproduce this width-vs-sparsity trend directly
-  [S2].'
+synthesis: The original Lottery Ticket Hypothesis paper's headline experiments use
+  a fully-connected LeNet-300-100 on MNIST, but its appendix also reports results
+  for wider hidden-layer configurations, and larger, more overparameterized networks
+  tend to make it easier to find a winning subnetwork, consistent with the 'more tickets
+  bought, better odds' intuition that motivates the hypothesis [S1]. Widening the
+  network does not change the iterative magnitude-pruning procedure itself, but it
+  shifts the sparsity levels and iteration counts at which winning tickets appear,
+  and the paper's own accuracy-vs-sparsity plots are the clearest record of that shift
+  [S1]. When size instead grows in depth rather than width -- e.g. ResNet-20 or VGG-19
+  on CIFAR-10 -- the original prune-and-reset-to-initialization approach becomes unstable
+  at higher sparsities, and a follow-up study found that rewinding weights to an early
+  training iteration, rather than to initialization, is needed to reliably find winning
+  tickets and keep the expected training speedup [S2]. This suggests network-size
+  effects on lottery tickets differ depending on whether capacity grows wider or deeper.
+  The official reference implementation lets a reader reproduce both regimes directly
+  [S3].
 resources:
 - url: https://arxiv.org/abs/1803.03635
-  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks
-    (Frankle & Carbin, 2019)'
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
   type: visual
-  why: The appendix contains the actual accuracy-vs-sparsity diagrams for LeNet at
-    hidden-layer sizes beyond 300/100, directly showing how width interacts with sparsity
-    and speedup.
-- url: https://github.com/google-research/lottery-ticket-hypothesis
-  title: lottery-ticket-hypothesis (official TensorFlow implementation)
-  type: reference-impl
-  why: Lets a reader rerun the LeNet fully-connected experiment with custom hidden-layer
-    sizes to reproduce the size-vs-sparsity trend themselves.
+  why: Contains the actual figures showing how pruning/accuracy curves shift when
+    the LeNet hidden layers are made wider than the default 300/100
+  anchor: Appendix section that varies the fully-connected LeNet's hidden-layer sizes
+    beyond 300/100 -- look for the plot comparing accuracy-vs-sparsity curves across
+    widths
 - url: https://arxiv.org/abs/1903.01611
-  title: Stabilizing the Lottery Ticket Hypothesis (Frankle et al., 2019)
+  title: Stabilizing the Lottery Ticket Hypothesis
   type: follow-up-paper
-  why: Shows how the winning-ticket phenomenon becomes less reliable as networks grow
-    larger/deeper than LeNet, and introduces rewinding to stabilize it at scale.
+  why: Shows that as networks grow larger/deeper (ResNet-20, VGG-19) the original
+    reset-to-init pruning breaks down, and explains the fix (weight rewinding) needed
+    to keep finding winning tickets at scale
+  anchor: The sections comparing ResNet-20/VGG-19 results under reset-to-initialization
+    vs. rewinding to an early iteration
+- url: https://github.com/google-research/lottery-ticket-hypothesis
+  title: lottery-ticket-hypothesis (Google Research)
+  type: reference-impl
+  why: Official code for reproducing the LeNet experiments, letting a reader directly
+    change hidden-layer widths and rerun the pruning loop
+  anchor: The mnist_fc experiment configuration, where the LeNet hidden-layer sizes
+    are set as a parameter
 unresolved:
-- Exact quantitative sparsity/accuracy figures for each LeNet width variant should
-  be checked directly against the paper's appendix rather than taken from memory.
-- Whether the width-vs-sparsity trend observed for fully-connected LeNet generalizes
-  the same way to widening convolutional layers (vs. depth) is not directly addressed
-  by these sources.
+- Exact quantitative sparsity/accuracy numbers for the width-ablation are in the paper's
+  appendix but not confirmed precisely here -- verify the specific figure directly.
+- No dedicated video or blog explainer specific to this narrow width-ablation experiment
+  could be confirmed as real; the paper's own figures are used as the visual in its
+  place.
 sources_consulted:
   S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
-    Trainable Neural Networks. arXiv:1803.03635 (ICLR 2019)'
-  S2: google-research/lottery-ticket-hypothesis, GitHub, https://github.com/google-research/lottery-ticket-hypothesis
-  S3: Frankle, J., Dziugaite, G.K., Roy, D.M., Carbin, M. (2019). Stabilizing the
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: Frankle, J., Dziugaite, G.K., Roy, D.M., Carbin, M. (2019). Stabilizing the
     Lottery Ticket Hypothesis. arXiv:1903.01611
+  S3: google-research/lottery-ticket-hypothesis GitHub repository

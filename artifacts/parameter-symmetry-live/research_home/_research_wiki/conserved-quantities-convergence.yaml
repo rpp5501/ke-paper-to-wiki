@@ -1,0 +1,43 @@
+concept: conserved-quantities-convergence
+status: complete
+synthesis: 'When training dynamics are treated as continuous-time gradient flow, continuous
+  symmetries in the loss landscape (e.g. translation, scale, and rescale invariances
+  common in normalized or homogeneous networks) generate quantities that stay exactly
+  constant along the trajectory, by a Noether-style argument [S1]. These conserved
+  quantities restrict the training path to a fixed-dimensional level set rather than
+  the full parameter space, shaping which minimum the trajectory can reach and helping
+  explain observed flatness/sharpness trade-offs [S1]. Because the conserved quantity''s
+  value depends on the specific parameterization (e.g. how weight scale is split across
+  layers before a normalization layer), practitioners can choose initializations or
+  reparameterizations that steer it toward better-conditioned or flatter minima [S1].
+  The same quantities can be logged during training as a diagnostic: if a quantity
+  that should be conserved starts drifting, it flags discretization error from too
+  large a learning rate, or a real departure from the gradient-flow regime [S1]. Visualizing
+  gradient-descent trajectories on curved loss surfaces, as in Distill''s interactive
+  treatment of momentum, builds intuition for how invariants constrain the path even
+  before the formal conserved-quantity argument is introduced [S2].'
+resources:
+- url: https://arxiv.org/abs/2210.17216
+  title: Symmetries, Flat Minima, and the Conserved Quantities of Gradient Flow
+  type: derivation
+  why: Derives the conserved quantities directly from architectural symmetries and
+    connects them to flat minima, parameterization choices, and training diagnostics.
+  anchor: §3 (deriving conservation laws from symmetries) and §5 (implications for
+    parameterization and diagnostics)
+- url: https://distill.pub/2017/momentum/
+  title: Why Momentum Really Works
+  type: visual
+  why: Interactive visualizations of gradient-descent trajectories on curved loss
+    surfaces give intuition for how invariants constrain the training path before
+    the formal conserved-quantity machinery is introduced.
+  anchor: the interactive gradient-descent trajectory figures near the top of the
+    article, in the 'Gradient Descent' and 'Complex Curvatures' sections
+unresolved:
+- Do these conserved quantities have a practical analogue for adaptive optimizers
+  like Adam, which don't follow simple gradient flow?
+- How feasible is it to monitor conserved quantities as a diagnostic in large-scale
+  training runs?
+sources_consulted:
+  S1: Kunin, D., Sagastuy-Brena, J., Ganguli, S., Yamins, D.L.K., Tanaka, H. (2022).
+    Symmetries, Flat Minima, and the Conserved Quantities of Gradient Flow. arXiv:2210.17216
+  S2: Distill.pub (2017). Why Momentum Really Works. https://distill.pub/2017/momentum/

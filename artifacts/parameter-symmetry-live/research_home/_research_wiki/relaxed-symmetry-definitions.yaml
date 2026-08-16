@@ -1,0 +1,51 @@
+concept: relaxed-symmetry-definitions
+status: complete
+synthesis: 'Exact functional symmetry requires a parameter transformation to leave
+  the network''s output unchanged for every possible input, which is often too strong
+  a requirement for practical analyses of training and generalization [S1]. Godfrey
+  et al. formalize a hierarchy of weaker notions: symmetries that only need to preserve
+  the loss rather than the full output map, symmetries that hold only on the actual
+  training or test data rather than all inputs, and symmetries that hold only in a
+  statistical or distributional sense over a data distribution [S1]. Relaxing to a
+  data-dependent or distributional level is what lets researchers claim, for example,
+  that SGD-trained networks are approximately permutation invariant even though this
+  is not exactly true pointwise for every input, only approximately true on the data
+  manifold [S2]. Ainsworth et al. exploit exactly this relaxed, distributional notion
+  empirically: permuting one network''s neurons to align with another''s collapses
+  the loss barrier between them on real data, even though the two functions are not
+  exactly equal everywhere [S3]. Each relaxation strictly generalizes the one before
+  it, so broader definitions capture a strictly larger set of transformations than
+  exact functional symmetry does.'
+resources:
+- url: https://arxiv.org/abs/2205.14258
+  title: On the Symmetries of Deep Learning Models and Their Internal Representations
+  type: derivation
+  why: Introduces the formal hierarchy of relaxed symmetry notions (loss-invariant,
+    data-dependent, distributional) that this concept covers.
+  anchor: §2-3, where functional equivalence is relaxed step by step to loss-invariance
+    and then to data-dependent notions
+- url: https://arxiv.org/abs/2110.06296
+  title: The Role of Permutation Invariance in Linear Mode Connectivity of Neural
+    Networks
+  type: follow-up-paper
+  why: Shows why a data-dependent/distributional notion of permutation symmetry, rather
+    than exact functional symmetry, is the useful one for explaining SGD solutions.
+  anchor: §1 and the statement of the permutation invariance conjecture
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: visual
+  why: 'Gives a concrete visual demonstration of a relaxed, distributional symmetry:
+    permutation alignment collapses the loss barrier on real data without the two
+    networks being exactly functionally equal everywhere.'
+  anchor: Figure 1, the loss-barrier plots before and after permutation alignment
+unresolved:
+- Whether the loss-invariant, data-dependent, and distributional relaxations form
+  a strict containment hierarchy in general, or only for the specific architectures
+  studied so far, is not fully settled.
+sources_consulted:
+  S1: Godfrey, C. et al. (2022) 'On the Symmetries of Deep Learning Models and Their
+    Internal Representations', arXiv:2205.14258
+  S2: Entezari, R. et al. (2021) 'The Role of Permutation Invariance in Linear Mode
+    Connectivity of Neural Networks', arXiv:2110.06296
+  S3: 'Ainsworth, S., Hayase, J., Srinivasa, S. (2022) ''Git Re-Basin: Merging Models
+    modulo Permutation Symmetries'', arXiv:2209.04836'

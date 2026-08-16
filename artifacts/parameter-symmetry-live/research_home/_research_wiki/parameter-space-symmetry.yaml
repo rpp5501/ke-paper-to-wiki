@@ -1,0 +1,65 @@
+concept: parameter-space-symmetry
+status: complete
+synthesis: 'Neural network parameter spaces contain large symmetry groups—permutations
+  of hidden units, sign/scale flips, and continuous rescalings—that leave the input-output
+  function unchanged, and these symmetries unify otherwise disparate observations
+  about loss landscapes, optimization trajectories, and generalization [S1][S2]. Because
+  every local minimum sits inside an orbit of functionally-identical points related
+  by these symmetries, the loss landscape is riddled with flat, connected valleys
+  rather than isolated basins, reframing questions like ''why does SGD find good minima''
+  around the geometry of these orbits [S1]. Continuous symmetries, such as positive
+  rescaling between adjacent ReLU layers, generate conserved quantities analogous
+  to Noether''s theorem, explaining empirically observed conservation laws in gradient-descent
+  dynamics and offering a mechanistic account of implicit regularization [S2]. Discrete
+  permutation symmetry connects theory to practice directly: aligning two independently
+  trained networks'' hidden units before interpolating between their weights removes
+  the loss barrier between them, enabling model merging and shedding light on linear
+  mode connectivity [S3]. Related parameter-space analyses in simpler architectures,
+  such as continuous-time recurrent networks, show that even small models have intricate,
+  symmetry-structured bifurcation geometry in weight space, suggesting these effects
+  are not artifacts of scale [S4].'
+resources:
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: visual
+  why: Its Figure 1 loss-landscape interpolation plot is the canonical picture of
+    permutation symmetry collapsing barriers between independently trained models
+  anchor: Figure 1, the interpolation plot comparing naive vs. permutation-aligned
+    weight averaging
+- url: https://github.com/samuela/git-re-basin
+  title: git-re-basin (official code)
+  type: reference-impl
+  why: Shows the permutation-matching algorithm that operationalizes parameter-space
+    symmetry
+  anchor: weight_matching.py, the function implementing the permutation-alignment
+    algorithm
+- url: https://arxiv.org/abs/2012.04728
+  title: 'Neural Mechanics: Symmetry and Broken Conservation Laws in Deep Learning
+    Dynamics'
+  type: derivation
+  why: Derives, via Noether's theorem, the conserved quantities that continuous parameter-space
+    symmetries (translation, scale, rescale) imply for gradient descent
+  anchor: §3-4, the Noether's-theorem derivation of conservation laws from translation/scale/rescale
+    symmetries
+- url: https://arxiv.org/abs/2105.12221
+  title: 'Geometry of the Loss Landscape in Overparameterized Neural Networks: Symmetries
+    and Invariances'
+  type: follow-up-paper
+  why: Formally characterizes how permutation symmetry orbits shape the geometry of
+    minima in the loss landscape
+  anchor: §3, the characterization of permutation symmetry orbits and their effect
+    on landscape geometry
+unresolved:
+- Whether the permutation, continuous-rescaling, and Lie-group threads of this literature
+  are converging on a single unifying group-theoretic account or remain separate strands.
+- How well symmetry-based accounts of the loss landscape extend to non-ReLU, non-feedforward
+  architectures (e.g., attention, normalization layers).
+sources_consulted:
+  S1: 'Simsek, B. et al., ''Geometry of the Loss Landscape in Overparameterized Neural
+    Networks: Symmetries and Invariances'', ICML 2021, https://arxiv.org/abs/2105.12221'
+  S2: 'Kunin, D. et al., ''Neural Mechanics: Symmetry and Broken Conservation Laws
+    in Deep Learning Dynamics'', ICLR 2021, https://arxiv.org/abs/2012.04728'
+  S3: 'Ainsworth, S., Hayase, J., Srinivasa, S., ''Git Re-Basin: Merging Models modulo
+    Permutation Symmetries'', ICLR 2023, https://arxiv.org/abs/2209.04836'
+  S4: '''Parameter Space Structure of Continuous-Time Recurrent Neural Networks''
+    (2006), https://doi.org/10.1162/neco.2006.18.12.3009'

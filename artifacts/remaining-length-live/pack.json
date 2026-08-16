@@ -1,0 +1,1437 @@
+{
+ "meta": {
+  "source": "arXiv:2607.05316",
+  "title": "How Much is Left? LLMs Linearly Encode Their Remaining Output Length",
+  "generated": "2026-08-15"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "When a large language model produces a step-by-step solution, retrieves a fact, or writes a paragraph, the result has a length: a number of tokens emitted before an end-of-sequence (EOS) token. That length is often surprisingly predictable from the prompt alone. Asked to solve a grade-school arithmetic problem, current LLMs tend to produce three-to-five lines of working before the answer; asked to retrieve a date, they produce a single short clause. This consistency is at odds with the standard description of how an autoregressive model computes: each token is sampled conditioned on the prefix, with no explicit notion of total response length anywhere in the computation graph. This paper asks whether that consistency is an artifact of decoding (token-by-token sampling that happens to terminate at similar lengths) or whether the model's intermediate representations an estimate of how much response remains. The distinction matters: in the first case, length is a downstream statistical regularity of the conditional distribution; in the second, the model carries an internal variable for remaining work, informally a . Recent mechanistic work shows that LLMs plan ahead over , e.g., committing to a rhyme word several positions before writing the line that ends in it; we ask the analogous question for . We attack this question with linear probing. For a frozen LLM and a (prompt, completion) pair $(x, y)$ with completion length $T$, we extract the residual-stream hidden states $h_t$ at every position $t$ and train minimal-capacity linear probes to predict the remaining token count $r_t = T - t$. The use of a linear probe is deliberate: any signal we recover is information that is in the hidden state, not a result of the probe's own computation. We compare against a constant statistical baseline (the train-split median of $r_t$, the optimal constant predictor under $L^1$ loss) and against a length-minus-position predictor seeded with the model's own prompt-end estimate of total length, so that any improvement of the per-position probe is attributable to mid-completion residuals rather than to position alone. Two methodological caveats motivate the rest of our design. First, we are remaining generation length, not exactly counting items in the input: our headline numbers are on the order of $\\mathrm{MAE} \\approx 30$ tokens on a $400$-token completion, a useful low-precision signal that is unrelated to the exact-counting impossibility theorems for transformers (see § for the distinction). Second, linear probes for LLM internals are typically evaluated only within distribution; we additionally report cross-dataset matrices for every (model, source dataset, target dataset) triple to test how much of the recovered signal is a property of the model's representation versus a fit to a single dataset's marginal. A third, qualitative observation complements these results: because the Remaining Count Probe predicts from $h_t$ rather than $t$, it is not constrained to be monotonic, and on curated high-MAE completions $\\hat{r}_t$ shifts upward at the retraction token (Wait, let me try again; Figure). We present this as directional only — absolute predictions on this example are far from $r_t$, and a length-matched non-retraction control would license the stronger plan-update reading (§ and Limitations). A reliable readout of the model's own length estimate has practical applications: a retraction token without an upward shift in $\\hat{r}_t$ is a candidate signature of unfaithful chain-of-thought, and a prompt-end estimate $\\hat{T}_0$ exceeding a budget is a cheap early-termination signal. We do not pursue either here, but both motivate the probing study that follows. Contributions. We define a small probe family a Remaining Count Probe, a constant-median statistical baseline, and a Completion Length Probe with exact countdown that stratifies the residual stream's contribution into within-prompt decodability and mid-completion update. Out-of-distribution evaluation: a probe trained on a corpus beats the constant-median predictor on most natural-language and synthetic targets, including ones it never saw; probes trained on the synthetic Count/Countdown sets transfer within that pair but fail on natural-language targets (Tables). The asymmetry suggests natural-language training recovers a more general length-tracking direction. Qualitative dynamic re-estimation: a curated retraction example (Figure) and high-MAE gallery (Appendix) isolate a class of directional updates no position-only predictor can produce. The aggregate version is flagged as future work."
+  },
+  {
+   "id": "sec_2",
+   "title": "Related Work",
+   "level": 1,
+   "text": "Linear probes for LLM internals, and OOD generalization. Training a small linear probe on frozen activations to predict a property of interest goes back to , with subsequent work showing that linguistic structure, latent beliefs about truth, world-model state, and safety-relevant behaviour are linearly recoverable from intermediate representations; theoretical accounts of the explain when this should be expected. cautions that probe accuracy reflects what is decodable, not what the model functionally uses. OOD evaluations of LLM probes are scarce and transfer is often weak (a notable exception is the cross-lingual refusal direction); evaluation is especially sparse for continuous regression targets on residual streams like our $r_t$. Our cross-dataset matrices (§) close that gap. Planning, aha moments, and dynamic re-estimation. Whether LLMs plan is a recently active question. use circuit tracing to show that Claude commits to a rhyme word before writing the line that ends in it, planning over ; we ask the analogous question over . Mid-trace shifts around the DeepSeek-R1 aha moment have been read both sceptically and mechanistically; closest in method is , whose linear probe reads out answer-confidence at every reasoning step. Our retraction-shift observation has the same shape but on the length variable. Engineered counterparts such as confirm that Wait-token interventions affect test-time compute. Token counting in transformers (orthogonal to this work). A separate literature studies in transformers: the $d \\!\\geq\\! m$ phase transition of , attention over-squashing on global aggregation, and BPE boundary effects. Our target is different: a continuous regression on hidden states for the number of tokens the model itself will go on to produce (headline $\\mathrm{MAE} \\approx 30$ on a $400$-token completion), not a $0/1$ exact count over the prompt. The two threads are complementary; impossibility results for exact counting do not bear on approximate estimation of remaining generation length."
+  },
+  {
+   "id": "sec_3",
+   "title": "Methodology",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Problem Formulation",
+   "level": 2,
+   "text": "Let $M$ be a frozen autoregressive language model and let $(x, y)$ denote a (prompt, completion) pair, where $y = (y_1, \\ldots, y_T)$ is generated by $M$ until either an end-of-sequence token is emitted at position $T$ or a maximum-length cutoff is reached. We say that $(x, y)$ when an EOS token is emitted; only naturally terminated sequences are used for training and evaluation. For each completion position $t \\in \\{1, \\ldots, T\\}$, we define the target: The empirical question is whether $h_t^{(\\ell)}$ contains enough information to predict $r_t$. The probe family of § answers it by comparing predictors with different access to $h_t$ versus $t$, against two reference predictors that use no information from the residual stream during generation."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Hidden State Extraction",
+   "level": 2,
+   "text": "For each token position $t$ in a (prompt, completion) sequence — including the prompt — we extract the residual-stream activation $h_t^{(\\ell)} \\in \\mathbb{R}^d$ at every transformer layer $\\ell \\in \\{0, \\ldots, L\\}$, computed by a single forward pass over the sequence with $M$'s parameters frozen. Probes are trained on completion positions only; prompt positions contribute no loss except where explicitly stated for the Completion Length Probe (§, item3), whose loss is masked everywhere except at the prompt's last position."
+  },
+  {
+   "id": "sec_3_3",
+   "title": "Probe Family",
+   "level": 2,
+   "text": "A probe $f_\\theta : \\mathbb{R}^d \\to \\mathbb{R}$ is a single linear layer with no nonlinearity. This minimal capacity is deliberate: strong probe performance reflects information that is already in $h_t^{(\\ell)}$ rather than computation performed by the probe. We compare three predictors of the per-position remaining-count target $r_t = T - t$, illustrated for a four-token completion in Figure: The $f_\\theta(h_t^{(\\ell)}) \\to \\hat{r}_t$ regresses on the residual-stream activation at every completion position with loss $\\mathcal{L}_{\\text{count}} = (\\hat{r}_t - r_t)^2$. Since the prediction depends on $h_t^{(\\ell)}$ rather than $t$, this probe is not constrained to be monotonic in $t$, a freedom we exploit in §. The outputs $\\hat{r}_t = \\widetilde{r}$, the median of $r_t$ over the train split, at every position; it is the optimal constant predictor under $L^1$ loss and our natural reference for MAE (§). The is a regression probe trained only on the prompt's last hidden state with target $T$, masked elsewhere. At evaluation, the prompt-end prediction $\\hat{T}_0$ is reused at every completion position via the deterministic exact countdown $$\\hat{r}_t = \\max(\\hat{T}_0 - t - 1,\\, 0).$$ The countdown uses no information from $h_t$ during generation; it shares the position structure of a length-minus-position baseline but substitutes the model's own prompt-end estimate of $T$. Our headline number at the prompt-end position is $\\text{prompt\\_AE} = |\\hat{T}_0 - T|$ (§). All three regression predictors share a single LM forward pass per minibatch and a single dataloader, so any difference in evaluation performance is attributable to the per-probe target rather than to sampling variance. A complementary family of $K$-way classification probes is reported as an ablation in Appendix."
+  },
+  {
+   "id": "sec_3_4",
+   "title": "Statistical Baselines",
+   "level": 2,
+   "text": "The optimal constant predictor under $L^1$ loss is the median: for a real-valued $X$ with median $m$, $\\arg\\min_c \\mathbb{E}|X - c| = m$, in direct parallel with the mean as the squared-loss minimizer. Since every regression number we report is MAE, the natural reference is the constant-median predictor $\\hat{r}_t = \\widetilde{r}$ (§ item2) fit on the train split. Its MAE on the train marginal is exactly the Mean Absolute Deviation about the median, the $L^1$ analogue of variance. A probe with MAE below this floor is therefore extracting information about $r_t$ beyond what any position-independent predictor can achieve from the train marginal alone."
+  },
+  {
+   "id": "sec_3_5",
+   "title": "Loss and Optimization",
+   "level": 2,
+   "text": "Let $\\mathcal{P}$ denote the set of active probes and let $\\mathcal{L}_p(\\theta_p; \\text{batch})$ denote the per-probe loss. For each minibatch we (i) compute hidden states, (ii) for each $p \\in \\mathcal{P}$, compute $\\mathcal{L}_p$, run the backward pass, and step the per-probe optimizer, and (iii) clear the per-probe gradients. The base model is never updated. Optimizer, learning rate, batch size, max steps, scheduler settings, and per-dataset configured split sizes are listed in Appendix."
+  },
+  {
+   "id": "sec_3_6",
+   "title": "Evaluation",
+   "level": 2,
+   "text": "The headline metric for every regression result is per-token mean absolute error (MAE) — the natural counterpart to the constant-median statistical baseline introduced in §. MAE aggregates cleanly over completions of varied length and bounds gracefully against the MAD-about-the-median floor without further normalization. We report MAE in two ways: as a token-weighted dataset-wide average (every completion-position contributes one term to the mean) and, when comparing the Completion Length Probe to its constant baseline, as the absolute error at the prompt-end position alone. Classification-probe metrics (accuracy and Cohen's $\\kappa$) are reported as a complementary ablation in Appendix."
+  },
+  {
+   "id": "sec_3_7",
+   "title": "Models and Datasets",
+   "level": 2,
+   "text": "Models. We evaluate three open-weight instruction-tuned base models in the 78B parameter range: Llama-3.1-8B-Instruct, Olmo-3-7B-Instruct, and Mistral-7B-Instruct-v0.3. The three families differ in tokenizer, pretraining mixture, and instruction-tuning recipe, which lets us check whether the length signal is a property of one model family or a more general feature of instruction-tuned LLMs. We use seven completion-style datasets in total: two synthetic and five standard. Synthetic (controlled-length) datasets. consists of completions to the prompt , and of completions to . In both cases $n \\in [0, 300]$. These two sets give us a controlled regime in which the eventual completion length $T$ is exactly determined by the prompt: a probe that performs well on Count and Countdown is verifiably reading the relevant information out of the residual stream and not relying on dataset-wide regularities. Standard datasets. Covering reasoning, retrieval, and open-ended writing, we use , (grade-school math), (competition-level math), (multiple-choice with reasoning rationales), (long-form reasoning traces), and (short-form retrieval). Together with Count and Countdown this yields seven datasets spanning a wide range of expected response lengths and structural regularities, a prerequisite for the cross-dataset experiments in §. The system prompts and the source field of the user message for each dataset are listed in Appendix. We extract hidden states for both train and eval splits in a single forward pass per example, then re-use the cache for every probe in the family (§) and the per-layer variants reported in Appendix, so the computational cost of training the entire probe family is dominated by the one LM forward pass per example."
+  },
+  {
+   "id": "sec_4",
+   "title": "Results",
+   "level": 1,
+   "text": "All numbers in this section are the mean across three independent training seeds; per-seed variance was less than $1$ token of MAE well below the spread across (model, dataset) cells so we omit per-seed error bars. Headline MAEs are token-weighted averages over the eval split; Appendix reports a per-completion-length breakdown."
+  },
+  {
+   "id": "sec_4_1",
+   "title": "Preliminary: Completion Length Probe results",
+   "level": 2,
+   "text": "Table reports the prompt-end MAE of the Completion Length Probe (§, item3) versus the constant-median statistical baseline. The probe beats the baseline on every (model, dataset) cell. The improvement is largest on the synthetic Countdown set, where Llama's prompt-end MAE drops to $5.27$ tokens against a $150.18$ baseline $T$ is a deterministic function of the prompt for these examples, and a linear readout recovers it almost exactly. On the natural-language sets the gap is smaller but consistent across all three model families: prompt-end MAE is roughly half to three-quarters of the constant baseline (Appendix). The headline claim total response length is linearly decodable from the prompt's last hidden state alone, before any output is emitted holds in every cell of the table."
+  },
+  {
+   "id": "sec_4_2",
+   "title": "Probe vs. statistical baseline vs. Completion Length countdown",
+   "level": 2,
+   "text": "Table compares the per-token MAE of the Remaining Count Probe against the constant-median statistical baseline and against the exact-countdown predictor (the Completion Length Probe's prompt-end estimate $\\hat{T}_0$ broadcast as $\\max(\\hat{T}_0 - t - 1, 0)$). Implied claim. The three-way comparison in Table stratifies the residual stream's contribution. Exact countdown is a stronger baseline than it appears: it receives the position $t$ as an explicit input through $\\max(\\hat{T}_0 - t - 1, 0)$, while the Remaining Count Probe sees only $h_t$ and must recover any position-dependent component from it; in expectation Exact countdown's per-token MAE is just $|\\hat{T}_0 - T|$, the prompt-end probe's accuracy. The breakdown is: (i) when the Remaining Count Probe beats the constant-median baseline, the residual stream encodes information about $r_t$ beyond what any position-independent predictor can deliver from the train marginal alone; (ii) when it further beats Exact countdown, the residual stream at positions adds information beyond what was already linearly readable at the prompt's last position the length estimate is updated during generation rather than committed at the prompt and decremented from there; (iii) when the two are within noise, the prompt-end estimate is sufficient and mid-completion positions add no additional linear information for $r_t$. Cells where the Remaining Count Probe ties or loses to Exact countdown are therefore the mechanical restatement of case(iii), not a contradiction. Appendix re-presents Tables and with each entry normalized by the constant-median baseline."
+  },
+  {
+   "id": "sec_4_3",
+   "title": "Dynamic re-estimation: the probe spikes when the model restarts",
+   "level": 2,
+   "text": "Because the Remaining Count Probe's prediction at position $t$ is a function of $h_t$ rather than of $t$, it is to be monotonic. The constant-median baseline and the exact-countdown predictor are monotonically non-increasing by construction; any upward jump in the probe's per-token prediction is therefore something neither reference predictor can reproduce. We do not aggregate this gap into a number across the eval set; rather, we use a single curated example to make the qualitative point that the per-position estimate update in response to events inside the model's own generation. Phenomenology. The probe's predictions track the ground truth closely on most completions (), but on a small fraction MAE is much larger. shows one such case. The point of the panel is the change in $\\hat{r}_t$: at the / pair (the model's own retraction) the probe's prediction shifts upward from $71$ to $277$, while the true $r_t$ continues to decrement monotonically an upward movement no monotonic-in-$t$ baseline can produce. The probe's predictions on this completion are far from the truth throughout the window (e.g., $4.84$ at $t=173$ against a true $r_t = 814$), so what is interpretable is the sign of the per-position update at the retraction token, not the level. We read this as evidence that the residual stream may carry a representation that updates when the model recognizes it must redo work. The within-distribution absolute-tracking behavior and the directional-update behavior are both present in the probe but on different completions; demonstrating them on the same example, and aggregating the directional update against a length-matched control, is flagged as future work in Limitations. We expect the aggregate version to recover the same directional pattern: the constant-median and exact-countdown baselines cannot produce upward $\\Delta\\hat{r}_t$ at position by construction, while the probe does so at retraction tokens whenever we look. Appendix shows the same shift on four additional completions, triggered by different retraction phrases (, , ) at different absolute positions."
+  },
+  {
+   "id": "sec_5",
+   "title": "Cross-dataset generalization of the Remaining Count Probe",
+   "level": 1,
+   "text": "The cross-dataset matrix is not symmetric, and the asymmetry is the result. Probes trained on natural-language datasets generalize broadly, including back into the controlled synthetic regime; probes trained on the controlled synthetic sets do not generalize to natural language. The remainder of this section unpacks both halves and the regularization-style explanation we offer for the gap. For each model, we trained a Remaining Count Probe on every available dataset and evaluated it on every other dataset. We present the Llama-3.1-8B-Instruct matrix in the main text (Table); the analogous Mistral-7B-Instruct-v0.3 and Olmo-3-7B-Instruct matrices are in the appendix (Tables and). The Llama and Mistral matrices report the five datasets for which the full train$\\times$eval grid was available; the Olmo matrix reports all seven (see §). Reading the matrix. The headline pattern recurs across all three models: off-diagonal entries (probe trained on one dataset, evaluated on another) are often still below the eval dataset's own baseline, showing that the probe direction trained on one corpus carries a non-trivial component of length information that survives the dataset shift. The off-diagonal structure is strikingly asymmetric along a single axis: . Probes trained on the synthetic Count and Countdown sets transfer poorly to natural-language datasets: on Llama-3.1-8B (Table) a Count-trained probe scores MAE $228.93$ on MMLU-Pro against a $176.54$ baseline; Mistral-7B and Olmo-3-7B reproduce the same picture (Tables and). Within the synthetic pair the probes transfer (Count$\\to$Countdown achieves $99.17$ against a $117.82$ baseline on Llama), consistent with the two tasks sharing a near-identical surface structure. The natural-language datasets behave in the opposite direction. On Llama-3.1-8B, an OpenThoughts-1k-trained probe beats the eval-side baseline on other dataset in its row, including the two synthetic ones; likewise for the MMLU-Pro-trained probe. Mistral-7B and Olmo-3-7B reproduce the same picture: the strongest transfer sources are the datasets with the longest and most heterogeneous completions (OpenThoughts-1k, MMLU-Pro, and to a lesser extent GSM8K), and probes trained on them generalize the synthetic regime despite never having seen it. We read this as a regularization story. The synthetic sets pin$T$ to a single deterministic feature of the prompt; a linear probe fit on them latches onto whichever direction in$h_t$ correlates with that feature, and that direction does not coincide with the model's general length-tracking direction. The natural-language sets, by contrast, force the probe onto a direction that explains length variation across many prompt structures the same direction that also covers the trivial synthetic cases. The diagonal remains the best entry in every row, but the off-diagonal pattern is inconsistent with a probe that has only memorized its source dataset's marginal distribution of$T$. Tokenization differences are also unparsimonious as the load-bearing explanation: a tokens-per-character story predicts symmetric transfer failures, but the matrix shows one-way generalization (natural$\\to$synthetic, not the converse), and natural-language probes transfer broadly across GSM8K, MMLU-Pro, OpenThoughts-1k, and TriviaQA despite their heterogeneous tokenization profiles. A shared-BPE replication is left to follow-up work."
+  },
+  {
+   "id": "sec_6",
+   "title": "Limitations",
+   "level": 1,
+   "text": "Decodability does not entail causal use. Linear probes recover information that is in the residual stream; they do not show that the model the identified direction during generation. The natural follow-up is an activation-patching study that ablates or steers the length-tracking direction at inference time and measures the effect on the realized output length. Until that experiment is run, every claim in this paper about a plan should be read as a claim about representation, not about mechanism. The dynamic re-estimation evidence is qualitative, not aggregate. The five cases (one in §, four more in Appendix) are surfaced by sorting eval-set completions on per-completion MAE; they are qualitative, not an aggregate measurement. A second caveat compounds the first: these examples are drawn from the worst-MAE region of the eval set by construction, and on those completions the probe's predictions are far from the ground truth (single digits against $r_t \\approx 800$ in Figure). The panels are therefore licensed to show only the of the per-position update, not its level. The within-distribution absolute-tracking result of § and the directional retraction-spike behavior of § are both present in the probe but on different subsets of the eval set, and we do not currently demonstrate them on the same example. The stronger plan-update reading would be licensed by (i) showing the upward shift is significantly larger at retraction tokens than at length-matched non-retraction controls in the same MAE regime, and (ii) recovering the same directional behavior on completions where the probe's absolute predictions track $r_t$ closely; both are tractable on the existing eval cache and are the immediate next step. Model scale and training regime. All three evaluated models are 78B-parameter instruction-tuned checkpoints. We do not know whether the length-tracking direction sharpens, weakens, or relocates at frontier scale, or in base (non-instruction-tuned) models whose completion-length distribution differs structurally. Our per-layer sweep (Appendix) is on one model only and should not be read as a claim about layer localization in the three headline models. Reduced grid coverage. Compute limits forced two omissions: Mistral-7B / TriviaQA is dropped throughout, and the Llama and Mistral cross-dataset matrices cover five of the seven datasets rather than all seven (the Olmo matrix covers all seven). Selection bias toward naturally-terminated sequences. Training and evaluation are restricted to completions that emit EOS before the max-length cutoff (§3.2); sequences that run to the cutoff are excluded by construction. Our results therefore speak to length estimation conditional on successful termination, not to the harder question of whether the model knows when its own generation is going to overrun."
+  },
+  {
+   "id": "sec_7",
+   "title": "Conclusion",
+   "level": 1,
+   "text": "We have shown that the residual stream of an LLM linearly encodes an internal estimate of how many tokens of its own response remain to be generated, and that this estimate has three properties consistent with a plan-like representation rather than a downstream regularity of decoding. (i) It is decodable from the prompt's last hidden state alone: the model has committed to an approximate response length before emitting the first generated token. (ii) The probe direction recovered from natural-language datasets transfers across datasets with markedly different length distributions, weakening a pure memorize-the-marginal explanation; the converse direction (synthetic to natural) does not transfer, and § attributes the asymmetry to natural-language training forcing the probe onto a more general length-tracking direction. (iii) On curated examples the estimate can update directionally: at the moment the model retracts a partial solution and restarts, the probe's prediction shifts upward, a behavior no position-only predictor can produce by construction. Result(iii) is qualitative, not aggregate (§ and Limitations); the natural follow-up is the aggregate retraction analysis we describe there. That analysis is also the most direct starting point for the safety and capabilities applications sketched in §. plainnat"
+  },
+  {
+   "id": "sec_8",
+   "title": "Additional Results",
+   "level": 1,
+   "text": ""
+  },
+  {
+   "id": "sec_8_1",
+   "title": "Per-layer probe sweep",
+   "level": 2,
+   "text": "To localize where in $M$ the length signal is most accessible, we extend the probe family across layers: we train a separate Remaining Count Probe on the hidden state at each individual layer $\\ell \\in \\{0, \\ldots, L\\}$. Figure reports MAE-vs-layer. MAE is significantly higher on early layers, decreases sharply through the middle of the network, and stabilizes in the upper third around $80$. Two takeaways follow. First, most of the length-tracking information is encoded in the late layers: the early layers' predictions sit essentially at the constant-median baseline, and the bulk of the MAE drop happens through the middle and upper third. The poor performance at layer $0$ (the token-embedding output) is itself informative: if the probe were reading off surface features of the current token, the token identity or its embedding, the embedding-layer probe would already match the headline numbers. The signal the probe recovers is therefore a processed representation that emerges only after several layers of computation, not a property of the current token in isolation. Second, the all-layers probe used for the headline numbers in § (where $h_t$ is the concatenation of the hidden state at every layer) significantly outperforms every single-layer probe in Figure the corresponding all-layers cell of Table is well below the best single-layer entry indicating that no single layer is sufficient and that information from multiple layers contributes additively to the linear readout."
+  },
+  {
+   "id": "sec_8_2",
+   "title": "MAE relative to the statistical-baseline floor",
+   "level": 2,
+   "text": "The absolute MAE numbers in Tables and are reported in tokens, which makes within-row comparisons easy but cross-dataset comparisons harder: a $\\mathrm{MAE} = 30$ on a dataset whose constant-median baseline is $50$ is a different result from the same number on a dataset whose constant-median baseline is $200$. Tables and re-report the same numbers, each entry divided by the corresponding constant-median statistical-baseline MAE (the MAD-about-the-median floor of §). On this scale, values below $1$ mean the probe beats the constant baseline and values above $1$ mean it loses; the constant-baseline row of Table is omitted because it is identically $1.00$ by construction. Read in this normalized form, the natural-language datasets cluster in the $0.5$$0.9$ range (the probe extracts roughly $10$$50\\%$ of the floor's gap to zero), the synthetic Count and Countdown sets in the $0.04$$0.7$ range (probe extracts most of the floor), and the one notable null result Llama-3.1-8B / TriviaQA is now obvious: the Exact countdown predictor is identically tied with the constant baseline ($1.00$), and the Remaining Count Probe extracts only an $0.18$ improvement, the smallest natural-language gain in the table."
+  },
+  {
+   "id": "sec_8_3",
+   "title": "MAE by completion length",
+   "level": 2,
+   "text": "The headline numbers in Tables and are token-weighted averages over the eval split. Figure shows the per-completion-length breakdown of the Remaining Count Probe MAE on the eval split on Llama-3.1-8B / GSM8K. Three things are worth noting. First, MAE is lowest for completions whose total length sits near the dataset mode (the $130$$220$-token range, MAE $\\approx 20$$30$), where most of the training mass lives. Second, the short-$T$ tail ($80$$110$ tokens) is mildly worse (MAE $\\approx 40$$50$) and has few samples per bin, so the estimate is noisier. Third, the long-$T$ tail ($T > 300$) degrades sharply: bins in the $400$$460$ range have MAE in the $80$$130$ range. This is the regime from which the curated retraction examples in § are drawn: the absolute-error caveat in that section the probe reads $4.84$ against a true $r_t = 814$ is consistent with the bin-wise picture rather than being an outlier of one completion. On completions whose total length falls in the worst bins of this figure, the probe's absolute predictions are systematically far from $r_t$."
+  },
+  {
+   "id": "sec_8_4",
+   "title": "Training hyperparameters and dataset sizes",
+   "level": 2,
+   "text": "Table lists the probe-training hyperparameters used to produce every number in § and the appendix; Table lists the configured train and eval split sizes per dataset. The base model is held frozen under throughout; only the per-probe linear heads are trained. Each head has its own AdamW optimizer stepped on its own loss for every minibatch (§, Loss and Optimization). All configurations are reproducible from the released repository (); the per-run snapshot in each output directory records the exact values used."
+  },
+  {
+   "id": "sec_8_5",
+   "title": "Prompt templates",
+   "level": 2,
+   "text": "For every dataset, the input to the base model is a chat-template-formatted message consisting of a fixed system prompt and a user message. We do not preprocess or rephrase prompts beyond formatting them with each model's chat template. Table reproduces the system prompt for every dataset used in the paper and lists where the user-message body comes from a synthetic template (already given verbatim in §) for Count and Countdown, and a HuggingFace dataset column for the natural-language sets. The exact configuration is preserved in in the released repository ()."
+  },
+  {
+   "id": "sec_8_6",
+   "title": "Cross-dataset generalization on Mistral-7B-Instruct-v0.3",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_8_7",
+   "title": "Cross-dataset generalization on Olmo-3-7B-Instruct",
+   "level": 2,
+   "text": ""
+  },
+  {
+   "id": "sec_8_8",
+   "title": "Classification probe family full breakdown",
+   "level": 2,
+   "text": "Alongside the three regression predictors of §, we train a complementary family of $K$-way classifiers ($K \\in \\{2, 3, 5, 7, 9\\}$) on $h_t^{(\\ell)}$, with anchors $a_i = i/(K-1)$ for $i = 0, \\ldots, K-1$ over the normalized completion progress $u_t = t / (T-1)$. At $K = 2$ the classifier predicts whether the current token is in the first or the second half of the output; at $K = 9$ it predicts which ninth. The chance-corrected scale of Cohen's $\\kappa$ lets us compare across $K$: a non-trivial $\\kappa$ at $K=9$ indicates the residual stream encodes a finer-grained progress signal than a coarse early/late split. Table reports $\\kappa$ across all (model, dataset) cells. The pattern is consistent across models: $\\kappa$ degrades smoothly with $K$ and is highest on the synthetic sets, where completion length is fully determined by the prompt, and lowest on TriviaQA, consistent with its short and variable answer lengths."
+  },
+  {
+   "id": "sec_8_9",
+   "title": "Additional examples of retraction and count spiking",
+   "level": 2,
+   "text": "The four panels below were obtained by sorting eval-set completions on per-completion MAE and walking down from the worst; they are by construction drawn from the high-loss region of the eval set, not a random sample. On these completions the probe's predictions are far from the ground truth, so the figures are licensed to support a directional, qualitative claim only: that the probe's per-position prediction at the retraction token, not a claim about absolute remaining-count accuracy. The dynamic re-estimation phenomenon documented in § is illustrated there on a single curated retraction example (Figure); the Limitations section notes that a systematic analysis, pairing retraction-token shifts with a length-matched non-retraction control population and reporting the aggregate distribution of upward shifts in $\\hat{r}_t$, is the strongest version of this result and remains future work. As partial qualitative support in advance of that aggregate study, we collect below four additional examples from the same high-loss selection procedure. The pattern that recurs in those high-loss completions is precisely a retraction-token shift: the ground-truth $r_t$ continues to decrement monotonically while the probe's $\\hat{r}_t$ jumps upward, so the contribution to MAE around the retraction is large by construction. Each panel was captured from an interactive token-by-token explorer that displays, for every completion position $t$, the underlying token, the ground-truth remaining count $r_t$, and the Remaining Count Probe's per-position prediction $\\hat{r}_t$ ( column in the table at the top of each panel and bar height in the chart at the bottom). The takeaway in every panel is qualitatively the same as in §: at a token where the model concedes that its current line of work is wrong , , , , $\\hat{r}_t$ jumps sharply upward, while the true remaining count $r_t$ continues to decrement monotonically. The four examples below show the spike triggered by different retraction phrases at different absolute positions in the completion, suggesting the pattern is not tied to a single trigger token. We make no quantitative claim about the prevalence of the pattern from a four-example gallery; the systematic version is flagged as future work in Limitations."
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "r_t = T - t \\quad \\text{(remaining token count)},",
+   "section": "sec_3_1"
+  },
+  {
+   "id": "eq_2",
+   "latex": "\\mathcal{L}_{\\text{prompt-only}} = \\bigl(\\hat{T} - T\\bigr)^2 \\quad \\text{evaluated only at } t = \\text{prompt\\_length} - 1,",
+   "section": "sec_3_3"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_4_1",
+   "caption": "Prompt-end absolute error of the Completion Length Probe versus the constant-median statistical baseline. Each cell is the MAE in tokens between the predicted total completion length $\\hat{T}_0$ and the realized $T$, evaluated only at the prompt's last position and averaged across the eval split. Lower is better; bold marks the winner per (model, dataset). Mistral-7B / TriviaQA was omitted due to computational limitations.",
+   "rows": [
+    [
+     "Model",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MATH",
+     "MMLU-Pro",
+     "OpenThoughts-1k",
+     "TriviaQA"
+    ],
+    [
+     "Llama-3.1-8B"
+    ],
+    [
+     "Statistical baseline",
+     "150.17",
+     "150.18",
+     "58.66",
+     "166.32",
+     "204.21",
+     "212.24",
+     "57.86"
+    ],
+    [
+     "Completion Length Probe",
+     "29.73",
+     "5.27",
+     "42.29",
+     "115.29",
+     "117.19",
+     "141.65",
+     "44.20"
+    ],
+    [
+     "Olmo-3-7B"
+    ],
+    [
+     "Statistical baseline",
+     "147.67",
+     "150.58",
+     "116.17",
+     "194.05",
+     "204.82",
+     "272.58",
+     "160.56"
+    ],
+    [
+     "Completion Length Probe",
+     "31.22",
+     "8.40",
+     "80.46",
+     "132.13",
+     "134.86",
+     "199.13",
+     "110.84"
+    ],
+    [
+     "Mistral-7B"
+    ],
+    [
+     "Statistical baseline",
+     "263.15",
+     "265.12",
+     "84.81",
+     "174.71",
+     "196.16",
+     "195.77",
+     "--"
+    ],
+    [
+     "Completion Length Probe",
+     "135.09",
+     "35.92",
+     "74.92",
+     "132.28",
+     "131.51",
+     "165.36",
+     "--"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_4_2",
+   "caption": "Per-token MAE on each (model, dataset) cell, in tokens, token-weighted mean across the eval split (every completion-position contributes one term to the mean). The constant-median statistical baseline is the same constant at every position; the exact-countdown predictor uses the model's prompt-end estimate $\\hat{T}_0$ and decrements by one each step; the Remaining Count Probe reads $h_t$ at every position. Lower is better; bold marks the winner per cell.",
+   "rows": [
+    [
+     "Model",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MATH",
+     "MMLU-Pro",
+     "OpenThoughts-1k",
+     "TriviaQA"
+    ],
+    [
+     "Llama-3.1-8B"
+    ],
+    [
+     "Statistical baseline",
+     "117.81",
+     "117.82",
+     "70.15",
+     "151.20",
+     "172.49",
+     "187.83",
+     "61.09"
+    ],
+    [
+     "Exact countdown",
+     "29.80",
+     "4.82",
+     "44.04",
+     "123.32",
+     "123.31",
+     "129.09",
+     "60.94"
+    ],
+    [
+     "Remaining Count Probe",
+     "34.41",
+     "4.38",
+     "36.59",
+     "109.87",
+     "123.56",
+     "131.47",
+     "50.05"
+    ],
+    [
+     "Olmo-3-7B"
+    ],
+    [
+     "Statistical baseline",
+     "116.54",
+     "117.84",
+     "124.32",
+     "178.83",
+     "184.82",
+     "219.01",
+     "151.00"
+    ],
+    [
+     "Exact countdown",
+     "31.59",
+     "8.64",
+     "94.51",
+     "131.87",
+     "127.19",
+     "191.75",
+     "140.88"
+    ],
+    [
+     "Remaining Count Probe",
+     "33.36",
+     "4.50",
+     "76.65",
+     "123.10",
+     "133.54",
+     "195.97",
+     "116.75"
+    ],
+    [
+     "Mistral-7B"
+    ],
+    [
+     "Statistical baseline",
+     "197.45",
+     "200.23",
+     "91.67",
+     "161.41",
+     "171.10",
+     "179.71",
+     "--"
+    ],
+    [
+     "Exact countdown",
+     "137.77",
+     "37.36",
+     "82.90",
+     "132.19",
+     "141.05",
+     "158.16",
+     "--"
+    ],
+    [
+     "Remaining Count Probe",
+     "69.51",
+     "20.81",
+     "66.94",
+     "122.23",
+     "138.55",
+     "133.63",
+     "--"
+    ]
+   ]
+  },
+  {
+   "id": "tab_3",
+   "section": "sec_5",
+   "caption": "Remaining Count Probe cross-token MAE (mean across 3 seeds) on Llama-3.1-8B. Rows: train dataset; columns: eval dataset. Each train-dataset row is followed by a baseline row giving the median-baseline MAE fit on that dataset's train split, reported on five datasets.",
+   "rows": [
+    [
+     "Train",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MMLU-Pro",
+     "OpenThoughts-1k"
+    ],
+    [
+     "Count",
+     "35.07",
+     "99.17",
+     "101.21",
+     "228.93",
+     "280.02"
+    ],
+    [
+     "\\quadbaseline",
+     "117.81",
+     "117.82",
+     "87.12",
+     "176.54",
+     "208.25"
+    ],
+    [
+     "Countdown",
+     "183.81",
+     "4.13",
+     "87.84",
+     "236.40",
+     "278.57"
+    ],
+    [
+     "\\quadbaseline",
+     "117.81",
+     "117.82",
+     "87.12",
+     "176.54",
+     "208.25"
+    ],
+    [
+     "GSM8K",
+     "130.91",
+     "149.68",
+     "38.79",
+     "164.27",
+     "199.74"
+    ],
+    [
+     "\\quadbaseline",
+     "129.59",
+     "129.59",
+     "70.15",
+     "201.75",
+     "241.90"
+    ],
+    [
+     "MMLU-Pro",
+     "105.01",
+     "118.96",
+     "63.57",
+     "121.51",
+     "147.25"
+    ],
+    [
+     "\\quadbaseline",
+     "118.83",
+     "118.84",
+     "98.93",
+     "172.68",
+     "201.28"
+    ],
+    [
+     "OpenThoughts-1k",
+     "100.37",
+     "101.03",
+     "107.94",
+     "133.05",
+     "136.69"
+    ],
+    [
+     "\\quadbaseline",
+     "147.44",
+     "147.45",
+     "175.60",
+     "175.51",
+     "187.83"
+    ]
+   ]
+  },
+  {
+   "id": "tab_4",
+   "section": "sec_8_2",
+   "caption": "Relative version of Table~\\ref{tab:prompt-only-count-mae}: prompt-end AE of the Completion Length Probe divided by the corresponding constant-median statistical-baseline AE. Smaller is better; values below $1$ mean the probe beats the constant baseline. Mistral-7B / TriviaQA omitted (``--''); see §\\ref{subsec:models-datasets}.",
+   "rows": [
+    [
+     "Model",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MATH",
+     "MMLU-Pro",
+     "OpenThoughts-1k",
+     "TriviaQA"
+    ],
+    [
+     "Llama-3.1-8B",
+     "0.20",
+     "0.04",
+     "0.72",
+     "0.69",
+     "0.57",
+     "0.67",
+     "0.76"
+    ],
+    [
+     "Olmo-3-7B",
+     "0.21",
+     "0.06",
+     "0.69",
+     "0.68",
+     "0.66",
+     "0.73",
+     "0.69"
+    ],
+    [
+     "Mistral-7B",
+     "0.51",
+     "0.14",
+     "0.88",
+     "0.76",
+     "0.67",
+     "0.84",
+     "--"
+    ]
+   ]
+  },
+  {
+   "id": "tab_5",
+   "section": "sec_8_2",
+   "caption": "Relative version of Table~\\ref{tab:prompt-only-static-decay-mae}: per-token MAE divided by the constant-median statistical-baseline MAE. The Statistical-baseline row of Table~\\ref{tab:prompt-only-static-decay-mae} is omitted from this version because it is identically $1.00$ by construction. Smaller is better; values below $1$ mean the predictor beats the constant baseline, values at or above $1$ mean it ties or loses. Mistral-7B / TriviaQA omitted (``--''); see §\\ref{subsec:models-datasets}.",
+   "rows": [
+    [
+     "Model",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MATH",
+     "MMLU-Pro",
+     "OpenThoughts-1k",
+     "TriviaQA"
+    ],
+    [
+     "Llama-3.1-8B"
+    ],
+    [
+     "Exact countdown",
+     "0.25",
+     "0.04",
+     "0.63",
+     "0.82",
+     "0.71",
+     "0.69",
+     "1.00"
+    ],
+    [
+     "Remaining Count Probe",
+     "0.29",
+     "0.04",
+     "0.52",
+     "0.73",
+     "0.72",
+     "0.70",
+     "0.82"
+    ],
+    [
+     "Olmo-3-7B"
+    ],
+    [
+     "Exact countdown",
+     "0.27",
+     "0.07",
+     "0.76",
+     "0.74",
+     "0.69",
+     "0.88",
+     "0.93"
+    ],
+    [
+     "Remaining Count Probe",
+     "0.29",
+     "0.04",
+     "0.62",
+     "0.69",
+     "0.72",
+     "0.89",
+     "0.77"
+    ],
+    [
+     "Mistral-7B"
+    ],
+    [
+     "Exact countdown",
+     "0.70",
+     "0.19",
+     "0.90",
+     "0.82",
+     "0.82",
+     "0.88",
+     "--"
+    ],
+    [
+     "Remaining Count Probe",
+     "0.35",
+     "0.10",
+     "0.73",
+     "0.76",
+     "0.81",
+     "0.74",
+     "--"
+    ]
+   ]
+  },
+  {
+   "id": "tab_6",
+   "section": "sec_8_4",
+   "caption": "Probe-training hyperparameters. Defaults from the released code.",
+   "rows": [
+    [
+     "Setting",
+     "Value",
+     "Notes"
+    ],
+    [
+     "Optimizer (per probe head)",
+     "AdamW",
+     "one optimizer per active probe head"
+    ],
+    [
+     "Learning rate",
+     "$2 \\times 10^{-4}$",
+     "shared across probe heads"
+    ],
+    [
+     "Weight decay",
+     "$0.01$",
+     ""
+    ],
+    [
+     "Max gradient norm",
+     "$10.0$",
+     "gradient clipping"
+    ],
+    [
+     "Loss (regression)",
+     "MSE",
+     "for count, percentage, prompt_only_count"
+    ],
+    [
+     "Loss (classification)",
+     "soft cross-entropy",
+     "with anchor sigma $0.15$ (§\\ref{app:classification})"
+    ],
+    [
+     "LR scheduler",
+     "ReduceLROnPlateau",
+     "monitor eval_mae, factor $0.5$, patience $5$ eval steps, $\\min$\\,LR $= 10^{-7}$"
+    ],
+    [
+     "Max steps",
+     "$4000$",
+     ""
+    ],
+    [
+     "Batch size (per device)",
+     "$8$",
+     "training and eval; same across probes"
+    ],
+    [
+     "Gradient accumulation",
+     "$1$",
+     ""
+    ],
+    [
+     "Eval cadence",
+     "every $100$ steps",
+     "ReduceLROnPlateau consumes eval_mae from these evals"
+    ],
+    [
+     "Probe input layer",
+     "all layers concatenated",
+     "data.hidden_layer = \"all\""
+    ],
+    [
+     "Independent seeds",
+     "$\\{0, 1, 2\\}$",
+     "seeds threaded through Torch / NumPy / Python / HF Trainer / dataloader"
+    ],
+    [
+     "Hidden-state extraction",
+     "frozen forward pass",
+     "torch.no_grad() over the full (prompt, completion) sequence"
+    ],
+    [
+     "Generation (extraction)",
+     "max_new_tokens $=1024$",
+     "do_sample=True, $T = 0.7$, top-$p = 0.8$, top-$k = 20$"
+    ],
+    [
+     "Naturally-terminated filter",
+     "has_eos = True only",
+     "sequences that hit max_new_tokens excluded (§\\ref{sec:methods})"
+    ]
+   ]
+  },
+  {
+   "id": "tab_7",
+   "section": "sec_8_4",
+   "caption": "Configured train / eval split sizes per dataset, as set in src/miol/conf/data/. The actual number of samples used by each probe is at most the configured size minus those whose generation hit the max_new_tokens cutoff (filtered by has_eos; see §\\ref{subsec:models-datasets}); per-(model, dataset) effective counts vary slightly with the model's termination behavior.",
+   "rows": [
+    [
+     "Dataset",
+     "Train",
+     "Eval",
+     "Source / split convention"
+    ],
+    [
+     "Count",
+     "301",
+     "301",
+     "synthetic, $n \\in \\{0, \\ldots, 300\\}$, one completion per length"
+    ],
+    [
+     "Countdown",
+     "301",
+     "301",
+     "synthetic, $n \\in \\{0, \\ldots, 300\\}$, one completion per length"
+    ],
+    [
+     "GSM8K",
+     "$7{,}473$",
+     "$1{,}319$",
+     "full train / test splits"
+    ],
+    [
+     "MATH",
+     "$\\approx 7{,}500$",
+     "$\\approx 5{,}000$",
+     "concatenation of seven subject configs"
+    ],
+    [
+     "MMLU-Pro",
+     "$10{,}000$",
+     "$2{,}256$",
+     "first $10{,}000$ for train, last $2{,}256$ for eval"
+    ],
+    [
+     "OpenThoughts-1k",
+     "$800$",
+     "$200$",
+     "first $800$ / last $200$ of the $1$k sample"
+    ],
+    [
+     "TriviaQA",
+     "$10{,}000$",
+     "$2{,}000$",
+     "first $10{,}000$ for train, last $2{,}000$ for eval"
+    ]
+   ]
+  },
+  {
+   "id": "tab_8",
+   "section": "sec_8_5",
+   "caption": "System prompts and user-message source for each dataset. The synthetic user-message templates for Count and Countdown are reproduced verbatim in §\\ref{subsec:datasets}; for the natural-language datasets the user message is the indicated HuggingFace column for the example, used unmodified.",
+   "rows": []
+  },
+  {
+   "id": "tab_9",
+   "section": "sec_8_6",
+   "caption": "Remaining Count Probe cross-token MAE (mean across 3 seeds) on Mistral-7B. Each train-dataset row is followed by a baseline row giving the median-baseline MAE fit on that dataset's train split. Reported on the five datasets for which the full train$\\times$eval grid was available; MATH and TriviaQA are omitted from this matrix, see §\\ref{subsec:models-datasets}. The Olmo-3-7B counterpart (Table~\\ref{tab:olmo-cross-abs}) reports all seven.",
+   "rows": [
+    [
+     "Train",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MMLU-Pro",
+     "OpenThoughts-1k"
+    ],
+    [
+     "Count",
+     "71.75",
+     "188.31",
+     "120.75",
+     "229.31",
+     "262.99"
+    ],
+    [
+     "\\quadbaseline",
+     "197.45",
+     "200.48",
+     "147.94",
+     "170.32",
+     "179.64"
+    ],
+    [
+     "Countdown",
+     "257.66",
+     "21.09",
+     "124.40",
+     "208.53",
+     "226.64"
+    ],
+    [
+     "\\quadbaseline",
+     "197.77",
+     "200.23",
+     "158.71",
+     "172.72",
+     "179.93"
+    ],
+    [
+     "GSM8K",
+     "247.25",
+     "277.57",
+     "60.93",
+     "142.28",
+     "170.10"
+    ],
+    [
+     "\\quadbaseline",
+     "228.80",
+     "236.82",
+     "91.67",
+     "187.53",
+     "215.33"
+    ],
+    [
+     "OpenThoughts-1k",
+     "181.93",
+     "219.30",
+     "139.60",
+     "128.60",
+     "132.99"
+    ],
+    [
+     "\\quadbaseline",
+     "197.54",
+     "200.27",
+     "153.61",
+     "171.51",
+     "179.71"
+    ]
+   ]
+  },
+  {
+   "id": "tab_10",
+   "section": "sec_8_7",
+   "caption": "Remaining Count Probe cross-token MAE (mean across 3 seeds) on Olmo-3-7B. Each train-dataset row is followed by a baseline row giving the median-baseline MAE fit on that dataset's train split.",
+   "rows": [
+    [
+     "Train",
+     "Count",
+     "Countdown",
+     "GSM8K",
+     "MATH",
+     "MMLU-Pro",
+     "OpenThoughts-1k",
+     "TriviaQA"
+    ],
+    [
+     "Count",
+     "28.97",
+     "119.08",
+     "169.72",
+     "258.82",
+     "271.78",
+     "310.52",
+     "185.82"
+    ],
+    [
+     "\\quadbaseline",
+     "116.54",
+     "117.84",
+     "124.24",
+     "192.66",
+     "202.63",
+     "242.21",
+     "150.64"
+    ],
+    [
+     "Countdown",
+     "169.18",
+     "4.57",
+     "185.80",
+     "284.90",
+     "292.47",
+     "339.74",
+     "191.86"
+    ],
+    [
+     "\\quadbaseline",
+     "116.55",
+     "117.84",
+     "124.30",
+     "192.35",
+     "202.28",
+     "241.83",
+     "150.71"
+    ],
+    [
+     "GSM8K",
+     "103.51",
+     "115.47",
+     "80.95",
+     "147.89",
+     "174.40",
+     "203.76",
+     "135.60"
+    ],
+    [
+     "\\quadbaseline",
+     "117.37",
+     "118.86",
+     "124.32",
+     "199.78",
+     "210.38",
+     "250.50",
+     "150.13"
+    ],
+    [
+     "MMLU-Pro",
+     "125.74",
+     "108.26",
+     "130.51",
+     "133.27",
+     "134.73",
+     "174.52",
+     "158.45"
+    ],
+    [
+     "\\quadbaseline",
+     "149.74",
+     "149.57",
+     "165.18",
+     "180.69",
+     "184.82",
+     "218.29",
+     "184.97"
+    ],
+    [
+     "OpenThoughts-1k",
+     "106.65",
+     "104.97",
+     "129.57",
+     "130.81",
+     "150.49",
+     "178.03",
+     "150.73"
+    ],
+    [
+     "\\quadbaseline",
+     "141.65",
+     "141.71",
+     "156.11",
+     "179.30",
+     "184.35",
+     "219.01",
+     "177.60"
+    ],
+    [
+     "TriviaQA",
+     "110.91",
+     "124.37",
+     "102.90",
+     "174.14",
+     "164.93",
+     "220.76",
+     "117.25"
+    ],
+    [
+     "\\quadbaseline",
+     "119.47",
+     "121.09",
+     "126.04",
+     "206.57",
+     "217.60",
+     "258.09",
+     "151.00"
+    ]
+   ]
+  },
+  {
+   "id": "tab_11",
+   "section": "sec_8_8",
+   "caption": "Full per-(model, dataset) dataset-wide Cohen's $\\kappa$ for the classification probe family $K \\in \\{2, 3, 5, 7, 9\\}$.",
+   "rows": [
+    [
+     "$K$",
+     "2",
+     "3",
+     "5",
+     "7",
+     "9"
+    ],
+    [
+     "Llama-3.1-8B"
+    ],
+    [
+     "Count",
+     "0.966",
+     "0.942",
+     "0.912",
+     "0.819",
+     "0.774"
+    ],
+    [
+     "Countdown",
+     "0.983",
+     "0.990",
+     "0.935",
+     "0.911",
+     "0.775"
+    ],
+    [
+     "GSM8K",
+     "0.838",
+     "0.804",
+     "0.693",
+     "0.553",
+     "0.463"
+    ],
+    [
+     "MATH",
+     "0.744",
+     "0.707",
+     "0.559",
+     "0.427",
+     "0.332"
+    ],
+    [
+     "MMLU-Pro",
+     "0.744",
+     "0.677",
+     "0.516",
+     "0.385",
+     "0.300"
+    ],
+    [
+     "OpenThoughts-1k",
+     "0.766",
+     "0.697",
+     "0.545",
+     "0.420",
+     "0.332"
+    ],
+    [
+     "TriviaQA",
+     "0.617",
+     "0.549",
+     "0.380",
+     "0.280",
+     "0.222"
+    ],
+    [
+     "Olmo-3-7B"
+    ],
+    [
+     "Count",
+     "0.949",
+     "0.919",
+     "0.878",
+     "0.809",
+     "0.708"
+    ],
+    [
+     "Countdown",
+     "0.976",
+     "0.985",
+     "0.926",
+     "0.900",
+     "0.903"
+    ],
+    [
+     "GSM8K",
+     "0.823",
+     "0.769",
+     "0.646",
+     "0.519",
+     "0.422"
+    ],
+    [
+     "MATH",
+     "0.777",
+     "0.714",
+     "0.574",
+     "0.447",
+     "0.358"
+    ],
+    [
+     "MMLU-Pro",
+     "0.770",
+     "0.709",
+     "0.554",
+     "0.412",
+     "0.330"
+    ],
+    [
+     "OpenThoughts-1k",
+     "0.707",
+     "0.547",
+     "0.380",
+     "0.272",
+     "0.208"
+    ],
+    [
+     "TriviaQA",
+     "0.705",
+     "0.636",
+     "0.439",
+     "0.324",
+     "0.250"
+    ],
+    [
+     "Mistral-7B"
+    ],
+    [
+     "Count",
+     "0.951",
+     "0.919",
+     "0.863",
+     "0.786",
+     "0.672"
+    ],
+    [
+     "Countdown",
+     "0.990",
+     "0.976",
+     "0.946",
+     "0.927",
+     "0.863"
+    ],
+    [
+     "GSM8K",
+     "0.793",
+     "0.762",
+     "0.625",
+     "0.506",
+     "0.414"
+    ],
+    [
+     "MATH",
+     "0.723",
+     "0.697",
+     "0.548",
+     "0.407",
+     "0.315"
+    ],
+    [
+     "MMLU-Pro",
+     "0.754",
+     "0.704",
+     "0.540",
+     "0.416",
+     "0.332"
+    ],
+    [
+     "OpenThoughts-1k",
+     "0.732",
+     "0.679",
+     "0.524",
+     "0.379",
+     "0.315"
+    ]
+   ]
+  }
+ ],
+ "macros": {},
+ "references": [
+  {
+   "key": "arditi2024refusal",
+   "text": "Refusal in Language Models Is Mediated by a Single Direction. Andy Arditi and Oscar Balcells Obeso and Aaquib Syed and Daniel Paleka and Nina Rimsky and Wes Gurnee and Neel Nanda. The Thirty-eighth Annual Conference on Neural Information Processing Systems. 2024",
+   "arxiv_id": null
+  },
+  {
+   "key": "burns2023ccs",
+   "text": "Discovering Latent Knowledge in Language Models Without Supervision. Collin Burns and Haotian Ye and Dan Klein and Jacob Steinhardt. 2024",
+   "arxiv_id": "2212.03827"
+  },
+  {
+   "key": "park2024lrh",
+   "text": "The Linear Representation Hypothesis and the Geometry of Large Language Models. Kiho Park and Yo Joong Choe and Victor Veitch. 2024",
+   "arxiv_id": "2311.03658"
+  },
+  {
+   "key": "alain2017probes",
+   "text": "Understanding intermediate layers using linear classifier probes. Guillaume Alain and Yoshua Bengio. 2018",
+   "arxiv_id": "1610.01644"
+  },
+  {
+   "key": "tenney2019bertpipeline",
+   "text": "BERT Rediscovers the Classical NLP Pipeline. Ian Tenney and Dipanjan Das and Ellie Pavlick. 2019",
+   "arxiv_id": "1905.05950"
+  },
+  {
+   "key": "hewitt2019structuralprobe",
+   "text": "A structural probe for finding syntax in word representations. Hewitt, John and Manning, Christopher D.. NAACL. 2019",
+   "arxiv_id": null
+  },
+  {
+   "key": "belinkov2022probing",
+   "text": "Probing Classifiers: Promises, Shortcomings, and Advances. Yonatan Belinkov. 2021",
+   "arxiv_id": "2102.12452"
+  },
+  {
+   "key": "li2023othellogpt",
+   "text": "Emergent World Representations: Exploring a Sequence Model Trained on a Synthetic Task. Kenneth Li and Aspen K. Hopkins and David Bau and Fernanda Viégas and Hanspeter Pfister and Martin Wattenberg. 2024",
+   "arxiv_id": "2210.13382"
+  },
+  {
+   "key": "nanda2023emergentlinear",
+   "text": "Emergent Linear Representations in World Models of Self-Supervised Sequence Models. Neel Nanda and Andrew Lee and Martin Wattenberg. 2023",
+   "arxiv_id": "2309.00941"
+  },
+  {
+   "key": "marks2024geometry",
+   "text": "The Geometry of Truth: Emergent Linear Structure in Large Language Model Representations of True/False Datasets. Samuel Marks and Max Tegmark. 2024",
+   "arxiv_id": "2310.06824"
+  },
+  {
+   "key": "zou2023repe",
+   "text": "Representation Engineering: A Top-Down Approach to AI Transparency. Andy Zou and Long Phan and Sarah Chen and others. 2025",
+   "arxiv_id": "2310.01405"
+  },
+  {
+   "key": "elhage2022superposition",
+   "text": "Toy Models of Superposition. Nelson Elhage and Tristan Hume and Catherine Olsson and others. 2022",
+   "arxiv_id": "2209.10652"
+  },
+  {
+   "key": "lindsey2025biology",
+   "text": "On the biology of a large language model. Lindsey, Jack and Gurnee, Wes and Ameisen, Emmanuel and others. 2025",
+   "arxiv_id": null
+  },
+  {
+   "key": "guo2025deepseekr1",
+   "text": "DeepSeek-R1 incentivizes reasoning in LLMs through reinforcement learning. Guo, Daya and Yang, Dejian and Zhang, Haowei and others. Nature. 2025",
+   "arxiv_id": null
+  },
+  {
+   "key": "daliberti2026illusion",
+   "text": "The Illusion of Insight in Reasoning Models. Liv G. d'Aliberti and Manoel Horta Ribeiro. 2026",
+   "arxiv_id": "2601.00514"
+  },
+  {
+   "key": "liu2025r1zerocritical",
+   "text": "Understanding R1-Zero-Like Training: A Critical Perspective. Zichen Liu and Changyu Chen and Wenjun Li and Penghui Qi and Tianyu Pang and Chao Du and Wee Sun Lee and Min Lin. 2025",
+   "arxiv_id": "2503.20783"
+  },
+  {
+   "key": "yang2025aha",
+   "text": "Understanding Aha Moments: from External Observations to Internal Mechanisms. Shu Yang and Junchao Wu and Xin Chen and Yunze Xiao and Xinyi Yang and Derek F. Wong and Di Wang. 2025",
+   "arxiv_id": "2504.02956"
+  },
+  {
+   "key": "tts2025",
+   "text": "Can Aha Moments Be Fake? Identifying True and Decorative Thinking Steps in Chain-of-Thought. Jiachen Zhao and Yiyou Sun and Weiyan Shi and Dawn Song. 2026",
+   "arxiv_id": "2510.24941"
+  },
+  {
+   "key": "reasoningtheater2026",
+   "text": "Siddharth Boppana and Annabel Ma and Max Loeffler and Raphael Sarfati and Eric Bigelow and Atticus Geiger and Owen Lewis and Jack Merullo. 2026",
+   "arxiv_id": "2603.05488"
+  },
+  {
+   "key": "muennighoff2025s1",
+   "text": "s1: Simple test-time scaling. Niklas Muennighoff and Zitong Yang and Weijia Shi and Xiang Lisa Li and Li Fei-Fei and Hannaneh Hajishirzi and Luke Zettlemoyer and Percy Liang and Emmanuel Candès and Tatsunori Hashimoto. 2025",
+   "arxiv_id": "2501.19393"
+  },
+  {
+   "key": "huang2024selfcorrect",
+   "text": "Large Language Models Cannot Self-Correct Reasoning Yet. Jie Huang and Xinyun Chen and Swaroop Mishra and Huaixiu Steven Zheng and Adams Wei Yu and Xinying Song and Denny Zhou. 2024",
+   "arxiv_id": "2310.01798"
+  },
+  {
+   "key": "yehudai2025counting",
+   "text": "When Can Transformers Count to n?. Gilad Yehudai and Haim Kaplan and Guy Dar and Royi Rassin and Asma Ghandeharioun and Mor Geva and Amir Globerson. 2026",
+   "arxiv_id": "2407.15160"
+  },
+  {
+   "key": "barbero2024oversquashing",
+   "text": "Transformers need glasses! Information over-squashing in language tasks. Federico Barbero and Andrea Banino and Steven Kapturowski and Dharshan Kumaran and João G. M. Araújo and Alex Vitvitskyi and Razvan Pascanu and Petar Veličković. 2024",
+   "arxiv_id": "2406.04267"
+  },
+  {
+   "key": "singh2024tokenizationcounts",
+   "text": "Tokenization counts: the impact of tokenization on arithmetic in frontier LLMs. Aaditya K. Singh and DJ Strouse. 2024",
+   "arxiv_id": "2402.14903"
+  },
+  {
+   "key": "meta2024llama3",
+   "text": "The Llama 3 Herd of Models. Aaron Grattafiori and Abhimanyu Dubey and Abhinav Jauhri and others. 2024",
+   "arxiv_id": "2407.21783"
+  },
+  {
+   "key": "allenai2024olmo",
+   "text": "OLMo: Accelerating the Science of Language Models. Dirk Groeneveld and Iz Beltagy and Pete Walsh and others. 2024",
+   "arxiv_id": "2402.00838"
+  },
+  {
+   "key": "jiang2023mistral",
+   "text": "Mistral 7B. Albert Q. Jiang and Alexandre Sablayrolles and Arthur Mensch and others. 2023",
+   "arxiv_id": "2310.06825"
+  },
+  {
+   "key": "cobbe2021gsm8k",
+   "text": "Training Verifiers to Solve Math Word Problems. Karl Cobbe and Vineet Kosaraju and Mohammad Bavarian and Mark Chen and Heewoo Jun and Lukasz Kaiser and Matthias Plappert and Jerry Tworek and Jacob Hilton and Reiichiro Nakano and Christopher Hesse and John Schulman. 2021",
+   "arxiv_id": "2110.14168"
+  },
+  {
+   "key": "hendrycks2021math",
+   "text": "Measuring Mathematical Problem Solving With the MATH Dataset. Dan Hendrycks and Collin Burns and Saurav Kadavath and Akul Arora and Steven Basart and Eric Tang and Dawn Song and Jacob Steinhardt. 2021",
+   "arxiv_id": "2103.03874"
+  },
+  {
+   "key": "wang2024mmlupro",
+   "text": "MMLU-Pro: A More Robust and Challenging Multi-Task Language Understanding Benchmark. Yubo Wang and Xueguang Ma and Ge Zhang and others. 2024",
+   "arxiv_id": "2406.01574"
+  },
+  {
+   "key": "joshi2017triviaqa",
+   "text": "TriviaQA: A Large Scale Distantly Supervised Challenge Dataset for Reading Comprehension. Mandar Joshi and Eunsol Choi and Daniel S. Weld and Luke Zettlemoyer. 2017",
+   "arxiv_id": "1705.03551"
+  },
+  {
+   "key": "guha2025openthoughts",
+   "text": "OpenThoughts: Data Recipes for Reasoning Models. Etash Guha and Ryan Marten and Sedrick Keh and others. 2025",
+   "arxiv_id": "2506.04178"
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_1",
+   "caption": "Predicting remaining tokens on a short example. The answer to ``How old is the son?'' has ground truth remaining counts 4, 3, 2, 1 (dashed line, hollow markers). The constant baseline outputs the dataset median at every position. The prompt-only probe is trained on the prompt's final hidden state and decremented by one at each step, capturing the right shape but with a systematic offset (9$\\to$8$\\to$7$\\to$6). The Remaining Count Probe reads the residual stream at every position; its predictions (6$\\to$3$\\to$4$\\to$1) are non-monotonic, yet it achieves the lowest MAE (1.0 vs.\\ 5.0 and 5.5). Section~\\ref{sec:results} and \\autoref{fig:retraction} show a real example with the retraction-token spike.",
+   "graphics": [
+    "figures/rtp1.pdf"
+   ],
+   "assets": [
+    "figures/rtp1.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_1",
+   "caption": "Count prediction versus ground truth on a typical example with small MAE.",
+   "graphics": [
+    "figures/good.png"
+   ],
+   "assets": [
+    "figures/good.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_1",
+   "caption": "Count prediction on a high-MAE example, zoomed in around the retraction.",
+   "graphics": [
+    "figures/bad.png"
+   ],
+   "assets": [
+    "figures/bad.png"
+   ]
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_8_1",
+   "caption": "Per-layer probe MAE. MAE-vs-layer for the Remaining Count Probe. Layer 0 = embedding output; layer $L$ = final hidden state. The dashed horizontal line marks the constant-median statistical baseline.",
+   "graphics": [
+    "figures/layers.pdf"
+   ],
+   "assets": [
+    "figures/layers.png"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_8_3",
+   "caption": "Per-token-length-bin MAE of the Remaining Count Probe on the eval split, at end of training (step 4000) on Llama-3.1-8B / GSM8K. Bin width $10$ tokens. Orange line and left axis: bin-mean MAE in tokens. Coral bars and right axis: number of eval-split samples per bin. Probe accuracy is best on completions whose total length sits near the dataset mode ($130$--$220$ tokens, MAE $\\approx 20$--$30$) and degrades for very long completion, which are much less frequent in the training dataset; the long-$T$ tail ($T > 300$) is where the curated retraction examples of §\\ref{sec:res:dynamic} live and where the probe's absolute predictions are systematically far from $r_t$.",
+   "graphics": [
+    "figures/mae_per_bin.png"
+   ],
+   "assets": [
+    "figures/mae_per_bin.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_8_9",
+   "caption": "Retraction example 1. Around completion position 469 the model emits ``Wait --- that's a contradiction'' after writing out a multi-step arithmetic answer. The count pred column shows $\\hat{r}_t$ jumping to $\\approx 353$ at the \"Wait\" token (row 469) and remaining elevated through the retraction phrase, while the true $r_t$ continues to decrement monotonically.",
+   "graphics": [
+    "figures/signal-2026-05-06-142800.jpeg"
+   ],
+   "assets": [
+    "figures/signal-2026-05-06-142800.jpeg"
+   ]
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_8_9",
+   "caption": "Retraction example 2. Around completion position 608, after the model has written a candidate answer ``**20 flashlights**'', it follows with ``Wait --- but that would mean \\dots'' and the bar chart shows a corresponding upward excursion. The \"Wait\" token at row 608 has $\\hat{r}_t \\approx 369$ (tooltip), against the surrounding $\\approx 130$--$170$ range.",
+   "graphics": [
+    "figures/signal-2026-05-06-142800_002.jpeg"
+   ],
+   "assets": [
+    "figures/signal-2026-05-06-142800_002.jpeg"
+   ]
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_8_9",
+   "caption": "Retraction example 3. Around completion position 261 the model writes ``.\\textbackslash n\\textbackslash n But let's check the exact wording'' immediately after producing a candidate numerical answer. The count pred column climbs from the surrounding $\\approx 220$--$280$ range to a local peak of $\\hat{r}_t \\approx 366$ at the start of the reconsideration and stays elevated for the next several tokens.",
+   "graphics": [
+    "figures/signal-2026-05-06-142800_004.jpeg"
+   ],
+   "assets": [
+    "figures/signal-2026-05-06-142800_004.jpeg"
+   ]
+  },
+  {
+   "id": "fig_9",
+   "section": "sec_8_9",
+   "caption": "Retraction example 4. Around completion position 500 the model produces a doubled retraction: ``But let's look again. \\textbackslash n\\textbackslash n Wait --- perhaps the phrase \\dots''. The count pred column spikes to $\\hat{r}_t \\approx 341$ at the \"But\" token (row 494) and shows a second elevated cluster around the subsequent \"Wait\".",
+   "graphics": [
+    "figures/signal-2026-05-06-142800_005.jpeg"
+   ],
+   "assets": [
+    "figures/signal-2026-05-06-142800_005.jpeg"
+   ]
+  }
+ ]
+}

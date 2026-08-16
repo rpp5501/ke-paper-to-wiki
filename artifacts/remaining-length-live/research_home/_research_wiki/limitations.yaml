@@ -1,0 +1,49 @@
+concept: limitations
+status: complete
+synthesis: 'A linear probe only shows that a quantity is linearly decodable from the
+  residual stream; decodability is a claim about information geometry, not about whether
+  the forward pass reads and uses that subspace to produce output [S1]. Confounds
+  include correlated surface cues (token count, punctuation density, positional statistics)
+  that a probe can latch onto instead of a true length representation, and probe expressivity
+  itself, since a powerful enough probe can extract structure the network encodes
+  only as an incidental byproduct of unrelated computation [S1]. Establishing causal
+  use instead requires an intervention: ablating, patching, or editing the identified
+  subspace and checking whether generation changes as predicted, the approach used
+  in causal tracing to localize factual associations in GPT rather than merely detect
+  them [S2][S3]. A control task (a probe trained on a shuffled or randomized target)
+  is the standard way to check a probe isn''t simply memorizing [S1]. Absent such
+  interventions, a successful probe on a length estimate is consistent with, but does
+  not demonstrate, causal reliance on that estimate during generation.'
+resources:
+- url: https://arxiv.org/abs/2102.12452
+  title: 'Belinkov, "Probing Classifiers: Promises, Shortcomings, and Advances"'
+  type: follow-up-paper
+  why: The canonical survey on exactly this gap, why decodability isn't causal use,
+    and how control tasks and causal probing try to close it
+  anchor: §2-3 (what probing does and doesn't establish) and the "Advances"/causal-probing
+    section near the end
+- url: https://www.neelnanda.io/mechanistic-interpretability/glossary
+  title: Neel Nanda, "A Comprehensive Mechanistic Interpretability Explainer & Glossary"
+  type: visual
+  why: Diagrammed contrast between passive probing/decoding and active causal interventions
+    (activation patching, ablation) as the actual test of use
+  anchor: the entries for "Probing" and "Activation Patching"/"Causal Intervention"
+- url: https://arxiv.org/abs/2202.05262
+  title: Meng et al., "Locating and Editing Factual Associations in GPT" (ROME)
+  type: follow-up-paper
+  why: 'Concrete worked example of what a causal (not correlational) demonstration
+    looks like: causal tracing plus an edit that changes model output'
+  anchor: §3, the Causal Tracing methodology, and the intervention/editing results
+    in §4
+unresolved:
+- Has an ablation or patching experiment been run specifically on the length-estimate
+  subspace in this model's residual stream to test causal necessity?
+- What control task (e.g., a shuffled-length target) would rule out the probe exploiting
+  a correlated surface cue rather than a true length feature?
+sources_consulted:
+  S1: 'Belinkov, Y. (2022). Probing Classifiers: Promises, Shortcomings, and Advances.
+    Computational Linguistics. arXiv:2102.12452'
+  S2: Neel Nanda, A Comprehensive Mechanistic Interpretability Explainer & Glossary,
+    neelnanda.io
+  S3: Meng, K., Bau, D., Andonian, A., Belinkov, Y. (2022). Locating and Editing Factual
+    Associations in GPT. arXiv:2202.05262

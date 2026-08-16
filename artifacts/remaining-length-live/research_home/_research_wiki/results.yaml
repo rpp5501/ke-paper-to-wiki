@@ -1,0 +1,40 @@
+concept: results
+status: partial
+synthesis: 'Reporting the mean across three independent seeds with variance under
+  one token follows a standard ML safeguard against seed-dependent noise: a single
+  run can overstate an effect, so researchers average several independent trials before
+  trusting a comparison [S1]. Averaging independent trials is precisely the mechanism
+  that shrinks estimator variance toward the true value, so a sub-token spread signals
+  a genuinely stable estimate rather than a lucky initialization [S2]. How much the
+  Remaining Count Probe beats the statistical baselines, and whether that margin holds
+  across different model families, is specific to this paper''s own tables and cannot
+  be confirmed from general methodology sources — here the general literature can
+  only vouch for the soundness of the reporting convention, not the size of the reported
+  gap.'
+resources:
+- url: https://seeing-theory.brown.edu/frequentist-inference/index.html
+  title: 'Seeing Theory: Frequentist Inference'
+  type: visual
+  why: Interactive visualization of how averaging independent trials shrinks sample
+    variance toward the true value, the statistical basis for trusting a sub-token
+    spread across seeds
+  anchor: the 'Sample Mean and Variance' subsection — drag the sample-size slider
+    to see variance shrink as more independent trials are averaged
+- url: https://arxiv.org/abs/1709.06560
+  title: Henderson et al., Deep Reinforcement Learning that Matters
+  type: follow-up-paper
+  why: Canonical demonstration of how much reported ML results can swing across random
+    seeds, and why multi-seed mean/variance reporting is necessary before trusting
+    a comparison to a baseline
+  anchor: §4 'Reproducibility', especially the tables comparing the same algorithm's
+    results across five random seeds
+unresolved:
+- The exact margin by which the Remaining Count Probe outperforms the statistical
+  baselines is paper-specific and not independently verifiable from general methodology
+  sources.
+- Whether the sub-token variance holds across different model architectures, not just
+  seeds, is not addressed by the sources here.
+sources_consulted:
+  S1: Henderson et al., 'Deep Reinforcement Learning that Matters,' arXiv:1709.06560
+    (2017)
+  S2: Seeing Theory (Brown University), Frequentist Inference chapter, seeing-theory.brown.edu/frequentist-inference

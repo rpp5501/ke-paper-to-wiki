@@ -1,0 +1,50 @@
+concept: symmetry-in-optimization
+status: complete
+synthesis: 'Neural network loss functions often have continuous symmetry groups (e.g.
+  positive rescaling of ReLU units) whose orbits are flat directions with equal loss
+  but very different gradient norms [S2]. Optimizer designs exploit this in two main
+  ways: building update rules that are provably invariant to the symmetry, so progress
+  does not depend on an arbitrary parameterization, as Path-SGD does for ReLU rescaling
+  [S2]; or actively moving a point along its symmetry orbit (''teleportation'') to
+  a location with a larger gradient before taking a standard gradient step, which
+  can provably speed convergence in some settings [S1]. Both approaches differ from
+  vanilla gradient descent, which treats raw Euclidean parameter coordinates as meaningful,
+  making its step sizes and convergence rate sensitive to a symmetry that never affects
+  the loss itself [S1][S2]. The underlying geometric intuition — that decomposing
+  a quadratic loss into a symmetric Hessian''s eigenbasis reveals which directions
+  converge fast versus slow — explains why exploiting this structure changes optimizer
+  behavior [S3].'
+resources:
+- url: https://arxiv.org/abs/2205.10637
+  title: Symmetry Teleportation for Accelerated Optimization
+  type: derivation
+  why: 'the clearest concrete algorithm for exploiting parameter-space symmetry: jump
+    along a symmetry orbit to a higher-gradient point before descending, with convergence-rate
+    analysis'
+  anchor: §3 'Symmetry Teleportation' (the algorithm) and Figure 2, which illustrates
+    a teleportation step on a loss surface
+- url: https://arxiv.org/abs/1506.02617
+  title: 'Path-SGD: Path-Normalized Optimization in Deep Neural Networks'
+  type: derivation
+  why: derives an update rule explicitly invariant to the rescaling symmetry of ReLU
+    networks, showing why symmetry-aware updates diverge from vanilla SGD
+  anchor: '§2-3: the rescaling-invariance definition and the Path-SGD update rule'
+- url: https://distill.pub/2017/momentum/
+  title: Why Momentum Really Works
+  type: visual
+  why: interactive visualization of decomposing gradient descent into a symmetric
+    quadratic loss's eigenbasis, giving the geometric intuition for why structure-aware
+    analysis changes convergence behavior
+  anchor: the 'The Quadratic Case' section with the interactive eigenspace convergence
+    visualizer
+unresolved:
+- Tight theoretical convergence-rate guarantees for teleportation-based methods beyond
+  simple quadratic or two-layer cases remain open.
+- How well symmetry-aware optimizers scale to large modern architectures like transformers
+  is not yet well characterized.
+sources_consulted:
+  S1: Zhao, B., Ganev, I., Walters, R., Yu, R., & Dehmamy, N. (2022). Symmetry Teleportation
+    for Accelerated Optimization. NeurIPS 2022. https://arxiv.org/abs/2205.10637
+  S2: 'Neyshabur, B., Salakhutdinov, R., & Srebro, N. (2015). Path-SGD: Path-Normalized
+    Optimization in Deep Neural Networks. NeurIPS 2015. https://arxiv.org/abs/1506.02617'
+  S3: Goh, G. (2017). Why Momentum Really Works. Distill. https://distill.pub/2017/momentum/

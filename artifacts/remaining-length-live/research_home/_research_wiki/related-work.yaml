@@ -1,0 +1,61 @@
+concept: related-work
+status: complete
+synthesis: 'Linear probing as an interpretability tool traces to Alain & Bengio, who
+  showed that training simple linear classifiers on frozen intermediate activations
+  reveals what information a network encodes at each layer, without altering the model
+  itself [S1]. Hewitt & Liang complicated this: a probe''s accuracy can reflect the
+  probe''s own capacity rather than what the representation truly encodes, and they
+  introduced control tasks and a selectivity metric to separate the two [S2]. Belinkov''s
+  survey synthesizes these methodological concerns and explicitly flags generalization
+  — whether a probe''s learned decision boundary holds outside its training distribution
+  — as an open weakness of the probing paradigm [S3]. Studies of OOD generalization
+  for probes extend this line by asking whether a linear direction found on one distribution
+  of activations (e.g. one topic or truthfulness setting) still predicts the property
+  correctly on a shifted distribution; Burns et al. show that even unsupervised linear
+  directions in LLM activations can generalize across such shifts better than naive
+  supervised probes, motivating why OOD robustness of a probe is treated as a stronger
+  validity test than in-distribution accuracy alone [S4].'
+resources:
+- url: https://nlp.stanford.edu/~johnhew/structural-probe.html
+  title: Finding Syntax with Structural Probes
+  type: visual
+  why: Hewitt's own project page diagrams how a linear transformation of frozen embeddings
+    can recover tree-structured syntax, the clearest visual intuition for 'linear
+    probe on frozen activations'
+  anchor: the overview section and the figure showing distances between transformed
+    word vectors reconstructing a parse tree
+- url: https://arxiv.org/abs/1909.03368
+  title: Designing and Interpreting Probes with Control Tasks
+  type: follow-up-paper
+  why: introduces control tasks and selectivity, the standard critique that a probe's
+    accuracy alone doesn't prove a property is 'in' the representation
+  anchor: §3, the control task construction and selectivity metric
+- url: https://arxiv.org/abs/2102.12452
+  title: 'Probing Classifiers: Promises, Shortcomings, and Advances'
+  type: reference-impl
+  why: the standard survey consolidating probing methodology and its known limitations,
+    including generalization concerns
+  anchor: §4, 'Limitations of probing classifiers'
+- url: https://arxiv.org/abs/2212.03827
+  title: Discovering Latent Knowledge in Language Models Without Supervision
+  type: follow-up-paper
+  why: directly studies whether linear directions found in LLM activations generalize
+    across distribution shift, the closest prior work to an OOD-generalization framing
+    of probing
+  anchor: §4, the generalization experiments comparing CCS directions to supervised
+    logistic-regression probes across datasets
+unresolved:
+- The brief does not name the specific paper under study, so it's unclear which exact
+  OOD generalization setup (topic shift, model shift, task shift) its probes are evaluated
+  on
+- Whether the study's probes are trained with the Hewitt & Liang control-task/selectivity
+  methodology or plain held-out accuracy is not specified
+sources_consulted:
+  S1: Alain, G. & Bengio, Y. (2016). Understanding intermediate layers using linear
+    classifier probes. https://arxiv.org/abs/1610.01644
+  S2: Hewitt, J. & Liang, P. (2019). Designing and Interpreting Probes with Control
+    Tasks. https://arxiv.org/abs/1909.03368
+  S3: 'Belinkov, Y. (2022). Probing Classifiers: Promises, Shortcomings, and Advances.
+    https://arxiv.org/abs/2102.12452'
+  S4: Burns, C. et al. (2022). Discovering Latent Knowledge in Language Models Without
+    Supervision. https://arxiv.org/abs/2212.03827

@@ -1,0 +1,1316 @@
+{
+ "meta": {
+  "source": "arXiv:2506.13018",
+  "title": "Symmetry in Neural Network Parameter Spaces",
+  "generated": "2026-08-15"
+ },
+ "extraction": {
+  "path": "latex",
+  "equation_fidelity": "exact",
+  "table_fidelity": "exact"
+ },
+ "sections": [
+  {
+   "id": "sec_1",
+   "title": "Introduction",
+   "level": 1,
+   "text": "Despite their remarkable empirical success, neural networks remain not fully understood from a theoretical standpoint. Designing effective architectures often relies on heuristics, and training outcomes can be highly sensitive to initialization and optimization details. The rapid growth of model sizesexemplified by the recent explosion in the size of language and other generative models further complicates efforts to characterize training dynamics and generalization behavior. While theoretical work has clarified aspects of overparameterization and implicit regularization in gradient descent , we still lack a unified understanding of how the structure of parameter space shapes the loss landscape and affects optimization. R0.4 -8pt Example of parameter space symmetry from neuron permutation. Swapping hidden units and their weights yields a different parameter configuration with the same function. -5pt This survey proposes parameter space symmetry as a valuable, underexplored perspective for understanding neural networks. Parameter space symmetries are transformations of neural network parameters that leave the output unchanged, e.g. permuting neurons in a hidden layer (Figure ). One of the most important consequences of these symmetries is that they induces nontrivial structure in the level sets of the loss function. In overparameterized networks, where many parameter configurations can yield the same function output, the loss landscape often contains high dimensional manifolds of global minima . Symmetry accounts for much of this degeneracy by mapping parameters within a level set without changing the network’s function. Understanding these equivalence classes is essential for analyzing generalization, optimization dynamics, and the loss landscape in deep learning. While symmetry in the data space has been central to geometric deep learning and equivariant models , symmetry in the parameter space has only recently begun to receive sustained attention. Recent work explores parameter symmetry in diverse contexts, including loss landscapes and mode connectivity , conserved quantities and training dynamics , symmetry-based optimization and model averaging , and symmetry-aware sampling in Bayesian inference . This survey aims to define symmetries in neural network parameter spaces, unify existing theoretical and algorithmic perspectives, and highlight their relevance to learning theory, optimization, and model analysis. We hope that a clearer understanding of parameter space symmetries will lead to more principled approaches in deep learning theory and practice. The rest of this paper is organized as follows. Section reviews definitions and examples of symmetries in the parameter space of neural networks. Section - collectively survey the theoretical and algorithmic applications of parameter space symmetry in deep learning: Section discusses the role of symmetry in the geometry and topology of loss level sets, with a focus on minima; Section lists progress in optimization by incorporating the knowledge of parameter space symmetry; Section discusses conserved quantities in gradient flow associated with parameter space symmetry and their applications in understanding learning dynamics. Section then discusses how parameter space symmetry interacts with data and representation symmetries, as well as applications in tasks where neural network parameters are treated as data. We conclude with a list of open questions and opportunities in Section ."
+  },
+  {
+   "id": "sec_2",
+   "title": "Parameter Space Symmetry",
+   "level": 1,
+   "text": "In this section, we explore various definitions and examples of parameter space symmetry, starting with transformations of the parameters that preserve the feedforward function. Then we expand our discussion to include relaxed definitions of symmetry, which preserve the overall loss function or the feedforward function's value on subsets of data. Along with these definitions, we provide a list of known symmetries and show how they arise from the architecture of neural networks. Finally, we discuss the impact of symmetries on parameter identifiability and whether the known symmetries are complete."
+  },
+  {
+   "id": "sec_2_1",
+   "title": "Loss-Invariant Parameter Transformations and Symmetry",
+   "level": 2,
+   "text": "Let $\\Par$ be the space of parameters and $\\Data$ be the space of data. In supervised learning, $\\Data$ is decomposed into $\\Data_{\\text{input}} \\times \\Data_{\\text{target}}$, where $\\Data_{\\text{input}}$ and $\\Data_{\\text{target}}$ correspond to the space of inputs and target labels, respectively. Let $f\\colon \\Par \\times \\Data_{\\text{input}} \\to \\Data_{\\text{target}}$ be a neural network function, and $\\Cost\\colon \\Data_{\\text{target}} \\times \\Data_{\\text{target}} \\to \\R$ be a function that measures the discrepancy between the neural network's prediction and the ground truth label. The loss function $L\\colon \\Par \\times \\Data \\to \\R$ is the composition of $f$ and $\\Cost$. That is, for $(\\theta, (x, y)) \\in \\Par \\times \\Data$, we define the loss $L(\\theta,(x,y)) := \\Cost\\big(f(\\theta,x),\\, y\\big)$. With occasional exceptions , the parameter space of a neural network is typically a real vector space. Symmetries are transformations that preserve certain properties of an object. In this paper, we focus on parameter space symmetry, which are transformations of a neural network's parameters that preserve loss. Mathematically, this is the set of bijective transformations $T\\colon\\Par \\to \\Par$ such that $L(w) = L(T(w))$. One may consider restricted sets of symmetry by imposing additional constraints such as linearity or smoothness. The set of all such transformations forms a group under function composition. To see this, we first examine its structure and properties. Viewing the transformations as functions, we are able to define the composition of two transformations. The composition of two loss-invariant transformations results in another loss-invariant transformation. Since function compositions are associative, the composition of these transformations are associative. Additionally, the identity transformation is always loss preserving, therefore included in our set. Finally, since each transformation is bijective, an inverse exists for every element in the set. These properties of the set of symmetry transformations under composition satisfy the definition of a group. A group is a set $G$ together with a composition law $\\circ$ that satisfies (1) Associativity: $(g_1 \\circ g_2) \\circ g_3 = g_1 \\circ (g_2 \\circ g_3)$ for all $g_1, g_2, g_3$ in $G$; (2) Identity: There exists an identity element $e$ in $G$ such that $g \\circ e = g$ and $e \\circ g = g$ for all $g$ in $G$; (3) Inverse: For every element $g$ in $G$, there exists an inverse element $g^{-1}$ such that $g \\circ g^{-1} = e$ and $g^{-1} \\circ g = e$. We illustrate a group of symmetry transformations on the dihedral group $D_3$, which represents symmetries of regular triangles (Figure ). $D_3$ has six elements: three rotations $0^\\circ, 120^\\circ, 240^\\circ$ ($r_0, r_1, r_2$) and three reflections across axes passing through each vertex and the midpoint of the opposite side ($s_0, s_1, s_2$). The composition of these transformations is also a symmetry. The identity element $r_0$ does not change the triangle. Each transformation has an inverse, which is also in the group. Composition of transformations are associative. Following Definition , the set of all loss-invariant and bijective transformations, which we denote by $G_{\\Theta,L}$, forms a group. In practice, we typically consider specific subgroups of $G_{\\Theta,L}$, since the full group is often difficult to characterize. For generality and to simplify analysis, we describe symmetry using abstract groups, which focus on the algebraic properties of groups detached from specific transformations. An example that will appear frequently is the $n\\times n$ general linear group over $\\R$. This group, denoted by $\\GLn(\\R)$, consists of invertible $n\\times n$ real matrices, with composition defined by matrix multiplication. We will also encounter several subgroups of $\\GLn(\\R)$, including the orthogonal group $O_n(\\R)$ which consists of real matrices whose transpose equal inverse, and the positive scaling group $\\R_{>0}^h$ which consists of diagonal matrices with positive diagonal entries. Another group relevant to neural network parameter spaces is the symmetric group $S_n$, which consists of permutations of the set $\\{1, 2, ..., n\\}$. Group actions connect the abstract concept of groups with concrete sets of transformations. A group action is a structure-preserving map from a group into a group of transformations (Figure d). An action of a group $G$ on a set $S$ is a map $\\cdot\\colon G \\times S \\to S $ that satisfies $e \\cdot s = s$ for all $s \\in S$ and $g \\cdot (g' \\cdot s) = (g g') \\cdot s$ for all $g, g'$ in $G$ and all $s$ in $S$. A parameter space symmetry can then be described as a group action on the space of parameters that leaves the loss unchanged. In many machine learning settings, these group actions are linear. This leads to the concept of a representation, which maps group elements to invertible matrices and enables the group to act on a vector space by linear transformations. A representation of a group $G$ is a homomorphism $\\rho\\colon G \\to \\GL_n(\\R)$, meaning that $\\rho(g_1g_2) = \\rho(g_1) \\rho(g_2)$ for all $g_1, g_2 \\in G$."
+  },
+  {
+   "id": "sec_2_2",
+   "title": "Functional Neural Network Symmetry",
+   "level": 2,
+   "text": "Parameter space symmetry can be defined in various ways, depending on the transformation preserved, i.e. the neural network function or the loss function, and the scope of the data considered, which can range from all possible data, subsets of data, or a particular distribution (Figure ). This section focuses on the strictest form of parameter space symmetry, which involves transformations that leave the neural network output invariant across all data. Such symmetry preserves the feedforward function. We discuss various general definitions in Section . Let $\\Par$ be the parameter space of a neural network $f\\colon \\Par \\times \\Data_{\\text{input}} \\to \\Data_{\\text{target}}$. A parameter space symmetry of $f$ is a (possibly nonlinear) action of a group $G$ on $\\Par$ that leaves $f$ invariant, The group $G$ is called a symmetry group of $f$."
+  },
+  {
+   "id": "sec_2_2_1",
+   "title": "Examples: Symmetries in Common Neural Network Components",
+   "level": 3,
+   "text": "Different neural network model architectures give rise to different parameter space symmetries. In the following examples, we examine common components of neural networks and identify specific symmetries associated with each. We begin with a linear network, which offers a clean setting to illustrate how parameter symmetries emerge from rescaling adjacent layers. We work towards realistic examples afterwards. [Linear] Consider a two-layer linear neural network $f_{linear}(W_2, W_1, b_2, b_1, X) = W_2 (W_1 X + b_1) + b_2$, with $(W_2, W_1, b_2, b_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n} \\times \\R^m \\times \\R^h$ and $X \\in \\R^{n \\times k}$. This architecture has a $\\text{GL}_h(\\R)$ symmetry, acting on $\\Par$ by $g \\cdot (W_2, W_1, b_2, b_1) = (W_2 g^{-1}, g W_1, b_2, g b_1)$, for $g \\in \\text{GL}_h(\\R)$ since Symmetries of similar forms appear in networks with activation functions, which are more commonly used than linear networks. In particular, many common activation functions are equivariant under a nontrivial group, which leads to following symmetries (Figure b). Let $\\sigma\\colon \\R^h \\to \\R^h$ be a function that satisfies $\\sigma(gZ)=\\rho(g) \\sigma(Z)$ for a group $G$ and a representation $\\rho\\colon G \\to \\GL_h(\\R)$. Consider a function $f\\colon \\Par \\times \\Data \\to \\R^{m \\times n}, (W_2, W_1, b_2, b_1, X) \\mapsto W_2 \\sigma(W_1 X + b_1) + b_2$, where $(W_2, W_1, b_2, b_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n} \\times \\R^m \\times \\R^n$ and $X \\in \\R^{n \\times k}$. Then, $f$ admits a functional parameter space symmetry defined by $g \\cdot (W_2, W_1, b_2, b_1) \\mapsto (W_2 \\rho(g^{-1}), g W_1, b_2, g b_1)$. The symmetries in the next three examples result from equivariance of various pointwise activation functions. A function $\\sigma \\colon \\R^h \\to \\R^h$ is called pointwise if it is defined as $\\sigma(z)_i = {\\sigma}_i(z_i)$ for some scalar functions $({\\sigma}_i\\colon \\R \\to \\R)_{i=1}^h$. In practice, $\\sigma_i$ is usually the same across all indices $i$. A pointwise function $\\sigma\\colon \\R^h \\to \\R^h$ is homogeneous if there exists a degree $\\alpha \\in \\mathbb{R}_{>0}^{h}$ such that $\\sigma(c z)_i = c^{\\alpha_i} \\sigma(z)_i$ for all $c\\in \\R_{>0}$ and $z \\in \\R^h$. Common homogeneous functions include ReLU, LeakyReLU, and monomials. Since the bias terms are transformed similarly as the other weights, we omit the bias terms in the following examples for brevity. [Homogeneous Activation] Consider a two-layer neural network $f(W_2, W_1, X) = W_2 \\sigma(W_1 X)$ with a homogeneous function $\\sigma$ of degree $\\alpha$, where $(W_2, W_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n}$ and $X \\in \\R^{n \\times k}$. A symmetry group of this architecture is the positive scaling group $\\R_{>0}^h$, which consists of diagonal matrix with positive diagonal entries and act on $\\Par$ by $g \\cdot (W_2, W_1) = (W_2 g^{-\\alpha}, g W_1)$, for $g \\in \\R_{>0}^h$ . [Tanh] Consider a two-layer hyperbolic tangent neural network $f_{tanh}(W_2, W_1, X) = W_2 \\tanh( W_1 X)$, where $(W_2, W_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n}$ and $X \\in \\R^{n \\times k}$. This architecture has a sign-flip symmetry, $\\mathbb{Z}_2^n$, that consists of diagonal matrix with all diagonal entries in $\\{1, -1\\}$, acting on $\\Par$ by $g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$ . [Radial neural network ] Often appearing in equivariant neural networks , a radial rescaling activation $\\sigma\\colon \\R^h \\to \\R^h$ has the form $\\sigma(z) = f(\\|z\\|)z $ for some function $f \\colon \\R \\to \\R$. A two-layer neural network $f(W_2, W_1, X) = W_2 \\sigma(W_1 X)$ with a radial rescaling activation $\\sigma$ has an $\\text{O}_h(\\R)$ symmetry, acting on $\\Par$ by $g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$, for $g \\in \\text{O}_h(\\R)$. When $\\sigma$ is $G$-invariant, which means $\\sigma(gZ) = \\sigma(Z)$, there exists a group action that acts on only the input weights of $\\sigma$ (Figure a). We illustrate this in the next two examples. [Batch Normalization ] Batchnorm standardizes inputs of a layer across a mini-batch: $\\text{BN}(Z) = \\frac{Z - \\text{E}[Z]}{\\sqrt{\\text{Var}[Z]}}$, where the expectation and variance are computed row-wise over $Z$. Assuming $Z$ is a linear feature $Z = WX$ where $W \\in \\Par = \\R^{m \\times n}$ and $X \\in \\R^{n \\times k}$, then the batchnorm function has a positive scaling symmetry. Batchnorm is equivariant with respect to the group $\\R_{>0}^m$, which consists of diagonal matrix with positive diagonal entries, acting on $\\Par$ by $g \\cdot W = gW$, for $g \\in \\R_{>0}^m$ . Other normalization layers, such as layer normalization , group normalization , and weight normalization , often have scaling symmetry of similar forms. [Softmax ] The softmax function $\\sigma\\colon \\R^h \\to \\R^h$ is defined as $\\sigma(z)_i = e^{z_i}/\\sum_j e^{z_j}$. Consider the function $f(W, X) = \\sigma(W X)$, where $W \\in \\Par = \\R^{m \\times n}$ and $X \\in \\R^{n \\times k}$, and $\\sigma$ applies on the rows of $WX$. Then $f$ has a translation symmetry, acting on $\\Par$ by $(g \\cdot W)_i = W_i + g$ for each row $W_i$, with $g \\in (\\R^n, +)$, the additive group over $\\R^n$ . Many architectures have parameter symmetries given by a symmetric group. This symmetry can often be interpreted as permutation of neurons or components along with their associated weights, as shown in Examples 2.7, 2.8 and Figure (c). Similar forms of symmetry have also been identified in recurrent neural networks . [Pointwise Activation] Feedforward networks with pointwise activations that use the same scalar function across coordinates have permutation symmetries. Consider a two-layer neural network $f(W_2, W_1, X) = W_2 \\sigma(W_1 X)$ with $(W_2, W_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n}$, $X \\in \\R^{n \\times k}$, and any pointwise activation function $\\sigma$ with $\\sigma_i = \\sigma_j$ for all $i,j$. There is a permutation symmetry acting on $\\Par$ by $g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$, for $g \\in \\text{S}_h$ . [Radial basis function networks ] In a radial basis function (RBF) network $\\sum_{i=1}^k w_i \\varphi \\left(\\frac{||\\mathbf{x}-\\mathbf{c_i}||}{b_i} \\right)$ with radial function $\\varphi\\colon \\R_+ \\to \\R$ and parameters $(w_i, b_i, c_i)_{i=1}^k \\in \\Par = (\\R \\times \\R_+ \\times \\R^n)^k$, there is a permutation symmetry acting on $\\Par$ by $\\pi \\cdot ((w_i, b_i, c_i)_{i=1}^k) = (w_{\\pi^{-1}(i)}, b_{\\pi^{-1}(i)}, c_{\\pi^{-1}(i)})_{i=1}^k$, for $\\pi \\in \\text{S}_k$ . Viewed as a computational graph, a neural network inherits the symmetries of all its subnetworks . Examples therefore naturally extend to multi-layer networks by applying symmetry to any subset of adjacent layer pairs. Additionally, modern architectures are often constructed from smaller components, many of which have the same form as these examples. Consequently, they admit the same symmetries, which act on a subspace of their parameter space."
+  },
+  {
+   "id": "sec_2_2_2",
+   "title": "Example: Symmetries in Transformers",
+   "level": 3,
+   "text": "To illustrate how symmetries emerge and combine in popular architectures, we delineate the symmetries in transformers by examining their components . Figure visualizes the source of these symmetries. [Attention ] The self attention function is a core component of transformers. For key $K \\in \\R^{m \\times p}$, query $Q \\in \\R^{n \\times p}$, and value $V \\in \\R^{n \\times r}$, with input embeddings $(Q, K, V) \\in \\R^{d \\times d_{m}} \\times \\R^{d \\times d_{m}} \\times \\R^{d \\times d_{m}}$ and weights $(W_Q, W_K, W_V) \\in \\Par = \\R^{d_{m} \\times d_k} \\times \\R^{d_{m} \\times d_k} \\times \\R^{d_{m} \\times d_v}$. This architecture has a $\\text{GL}_{d_k}(\\R)$ symmetry, acting on $\\Par$ by $g \\cdot (W^Q, W^K, W^V) = (W^Q g^{-1}, W^K g^T, W^V)$, for $g \\in \\text{GL}_{d_k}(\\R)$. Building on Example, multi-head attention replicates the attention block across $h$ heads and linearly mixes their outputs, thereby inheriting the $(\\GL_{d_k}(\\R))^h$ symmetry and introducing additional head-permutation ($S_h$) and per-head linear symmetries ($(\\GL_{d_v}(\\R))^h$). [Multi-head attention ] Most transformer architectures use multi-head attentions, which concatenate the output of multiple attentions and apply a linear transformation to the concatenated output. Concretely, a multi-head attention is given by $\\text{MultiHead}(Q, K, V) = \\text{Concat}(\\text{head}_1, ..., \\text{head}_h)W^O$, with $\\text{head}_i = \\text{Attention}(QW_i^Q, KW_i^K, VW_i^V)$ and additional parameters $W^O \\in \\R^{hd_v \\times d_m}$. The new parameter space is $\\Par = (\\R^{d_{m} \\times d_k} \\times \\R^{d_{m} \\times d_k} \\times \\R^{d_{m} \\times d_v})^h \\times \\R^{hd_v \\times d_m}$. To simplify notation when describing symmetries, denote $W^O_i \\in \\R^{d_v \\times d_m}$ as the matrix formed by row $(d_v \\times i + 1)$ to row $(d_v \\times (i + 1))$ of $W^O$. In addition to the $(\\GL_{d_k}(\\R))^h$ symmetry inherited from individual attention heads, a multi-head attention admits an $S_h$ and a $(\\GL_{d_v}(\\R))^h$ symmetry. The $S_h$ symmetry acts as permutation of attention heads: $\\pi \\cdot (W_i^Q, W_i^K, W_i^V, W_{i}^O) = (W_{\\pi^{-1}(i)}^Q, W_{\\pi^{-1}(i)}^K, W_{\\pi^{-1}(i)}^V, W^O_{\\pi^{-1}(i)})$, for $\\pi \\in S_h$. The multiplication of each attention head with $W_O$ results in one $\\GL_{d_v}(\\R)$ symmetry, acting by $g_i \\cdot (W_i^Q, W_i^K, W_i^V, W_{i}^O) = (W_i^Q, W_i^K, W_i^V g_i^{-1}, g_i W^O_{i})$, for $g_i \\in \\GL_{d_v}(\\R)$, $i=1,...,h$. Parameters in a transformer can be finetuned after training to adapt to new datasets or tasks. A commonly used method, low-rank adaptation (LoRA) , updates pretrained parameters by low-rank matrices to reduce memory and compute. This parametrization adopts a general linear symmetry group. [LoRA] In a low-rank adaptation $W + UV$, with pretrained weight matrix $W \\in \\R^{n \\times m}$ and trainable parameters $U \\in \\R^{n\\times r}, V \\in \\R^{r \\times m}$, there is a $\\text{GL}_r(\\R)$ symmetry, acting on $(U, V)$ by $g \\cdot (U, V) = (U g^{-1}, g V)$, for $g \\in \\text{GL}_r(\\R)$ ."
+  },
+  {
+   "id": "sec_2_3",
+   "title": "Relaxed Definitions of Symmetry",
+   "level": 2,
+   "text": "While functional neural network symmetries ensure invariance of the neural network output across all input data, more general notions of symmetry arise when we relax this requirement. In this section, we expand the scope of parameter space symmetry to include transformations that preserve the overall loss function instead of the neural network function, as well as transformations that preserve the output over subsets of data instead of the entire data space."
+  },
+  {
+   "id": "sec_2_3_1",
+   "title": "Loss Symmetry",
+   "level": 3,
+   "text": "Loss symmetry refers to parameter transformations that preserve the overall loss but not necessarily the neural network function. Recall that the loss function $L\\colon \\Par \\times \\Data \\to \\R$ is often the composition of a model $f\\colon \\Par \\times \\Data_{\\text{input}} \\to \\Data_{\\text{target}}$ and a cost function $\\Cost\\colon \\Data_{\\text{target}} \\times \\Data_{\\text{target}} \\to \\R$. Definition defines transformations on $\\Par$ that do not alter the value of $f$, thereby also preserving $L$. We now relax this definition to include transformations that are required to preserve $L$ but allowed to change $f$. Let $\\Par$ be the parameter space of a loss function $L\\colon \\Par \\times \\Data \\to \\R$. A parameter space symmetry of $L$ is an action of a group $G$ on $\\Par$ that leaves $L$ invariant: [Self-supervised learning with linear network ] Consider a self supervised learning setting, with a linear network $f(W, x) = Wx$ and a loss $L(W, x)$ that depends on $f$ only through $f(x)^T f(x')$ for data pairs $x, x' \\in \\R^n$. Then, $L$ has a rotational symmetry, which acts on $\\Par = \\R^{m \\times n}$ by $g \\cdot W = gW$ for $g$ in $O(m)$. This differs from the group action on linear networks (Example ) since it only acts on one layer and is not canceled by transformations in other layers. Hence, this group action preserves the overall loss $L$ but not the feedforward function."
+  },
+  {
+   "id": "sec_2_3_2",
+   "title": "Data-Dependent Symmetry",
+   "level": 3,
+   "text": "In the next definition, we relax the definition of functional symmetries (Definitions and ) by considering parameter transformations that preserve the output for data batches of size $n$, without guaranteeing invariance on other data. These symmetries depend on the data with respect to which the neural network output is invariant. A data-dependent group action is a group action of $G$ on $(\\Par \\times \\Data^n)$ that acts trivially on $\\Data^n$. To simplify notation, we drop $\\Data^n$ from the output and write a data-dependent group action as a map $G \\times (\\Par \\times \\Data^n) \\to \\Par$ that satisfies $e \\cdot (\\theta, X) = \\theta$ and $g \\cdot (g' \\cdot (\\theta, X), X) = (g g') \\cdot (\\theta, X)$ for all $g, g'$ in $G$, $\\theta$ in $\\Par$, and $X \\in \\Data^n$. Let $\\Par$ be the parameter space. Let $F\\colon \\Par \\times \\Data \\to Y$ be a function with output space $Y$. A data-dependent symmetry of $F$ is a data-dependent action of a group $G$ on $\\Par$ that preserves the value of $f$ on a subset of data: [Two-layer network ] For a nonzero vector $z \\in \\R^h$, define a matrix $R$ as $$ \\left(R_z\\right)_{ij} = \\begin{cases} z_i \\cos(\\alpha_{j-1}) \\left(\\prod_{k=1}^{j-1} \\sin(\\alpha_k)\\right)\\inv \\qquad & \\text{\\rm if $j \\leq i$ and $\\prod_{k=1}^{i-1} \\sin(\\alpha_k) \\neq 0$} \\\\ - r \\sin(\\alpha_i) \\qquad & \\text{\\rm if $j = i+1$} \\\\ 0\\qquad & \\text{\\rm otherwise}. \\end{cases}$$ Consider a two-layer neural network $f(W_2, W_1, X) = W_2 \\sigma(W_1 X)$, where $(W_2, W_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n}$ and $X \\in \\R^{n}$. Suppose $\\sigma(z)$ is nonzero for any $z \\in \\R^h$. Then this architecture has a data-dependent $\\text{GL}_h(\\R)$ symmetry, which acts on $\\Par$ by $g \\cdot (W_2,W_1,x) = (W_2 R_{\\sigma(W_1x)} R_{\\sigma(gW_1x)}\\inv \\ , \\ gW_1)$ and preserves loss value on single data points."
+  },
+  {
+   "id": "sec_2_3_3",
+   "title": "Distribution Symmetry",
+   "level": 3,
+   "text": "In practical settings, data can often be viewed as samples from an underlying distribution. The following definition considers parameter transformations that preserve the expected loss over this distribution. Neural networks related by these transformations are expected to perform similarly on data within the given distribution but not guaranteed to perform similarly on data from different distributions. Consider a function $F\\colon \\Par \\times \\Data \\to Y$ with output space $Y$, where $\\Par$ is the parameter space and data are drawn from a distribution $D$. A distribution symmetry of $F$ is an action of a group $G$ on $\\Par$ that leaves the expectation of $F$ invariant: Distribution symmetry is often related to averaging effects, where aggregated predictions remain consistent despite variations in the predictions from individual parameters. Consider the function $F\\colon \\R^{m \\times n} \\times (\\R^{n} \\times \\R^n) \\to \\R^{m}$ defined by $F(W, (x, y)) = Wx - y$, where $W$ is the parameter and $x, y$ are data. Assume that $x$ is drawn from a distribution $D_{x}$ and for each data pair $(x, y)$, $y$ is defined as $y = W^* x$ for a fixed matrix $W^* \\in \\R^{m \\times n}$. Let $\\bar{x} = \\E_{x \\sim D_x}[x]$. Then, the expectation of $F$ under the data distribution is: Let $G$ be the group of all invertible matrices $A$ for which $A\\bar{x} = \\bar{x}$. This group acts on the parameter space $\\R^{m \\times n}$ via the action $A \\cdot W = WA^{-1}$. This action is a distribution symmetry for $F$, because for all $A \\in G$ and matrix $W \\in \\R^{m \\times n}$, we have: The relation among the above definitions are visualized in Figure . Parameter transformations that preserve the neural network function are guaranteed to preserve the loss function. Parameter transformations that preserve a function at every data point are guaranteed to preserve the function over every fixed-size batch or distribution. Therefore, neural network symmetry (Definition ) implies loss symmetry (Definition ). Neural network (or loss) symmetry implies both neural network (or loss) data-dependent symmetry (Definition ) and neural network (or loss) distribution loss symmetry (Definition )."
+  },
+  {
+   "id": "sec_2_4",
+   "title": "Parameter Identifiability and Completeness of Symmetry",
+   "level": 2,
+   "text": "Having introduced a range of examples highlighting that symmetry is ubiquitous in neural network parameter spaces, we now turn to the fundamental question of whether known parameter symmetries account for all the ways in which parameters can represent the same function. This question concerns parameter identifiabilitythe extent to which a neural network’s function determines its parameters, which is important in interpreting and comparing trained networks . This section formalizes the relationship between symmetry and identifiability using the realization map from parameters to functions, and surveys results on when known symmetries are sufficient to characterize all such redundancy. Formally, we consider the realization map $\\rho\\colon \\Par \\to \\mathcal{F}, \\text{where } \\mathcal{F} = \\{ f \\colon \\Data_{\\text{input}} \\to \\Data_{\\text{output}} \\}$, which associates each parameter $\\theta \\in \\Par$ with the function $\\rho(\\theta) \\in \\mathcal{F}$ it defines . The fiber of a function $f$ under $\\rho$, denoted $\\rho^{-1}(f) := \\{\\theta \\in \\Par ~|~ \\rho(\\theta) = f\\}$, is the set of all parameters that map to the same function $f$. In many architectures, $\\rho$ is not injective, and fibers contain multiple distinct parameters that define the same function. This implies that parameters are, in general, not uniquely determined by the function alone. Parameter space symmetries contribute directly to this non-identifiability, as they induce transformations within the same fiber. Therefore, analyzing fiber structures helps in determining whether the known set of symmetries is complete. If a symmetry group $G$ acts on $\\Par$ such that every element of a fiber can be reached from another via a transformation in $G$, we say $G$ acts transitively on that fiber. In this case, $G$ captures all the redundancy in the parameterization, and no hidden symmetries remain. Let $L\\colon \\Par \\times \\Data \\to \\R$ be a loss function with symmetry group $G$. We say parameters of $L$ are identifiable up to $G$ if for every fiber of the realization map of $L$, the group $G$ acts transitively on that fiber. We say $G$ is complete if parameters are identifiable up to $G$. For several architectures, such completeness has been established. For example, Gaussian radial basis function networks are known to be identifiable up to permutation symmetry, indicating that permutation symmetry is complete for these architectures . For feedforward networks with tanh activations, if two networks represent the same function, then they have the same architecture and parameters up to permutation and sign-flip symmetries, under a known set of conditions . Similar completeness results have also been established for complex-valued tanh networks , tanh recurrent neural networks , networks with activation functions $\\sigma$ satisfying $\\sigma(0)=0, \\sigma'(0) \\neq 0$, and $\\sigma''(0) = 0$ , and networks with asymptotically constant activation functions . For Mixture-of-Experts (MoE) architectures, permutation-translation symmetries of the gating parameters were recently proven to fully characterize functional equivalence . The identifiability of ReLU networks is less straightforward. In particular, ReLU networks can contain hidden symmetriestransformations that preserve the realized function but not captured by permutation and positive scaling symmetries. describe several mechanisms through which hidden symmetries can arise. For example, for a single ReLU neuron with scalar input $x$ and realization map $\\rho\\colon (a, b) \\mapsto (x \\mapsto \\text{ReLU}(ax + b))$, the fiber of the constant function 0, $\\rho^{-1}(0)$, contains $(0, 0)$ and $(0, -1)$, which are not related by rescaling and permutation . To formalize this variability, introduce the functional dimension, defined as the rank of the Jacobian of the realization map $\\rho$, which reflects the local dimensionality of the set of functions realized near a given parameter. They show that the functional dimension may not be constant even within the same fiber. This suggest a complicated structure of symmetries in ReLU networks. Other recent work investigates when ReLU networks are identifiable up to positive scaling and permutation symmetries. prove that excluding a degenerate case where two neurons have identical zero hyperplanes, two-layer ReLU networks do not have additional symmetries besides permutation and positive scaling. prove that under the assumption that networks within each linear region compute the same linear function, boundaries between linear regions uniquely determine parameters up to permutation and positive scaling. For ReLU networks with either non-increasing widths or all layers wider than input , a positive measure subset of the parameters have no symmetries besides permutation and positive scaling (hidden symmetries). also empirically show that the probability of having no hidden symmetry increases with input and layer width and decreases with depth. provide sufficient conditions under which two ReLU network are identical up to permutation and positive scaling if their output agrees on a subset of the input space. The identifiability of neural networks that are polynomial in their parameters can often be analyzed using tools from algebraic geometry . A notable example is multi-layer perceptrons with polynomial activation functions, or polynomial neural networks. conjecture that permutation and scaling are the only symmetries in generic polynomial neural networks, which was later proved for the monomial case . For more general polynomial activation functions, there are only finitely many data-independent parameter symmetries . Convolutional neural networks with polynomial activations generically have no nontrivial data-independent parameter symmetries. Another example of a polynomial function is lightening self-attention $(W^Q, W^K, W^V) \\mapsto QW^Q (KW^K)^T VW^V$, where the softmax normalization is omitted from the standard attention mechanism (Example ). prove that in networks composed of lightning self- attention layers, the only symmetries are (1) scaling $W_QW_K^T$ and $W_V$ by a constant, (2) scaling $W_Q$ and $W_K$ by an invertible matrix, and (3) scaling $W_V$ of one layer and $W_Q, W_K$ in the next layer by an invertible matrix. They conjecture and verify numerically that adding back the softmax breaks only the first of these symmetries."
+  },
+  {
+   "id": "sec_3",
+   "title": "Role of Symmetry in Loss Landscapes",
+   "level": 1,
+   "text": "The loss landscapethe graph of the loss function over the parameter spaceplays a central role in understanding the optimization behavior of neural networks. Parameter symmetries and the lack of parameter identifiability increase the size of loss level sets. To illustrate, consider a two–layer linear network $f_{linear}(W_2, W_1) = W_2 W_1 X$, where $(W_2, W_1) \\in \\Par = \\R^{m \\times h} \\times \\R^{h \\times n}$ and $X \\in \\R^{n \\times k}$ is fixed input data. If $(W_2^*, W_1^*)$ is a global minimum, so are all points $(W_2^* g^{-1}, g W_1^*)$ with $g\\in\\GL_h(\\R)$. This set forms a positive‐dimensional manifold of zero loss (Figure). In this section, we examine how parameter space symmetry governs the connectedness, dimensionality, and structure of loss level sets. In Sections and , we will see how these properties can be exploited in optimization."
+  },
+  {
+   "id": "sec_3_1",
+   "title": "Continuous Symmetry and Mode Connectivity",
+   "level": 2,
+   "text": "Continuous parameter space symmetries enlarge individual minima into connected sets. Formally, a symmetry is continuous if the symmetry group $G$ is a Lie group and the group action is continuous. The orbit of a point $\\theta \\in \\Par$ is the set $O(\\theta) = \\{ \\theta' \\in \\Theta \\mid \\theta' = g \\cdot \\theta \\text{ for some } g \\in G \\}$. When $G$ is a Lie group, the orbits are often positive-dimensional, so continuous symmetries generically create a positive‑dimensional manifold lying entirely in a single loss level set. Empirical work first revealed that independently trained networks can be joined by low‑loss curves in parameter space . This observation, often referred to as mode connectivity , has been extended to show that points found by stochastic gradient descent (SGD) are connected by multi-dimensional volumes . This insight has applications in model ensembling and model averaging . Continuous symmetries provide a theoretical explanation for this phenomenon. The loss remains constant along each orbit, so minima discovered by SGD will automatically be connected whenever the group action is continuous and they can be mapped to each other by an element in the identity component of the group. We note that not all points in a minimum are related by a symmetry transformation, and empirical connectivity observed between independently trained networks may also arise from other mechanisms beyond symmetry. Parameter space symmetry imposes a structure on the loss level sets. The minimum of a neural network, which is the optimization target, is perhaps the most interesting level set. Investigating the connection between symmetry groups and the topology of minima may lead to better understanding of the loss landscape and explain the source of mode connectivity. When a level set is homeomorphic to the symmetry group through a group action, e.g. in linear networks with invertible weight matrices, the minima has the same topological properties, such as connectedness, as the symmetry group . Zero‑loss curves generated by continuous actions and dimension bounds derived from orbit dimensions further illustrate how symmetry dictates flat directions. visualizes the set of functionally equivalent parameters. In ReLU networks, the visualization demonstrates the expected permutation and scaling symmetry, as well as other structures which indicate more complex symmetries."
+  },
+  {
+   "id": "sec_3_2",
+   "title": "Discrete Symmetry and Structure of Minimum",
+   "level": 2,
+   "text": "Discrete symmetries do not connect minima continuously; instead they replicate them, creating many functionally identical copies throughout the parameter space. Permutation is the best‑studied discrete symmetry. show that all permutations of a given hidden layer reside in the same loss level set, while prove that adding just one extra neuron per layer in a minimal tanh network merges these replicas into a single connected manifold. Extending this analysis, characterize functional equivalence classes for hyperbolic‑tangent networks, and examine minima in the function space after quotienting out both permutation and scaling symmetries. Counting arguments reveal the combinatorial explosion such symmetries induce. estimate that the number of permutation‑equivalent minima grows factorially with width, underscoring how discrete symmetry complicates landscape exploration. Although discrete actions do not generate continuous valleys, they still influence the loss landscape shape and optimization trajectories, as the next section will demonstrate. In particular, quotienting out these symmetries reduces model redundancy, shrinks the search space, and sometimes simplify sampling."
+  },
+  {
+   "id": "sec_3_3",
+   "title": "Removing Symmetry: Model Compression and Reduced Search Space",
+   "level": 2,
+   "text": "While symmetry enriches the loss landscape by introducing structure and multiplicity, removing symmetry reveals a simpler geometry—one that is more compact to represent, and often more amenable to analysis. Symmetry removal effectively collapses each symmetry orbit to a canonical representative . This operation alters the shape of the loss landscape—not by changing its values, but by restricting attention to a lower-dimensional quotient space where each point represents a unique function. As a result, the loss landscape becomes less redundant, more compact, and easier to sample from and optimize. One major motivation for removing symmetry is to reduce the dimensionality of the parameter space without altering the function space. This operation, often known as model compression, is of critical importance in lowering storage cost, improving inference speed, and efficient deployment of machine learning models. Every symmetry implies a set of directions in which the loss is constant, stretching level sets into high-dimensional manifolds. Quotienting out these directions yields a more compact version of the loss landscape, where each point corresponds to a unique function. In the context of model compression, this means we can represent networks more efficiently. For example, compress radial neural networks by factoring out orthogonal symmetries, and exploit structural symmetries in computational graphs to merge redundant nodes. These methods reduce storage costs and inference time, without affecting expressivity or accuracy. Beyond compression, removing symmetry transforms the loss landscape by collapsing symmetry-related regions into single representatives. For networks with permutation symmetry—such as feedforward networks with interchangeable hidden units—the parameter space can be partitioned into large equivalence classes. Building on the observation that permutations of neurons can be viewed as compositions of reflections in the parameter space, constructs a cone in the parameter space that contains a permuted copy of every point in the parameter space. For two layer networks with permutation symmetry $S_h$, the cone occupies only $1/h$ of the parameter space. They further prove the existence of a minimal search set, in which no two points are related by symmetry. This geometric reduction reduces the volume of minima and reveals its global structure. empirically show that after removing permutation and scaling symmetries, neural networks are more linearly mode connected, and the loss decreases more monotonically on the linear interpolation between initialization and trained parameters. In Bayesian neural networks, removing symmetry reduces the effective search space by collapsing functionally equivalent modes in the posterior . In high-dimensional models like neural networks, symmetries can cause posterior distributions to become multi-modal in a functionally redundant way. This impairs MCMC mixing and complicates interpretation. By mapping parameters to a canonical representative—effectively quotienting out permutation or sign-flip symmetries— and show that it is possible to explore a more informative and diverse set of functionally distinct solutions. show that removing permutation symmetry leads to a compact representation that helps directly compare trained Bayesian neural networks across sampling methods. Finally, removing symmetry alters the curvature and critical point structure of the landscape, with direct implications for optimization. Symmetry-induced flat directions often give rise to plateaus or saddle points that slow down training. By projecting the loss landscape onto a symmetry-reduced space, these degenerate directions are removed, yielding a more strongly convex surface. show that continuous symmetries can be used to construct convex polytopes, allowing nonconvex optimization problems to be reformulated as linear optimization problems over polytopes, which are computationally more tractable. In summary, removing symmetry simplifies the geometry and topology of the loss landscape, by collapsing orbits of equivalent parameters. This simplification yields a lower-dimensional loss surface, a more meaningful probabilistic structure in Bayesian neural networks, and an optimization landscape with fewer spurious critical points and degenerate directions. While symmetry endows the loss landscape with structure and multiplicity, its removal distills the parameter space into a representation more aligned with the underlying function space."
+  },
+  {
+   "id": "sec_4",
+   "title": "Applications of Symmetry in Gradient-Based Optimization",
+   "level": 1,
+   "text": "In this section, we describe ways of leveraging parameter space symmetry to design more efficient and theoretically motivated optimization algorithms. Optimization in machine learning is the process of finding parameters that minimize an objective function $L\\colon \\Par \\times \\Data \\to \\R$, over a given subset of data $X \\subseteq \\Data$. In the absence of additional constraints on the parameters, the optimization problem is formulated as \\[\\min_{\\theta \\in \\Par} L(\\theta, X). \\] A common optimization method is gradient descent, which iteratively updates parameters in the direction opposite to the gradient $\\nabla L(\\theta) = \\frac{\\partial L}{\\partial \\theta}$. Using a step size $\\eta_t \\in \\R_{>0}$, the parameter after $t+1$ steps is obtained from the parameter after $t$ steps by When analyzing gradient descent, the presence of parameter symmetry introduces complexities that are not immediately apparent from the loss values alone. Consider two points in the parameter space, $\\theta$ and $\\theta' = g \\cdot \\theta$ for some $g$ in the symmetry group $G$. While the value of $L$ at $\\theta$ and $\\theta'$ is the same, the gradient $\\nabla L$ may differ (Figure a). Therefore, learning dynamics starting from points in the same orbit can also be different (Figure b). The discrepancy among points in an orbit inspires two families of optimization techniquespurposefully searching for a favorable point within the orbit, or eliminating the differences among points in the same orbit. We discuss the two approaches in the next two subsections."
+  },
+  {
+   "id": "sec_4_1",
+   "title": "Exploiting Difference among Points in an Orbit",
+   "level": 2,
+   "text": "Leveraging the difference among points in an orbit, loss-invariant transformations defined by symmetry may be used in concert with common optimization algorithms to accelerate training or improve the quality of the final solution. During optimization, the parameter $\\theta$ can be transformed by an element $g$ of the symmetry group $G$, $\\theta \\mapsto g \\cdot \\theta$ (Figure c). We can thus optimize over the orbits by optimizing over the group $G$. If $G$ is a Lie group, then optimization can likewise be performed using gradient descent on the manifold underlying $G$. Below we discuss various optimization objectives for $g$, including minimizing parameter norms, maximizing loss gradients, and optimizing other qualities of the solution (Table ). One application is minimizing the norm of the parameters, which has been shown to improve learning. On ReLU networks, and search in the positive rescaling group for an element that minimizes parameter norms. propose Equi-normalization (ENorm), an algorithm that rescales parameters $\\theta$ to minimize their $l_p$-norm $l_p(\\theta) = \\|\\theta\\|_p^p$. proposes to minimize the $l_{p,q}$-norm $\\|W\\|_{p,q} = (\\Sigma_i \\left( \\Sigma_j |(g \\cdot W)_{ij}|^p \\right) ^\\frac{q}{p} )^{\\frac{1}{q}}$, where $W_{ij}$ denotes the weight from neurons $i$ to $j$. In the resulting network, the incoming and outgoing weights are balanced at each layer. Interleaving these symmetry transformations with stochastic gradient descent improves training speed and test accuracy, following the intuition that gradient propagation is smoother on parameters with smaller norms. Other work seeks to improve convergence speed by optimizing on the orbits to increase the norm of gradients. On general neural network architectures, propose neural teleportation, which moves parameters on their loss level set using a group element random drawn from a distribution on the symmetry group. This procedure leads to an increase in the expected magnitude of gradients, resulting in improved empirical convergence rates. Building on this work, perform optimization in the orbit to find points with large gradient norms $\\|\\grad L\\|_2$. They show that points where gradient norms are maximized in a loss level set, the gradient descent direction $\\nabla L$ aligns with Newton's direction $H^{-1} \\nabla L$, where $H$ is the Hessian of $L$. This alignment suggests that optimal teleportation before each gradient descent step enables the algorithm to achieve the faster convergence rates typical of second-order methods. In preconditioned gradient descent $\\theta_{t+1} = \\theta_t - \\eta A \\nabla L (\\theta_t)$, where $A$ is a matrix with dimensions matching $\\Par$, teleporting to maximize the Mahalanobis norm $\\|\\grad L\\|_A$ results in faster convergence compared to maximizing the $l_2$-norm $\\|\\grad L\\|_2$ . Since its introduction, teleportation has found broad application in long-tail recognition , continual optimization in multi-task learning , and privacy-preserving verification of deep learning inference . Beyond finding a good starting point for gradient descent, optimization on orbits can incorporate other objectives at different times during training. For example, teleport parameters to regions with different sharpness and curvature, empirically improving the generalization ability of the final solution. More generally, knowing the symmetries allows one to search on the minima for points with desired properties. When the optimization on orbits is done using infinitesimal symmetries, this approach is similar to orthogonal gradient descent in continual learning , which projects the gradient of new tasks to the space orthogonal to the gradient of the original task to avoid catastrophic forgetting. Group actions that preserve loss approximately but not exactly are still a useful tool to explore near a loss level set. In this case, one can leverage the different loss or functions realized by points in the same orbit. In certain methods with regularizers, loss is not invariant on the orbits, but the variation is small, which slows down optimization after parameters enter the orbit. This is analogous to the Goldstone mode in physics . After optimization on the full parameter space slows down due to entering the Goldstone mode, propose to optimize on the symmetry subspace, which accelerates optimization in these orbits with weakly-broken symmetry."
+  },
+  {
+   "id": "sec_4_2",
+   "title": "Symmetry Invariant Optimization Algorithms",
+   "level": 2,
+   "text": "Points in a symmetry group orbit share the same loss but can differ in other aspects. In Section , we explored optimization algorithms that capitalize on these differences. A complementary approach of handling these differences involves designing learning algorithms that remain unaffected by such differences. In this section, we discuss ways to make gradient descent invariant to parameter symmetries. Similar to symmetry in the loss function, symmetry in algorithms is defined by the invariance of an algorithm to group actions on parameters. We denote an algorithm as $A\\colon \\Par \\times \\Data \\times \\R \\to \\Par$, which takes initial parameters with a dataset and outputs the learned parameters after $t$ steps. Inspired by the definition of data-equivariant learning algorithms , the following definition generalizes rescaling invariant algorithms to general parameter-equivariant algorithms, visualized in Figure d. Let $G$ be a symmetry group of a loss function $L\\colon \\Par \\times \\Data \\to \\R$. An algorithm $A$ is $G$-invariant if, for every $g \\in G$, $\\theta \\in \\Par$, $X \\subseteq \\Data$, and $t > 0$, there exists an $g'\\in G$ such that $A(g \\cdot \\theta, X, t) = g' \\cdot A(\\theta, X, t)$."
+  },
+  {
+   "id": "sec_4_2_1",
+   "title": "Scaling Invariant Algorithms",
+   "level": 3,
+   "text": "ReLU networks are positively rescale-invariant (Example ), but gradient descent (Equation ) on them is not. When parameters are rescaled in ways such that there are significant disparities between input and output weights of neurons, gradient descent tends to perform poorly . The extra effort required to circumvent these configurations, along with difficulty in analysis caused by inconsistent performance across parameters on the same orbit, motivates new optimization algorithms that are invariant to rescaling. Two families of rescale invariant algorithms have been developed. The first one is based on the observation that the product of incoming and outgoing parameters of a ReLU function is invariant to rescaling. From the parameters $\\theta$ of a ReLU network, construct a path vector $\\pi(\\theta)$ that contains the product of parameters along each path from an input node to an output node. Their algorithm, Path-SGD, performs proximal gradient descent with respect to a path regularizer $\\left\\| \\pi(\\theta) - \\pi(\\theta^t) \\right\\|_p^2$, instead of the 2-norm of parameters $\\left\\| \\theta - \\theta^t \\right\\|_2^2$ that would give rise to Equation : The resulting update step size for each parameter is inversely proportional to the norm of a vector, where each entry is the product of all other parameters along a path that includes the parameter. Consequently, parameters with larger values receive proportionally larger updates, and the resulting algorithm achieves rescaling invariance. Another method to make gradient descent invariant to scaling symmetry involves projecting parameters to a different space, then either optimizing directly in that space or, when the space is not a vector space, performing manifold optimization. The space is often a quotient space induced by scaling equivalence and has fewer dimensions than $\\Par$. design a rescaling invariant algorithm, $\\mathcal{G}$-SGD, by performing gradient descent in the rescale-invariant space spanned by the path vector of basis paths. and constrain the incoming weights of each neuron to stay unit-norm by updating the weight matrix $W$ of each layer using the Riemannian gradient before projecting them back to the oblique manifold $\\{W \\in \\R^{n \\times p}\\colon \\mathrm{diag}(WW^T) = I\\}$. In addition to ReLU networks, other architectures such as those with batch normalization also exhibit scaling symmetry (Example ), and similar optimization techniques apply. quotients out the positive scaling symmetry in batch normalization, develops gradient descent algorithms on the quotient manifold in a similar way, and proves that the resulting algorithm has a better convergence rate than gradient descent in the original parameter space."
+  },
+  {
+   "id": "sec_4_2_2",
+   "title": "General Symmetry Invariant Algorithms",
+   "level": 3,
+   "text": "One algorithm whose convergence is invariant to general parameter symmetry is natural gradient descent. This method computes gradients using the Fisher metric on the manifold of distributions, which is invariant to parametrizations . In implementation, natural gradient descent is not fully invariant to symmetry due to finite step size. However, methods which use a second-order ODE solver and the second-order approximation of the exponential map can reduce the invariance error to second order . More recently, observe that gradient descent can be made invariant to parameter symmetry by explicitly including the metric when computing gradients, and show that there exist metrics other than the Fisher metric that achieve this invariance. Scale-free updates, which are updates invariant to gradient scaling, are hypothesized to be the reason why AdamW outperforms standard Adam with $\\ell_2$ regularization ."
+  },
+  {
+   "id": "sec_5",
+   "title": "Implications of Symmetry for Learning Dynamics",
+   "level": 1,
+   "text": "In this section we continue to explore how parameter space symmetry informs learning dynamics. In physical systems, Noether's theorem states that certain continuous symmetries have associated conservation laws . Similarly, in neural network training, parameter space symmetry implies the existence of conserved quantities in gradient flows. These conserved quantities, which remain constant along gradient flow trajectories, are useful both as conditions held throughout training and as a way to parameterize optimization trajectories in the parameter space. We summarize known conserved quantities arising from parameter space symmetry and discuss their roles in theoretical analysis of learning dynamics."
+  },
+  {
+   "id": "sec_5_1",
+   "title": "From Symmetry to Conserved Quantities",
+   "level": 2,
+   "text": "Gradient flow is a continuous version of gradient descent, commonly used to analyze learning dynamics in the limit of infinitesimal step sizes. It defines a trajectory $\\theta(t) \\in \\Par$ for $t \\in \\R_{>0}$ that connects an initialization to the limiting critical point, with velocity given by the gradient of loss: $\\dot{\\theta}(t) = - \\nabla_{\\theta(t)} L.$ A conserved quantity of gradient flow is a function $Q \\colon \\Par \\to \\R$ that remains constant along this trajectory, i.e., $Q(\\theta(s))=Q(\\theta(t))$ for all $s,t \\in \\R_{\\geq 0}$. A widely studied conserved quantity in gradient flow is imbalance—the difference between the Gram matrices of adjacent layers in linear networks. [Imbalance ] Consider an $l$-layer linear feedforward network $f\\colon \\Par \\times \\Data_{\\text{input}} \\to \\Data_{\\text{target}}$, defined as $(W_1, ..., W_l), X \\mapsto W_l ... W_1 X$, with parameter space $\\Par = \\R^{n_l \\times n_{l-1}} \\times \\cdots \\times \\R^{n_1 \\times n_0}$. Define the loss function $L\\colon \\Par \\times \\Data \\to \\R$ as the composition of $f$ and any differentiable function $\\Cost\\colon \\Data_{\\text{target}} \\times \\Data_{\\text{target}} \\to \\R$. For $h \\in [l - 1]$, each element in $W^{(h)} (W^{(h)})^T - (W^{(h+1)})^T W^{(h+1)} \\in \\R^{n_h \\times n_h}$ is a conserved quantity of the gradient flow on $L$, known as the unbalancedness or imbalance . Similar conserved quantities have been identified beyond linear feedforward networks and gradient flow. For example, in feedforward networks with homogeneous activations, show that gradient flow preserves the difference in squared norms between each neuron's incoming and outgoing weights, making it a conserved quantity. In graph attention networks with homogeneous activation functions, identify similar conserved quantitiesthe difference between the norm of incoming and outgoing parameters of each neuron. By expressing convolutional layers as equivalent fully connected layers, identify conserved quantities of similar forms between convolutional layers and between residual blocks in ResNet. Beyond standard gradient descent, identify conserved quantities under spectral initialization in natural gradient descent and curvature-corrected dynamics, including expressions involving differences and ratios of singular values of weight matrices. Several theoretical frameworks explicitly connect conserved quantities to parameter space symmetries, drawing analogies to Noether’s theorem and extending conservation laws across diverse optimization dynamics. For example, derive conserved quantities in gradient flows and analyze their evolution under modified gradient flows that better approximate stochastic gradient descent. Their work focuses on one-parameter symmetry groups, such as translation, scaling, and rescaling, and parallels Noether’s theorem in both form and intuition. Extending these ideas to higher-dimensional symmetry groups, develop a framework for describing optimization algorithms as ordinary differential equations, identifying their corresponding Lagrangians, and deriving conserved quantities by applying Noether’s theorem via the generators of symmetry groups. Notably, they connect imbalance to symmetry and derive conserved quantities for a broader class of dynamics, including both first-order and second-order systems such as Newtonian dynamics and Nesterov’s accelerated flows. For more general architectures, associate conserved quantities with infinitesimal symmetries, deriving them for activation functions with general equivariance properties. This approach recovers known conserved quantities for homogeneous activations and reveals a new conservation law analogous to angular momentum conservation for radial rescaling activation layers. While many conserved quantities can be derived from parameter space symmetries, it remains an open question whether all conserved quantities originate from known symmetries. To explore whether known sets of conserved quantities are maximal, apply the Frobenius theorem to compute the number of independent conserved quantities, from the Lie algebra generated by the vector fields spanned by the model's Jacobian. In the case of the matrix factorization problem (Example without the bias terms), they show that besides imbalance, there are no other independent conservation laws. Similar results hold for attention layers in transformers ."
+  },
+  {
+   "id": "sec_5_2",
+   "title": "Conserved Quantities for Convergence and Parameterization",
+   "level": 2,
+   "text": "By ensuring certain properties remain constant throughout training, conserved quantities provide stability in gradient flow that is essential for convergence analysis. In particular, any condition based solely on conserved quantities that holds at initialization will continue to hold throughout the gradient flow. As noted in , conserved quantities such as imbalance provide guarantees that parameters are bounded throughout gradient flow, which is helpful in convergence analysis. The proofs of several convergence bounds for gradient descent of deep linear networks depend either on the invariance of the imbalance or the assumption that the imbalance is small or zero . Zero imbalance is also an assumption in , as a condition under which the gradient flows of linear networks are Riemannian gradient flows on the manifold of fixed rank matrices. Beyond stability, conserved quantities act as coordinates for the dynamics. Because they are constant along a trajectory, they label optimization paths, and their limiting values locate endpoints within the set of minima. This labeling links initialization to both convergence and generalization: in small two-layer networks, observe strong correlations between conserved quantities and both convergence and sharpness of the resulting minima, suggesting that carefully chosen initializations can improve training efficiency and generalization. Moreover, under imbalanced initializations, conserved quantities have been explicitly connected to the convergence rate by appearing as terms in convergence bounds . By parametrizing minima, conserved quantities also help describe which solutions optimization converges to, formalizing the notion of implicit bias the tendency of optimization algorithms to favor solutions with specific properties. In homogeneous and leaky ReLU networks, and prove that layers become automatically balanced. Similarly, proves an implicit regularization effect in matrix factorization problems under large learning rates. This effect is quantified by an upper bound on the difference between the 2-norms of weight matrices, a quantity similar to imbalance. This trend also appears empirically observe that imbalance decreases exponentially when training with large learning rates. For loss functions with a rescaling symmetry, derive the stationary distribution of SGD and prove that SGD solutions are biased towards a balanced one, different from predictions from a Langevin model. Extending this idea, propose a unified framework based on mirror reflection symmetry, encompassing rescaling, rotation, and permutation symmetries. They prove that such symmetries impose structured constraints, which are preferentially satisfied when weight decay or gradient noise is large. This framework explains various phenomena in gradient-based learning and motivates algorithms that enforce constraints. As such, conserved quantities, rooted in symmetry, bridge the structure of parameter space and the dynamics of learning, guiding both the path and outcome of optimization."
+  },
+  {
+   "id": "sec_6",
+   "title": "Connections to Symmetry in Internal Representations and Data",
+   "level": 1,
+   "text": "In previous sections, we focused on how symmetry impacts the structure and dynamics within the parameter space. In this section, we explore how parameter space symmetry interacts with symmetry in other spaces, including data and internal representations. In the first part, we examine how activation function equivariance links symmetry in parameter space to symmetry in internal representations. We then discuss how symmetry in data can induce symmetry in learned parameters, followed by a brief look at an application involving joint transformations of data and parameters. In the second part, we turn to tasks where neural network parameters are treated as data, and show how parameter symmetry can be leveraged through equivariant architectures and data augmentation."
+  },
+  {
+   "id": "sec_6_1",
+   "title": "Symmetry in Parameters, Internal Representations, and Data",
+   "level": 2,
+   "text": "Symmetry in parameter space is closely connected to symmetry in internal representations, the intermediate outputs of neural networks, with both often arising from the equivariance of activation functions. In Section , we saw that many parameter space symmetries arise from equivariance of the activation functions $\\sigma$. Recall that $\\sigma$ is equivariant to a group $G$ if it satisfies $\\sigma \\circ g = g \\circ \\sigma$ for $g \\in G$. The set of such transformations, known as the intertwiner group, defines symmetries in both the parameter space and the internal representations of data . This property enables stitching: given two functionally equivalent networks with the same architecture but different weights, expressed as function compositions $f_1 \\circ \\sigma \\circ f_2$ and $\\tilde{f}_1 \\circ \\sigma \\circ \\tilde{f}_2$, an element $g \\in G$ can align the two via $\\tilde{f}_1 \\circ g \\circ \\sigma \\circ f_2$ while preserving the output. Symmetries in internal representations also motivate new approaches for comparing hidden activations across networks. In particular, point out that internal representations should be considered equivalent up to transformations from the intertwiner group, leading to similarity metrics that are invariant under such transformations. This perspective justifies interpreting ReLU networks through the behavior of individual neurons, whose activations are preserved under these symmetries, rather than through arbitrary linear combinations, which may obscure meaningful structure. In two-layer ReLU networks trained with gradient descent, symmetry in training data preserves symmetry in the learned parameters. Specifically, let $X \\subseteq \\Data$ be a dataset that is invariant under a group $G$, i.e., $g \\cdot X = X$ for all $g \\in G$. This implies the loss function satisfies $L(\\theta, g \\cdot X) = L(\\theta; X)$. Consider a two-layer ReLU network of the form $v^T \\sigma(W x)$, where $(v, W) \\in \\Par = (R^k \\times \\R^{k \\times d})$ and $x \\in \\Data = \\R^d$. Because of this data invariance, the gradient with respect to $W$ is equivariant under $G$, i.e. $\\nabla_W L(g \\cdot W; X) = g \\cdot \\nabla_W L(W; X)$. As a result, if $W$ is initialized to have the same symmetry as data ($gW_0 = W_0$ for all $g \\in G$), this symmetry is preserved throughout gradient descent training ($gW_t = W_t$ for all $g \\in G$, at all time $t$). While most studies examine symmetries acting on either the data space or the parameter space, it is also possible to define simultaneous transformations on both spaces that leave the loss function invariant. For example, in a one-layer linear network $f(W, b, X) = WX + b$, the group action $g \\cdot (W, X) = Wg^{-1}, gX$ leaves the output unchanged. By formulating such joint group actions on data and parameters, reveal a group theoretic aspect of neural network approximation theory. Using Schur’s lemma, they show that the ridgelet transform is a right inverse of the integral representation of neural networks. This means that the ridgelet transform can reconstruct a neural network that exactly represents a given data-generating function. As a result, their framework provides a constructive proof of the universal approximation theorem, rooted in the symmetry structure of the joint space."
+  },
+  {
+   "id": "sec_6_2",
+   "title": "Parameter Symmetry as Data Symmetry in Weight Space Learning",
+   "level": 2,
+   "text": "In tasks where neural network parameters are treated as datafor example, in parameter generation or in learning representation of trained models the parameter space symmetry of the input network becomes the data space symmetry of the processing network. Designing architectures that process neural network parameters effectively has attracted increasing attention , partly due to the convergence of several trends: the rise of neural networks that directly encode data objects, such as implicit neural representations ; the need for weight alignment in model merging ; and growing interest in model analysis driven by the increasing amount of publicly released trained models . Advances in methods that process neural network parameters as data have enabled applications including learning on implicit neural representations , optimizing weight alignment between networks , predicting generalization ability , recovering the dataset size used in fine-tuning , and generating high-performing parameters or high-quality initializations . Respecting parameter space symmetry of the input network is a desirable property of these architectures, as it ensures consistent treatment of functionally equivalent networks and improves generalization and efficiency. This concept aligns with the broader goals of geometric deep learninga field that leverages structures in data to design more effective learning methods . The rest of this section reviews how these ideas are implemented through equivariant architectures and data augmentation. One way to enforce data symmetry in processing architectures is to use equivariant neural networks (Figure ). Applying this idea to processing multi-layer perceptrons (MLPs), propose an architecture that is equivariant to permutation of the MLP’s hidden neurons. Their architecture outperforms nonequivariant models on implicit neural representation classification and prediction, as well as the adaptation of classification networks to new domains. Concurrently, develop a similar architecture that is equivariant to permutation of all neurons and input of convolutional neural networks. Subsequently, this architecture is extended to process arbitrary weight spaces and to account for scaling symmetry in ReLU , although the proposed models can only learn from inputs with one fixed architecture. and treat neural networks as computational graphs and use graph neural networks to process the input neural networks. Their models are thus able to learn from diverse architectures. Most recently, extend graph-based metanetworks to account for scaling symmetries arising from activation functions, achieving state-of-the-art performance across multiple neural network processing tasks. Building on the success of equivariant architectures that leverage parameter symmetry, later work applies them to a wider range of input networks and tasks. For example, propose transformers that are equivariant to permutation symmetry in the input networks, while develop architectures that are equivariant to symmetry in transformers. Incorporating the knowledge of parameter symmetry into solving the weight alignment problem, extend the equivariant architecture in to learn the optimal alignment between two sets of parameters. Their approach is faster, produces better alignment than traditional optimization-based approaches, and can be used as initialization for optimization-based methods to improve their alignment quality. Beyond equivariant networks, parameter space symmetry can also be leveraged through data augmentation. Applying symmetry transformations to existing trained parameters generates new, functionally equivalent versions of the network to be used as additional training inputs. While most existing equivariant architectures focus on permutation symmetry, introduce scaling symmetry in ReLU networks and discrete symmetries in sinusoidal activations to generate new sets of parameters as training samples. These augmentations increase the diversity of neural representations for each data object, mitigating overfitting in weight space learning and improving generalization."
+  },
+  {
+   "id": "sec_7",
+   "title": "Challenges and Future Directions",
+   "level": 1,
+   "text": "In Sections –, we reviewed the current understanding of parameter space symmetries, covering their theoretical foundations as well as tangible effects on the geometry of loss landscapes, the dynamics of optimization, and the design of practical algorithms. In this section, we outline key research directions towards a more complete theoretical foundation of parameter space symmetry, better understanding of the role of symmetry in deep learning theory, and broader applicability of symmetry-informed methods."
+  },
+  {
+   "id": "sec_7_1",
+   "title": "Mathematical Foundations",
+   "level": 2,
+   "text": "A fundamental challenge in understanding parameter space symmetry is to develop a complete and rigorous characterization of all symmetries that preserve neural-network functions. From a mathematical perspective, clarifying the existence, completeness, and structures of these symmetry groups represents a foundational problem. Even seemingly simple network architectures can have nontrivial symmetry groups, and identifying them is essential for understanding loss landscapes and optimization dynamics. Another challenge is extending the notion of symmetry from exact, function-preserving transformations to more flexible, data-dependent symmetries. We saw in Section that in many neural networks with elementwise activation functions, all transformations that do not change the function are known. However, this set of symmetry is often small, as they are required to keep the loss invariant for all input values. Data-dependent symmetry allows for larger symmetry groups, but current analysis is limited to symmetry that preserves the loss for a single data point. Investigating the existence and structure of data-dependent symmetry for different batch sizes will to make this set of symmetry more relevant to practical settings. Thus far, most work has focused on layer-wise equivariances arising from adjacent activations, potentially overlooking more global invariances. Existing studies examine small components—pairs of layers whose activations admit a group action—but this does not preclude broader classes of symmetry that act across multiple, non-adjacent layers or repeated architectural blocks. Exploring such symmetries could substantially expand the known symmetry groups and reveal new geometric or topological structures in parameter space. Besides pursuing a general theory, detailed investigations into architecture-specific symmetries are also valuable. Models such as neural radiance fields , which are computationally expensive to optimize, might benefit greatly from symmetry-informed optimization methods. Discovering and characterizing symmetries particular to these architectures would provide concrete opportunities to accelerate training and enhance scalability, thereby translating theoretical advances into immediate practical improvements. Finally, numerical and visualization tools can help guide theoretical characterization of parameter space symmetries. Methods for numerically constructing and visualizing functionally equivalent parameters, such as those developed by , provide practical insight into the connectedness, dimensionality, and topological complexity of symmetry-induced loss level sets. Numerical discovery of symmetries and symmetry-induced structures in the parameter space may also provide intuitions on the existence and number of symmetries in a given architecture. These computational approaches can be important in guiding theoretical efforts in large-scale architectures."
+  },
+  {
+   "id": "sec_7_2",
+   "title": "Deep Learning Theory",
+   "level": 2,
+   "text": "Parameter space symmetry is not merely a mathematical curiosity—it offers a lens to understand core phenomena in deep learning theory. As neural networks scale in size and complexity, symmetry provides a principled foundation for analyzing learning dynamics, the geometry of loss landscapes, and model capacity. Symmetry considerations are thus increasingly central in explaining how overparameterized networks behave, generalize, and learn in practice. Training dynamics and implicit bias. One promising direction is to study learning dynamics through the lens of symmetry and conserved quantities. As we have seen in Section , continuous symmetries induce conserved quantities that remain fixed along gradient flows and partially parameterize the minimum. These quantities label the optimizer's position and reveal how initialization and symmetry constrain the final solution, formalizing implicit bias. However, the precise relationship between conserved quantities, implicit bias, and generalization remains poorly understoodespecially in deeper architectures or when SGD breaks these symmetries due to finite-step updates. Understanding how stochasticity or regularization cause the drift of these conserved quantities will be an alternative route to explain phenomena in training neural networks, such as why stochastic gradient descent prefers minima that generalize. Loss landscape geometry and generalization. Symmetry is an integral part of the geometry of the loss landscape, which is closely linked to generalization. By expanding minima into manifolds of equivalent solutions, symmetries create flat directions that confound curvature-based metrics such as sharpness. Recent work by addresses this issue by formulating sharpness on a Riemannian quotient manifold that factors out the continuous symmetry of transformers, recovering a strong correlation between curvature and generalization. Developing such symmetry-aware geometric formalisms may help reconcile conflicting observations about the relationship between flatness and generalization. Expressivity and approximation theory. Symmetry has direct implications for the expressivity and effective capacity of neural networks. Since many parameter configurations can represent the same function (e.g., due to permutation symmetry in multilayer perceptrons), the function class is smaller than suggested by raw parameter counts. Recent work by quantifies this, showing that factoring out symmetry leads to significantly tighter covering number bounds—improving estimates by factorial factors in width. These results suggest that traditional complexity measures overestimate model capacity by ignoring symmetric redundancies. Extending such analyses to broader symmetry groups (beyond permutations) could yield sharper generalization bounds by treating symmetry-related parameters as equivalent in the function space. Introducing or removing parameter symmetries? Architectural design offers a means to either introduce or eliminate symmetries, which provides the opportunity to examine symmetry's effect on various aspect of deep learning. On one hand, imposing symmetry can enhance training stability and invariance. For example, introduce a scale-invariant transformer, replacing Softmax with a normalized ReLU to create a model trainable by plain SGD yet competitive with Adam-trained BERT variants. On the other hand, removing symmetry reduces degeneracies, creates more connected minima, and sometimes makes optimization easier. propose architectures that break permutation symmetry between neurons, enabling linear mode connectivity and improving Bayesian training efficiency. Additionally, show that removing symmetries via small perturbations can prevent capacity collapse and improve both optimization and generalization by encouraging exploration of more expressive model configurations. An important open question is determining which symmetries to preserve and which to break, in order to best align model behavior with the goals of a given learning task. Taken together, these directions position symmetry not only as a descriptive tool for neural networks, but as a foundational principle for understanding learning dynamics, designing architectures, and guiding future theory in deep learning."
+  },
+  {
+   "id": "sec_7_3",
+   "title": "Applications",
+   "level": 2,
+   "text": "Optimization on loss level sets. One practical use of symmetry is to facilitate movement along loss level sets in the parameter space. Points on a fiber of the realization map can have very different neighborhoods . In other words, points on the same level set can be different. Early work illustrates the usefulness of this property in optimization . Despite initial promise, these methods have not been wide adapted, possibly due to a lack of large-scale benchmark study and an easy to use implementation, as well as the mathematical background required to adapt these algorithms to new architectures. New implementation techniques and learning the teleportation destination might help reduce the cost of teleportation in larger scale applications. Besides scaling up teleportation, another promising direction is to explore level sets via symmetry transformation in diverse domains. When some parts of the minima are better than others, one can use symmetry to explore the minima to find the better models. One example is continual learning, where one optimize in the minimum manifold and could be a method for fine-tuning pre-trained models. Another example is model alignment, where symmetry is used to move models closer in the parameter space to improve model fusion . Recent work also demonstrates that parameter space symmetries can be leveraged to align sparse subnetworks across different random initializations, enabling effective sparse training from scratch . Moreover, some minima may produce lower error during quantization than others . Given a known symmetry and a point on minimum, we can search for these better points on an orbit. Reducing search space in sampling. Symmetry can be exploited beyond standard gradient-based training, for instance in Bayesian methods and sampling-based optimization . The parameter space explored by sampling algorithms (such as MCMC for neural network weights) may also contain redundancies coming from symmetry, though this aspect remains less studied. Factoring out symmetries in such scenarios could reduce the effective search space and improve sampling efficiency. For example, if parameters related by a continuous symmetry produce the same likelihood, one could constrain the sampler to move only in the reduced space of unique configurations, thereby eliminating needless exploration of equivalent states. This idea can also be used as a diagnostic: known symmetries provide a consistency check for the quality of sampling (the sampler should visit all members of a symmetry orbit with equal probability). Discrete symmetry has been explored in depth , but factoring out continuous symmetry might be more appealing, since it reduces the dimension, instead of just volume, of the posterior space."
+  },
+  {
+   "id": "sec_8",
+   "title": "Conclusion",
+   "level": 1,
+   "text": "Symmetry is prevalent in neural network parameter spaces and appears in many areas of machine learning, though often overlooked. Recognizing and formalizing these symmetries connects deep learning to well-established mathematical tools from group theory and geometry. Symmetry's intrinsic connection to structure improves our understanding of how neural networks work and hints at better architectures, faster optimization techniques, and new approaches to solving problems with real-world impact. Symmetry is, of course, not the only path forward in the study of neural networks. Like modeling training dynamics using classical mechanics or designing new neural networks with inspirations from neuroscience, it is an example of approaching problems in machine learning from the view of a pre-existing subject, allowing us to bring existing tool and insight to bear on the problem. What makes a mathematical approach especially appealing is that neural networks are fully artificial, abstract objects, unconstrained by the specific laws of physics or biology. By examining parameter space symmetry, we gain access to powerful mathematical frameworks that help us better understand these systems and ultimately design more effective models."
+  },
+  {
+   "id": "sec_9",
+   "title": "Acknowledgements",
+   "level": 1,
+   "text": "We thank Kathlén Kohn and Hancheng Min for helpful comments. This work was supported in part by the U.S. Army Research Office under Army-ECASE award W911NF-07-R-0003-03, the U.S. Department Of Energy, Office of Science, IARPA HAYSTAC Program, and NSF Grants 2205093, 2146343, 2134274, 2442658, 2134178, CDC-RFA-FT-23-0069, DARPA AIE FoundSci and DARPA YFA. tmlr"
+  }
+ ],
+ "equations": [
+  {
+   "id": "eq_1",
+   "latex": "f(g \\cdot , x) = f(, x),\\quad \\forall g \\in G,\\quad \\forall  \\in \\Par,\\quad \\forall x \\in \\Data_{\\text{input}}.",
+   "section": "sec_2_2"
+  },
+  {
+   "id": "eq_2",
+   "latex": "\\begin{aligned}\nf_{linear}(g \\cdot (W_2, W_1, b_2, b_1), X) &= W_2g^{-1} (g W_1 X + g b_1) + b_2 \\\\ \n&= W_2 (W_1 X + b_1)+ b_2 \\\\\n&= f_{linear}(W_2, W_1, b_2, b_1, X).\n\\end{aligned}",
+   "section": "sec_2_2_1"
+  },
+  {
+   "id": "eq_3",
+   "latex": "\\text{Attention}(QW^Q, KW^K, VW^V) = \\text{softmax}\\left( \\frac{QW^Q (KW^K)^T}{\\sqrt{d_k}} \\right) VW^V",
+   "section": "sec_2_2_2"
+  },
+  {
+   "id": "eq_4",
+   "latex": "L(g \\cdot , x) = L(, x),\\quad \\forall g \\in G,\\quad \\forall  \\in \\Par,\\quad \\forall x \\in \\Data.",
+   "section": "sec_2_3_1"
+  },
+  {
+   "id": "eq_5",
+   "latex": "F(g \\cdot (, X), x) = F(, x), \\quad \\forall g \\in G,~ \\forall  \\in \\Par,~ \\forall X \\in (\\Data_{\\text{input}})^n,~ \\text{and }~ \\forall x \\in X.",
+   "section": "sec_2_3_2"
+  },
+  {
+   "id": "eq_6",
+   "latex": "\\E_{x \\sim D} [F(g \\cdot , x)] = \\E_{x \\sim D} [F(, x)],\\quad \\forall g \\in G,\\quad \\forall  \\in \\Par.",
+   "section": "sec_2_3_3"
+  },
+  {
+   "id": "eq_7",
+   "latex": "\\E_{x \\sim D_x} [F(W, (x, y))] \n        = \\E_{x \\sim D_x} [Wx - W^* x] \n        = W \\bar{x} - W^* \\bar{x}.",
+   "section": "sec_2_3_3"
+  },
+  {
+   "id": "eq_8",
+   "latex": "\\E_{x \\sim D_x}[F(A \\cdot W, (x, y))] = \\E_{x \\sim D_x}[W A^{-1}x - W^* x] = W\\bar{x} - W^*\\bar{x} = \\E_{x \\sim D_x}[F(W, (x, y))].",
+   "section": "sec_2_3_3"
+  },
+  {
+   "id": "eq_9",
+   "latex": "\\theta_{t+1} = \\theta_t - \\eta_t \\nabla L (\\theta_t).",
+   "section": "sec_4"
+  },
+  {
+   "id": "eq_10",
+   "latex": "^{t+1} = \\argmin_ \\eta \\left< \\grad L(^t), \\right> + \\frac{1}{2} \\left\\| \\pi() - \\pi(^t) \\right\\|_p^2.",
+   "section": "sec_4_2_1"
+  }
+ ],
+ "tables": [
+  {
+   "id": "tab_1",
+   "section": "sec_2_2_1",
+   "caption": "Symmetry in common neural network components (Examples \\ref{example:linear}--\\ref{example:rbf}). Since larger networks inherit symmetries from their subnetworks, these examples naturally extend to multi-layer networks by applying symmetry to pairs of adjacent layers.",
+   "rows": [
+    [
+     "Name",
+     "Architecture",
+     "Symmetry Group",
+     "Group action"
+    ],
+    [
+     "{Linear}",
+     "$W_2 W_1 X$",
+     "$\\GL_h(\\R)$",
+     "$g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$"
+    ],
+    [
+     "[-8pt] {Homogeneous}",
+     "$W_2 \\sigma_{hom}(W_1 X)$",
+     "$\\R_{>0}^h$",
+     "$g \\cdot (W_2, W_1) = (W_2 g^{-\\alpha}, g W_1)$"
+    ],
+    [
+     "[-8pt] {Tanh}",
+     "$W_2 \\sigma_{\\tanh} (W_1 X)$",
+     "$\\mathbb{Z}_2^n$",
+     "$g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$"
+    ],
+    [
+     "[-8pt] {Radial rescaling}",
+     "$W_2 \\sigma_{radial}(W_1 X)$",
+     "$O(h)$",
+     "$g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$"
+    ],
+    [
+     "[-8pt] {Batchnorm}",
+     "$\\frac{(WX)_i - \\text{E}[(WX)_i]}{\\sqrt{\\text{Var}[(WX)_i]}}$",
+     "$\\R_{>0}^h$",
+     "$g \\cdot W = gW$"
+    ],
+    [
+     "[-8pt] {Softmax}",
+     "$\\text{softmax}(W X)$",
+     "$(\\R^n, +)$",
+     "$(g \\cdot W)_{i} = W_{i} + g$"
+    ],
+    [
+     "[-8pt] {Pointwise}",
+     "$W_2 \\sigma_{pointwise} (W_1 X)$",
+     "$S_h$",
+     "$g \\cdot (W_2, W_1) = (W_2 g^{-1}, g W_1)$"
+    ],
+    [
+     "[-8pt] {Radial basis function}",
+     "~$\\sum_{i=1}^k w_i \\varphi \\left(\\frac{||x-c_i||}{b_i} \\right)$",
+     "$S_k$",
+     "$\\pi \\cdot (w_i, b_i, c_i) = (w_{\\pi^{-1}(i)}, b_{\\pi^{-1}(i)}, c_{\\pi^{-1}(i)})$"
+    ]
+   ]
+  },
+  {
+   "id": "tab_2",
+   "section": "sec_4_1",
+   "caption": "Algorithms utilizing group elements to transform parameters during optimization.",
+   "rows": [
+    [
+     "Algorithm",
+     "Reference",
+     "Group Element for Parameter Update"
+    ],
+    [
+     "ENorm",
+     "\\cite{stock2019equi}",
+     "$\\argmin_{g \\in G} \\|g \\cdot \\theta\\|_p^p$"
+    ],
+    [
+     "Weight Balancing",
+     "\\cite{saul2023weight}",
+     "$\\argmin_{g \\in G} \\left( \\Sigma_i \\left( \\Sigma_j |(g \\cdot W)_{ij}|^p \\right) ^\\frac{q}{p} \\right)^\\frac{1}{q}$"
+    ],
+    [
+     "\\multirow{3}{0pt}{Teleportation}",
+     "\\cite{armenta2023neural}",
+     "sampled from a distribution on $G$"
+    ],
+    [
+     "",
+     "\\cite{zhao2022symmetry}",
+     "$\\argmax_{g \\in G} \\| (\\grad L)|_{g \\cdot \\theta} \\|_2^2$"
+    ],
+    [
+     "",
+     "\\cite{zhao2023improving}",
+     "$\\argmax_{g \\in G} \\Curvature (g \\cdot \\theta)$"
+    ],
+    [
+     "Goldstone-GD",
+     "\\cite{bamler2018improving}",
+     "$\\argmin_{g \\in G} L(g \\cdot \\theta)$"
+    ]
+   ]
+  }
+ ],
+ "macros": {
+  "\\diff": "\\mathop{}\\!\\mathrm{d}",
+  "\\loss": "\\mathcal{L}",
+  "\\W": "\\mathcal{W}",
+  "\\smallO": "\\mathchoice\n\t{{\\scriptstyle\\mathcal{O}}}\n\t{{\\scriptstyle\\mathcal{O}}}\n\t{{\\scriptscriptstyle\\mathcal{O}}}\n\t{\\scalebox{.7}{$\\scriptscriptstyle\\mathcal{O}$}}",
+  "\\R": "{\\mathbb R}",
+  "\\E": "{\\mathbb E}",
+  "\\skt": "{\\mathcal{S}}",
+  "\\tr": "{\\text{tr}}",
+  "\\vt": "{\\text{vec}}",
+  "\\eat": "",
+  "\\out": "\\eat",
+  "\\Eqref": "\\eqref",
+  "\\real": "\\mathbb{R}",
+  "\\ex": "\\mathbb{E}",
+  "\\pq": "\\left( #1 \\right)",
+  "\\Loss": "\\mathcal{L}",
+  "\\M": "{\\mathbf{#1}}",
+  "\\T": "{\\mathcal{#1}}",
+  "\\V": "{\\mathbf{#1}}",
+  "\\SM": "\\mathbf{\\hat{#1}}",
+  "\\TM": "\\mathbf{\\bar{#1}}",
+  "\\PR": "\\mathbb{P}",
+  "\\MG": "\\mathcal{N}(#1,#2)",
+  "\\OO": "\\mathcal{O}(#1)",
+  "\\OOt": "\\tilde{\\mathcal{O}}(#1)",
+  "\\NI": "\\N{ #1}_{1}",
+  "\\Nsp": "\\N{ #1}_{2}",
+  "\\N": "{\\left\\| #1 \\right\\|}",
+  "\\Nf": "\\N{ #1}_{\\textsc{F}}",
+  "\\Mij": "#1_{{#2},{#3}}",
+  "\\Mcij": "{\\{#1\\}}_{{#2},{#3}}",
+  "\\SV": "\\sigma_{#1}(#2)",
+  "\\EV": "\\lambda_{#1}(#2)",
+  "\\numberthis": "",
+  "\\abs": "{\\left| #1 \\right|}",
+  "\\nd": "{\\color{orange}[ND: #1]}",
+  "\\bz": "{\\color{blue} BZ: #1}",
+  "\\neuripsedit": "{\\color{black} #1}",
+  "\\tmlredit": "{\\color{blue} #1}",
+  "\\brck": "\\left(#1\\right)",
+  "\\brcksq": "\\left[#1\\right]",
+  "\\brckcur": "\\left\\{#1\\right\\}",
+  "\\brckc": "\\left[#1\\right\\}",
+  "\\brcka": "\\langle #1\\rangle",
+  "\\bkt": "\\brcka",
+  "\\refn": "(\\ref{#1})",
+  "\\tsc": "\\textsc{#1}",
+  "\\tb": "\\textbf{#1}",
+  "\\ti": "\\textit{#1}",
+  "\\algMMT": "\\texttt{MSMRL}",
+  "\\rmnum": "\\romannumeral #1",
+  "\\Rmnum": "\\expandafter\\@slowromancap\\romannumeral #1@",
+  "\\Aut": "\\operatorname{Aut}",
+  "\\Ext": "\\operatorname{Ext}",
+  "\\Tor": "\\operatorname{Tor}",
+  "\\Z": "\\mathbb{Z}",
+  "\\osum": "\\oplus",
+  "\\aff": "\\operatorname{Aff}",
+  "\\Id": "\\operatorname{Id}",
+  "\\concat": "(\\Id \\to \\Omega \\Sigma)",
+  "\\eval": "(\\Sigma\\Omega \\to \\Id)",
+  "\\Tr": "\\operatorname{Tr}",
+  "\\ro": "\\partial",
+  "\\ba": "\\overline{#1}",
+  "\\pa": "\\left(#1\\right)",
+  "\\br": "\\left[#1\\right]",
+  "\\bk": "\\left<#1\\right>",
+  "\\grad": "\\nabla",
+  "\\g": "\\mathfrak{g}",
+  "\\GL": "\\operatorname{GL}",
+  "\\GLn": "\\GL_n",
+  "\\gl": "\\mathfrak{gl}",
+  "\\GLh": "\\GL_h(\\mathbb{R})",
+  "\\Par": "\\Theta",
+  "\\Data": "\\mathcal{D}",
+  "\\Output": "\\textnormal{Output}",
+  "\\Cost": "c",
+  "\\inv": "^{-1}",
+  "\\Curvature": "\\operatorname{Curvature}",
+  "\\themanualtheoreminner": "#1",
+  "\\argmax": "\\operatorname*{arg\\,max}",
+  "\\argmin": "\\operatorname*{arg\\,min}",
+  "\\fix": "\\marginpar{FIX}",
+  "\\new": "\\marginpar{NEW}"
+ },
+ "references": [
+  {
+   "key": "abbe2022non",
+   "text": "Emmanuel Abbe and Enric Boix-Adsera. \\newblock On the non-universality of deep learning: quantifying the cost of symmetry. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "adnan2025sparse",
+   "text": "Mohammed Adnan, Rohan Jain, Ekansh Sharma, Rahul Krishnan, and Yani Ioannou. \\newblock Sparse training from random initialization: Aligning lottery ticket masks using weight symmetry. \\newblock In \\emph{Forty-second International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ainsworth2022git",
+   "text": "Samuel~K. Ainsworth, Jonathan Hayase, and Siddhartha Srinivasa. \\newblock Git re-basin: Merging models modulo permutation symmetries. \\newblock \\emph{International Conference on Learning Representations}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "albertini1993neural",
+   "text": "Francesca Albertini and Eduardo~D Sontag. \\newblock For neural networks, function determines form. \\newblock \\emph{Neural networks}, 6\\penalty0 (7):\\penalty0 975--990, 1993.",
+   "arxiv_id": null
+  },
+  {
+   "key": "albertini1995recurrent",
+   "text": "Francesca Albertini, Paolo Dai~Pra, et~al. \\newblock Recurrent neural networks: Identification and other system theoretic properties. \\newblock \\emph{Neural Network Systems Techniques and Applications}, 3:\\penalty0 1--41, 1995.",
+   "arxiv_id": null
+  },
+  {
+   "key": "altland2010condensed",
+   "text": "Alexander Altland and Ben~D Simons. \\newblock \\emph{Condensed matter field theory}. \\newblock Cambridge university press, 2010.",
+   "arxiv_id": null
+  },
+  {
+   "key": "amari1998natural",
+   "text": "Shun-Ichi Amari. \\newblock Natural gradient works efficiently in learning. \\newblock \\emph{Neural computation}, 10\\penalty0 (2):\\penalty0 251--276, 1998.",
+   "arxiv_id": null
+  },
+  {
+   "key": "armenta2023neural",
+   "text": "Marco Armenta, Thierry Judge, Nathan Painchaud, Youssef Skandarani, Carl Lemaire, Gabriel Gibeau~Sanchez, Philippe Spino, and Pierre-Marc Jodoin. \\newblock Neural teleportation. \\newblock \\emph{Mathematics}, 11\\penalty0 (2):\\penalty0 480, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "arora2018convergence",
+   "text": "Sanjeev Arora, Nadav Cohen, Noah Golowich, and Wei Hu. \\newblock A convergence analysis of gradient descent for deep linear neural networks. \\newblock \\emph{International Conference on Learning Representations}, 2018{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "arora2018optimization",
+   "text": "Sanjeev Arora, Nadav Cohen, and Elad Hazan. \\newblock On the optimization of deep networks: Implicit acceleration by overparameterization. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 244--253. PMLR, 2018{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ba2016layer",
+   "text": "Jimmy~Lei Ba, Jamie~Ryan Kiros, and Geoffrey~E Hinton. \\newblock Layer normalization. \\newblock \\emph{arXiv preprint arXiv:1607.06450}, 2016.",
+   "arxiv_id": "1607.06450"
+  },
+  {
+   "key": "badrinarayanan2015symmetry",
+   "text": "Vijay Badrinarayanan, Bamdev Mishra, and Roberto Cipolla. \\newblock Symmetry-invariant optimization in deep networks. \\newblock \\emph{arXiv preprint arXiv:1511.01754}, 2015.",
+   "arxiv_id": "1511.01754"
+  },
+  {
+   "key": "bah2022learning",
+   "text": "Bubacarr Bah, Holger Rauhut, Ulrich Terstiege, and Michael Westdickenberg. \\newblock Learning deep linear neural networks: Riemannian gradient flows and convergence to global minimizers. \\newblock \\emph{Information and Inference: A Journal of the IMA}, 11\\penalty0 (1):\\penalty0 307--353, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bamler2018improving",
+   "text": "Robert Bamler and Stephan Mandt. \\newblock Improving optimization for models with continuous symmetry breaking. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 423--432. PMLR, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bassey2021survey",
+   "text": "Joshua Bassey, Lijun Qian, and Xianfang Li. \\newblock A survey of complex-valued neural networks. \\newblock \\emph{arXiv preprint arXiv:2101.12249}, 2021.",
+   "arxiv_id": "2101.12249"
+  },
+  {
+   "key": "belkin2019reconciling",
+   "text": "Mikhail Belkin, Daniel Hsu, Siyuan Ma, and Soumik Mandal. \\newblock Reconciling modern machine-learning practice and the classical bias--variance trade-off. \\newblock \\emph{Proceedings of the National Academy of Sciences}, 116\\penalty0 (32):\\penalty0 15849--15854, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "benton2021loss",
+   "text": "Gregory Benton, Wesley Maddox, Sanae Lotfi, and Andrew~Gordon Wilson. \\newblock Loss surface simplexes for mode connecting volumes and fast ensembling. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 769--779. PMLR, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "benzing2022random",
+   "text": "Frederik Benzing, Simon Schug, Robert Meier, Johannes Von~Oswald, Yassir Akram, Nicolas Zucchet, Laurence Aitchison, and Angelika Steger. \\newblock Random initialisations performing above chance and how to find them. \\newblock \\emph{14th Annual Workshop on Optimization for Machine Learning (OPT2022)}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bona2023parameter",
+   "text": "Joachim Bona-Pellissier, Fran{\\c{c}}ois Bachoc, and Fran{\\c{c}}ois Malgouyres. \\newblock Parameter identifiability of a deep feedforward relu neural network. \\newblock \\emph{Machine Learning}, pp.\\ 1--63, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "brea2019weight",
+   "text": "Johanni Brea, Berfin Simsek, Bernd Illing, and Wulfram Gerstner. \\newblock Weight-space symmetry in deep networks gives rise to permutation saddles, connected by equal-loss valleys across the loss landscape. \\newblock \\emph{arXiv preprint arXiv:1907.02911}, 2019.",
+   "arxiv_id": "1907.02911"
+  },
+  {
+   "key": "bridle1989training",
+   "text": "John Bridle. \\newblock Training stochastic model recognition algorithms as networks can lead to maximum mutual information estimation of parameters. \\newblock \\emph{Advances in neural information processing systems}, 2, 1989.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bronstein2021geometric",
+   "text": "Michael~M Bronstein, Joan Bruna, Taco Cohen, and Petar Veli{\\v{c}}kovi{\\'c}. \\newblock Geometric deep learning: Grids, groups, graphs, geodesics, and gauges. \\newblock \\emph{arXiv preprint arXiv:2104.13478}, 2021.",
+   "arxiv_id": "2104.13478"
+  },
+  {
+   "key": "broomhead1988radial",
+   "text": "David Broomhead and David Lowe. \\newblock Radial basis functions, multi-variable functional interpolation and adaptive networks. \\newblock \\emph{ROYAL SIGNALS AND RADAR ESTABLISHMENT MALVERN (UNITED KINGDOM)}, RSRE-MEMO-4148, 03 1988.",
+   "arxiv_id": null
+  },
+  {
+   "key": "bui2020functional",
+   "text": "Phuong Bui Thi~Mai and Christoph Lampert. \\newblock Functional vs. parametric equivalence of relu networks. \\newblock In \\emph{8th International Conference on Learning Representations}, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chauhan2023brief",
+   "text": "Vinod~Kumar Chauhan, Jiandong Zhou, Ping Lu, Soheila Molaei, and David~A Clifton. \\newblock A brief review of hypernetworks in deep learning. \\newblock \\emph{Artificial Intelligence Review}, 57\\penalty0 (9):\\penalty0 250, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "chen1993geometry",
+   "text": "An~Mei Chen, Haw-minn Lu, and Robert Hecht-Nielsen. \\newblock On the geometry of feedforward neural network error surfaces. \\newblock \\emph{Neural computation}, 5\\penalty0 (6):\\penalty0 910--927, 1993.",
+   "arxiv_id": null
+  },
+  {
+   "key": "cohen2016group",
+   "text": "Taco Cohen and Max Welling. \\newblock Group equivariant convolutional networks. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 2990--2999. PMLR, 2016.",
+   "arxiv_id": null
+  },
+  {
+   "key": "cooper2018loss",
+   "text": "Yaim Cooper. \\newblock The loss landscape of overparameterized neural networks. \\newblock \\emph{arXiv preprint arXiv:1804.10200}, 2018.",
+   "arxiv_id": "1804.10200"
+  },
+  {
+   "key": "daSilva2025hide",
+   "text": "Marvin~F da~Silva, Felix Dangel, and Sageev Oore. \\newblock Hide \\& seek: Transformer symmetries obscure sharpness \\& riemannian geometry finds it. \\newblock In \\emph{Forty-second International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "draxler2018essentially",
+   "text": "Felix Draxler, Kambis Veschgini, Manfred Salmhofer, and Fred Hamprecht. \\newblock Essentially no barriers in neural network energy landscape. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 1309--1318. PMLR, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "du2018algorithmic",
+   "text": "Simon~S Du, Wei Hu, and Jason~D Lee. \\newblock Algorithmic regularization in learning deep homogeneous models: Layers are automatically balanced. \\newblock \\emph{Neural Information Processing Systems}, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "dupont2022data",
+   "text": "Emilien Dupont, Hyunjik Kim, SM~Ali Eslami, Danilo~Jimenez Rezende, and Dan Rosenbaum. \\newblock From data to functa: Your data point is a function and you can treat it like one. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 5694--5725. PMLR, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "entezari2021role",
+   "text": "Rahim Entezari, Hanie Sedghi, Olga Saukh, and Behnam Neyshabur. \\newblock The role of permutation invariance in linear mode connectivity of neural networks. \\newblock \\emph{International Conference on Learning Representations}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "farajtabar2020orthogonal",
+   "text": "Mehrdad Farajtabar, Navid Azizan, Alex Mott, and Ang Li. \\newblock Orthogonal gradient descent for continual learning. \\newblock In \\emph{International Conference on Artificial Intelligence and Statistics}, pp.\\ 3762--3773. PMLR, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "farrugia2023functional",
+   "text": "Matthew Farrugia-Roberts. \\newblock Functional equivalence and path connectivity of reducible hyperbolic tangent networks. \\newblock \\emph{Advances in neural information processing systems}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "fefferman1993recovering",
+   "text": "Charles Fefferman and Scott Markel. \\newblock Recovering a feed-forward net from its output. \\newblock \\emph{Advances in neural information processing systems}, 6, 1993.",
+   "arxiv_id": null
+  },
+  {
+   "key": "finkel2024activation",
+   "text": "Bella Finkel, Jose~Israel Rodriguez, Chenxi Wu, and Thomas Yahl. \\newblock Activation degree thresholds and expressiveness of polynomial neural networks. \\newblock \\emph{Algebraic Statistics}, 16\\penalty0 (2):\\penalty0 113--130, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ganev2021universal",
+   "text": "Iordan Ganev, Twan van Laarhoven, and Robin Walters. \\newblock Universal approximation and model compression for radial neural networks. \\newblock \\emph{arXiv preprint arXiv:2107.02550v2}, 2022.",
+   "arxiv_id": "2107.02550"
+  },
+  {
+   "key": "garipov2018loss",
+   "text": "Timur Garipov, Pavel Izmailov, Dmitrii Podoprikhin, Dmitry~P Vetrov, and Andrew~G Wilson. \\newblock Loss surfaces, mode connectivity, and fast ensembling of dnns. \\newblock \\emph{Advances in neural information processing systems}, 31, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "gerken2023geometric",
+   "text": "Jan~E Gerken, Jimmy Aronsson, Oscar Carlsson, Hampus Linander, Fredrik Ohlsson, Christoffer Petersson, and Daniel Persson. \\newblock Geometric deep learning and equivariant neural networks. \\newblock \\emph{Artificial Intelligence Review}, pp.\\ 1--58, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "gluch2021noether",
+   "text": "Grzegorz G{\\l}uch and R{\\\"u}diger Urbanke. \\newblock Noether: The more things change, the more stay the same. \\newblock \\emph{arXiv preprint arXiv:2104.05508}, 2021.",
+   "arxiv_id": "2104.05508"
+  },
+  {
+   "key": "godfrey2022symmetries",
+   "text": "Charles Godfrey, Davis Brown, Tegan Emerson, and Henry Kvinge. \\newblock On the symmetries of deep learning models and their internal representations. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "grigsby2023hidden",
+   "text": "J~Elisenda Grigsby, Kathryn Lindsey, and David Rolnick. \\newblock Hidden symmetries of relu networks. \\newblock In \\emph{International Conference on Machine Learning}. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "grigsby2025functional",
+   "text": "J~Elisenda Grigsby, Kathryn Lindsey, Robert Meyerhoff, and Chenxi Wu. \\newblock Functional dimension of feedforward relu neural networks. \\newblock \\emph{Advances in Mathematics}, 482:\\penalty0 110636, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "hecht1990algebraic",
+   "text": "Robert Hecht-Nielsen. \\newblock On the algebraic structure of feedforward network weight spaces. \\newblock In \\emph{Advanced Neural Computers}, pp.\\ 129--135. Elsevier, 1990.",
+   "arxiv_id": null
+  },
+  {
+   "key": "henrygeometry",
+   "text": "Nathan~W Henry, Giovanni~Luca Marchetti, and Kathl{\\'e}n Kohn. \\newblock Geometry of lightning self-attention: Identifiability and dimension. \\newblock In \\emph{The Thirteenth International Conference on Learning Representations}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "horwitz2025we",
+   "text": "Eliahu Horwitz, Nitzan Kurer, Jonathan Kahana, Liel Amar, and Yedid Hoshen. \\newblock We should chart an atlas of all the world's models. \\newblock \\emph{arXiv preprint arXiv:2503.10633}, 2025.",
+   "arxiv_id": "2503.10633"
+  },
+  {
+   "key": "hu2022lora",
+   "text": "Edward~J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, Weizhu Chen, et~al. \\newblock Lora: Low-rank adaptation of large language models. \\newblock \\emph{ICLR}, 1\\penalty0 (2):\\penalty0 3, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "huang2018orthogonal",
+   "text": "Lei Huang, Xianglong Liu, Bo~Lang, Adams Yu, Yongliang Wang, and Bo~Li. \\newblock Orthogonal weight normalization: Solution to optimization over multiple dependent stiefel manifolds in deep neural networks. \\newblock In \\emph{Proceedings of the AAAI Conference on Artificial Intelligence}, volume~32, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "huang2020projection",
+   "text": "Lei Huang, Xianglong Liu, Jie Qin, Fan Zhu, Li~Liu, and Ling Shao. \\newblock Projection based weight normalization: Efficient method for optimization on oblique manifold in dnns. \\newblock \\emph{Pattern Recognition}, 105:\\penalty0 107317, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "huh2020curvature",
+   "text": "Dongsung Huh. \\newblock Curvature-corrected learning dynamics in deep neural networks. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 4552--4560. PMLR, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ioffe2015batch",
+   "text": "Sergey Ioffe and Christian Szegedy. \\newblock Batch normalization: Accelerating deep network training by reducing internal covariate shift. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 448--456. pmlr, 2015.",
+   "arxiv_id": null
+  },
+  {
+   "key": "izmailov2018averaging",
+   "text": "Pavel Izmailov, Dmitrii Podoprikhin, Timur Garipov, Dmitry Vetrov, and Andrew~Gordon Wilson. \\newblock Averaging weights leads to wider optima and better generalization. \\newblock \\emph{Conference on Uncertainty in Artificial Intelligence}, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ji2019gradient",
+   "text": "Ziwei Ji and Matus Telgarsky. \\newblock Gradient descent aligns the layers of deep linear networks. \\newblock In \\emph{International Conference on Learning Representations}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kalogeropoulos2024scale",
+   "text": "Ioannis Kalogeropoulos, Giorgos Bouritsas, and Yannis Panagakis. \\newblock Scale equivariant graph metanetworks. \\newblock \\emph{Advances in neural information processing systems}, 37:\\penalty0 106800--106840, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kaplan2020scaling",
+   "text": "Jared Kaplan, Sam McCandlish, Tom Henighan, Tom~B Brown, Benjamin Chess, Rewon Child, Scott Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. \\newblock Scaling laws for neural language models. \\newblock \\emph{arXiv preprint arXiv:2001.08361}, 2020.",
+   "arxiv_id": "2001.08361"
+  },
+  {
+   "key": "kileel2019expressive",
+   "text": "Joe Kileel, Matthew Trager, and Joan Bruna. \\newblock On the expressive power of deep polynomial neural networks. \\newblock \\emph{Advances in neural information processing systems}, 32, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kimura2002unique",
+   "text": "Masahiro Kimura. \\newblock On unique representations of certain dynamical systems produced by continuous-time recurrent neural networks. \\newblock \\emph{Neural computation}, 14\\penalty0 (12):\\penalty0 2981--2996, 2002.",
+   "arxiv_id": null
+  },
+  {
+   "key": "knyazev2023can",
+   "text": "Boris Knyazev, Doha Hwang, and Simon Lacoste-Julien. \\newblock Can we scale transformers to predict parameters of diverse imagenet models? \\newblock In \\emph{Proceedings of the 40th International Conference on Machine Learning}, volume 202, pp.\\ 17243--17259. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kobayashi2010exceptional",
+   "text": "Masaki Kobayashi. \\newblock Exceptional reducibility of complex-valued neural networks. \\newblock \\emph{IEEE Transactions on Neural Networks}, 21\\penalty0 (7):\\penalty0 1060--1072, 2010.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kofinas2024graph",
+   "text": "Miltiadis Kofinas, Boris Knyazev, Yan Zhang, Yunlu Chen, Gertjan~J Burghouts, Efstratios Gavves, Cees~GM Snoek, and David~W Zhang. \\newblock Graph neural networks for learning equivariant representations of neural networks. \\newblock In \\emph{The Twelfth International Conference on Learning Representations}, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kondor2018generalization",
+   "text": "Risi Kondor and Shubhendu Trivedi. \\newblock On the generalization of equivariance and convolution in neural networks to the action of compact groups. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 2747--2755. PMLR, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kou2024implicit",
+   "text": "Yiwen Kou, Zixiang Chen, and Quanquan Gu. \\newblock Implicit bias of gradient descent for two-layer relu and leaky relu networks on nearly-orthogonal data. \\newblock \\emph{Advances in Neural Information Processing Systems}, 36, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kristiadi2023geometry",
+   "text": "Agustinus Kristiadi, Felix Dangel, and Philipp Hennig. \\newblock The geometry of neural nets' parameter spaces under reparametrization. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kunin2021neural",
+   "text": "Daniel Kunin, Javier Sagastuy-Brena, Surya Ganguli, Daniel~LK Yamins, and Hidenori Tanaka. \\newblock Neural mechanics: Symmetry and broken conservation laws in deep learning dynamics. \\newblock In \\emph{International Conference on Learning Representations}, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kuurkova1994functionally",
+   "text": "V{\\v{e}}ra K{\\r{u}}rkov{\\'a} and Paul~C Kainen. \\newblock Functionally equivalent feedforward neural networks. \\newblock \\emph{Neural Computation}, 6\\penalty0 (3):\\penalty0 543--558, 1994.",
+   "arxiv_id": null
+  },
+  {
+   "key": "kuurkova1994uniqueness",
+   "text": "V{\\v{e}}ra K{\\r{u}}rkov{\\'a} and Roman Neruda. \\newblock Uniqueness of functional representations by gaussian basis function networks. \\newblock In \\emph{ICANN’94: Proceedings of the International Conference on Artificial Neural Networks Sorrento, Italy, 26--29 May 1994 Volume 1, Parts 1 and 2 4}, pp.\\ 471--474. Springer, 1994.",
+   "arxiv_id": null
+  },
+  {
+   "key": "laird2025data",
+   "text": "Lucas Laird, Bo~Zhao, Rose Yu, and Robin Walters. \\newblock Data-free transformer quantization using parameter-space symmetry. \\newblock \\emph{Workshop on High-dimensional Learning Dynamics (HiLD)}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "laurent2024symmetry",
+   "text": "Olivier Laurent, Emanuel Aldea, and Gianni Franchi. \\newblock A symmetry-aware exploration of bayesian neural network posteriors. \\newblock In \\emph{The Twelfth International Conference on Learning Representations}, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "le2022training",
+   "text": "Thien Le and Stefanie Jegelka. \\newblock Training invariances and the low-rank phenomenon: beyond linear networks. \\newblock \\emph{International Conference on Learning Representations}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "leake2021optimization",
+   "text": "Jonathan Leake and Nisheeth~K Vishnoi. \\newblock Optimization and sampling under continuous symmetry: Examples and lie theory. \\newblock \\emph{arXiv preprint arXiv:2109.01080}, 2021.",
+   "arxiv_id": "2109.01080"
+  },
+  {
+   "key": "lengyel2020genni",
+   "text": "Daniel Lengyel, Janith Petangoda, Isak Falk, Kate Highnam, Michalis Lazarou, Arinbj{\\\"o}rn Kolbeinsson, Marc~Peter Deisenroth, and Nicholas~R Jennings. \\newblock Genni: Visualising the geometry of equivalences for neural network identifiability. \\newblock \\emph{arXiv preprint arXiv:2011.07407}, 2020.",
+   "arxiv_id": "2011.07407"
+  },
+  {
+   "key": "li2022robust",
+   "text": "Zhiyuan Li, Srinadh Bhojanapalli, Manzil Zaheer, Sashank Reddi, and Sanjiv Kumar. \\newblock Robust training of neural networks using scale invariant architectures. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 12656--12684. PMLR, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lim2024graph",
+   "text": "Derek Lim, Haggai Maron, Marc~T Law, Jonathan Lorraine, and James Lucas. \\newblock Graph metanetworks for processing diverse neural architectures. \\newblock In \\emph{The Twelfth International Conference on Learning Representations}, 2024{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "lim2024empirical",
+   "text": "Derek Lim, Moe Putterman, Robin Walters, Haggai Maron, and Stefanie Jegelka. \\newblock The empirical impact of neural parameter symmetries, or lack thereof. \\newblock \\emph{arXiv preprint arXiv:2405.20231}, 2024{\\natexlab{b}}.",
+   "arxiv_id": "2405.20231"
+  },
+  {
+   "key": "maheri2025telesparse",
+   "text": "Mohammad~M Maheri, Hamed Haddadi, and Alex Davidson. \\newblock Telesparse: Practical privacy-preserving verification of deep neural networks. \\newblock \\emph{The Privacy Enhancing Technologies Symposium (PETS)}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "marchetti2025algebra",
+   "text": "Giovanni~Luca Marchetti, Vahid Shahverdi, Stefano Mereta, Matthew Trager, and Kathl{\\'e}n Kohn. \\newblock Algebra unveils deep learning--an invitation to neuroalgebraic geometry. \\newblock In \\emph{International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "marcotte2023abide",
+   "text": "Sibylle Marcotte, R{\\'e}mi Gribonval, and Gabriel Peyr{\\'e}. \\newblock Abide by the law and follow the flow: Conservation laws for gradient flows. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "marcotte2025transformative",
+   "text": "Sibylle Marcotte, R{\\'e}mi Gribonval, and Gabriel Peyr{\\'e}. \\newblock Transformative or conservative? conservation laws for resnets and transformers. \\newblock In \\emph{Forty-second International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "maron2018invariant",
+   "text": "Haggai Maron, Heli Ben-Hamu, Nadav Shamir, and Yaron Lipman. \\newblock Invariant and equivariant graph networks. \\newblock \\emph{International Conference on Learning Representations}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "martinelli2024expand",
+   "text": "Flavio Martinelli, Berfin Simsek, Wulfram Gerstner, and Johanni Brea. \\newblock Expand-and-cluster: Parameter recovery of neural networks. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 34895--34919. PMLR, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "meller2019same",
+   "text": "Eldad Meller, Alexander Finkelstein, Uri Almog, and Mark Grobman. \\newblock Same, same but different: Recovering neural network quantization error through weight factorization. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 4486--4495. PMLR, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "meng2019mathcal",
+   "text": "Qi~Meng, Shuxin Zheng, Huishuai Zhang, Wei Chen, Zhi-Ming Ma, and Tie-Yan Liu. \\newblock {$\\mathcal{G}$-SGD}: Optimizing relu neural networks in its positively scale-invariant space. \\newblock \\emph{International Conference on Learning Representations}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "michelucci2022high",
+   "text": "Umberto Michelucci. \\newblock On the high symmetry of neural network functions. \\newblock \\emph{arXiv preprint arXiv:2211.06603}, 2022.",
+   "arxiv_id": "2211.06603"
+  },
+  {
+   "key": "mildenhall2021nerf",
+   "text": "Ben Mildenhall, Pratul~P Srinivasan, Matthew Tancik, Jonathan~T Barron, Ravi Ramamoorthi, and Ren Ng. \\newblock Nerf: Representing scenes as neural radiance fields for view synthesis. \\newblock \\emph{Communications of the ACM}, 65\\penalty0 (1):\\penalty0 99--106, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "min2021explicit",
+   "text": "Hancheng Min, Salma Tarmoun, René Vidal, and Enrique Mallada. \\newblock On the explicit role of initialization on the convergence and implicit bias of overparametrized linear networks. \\newblock In \\emph{International Conference on Machine Learning}. PMLR, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "min2023convergence",
+   "text": "Hancheng Min, Ren{\\'e} Vidal, and Enrique Mallada. \\newblock On the convergence of gradient flow on multi-layer linear models. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 24850--24887. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mishkin2023level",
+   "text": "Aaron Mishkin, Alberto Bietti, and Robert~M. Gower. \\newblock Level set teleportation: the good, the bad, and the ugly. \\newblock In \\emph{OPT2023: 15th Annual Workshop on Optimization for Machine Learning}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "mustafa2023gats",
+   "text": "Nimrah Mustafa, Aleksandar Bojchevski, and Rebekka Burkholz. \\newblock Are gats out of balance? \\newblock \\emph{Advances in Neural Information Processing Systems}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "nagel2019data",
+   "text": "Markus Nagel, Mart~van Baalen, Tijmen Blankevoort, and Max Welling. \\newblock Data-free quantization through weight equalization and bias correction. \\newblock In \\emph{Proceedings of the IEEE/CVF International Conference on Computer Vision}, pp.\\ 1325--1334, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "navon2023equivariant",
+   "text": "Aviv Navon, Aviv Shamsian, Idan Achituve, Ethan Fetaya, Gal Chechik, and Haggai Maron. \\newblock Equivariant architectures for learning in deep weight spaces. \\newblock \\emph{International Conference on Machine Learning}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "navon2024equivariant",
+   "text": "Aviv Navon, Aviv Shamsian, Ethan Fetaya, Gal Chechik, Nadav Dym, and Haggai Maron. \\newblock Equivariant deep weight space alignment. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 37376--37395. PMLR, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "neyshabur2015path-sgd",
+   "text": "Behnam Neyshabur, Russ~R Salakhutdinov, and Nati Srebro. \\newblock {Path-SGD}: Path-normalized optimization in deep neural networks. \\newblock In \\emph{Advances in Neural Information Processing Systems}, 2015.",
+   "arxiv_id": null
+  },
+  {
+   "key": "neyshabur2019towards",
+   "text": "Behnam Neyshabur, Zhiyuan Li, Srinadh Bhojanapalli, Yann LeCun, and Nathan Srebro. \\newblock The role of over-parametrization in generalization of neural networks. \\newblock In \\emph{International Conference on Learning Representations}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "nitta2003uniqueness",
+   "text": "Tohru Nitta. \\newblock The uniqueness theorem for complex-valued neural networks and the redundancy of the parameters. \\newblock \\emph{Systems and Computers in Japan}, 34\\penalty0 (14):\\penalty0 54--62, 2003.",
+   "arxiv_id": null
+  },
+  {
+   "key": "noether1971invariant",
+   "text": "Emmy Noether. \\newblock Invariante variationsprobleme. \\newblock \\emph{Nachrichten von der Gesellschaft der Wissenschaften zu Göttingen, Mathematisch-Physikalische Klasse}, pp.\\ 235–257, 1918.",
+   "arxiv_id": null
+  },
+  {
+   "key": "park2019deepsdf",
+   "text": "Jeong~Joon Park, Peter Florence, Julian Straub, Richard Newcombe, and Steven Lovegrove. \\newblock Deepsdf: Learning continuous signed distance functions for shape representation. \\newblock In \\emph{Proceedings of the IEEE/CVF conference on computer vision and pattern recognition}, pp.\\ 165--174, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "petzka2020notes",
+   "text": "Henning Petzka, Martin Trimmel, and Cristian Sminchisescu. \\newblock Notes on the symmetries of 2-layer relu-networks. \\newblock In \\emph{Proceedings of the Northern Lights Deep Learning Workshop}, volume~1, pp.\\ 6--6, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "pittorino2022deep",
+   "text": "Fabrizio Pittorino, Antonio Ferraro, Gabriele Perugini, Christoph Feinauer, Carlo Baldassi, and Riccardo Zecchina. \\newblock Deep networks on toroids: Removing symmetries reveals the structure of flat regions in the landscape geometry. \\newblock In \\emph{Proceedings of the 39th International Conference on Machine Learning}, pp.\\ 17759--17781, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "putterman2024learning",
+   "text": "Theo Putterman, Derek Lim, Yoav Gelberg, Stefanie Jegelka, and Haggai Maron. \\newblock Learning on loras: Gl-equivariant processing of low-rank weight spaces for large finetuned models. \\newblock \\emph{arXiv preprint arXiv:2410.04207}, 2024.",
+   "arxiv_id": "2410.04207"
+  },
+  {
+   "key": "ran2017parameter",
+   "text": "Zhi-Yong Ran and Bao-Gang Hu. \\newblock Parameter identifiability in statistical machine learning: a review. \\newblock \\emph{Neural Computation}, 29\\penalty0 (5):\\penalty0 1151--1203, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ravanbakhsh2017equivariance",
+   "text": "Siamak Ravanbakhsh, Jeff Schneider, and Barnabas Poczos. \\newblock Equivariance through parameter-sharing. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 2892--2901. PMLR, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "rolnick2020reverse",
+   "text": "David Rolnick and Konrad Kording. \\newblock Reverse-engineering deep relu networks. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 8178--8187. PMLR, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "salama2024dataset",
+   "text": "Mohammad Salama, Jonathan Kahana, Eliahu Horwitz, and Yedid Hoshen. \\newblock Dataset size recovery from lora weights. \\newblock \\emph{arXiv preprint arXiv:2406.19395}, 2024.",
+   "arxiv_id": "2406.19395"
+  },
+  {
+   "key": "salimans2016weight",
+   "text": "Tim Salimans and Durk~P Kingma. \\newblock Weight normalization: A simple reparameterization to accelerate training of deep neural networks. \\newblock \\emph{Advances in neural information processing systems}, 29, 2016.",
+   "arxiv_id": null
+  },
+  {
+   "key": "saul2023weight",
+   "text": "Lawrence~K Saul. \\newblock Weight-balancing fixes and flows for deep learning. \\newblock \\emph{Transactions on Machine Learning Research}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "schurholt2025neural",
+   "text": "Konstantin Sch{\\\"u}rholt, Giorgos Bouritsas, Eliahu Horwitz, Derek Lim, Yoav Gelberg, Bo~Zhao, Allan Zhou, Damian Borth, and Stefanie Jegelka. \\newblock Neural network weights as a new data modality. \\newblock In \\emph{ICLR 2025 Workshop Proposals}, 2024{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "schurholt2024towards",
+   "text": "Konstantin Sch{\\\"u}rholt, Michael~W Mahoney, and Damian Borth. \\newblock Towards scalable and versatile weight space learning. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 43947--43966. PMLR, 2024{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shahverdi2025learning",
+   "text": "Vahid Shahverdi, Giovanni~Luca Marchetti, and Kathl{\\'e}n Kohn. \\newblock Learning on a razor's edge: the singularity bias of polynomial neural networks. \\newblock \\emph{arXiv preprint arXiv:2505.11846}, 2025.",
+   "arxiv_id": "2505.11846"
+  },
+  {
+   "key": "shamsian2024improved",
+   "text": "Aviv Shamsian, Aviv Navon, David~W Zhang, Yan Zhang, Ethan Fetaya, Gal Chechik, and Haggai Maron. \\newblock Improved generalization of weight space networks via augmentations. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 44378--44393. PMLR, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "shen2023complexity",
+   "text": "Guohao Shen. \\newblock Complexity of feed-forward neural networks from the perspective of functional equivalence. \\newblock In \\emph{International Conference on Machine Learning}. PMLR, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "simsek2021geometry",
+   "text": "Berfin {\\c{S}}im{\\c{s}}ek, Fran{\\c{c}}ois Ged, Arthur Jacot, Francesco Spadaro, Cl{\\'e}ment Hongler, Wulfram Gerstner, and Johanni Brea. \\newblock Geometry of the loss landscape in overparameterized neural networks: Symmetries and invariances. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 9722--9732. PMLR, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "song2018accelerating",
+   "text": "Yang Song, Jiaming Song, and Stefano Ermon. \\newblock Accelerating natural gradient with higher-order invariance. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 4713--4722. PMLR, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sonoda2024unified",
+   "text": "Sho Sonoda, Yuka Hashimoto, Isao Ishikawa, and Masahiro Ikeda. \\newblock Unified universality theorem for deep and shallow joint-group-equivariant machines. \\newblock \\emph{International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sorensen2020understanding",
+   "text": "Hikari Sorensen. \\newblock Understanding and collapsing symmetries in neural network parameter spaces. \\newblock \\emph{Bachelor's thesis, Harvard College}, 2020.",
+   "arxiv_id": null
+  },
+  {
+   "key": "soudry2018implicit",
+   "text": "Daniel Soudry, Elad Hoffer, Mor~Shpigel Nacson, Suriya Gunasekar, and Nathan Srebro. \\newblock The implicit bias of gradient descent on separable data. \\newblock \\emph{Journal of Machine Learning Research}, 19\\penalty0 (70):\\penalty0 1--57, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sourek2021lossless",
+   "text": "Gustav Sourek, Filip Zelezny, and Ondrej Kuzelka. \\newblock Lossless compression of structured convolutional models via lifting. \\newblock In \\emph{International Conference on Learning Representations}, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "stock2019equi",
+   "text": "Pierre Stock, Benjamin Graham, R{\\'e}mi Gribonval, and Herv{\\'e} J{\\'e}gou. \\newblock Equi-normalization of neural networks. \\newblock \\emph{International Conference on Learning Representations}, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "sussmann1992uniqueness",
+   "text": "H{\\'e}ctor~J Sussmann. \\newblock Uniqueness of the weights for minimal feedforward nets with a given input-output map. \\newblock \\emph{Neural networks}, 5\\penalty0 (4):\\penalty0 589--593, 1992.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tanaka2021noether",
+   "text": "Hidenori Tanaka and Daniel Kunin. \\newblock Noether’s learning dynamics: Role of symmetry breaking in neural networks. \\newblock \\emph{Advances in Neural Information Processing Systems}, 34, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tarmoun2021understanding",
+   "text": "Salma Tarmoun, Guilherme Franca, Benjamin~D Haeffele, and Rene Vidal. \\newblock Understanding the dynamics of gradient flow in overparameterized linear models. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 10153--10161. PMLR, 2021.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tran2024monomial",
+   "text": "Hoang Tran, Thieu Vo, Tho Huu, Tan Nguyen, et~al. \\newblock Monomial matrix group equivariant neural functional networks. \\newblock \\emph{Advances in Neural Information Processing Systems}, 37:\\penalty0 48628--48665, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tran2025equivariant",
+   "text": "Hoang~V. Tran, Thieu Vo, An~Nguyen The, Tho~Tran Huu, Minh-Khoi Nguyen-Nhat, Thanh Tran, Duy-Tung Pham, and Tan~Minh Nguyen. \\newblock Equivariant neural functional networks for transformers. \\newblock In \\emph{The Thirteenth International Conference on Learning Representations}, 2025{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "tran2025linear",
+   "text": "Viet-Hoang Tran, Van~Hoan Trinh, Khanh~Vinh Bui, and Tan~M Nguyen. \\newblock On linear mode connectivity of mixture-of-experts architectures. \\newblock \\emph{arXiv preprint arXiv:2509.11348}, 2025{\\natexlab{b}}.",
+   "arxiv_id": "2509.11348"
+  },
+  {
+   "key": "unterthiner2020predicting",
+   "text": "Thomas Unterthiner, Daniel Keysers, Sylvain Gelly, Olivier Bousquet, and Ilya Tolstikhin. \\newblock Predicting neural network accuracy from weights. \\newblock \\emph{arXiv preprint arXiv:2002.11448}, 2020.",
+   "arxiv_id": "2002.11448"
+  },
+  {
+   "key": "van2017l2",
+   "text": "Twan Van~Laarhoven. \\newblock L2 regularization versus batch and weight normalization. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "vaswani2017attention",
+   "text": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N Gomez, {\\L}ukasz Kaiser, and Illia Polosukhin. \\newblock Attention is all you need. \\newblock \\emph{Advances in neural information processing systems}, 30, 2017.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wang2024neural",
+   "text": "Kai Wang, Dongwen Tang, Boya Zeng, Yida Yin, Zhaopan Xu, Yukun Zhou, Zelin Zang, Trevor Darrell, Zhuang Liu, and Yang You. \\newblock Neural network diffusion. \\newblock \\emph{arXiv preprint arXiv:2402.13144}, 2024.",
+   "arxiv_id": "2402.13144"
+  },
+  {
+   "key": "wang2022large",
+   "text": "Yuqing Wang, Minshuo Chen, Tuo Zhao, and Molei Tao. \\newblock Large learning rate tames homogeneity: Convergence and balancing effect. \\newblock \\emph{International Conference on Learning Representations}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "weiler2019general",
+   "text": "Maurice Weiler and Gabriele Cesa. \\newblock General e (2)-equivariant steerable cnns. \\newblock \\emph{Advances in neural information processing systems}, 32, 2019.",
+   "arxiv_id": null
+  },
+  {
+   "key": "weiler2018learning",
+   "text": "Maurice Weiler, Fred~A Hamprecht, and Martin Storath. \\newblock Learning steerable filters for rotation equivariant cnns. \\newblock In \\emph{Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition}, pp.\\ 849--858, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wiese2023towards",
+   "text": "Jonas~Gregor Wiese, Lisa Wimmer, Theodore Papamarkou, Bernd Bischl, Stephan G{\\\"u}nnemann, and David R{\\\"u}gamer. \\newblock Towards efficient mcmc sampling in bayesian neural networks by exploiting symmetry. \\newblock In \\emph{Joint European Conference on Machine Learning and Knowledge Discovery in Databases (ECML PKDD): Research Track}, pp.\\ 459--474, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wortsman2022model",
+   "text": "Mitchell Wortsman, Gabriel Ilharco, Samir~Ya Gadre, Rebecca Roelofs, Raphael Gontijo-Lopes, Ari~S Morcos, Hongseok Namkoong, Ali Farhadi, Yair Carmon, Simon Kornblith, et~al. \\newblock Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time. \\newblock In \\emph{International Conference on Machine Learning}, pp.\\ 23965--23998. PMLR, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wu2018group",
+   "text": "Yuxin Wu and Kaiming He. \\newblock Group normalization. \\newblock In \\emph{Proceedings of the European conference on computer vision (ECCV)}, pp.\\ 3--19, 2018.",
+   "arxiv_id": null
+  },
+  {
+   "key": "wu2025teleportation",
+   "text": "Zihao Wu, Juncheng Dong, Ahmed Aloui, and Vahid Tarokh. \\newblock Teleportation with null space gradient projection for optimization acceleration. \\newblock \\emph{arXiv preprint arXiv:2502.11362}, 2025.",
+   "arxiv_id": "2502.11362"
+  },
+  {
+   "key": "xiao2023compact",
+   "text": "Tim Xiao, Weiyang Liu, and Robert Bamler. \\newblock A compact representation for bayesian neural networks by removing permutation symmetry. \\newblock \\emph{UniReps: Unifying Representations in Neural Models (NeurIPS 2023 Workshop)}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "xu2023linear",
+   "text": "Ziqing Xu, Hancheng Min, Salma Tarmoun, Enrique Mallada, and Ren{\\'e} Vidal. \\newblock Linear convergence of gradient descent for finite width over-parametrized linear networks with general initialization. \\newblock In \\emph{International Conference on Artificial Intelligence and Statistics}, pp.\\ 2262--2284. PMLR, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "yang2025conflict",
+   "text": "Mianzimei Yang, Zhipeng Zhou, Jin Zhang, Yuanhao Pu, Hong Xie, and Defu Lian. \\newblock Conflict-buffering optimization by symmetry teleportation for deep long-tailed recognition. \\newblock In \\emph{Proceedings of the 33rd ACM International Conference on Multimedia}, pp.\\ 1366--1375, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "yi2022accelerating",
+   "text": "Mingyang Yi. \\newblock Accelerating training of batch normalization: A manifold perspective. \\newblock In \\emph{Uncertainty in Artificial Intelligence}, pp.\\ 1128--1137. PMLR, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zamir2025improving",
+   "text": "Guy Zamir, Aryan Dokania, Bo~Zhao, and Rose Yu. \\newblock Improving learning to optimize using parameter symmetries. \\newblock \\emph{arXiv preprint arXiv:2504.15399}, 2025.",
+   "arxiv_id": "2504.15399"
+  },
+  {
+   "key": "zhang2025beyond",
+   "text": "Binchi Zhang, Zaiyi Zheng, Zhengzhang Chen, and Jundong Li. \\newblock Beyond the permutation symmetry of transformers: The role of rotation for model fusion. \\newblock \\emph{International Conference on Machine Learning}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhao2022symmetry",
+   "text": "Bo~Zhao, Nima Dehmamy, Robin Walters, and Rose Yu. \\newblock Symmetry teleportation for accelerated optimization. \\newblock \\emph{Advances in neural information processing systems}, 35:\\penalty0 16679--16690, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhao2022symmetries",
+   "text": "Bo~Zhao, Iordan Ganev, Robin Walters, Rose Yu, and Nima Dehmamy. \\newblock Symmetries, flat minima, and the conserved quantities of gradient flow. \\newblock \\emph{International Conference on Learning Representations}, 2023.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhao2024finding",
+   "text": "Bo~Zhao, Nima Dehmamy, Robin Walters, and Rose Yu. \\newblock Finding symmetry in neural network parameter spaces. \\newblock In \\emph{UniReps: 2nd Edition of the Workshop on Unifying Representations in Neural Models}, 2024{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhao2023improving",
+   "text": "Bo~Zhao, Robert~M Gower, Robin Walters, and Rose Yu. \\newblock Improving convergence and generalization using parameter symmetries. \\newblock \\emph{International Conference on Learning Representations}, 2024{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhao2023understanding",
+   "text": "Bo~Zhao, Nima Dehmamy, Robin Walters, and Rose Yu. \\newblock Understanding mode connectivity via parameter space symmetry. \\newblock In \\emph{International Conference on Machine Learning}. PMLR, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhou2023permutation",
+   "text": "Allan Zhou, Kaien Yang, Kaylee Burns, Yiding Jiang, Samuel Sokota, J~Zico Kolter, and Chelsea Finn. \\newblock Permutation equivariant neural functionals. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2023{\\natexlab{a}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhou2023neural",
+   "text": "Allan Zhou, Kaien Yang, Yiding Jiang, Kaylee Burns, Winnie Xu, Samuel Sokota, J~Zico Kolter, and Chelsea Finn. \\newblock Neural functional transformers. \\newblock \\emph{Advances in Neural Information Processing Systems}, 2023{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhou2024universal",
+   "text": "Allan Zhou, Chelsea Finn, and James Harrison. \\newblock Universal neural functionals. \\newblock \\emph{Advances in neural information processing systems}, 37:\\penalty0 104754--104775, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhou2025continual",
+   "text": "Zhipeng Zhou, Ziqiao Meng, Pengcheng Wu, Peilin Zhao, and Chunyan Miao. \\newblock Continual optimization with symmetry teleportation for multi-task learning. \\newblock In \\emph{The Thirty-ninth Annual Conference on Neural Information Processing Systems}, 2025.",
+   "arxiv_id": null
+  },
+  {
+   "key": "zhuang2022understanding",
+   "text": "Zhenxun Zhuang, Mingrui Liu, Ashok Cutkosky, and Francesco Orabona. \\newblock Understanding adamw through proximal methods and scale-freeness. \\newblock \\emph{Transactions on Machine Learning Research}, 2022.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ziyin2024symmetry",
+   "text": "Liu Ziyin. \\newblock Symmetry induces structure and constraint of learning. \\newblock In \\emph{Forty-first International Conference on Machine Learning}, 2024.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ziyin2023law",
+   "text": "Liu Ziyin, Hongchao Li, and Masahito Ueda. \\newblock Law of balance and stationary distribution of stochastic gradient descent. \\newblock \\emph{arXiv preprint arXiv:2308.06671}, 2023{\\natexlab{a}}.",
+   "arxiv_id": "2308.06671"
+  },
+  {
+   "key": "ziyin2023shapes",
+   "text": "Liu Ziyin, Ekdeep~Singh Lubana, Masahito Ueda, and Hidenori Tanaka. \\newblock What shapes the loss landscape of self-supervised learning? \\newblock \\emph{International Conference on Learning Representations}, 2023{\\natexlab{b}}.",
+   "arxiv_id": null
+  },
+  {
+   "key": "ziyin2025remove",
+   "text": "Liu Ziyin, Yizhou Xu, and Isaac~L. Chuang. \\newblock Remove symmetries to control model expressivity. \\newblock In \\emph{The Thirteenth International Conference on Learning Representations}, 2025.",
+   "arxiv_id": null
+  }
+ ],
+ "figures": [
+  {
+   "id": "fig_1",
+   "section": "sec_2_1",
+   "caption": "An example of symmetry and group actions. (a) The dihedral group $D_3$, which is the group of symmetries of a regular triangle. $D_3$ has six elements: three rotations $r_0, r_1, r_2$ and three reflections $s_0, s_1, s_2$. (b) The identity element $r_0$ does not change the object. Each group element has an inverse. (c) Composition of transformations are associative. (d) A group action can be defined as a homomorphism $h$ from a group $G$ to the group of symmetry transformations $T$.",
+   "graphics": [
+    "figures/group-action.pdf"
+   ],
+   "assets": [
+    "figures/group-action.png"
+   ]
+  },
+  {
+   "id": "fig_2",
+   "section": "sec_2_2_1",
+   "caption": "Parameter space symmetries arising from neural network architectures. Each circle in the computation graphs represents a neuron or a component in the architecture. Each line segment represents one or a set of parameters. (a) Scaling of the incoming weights of an invariant activation (Examples 2.5, 2.6). (b) Scaling of the incoming and outgoing weights of an equivariant activation (Examples 2.1-2.4). (c) Permutation of neurons (Example 2.7) or components (Examples 2.8) together with their associated weights.",
+   "graphics": [
+    "figures/symmetry-from-architecture.pdf"
+   ],
+   "assets": [
+    "figures/symmetry-from-architecture.png"
+   ]
+  },
+  {
+   "id": "fig_3",
+   "section": "sec_2_2_2",
+   "caption": "Symmetries in (a) the attention mechanism and (b) a multi-headed attention. Dashed rectangles represent output of each layer. Each symmetry is annotated in the same color as that of the component that gives rise to it.",
+   "graphics": [
+    "figures/transformer.pdf"
+   ],
+   "assets": [
+    "figures/transformer.png"
+   ]
+  },
+  {
+   "id": "fig_4",
+   "section": "sec_2_3_3",
+   "caption": "Relation among different definitions of parameter space symmetry. Arrows represent the relationship that satisfying one definition implies satisfying the other. (a) Symmetries that preserve the overall loss versus the neural network output. (b) Symmetries defined over the entire input space versus those defined over subsets of data.",
+   "graphics": [
+    "figures/symmetry-definitions.pdf"
+   ],
+   "assets": [
+    "figures/symmetry-definitions.png"
+   ]
+  },
+  {
+   "id": "fig_5",
+   "section": "sec_3",
+   "caption": "Parameter symmetries increase the size of the zero loss set. If $\\theta$ is a global minimum, so are all points $g \\cdot \\theta$ with $g$ in the symmetry group of $L$. This set is typically positive-dimensional.",
+   "graphics": [
+    "figures/symmetry-landscape.pdf"
+   ],
+   "assets": [
+    "figures/symmetry-landscape.png"
+   ]
+  },
+  {
+   "id": "fig_6",
+   "section": "sec_4_1",
+   "caption": "Implications and applications of parameter space symmetry in gradient-based optimization. (a) Points in an orbit have same loss values $L$ but different gradients $\\grad L$. (b) Gradient descent trajectories originating from two points in the same orbit, $\\theta$ and $g \\cdot \\theta$, may differ. (c) Algorithms leveraging these differences search within the orbit for a point that leads to faster optimization ($g^* \\cdot \\theta$). (d) A $G$-invariant algorithm $A$, which commutes with the group action, is indifferent to initializations within an orbit.",
+   "graphics": [
+    "figures/symmetry-optimization.pdf"
+   ],
+   "assets": [
+    "figures/symmetry-optimization.png"
+   ]
+  },
+  {
+   "id": "fig_7",
+   "section": "sec_5_1",
+   "caption": "(a) Symmetry and corresponding conserved quantities. Symmetry directions--infinitesimal actions of parameter space symmetries--and the gradients of conserved quantities, $\\nabla Q$, are both orthogonal to $\\nabla L$ and hence lie tangent to the loss level set shown in the figure. Symmetries and conserved quantities can therefore be connected by matching $\\grad Q$ to a symmetry direction. (b) Conserved quantities partially parameterize gradient flow trajectories and minima (adapted from Figure 1 in \\cite{zhao2022symmetries}). Different trajectories correspond to distinct values of the conserved quantity $Q$, which remains fixed along the trajectory. The minima reached by these trajectories also have distinct conserved quantity values.",
+   "graphics": [
+    "figures/conserved-quantity.pdf"
+   ],
+   "assets": [
+    "figures/conserved-quantity.png"
+   ]
+  },
+  {
+   "id": "fig_8",
+   "section": "sec_6_2",
+   "caption": "Invariant and equivariant metanetworks. (a) A metanetwork $f$ is invariant to $G$ if $f(g\\cdot x) = f(x)$ for all input network $x$. Invariance is desirable in tasks such as predicting generalization performance or classifying INRs, where the output should remain unchanged under parameter symmetries. (b) A metanetwork $f$ is equivariant to a symmetry group $G$ if, for all input network $x$, $f(g\\cdot x) = g \\cdot f(x)$. This is used in tasks such as learning to optimize (predicting update steps) or style editing for INRs (predicting weight changes in INRs that produce a given style change in the encoded content).",
+   "graphics": [
+    "figures/equivariant-metanetwork.pdf"
+   ],
+   "assets": [
+    "figures/equivariant-metanetwork.png"
+   ]
+  }
+ ]
+}

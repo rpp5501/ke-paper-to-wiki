@@ -1,44 +1,47 @@
 concept: random-reinitialization-control
-status: partial
-synthesis: 'The random-reinitialization control from Frankle & Carbin''s original
-  lottery ticket experiments takes the mask (connectivity pattern) found by iterative
-  magnitude pruning and applies it to freshly sampled random weights instead of the
-  original initialization, then trains from scratch [S1]. This ''random ticket'' trains
-  more slowly and reaches lower accuracy than the winning ticket at the same sparsity,
-  showing the original initial weights, not just the sparse structure, are doing real
-  work [S1]. Zhou et al. decomposed initializations into sign and magnitude and found
-  that preserving the sign of the original initialization while randomizing magnitude
-  retains most of the winning ticket''s advantage, whereas randomizing the sign destroys
-  it [S2]. Liu et al., however, found that in many standard pruning settings, a randomly
-  reinitialized pruned architecture trained from scratch can match or exceed the original
-  fine-tuned weights, arguing the architecture itself often matters more than initialization
-  once training budgets are large enough [S3]. Together these results suggest the
-  size of the initialization advantage is regime-dependent: pronounced under the small-scale
-  conditions of the original lottery ticket experiments, but attenuated in larger-scale
-  pruning settings [S1][S3].'
+status: complete
+synthesis: 'Frankle & Carbin''s lottery ticket experiments include a random-reinitialization
+  control: take the mask found by iterative magnitude pruning but reinitialize the
+  surviving weights randomly instead of resetting them to their original values, then
+  retrain [S1]. Across MNIST and CIFAR-10 architectures this reinitialized-but-same-structure
+  network trains slower and reaches lower accuracy than the true winning ticket, and
+  the gap widens as sparsity increases [S1]. This isolates the two candidate explanations
+  for a winning ticket''s success: the sparse connectivity pattern alone is not sufficient,
+  and the specific initial weight values matter, not just which units survived pruning
+  [S1]. Follow-up work refined this by showing winning tickets found late in training
+  are robust to different SGD seeds even though early tickets are not, connecting
+  the reinit control to instability analysis under linear mode connectivity [S3].
+  The open_lth codebase implements the exact IMP-plus-reinit-control pipeline used
+  in these experiments and is the standard way to reproduce them [S2].'
 resources:
-- url: https://github.com/google-research/lottery-ticket-hypothesis
-  title: google-research/lottery-ticket-hypothesis
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: visual
+  why: Original source of the random-reinitialization control; Figure 4 directly plots
+    the reinitialized-network curves against the true winning ticket
+  anchor: Section 2 and Figure 4 — reinitialized-mask curves vs. winning-ticket curves
+    for Lenet/Conv architectures at increasing sparsity
+- url: https://github.com/facebookresearch/open_lth
+  title: open_lth (Frankle's official Lottery Ticket Hypothesis codebase)
   type: reference-impl
-  why: official code for extracting winning tickets and running the random-reinitialization
-    control, letting a learner reproduce the comparison directly
-- url: https://arxiv.org/abs/1905.01067
-  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  why: Authors' own implementation that reproduces IMP plus the reinit control exactly
+  anchor: the lottery/ module and its randomly-reinitialize option in the runner/desc
+    code, used to regenerate the Figure 4-style comparison
+- url: https://arxiv.org/abs/1912.05671
+  title: Linear Mode Connectivity and the Lottery Ticket Hypothesis
   type: follow-up-paper
-  why: isolates how much of the random-reinit gap is due to the initialization's sign
-    versus its magnitude
-- url: https://arxiv.org/abs/1810.05270
-  title: Rethinking the Value of Network Pruning
-  type: follow-up-paper
-  why: shows the structure-vs-initialization result reverses in many larger-scale
-    pruning settings, adding an important caveat
+  why: Extends the reinit-control logic into an instability analysis across random
+    seeds, explaining why early- vs late-found tickets behave differently
+  anchor: §3, the instability analysis comparing retrained tickets across different
+    SGD noise seeds
 unresolved:
-- No verified visual or lecture explainer specifically covering the random-reinitialization
-  control could be confirmed within the search budget.
+- Does the initialization advantage persist at ImageNet scale, where the original
+  reinit-control experiments were not run?
+- Is the advantage attributable to init magnitude/sign alone, or to finer joint structure
+  between mask and weights?
 sources_consulted:
-  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
-    Trainable Neural Networks. arXiv:1803.03635'
-  S2: 'Zhou, H., Lan, J., Liu, R., & Yosinski, J. (2019). Deconstructing Lottery Tickets:
-    Zeros, Signs, and the Supermask. arXiv:1905.01067'
-  S3: Liu, Z., Sun, M., Zhou, T., Huang, G., & Darrell, T. (2019). Rethinking the
-    Value of Network Pruning. arXiv:1810.05270
+  S1: 'Frankle & Carbin, ''The Lottery Ticket Hypothesis: Finding Sparse, Trainable
+    Neural Networks,'' ICLR 2019, https://arxiv.org/abs/1803.03635'
+  S2: facebookresearch/open_lth GitHub repository, https://github.com/facebookresearch/open_lth
+  S3: Frankle, Dziugaite, Roy, Carbin, 'Linear Mode Connectivity and the Lottery Ticket
+    Hypothesis,' ICML 2020, https://arxiv.org/abs/1912.05671

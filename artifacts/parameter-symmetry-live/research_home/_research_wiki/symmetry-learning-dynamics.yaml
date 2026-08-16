@@ -1,0 +1,53 @@
+concept: symmetry-learning-dynamics
+status: complete
+synthesis: 'Noether''s theorem states that every continuous symmetry of a physical
+  system''s Lagrangian corresponds to a conserved quantity under its dynamics [S3].
+  Kunin et al. show this carries over to neural network training: many common architectures
+  possess parameter-space symmetries (e.g., rescaling symmetries in ReLU networks,
+  rotational symmetries around normalization layers), and under continuous-time gradient
+  flow these symmetries imply conserved quantities analogous to Noether charges [S1].
+  Gradient flow plays the role of the physical dynamics: it is the continuous-time
+  limit of gradient descent, and treating the loss like the physical potential lets
+  the same variational argument that produces conservation laws in mechanics be applied
+  to training trajectories [S1][S3]. These conserved quantities constrain how parameters
+  move relative to one another along the trajectory, coupling otherwise-independent
+  weights and shaping the effective optimization geometry even though they are invisible
+  in the loss value itself [S1]. Tanaka and Kunin extend the analysis to the discrete,
+  stochastic setting of real SGD, showing the continuous conservation laws are only
+  approximately preserved and that their breaking - via momentum, weight decay, or
+  finite learning rates - actively drives learning dynamics rather than being a mere
+  numerical artifact [S2].'
+resources:
+- url: https://arxiv.org/abs/2012.04728
+  title: 'Neural Mechanics: Symmetry and Broken Conservation Laws in Deep Learning
+    Dynamics'
+  type: derivation
+  why: Derives the Noether-style conserved quantities implied by common neural network
+    symmetries under gradient flow
+  anchor: §3 'Conservation Laws' and Table 1, which lists the symmetry -> conserved-quantity
+    correspondences
+- url: https://arxiv.org/abs/2105.02716
+  title: 'Noether''s Learning Dynamics: Role of Symmetry Breaking in Neural Networks'
+  type: follow-up-paper
+  why: Extends the Noether analogy to real (discrete, stochastic) SGD, showing symmetry
+    breaking actively drives training
+  anchor: §2-3, the derivation of how momentum and weight decay break the conservation
+    laws that hold in the continuous case
+- url: https://en.wikipedia.org/wiki/Noether%27s_theorem
+  title: Noether's theorem
+  type: visual
+  why: Grounds the physics side of the analogy with the general statement and diagrams
+    of the symmetry <-> conservation correspondence
+  anchor: the 'Overview' and 'Illustrations' sections, which diagram how a continuous
+    symmetry maps to a conserved quantity
+unresolved:
+- Whether conserved quantities under discrete SGD (vs. continuous gradient flow) meaningfully
+  explain generalization, or only shape trajectory geometry
+- How this framework extends to symmetries that are only approximate (e.g. attention
+  permutation symmetry) rather than exact
+sources_consulted:
+  S1: 'Kunin, Sagastuy-Brena, Ganguli, Yamins, Tanaka, ''Neural Mechanics: Symmetry
+    and Broken Conservation Laws in Deep Learning Dynamics,'' ICLR 2021, arXiv:2012.04728'
+  S2: 'Tanaka & Kunin, ''Noether''s Learning Dynamics: Role of Symmetry Breaking in
+    Neural Networks,'' NeurIPS 2021, arXiv:2105.02716'
+  S3: Wikipedia, 'Noether's theorem,' https://en.wikipedia.org/wiki/Noether%27s_theorem

@@ -1,0 +1,52 @@
+concept: conclusion
+status: partial
+synthesis: 'Direct evidence that a model''s residual stream linearly encodes a running
+  estimate of remaining output length is not something I can confirm against a specific
+  canonical paper within this budget; the closest well-established, verifiable related
+  work is Future Lens, which shows a transformer''s hidden state at one position linearly
+  encodes information about tokens several steps ahead, i.e. the residual stream carries
+  forward-looking generation content rather than just the current token [S1]. Mechanistically,
+  this is consistent with how the residual stream is built: each layer additively
+  writes features into a shared vector that persists and accumulates across positions,
+  which is the substrate any such ''tokens remaining'' signal would live in [S2].
+  If a length or stopping-point estimate is linearly readable this way, the natural
+  implications are early-exit or adaptive-compute decoding and length-controlled or
+  budget-aware generation, since a cheap linear probe on an intermediate layer could
+  gate generation before the final logits are computed. Open questions this raises:
+  whether such a probe generalizes across prompt types and lengths, whether it is
+  causal (steerable) rather than merely correlational, and at which layer the estimate
+  first becomes linearly decodable.'
+resources:
+- url: https://arxiv.org/abs/2311.04897
+  title: 'Future Lens: Anticipating Subsequent Tokens from a Single Hidden State'
+  type: follow-up-paper
+  why: Closest verified work showing a single hidden state in the residual stream
+    linearly encodes information about multiple future generation steps, the same
+    style of claim as the brief's concept.
+  anchor: §3-4, the linear probing methodology and the results showing probe accuracy
+    for predicting tokens several positions ahead
+- url: https://www.youtube.com/watch?v=wjZofJX0v4M
+  title: But what is a GPT? Visual introduction to transformers | Chapter 5, Deep
+    Learning
+  type: visual
+  why: Gives the visual intuition for the residual stream itself, the additive vector
+    that layers read from and write to, which is the object any 'remaining tokens'
+    estimate would be linearly encoded in.
+  anchor: the section explaining the residual stream as a vector that flows through
+    the network and is additively updated by each layer, before the attention/MLP
+    breakdown
+unresolved:
+- Is there a specific paper that directly demonstrates a linear probe recovering an
+  estimate of tokens-remaining-in-response, as opposed to next-few-token identity?
+- Is the encoding causal (can generation length be steered by editing the residual
+  stream) or merely correlational/decodable?
+- At which layer(s) does the remaining-length estimate first become linearly decodable,
+  and does it update token-by-token as generation proceeds?
+- Does this signal generalize across task types, or is it tied to formats with predictable
+  lengths (e.g. structured output, chain-of-thought)?
+sources_consulted:
+  S1: 'Pal, Koyena, Jiuding Sun, Andrew Yuan, Byron C. Wallace, David Bau. "Future
+    Lens: Anticipating Subsequent Tokens from a Single Hidden State." CoNLL 2023.
+    arXiv:2311.04897.'
+  S2: 3Blue1Brown. "But what is a GPT? Visual introduction to transformers | Chapter
+    5, Deep Learning." YouTube.

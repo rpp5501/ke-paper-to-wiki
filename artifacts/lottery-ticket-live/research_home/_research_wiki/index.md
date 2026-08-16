@@ -10,3 +10,5 @@
 - noise-robustness-of-winning-tickets — noise-robustness-of-winning-tickets — 2026-08-13
 - network-size-effects — network-size-effects — 2026-08-13
 - pruning-at-iteration-0 — pruning-at-iteration-0 — 2026-08-13
+- lottery-ticket-hypothesis — lottery-ticket-hypothesis — 2026-08-14
+- conv-cifar10-experiments — conv-cifar10-experiments — 2026-08-14

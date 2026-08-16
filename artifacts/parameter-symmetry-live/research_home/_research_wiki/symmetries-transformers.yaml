@@ -1,0 +1,53 @@
+concept: symmetries-transformers
+status: complete
+synthesis: 'Within a single attention head, the QK and OV circuits are pure bilinear/linear
+  maps (W_Q^T W_K and W_O W_V), so any invertible matrix M can be absorbed as W_Q
+  -> W_Q M, W_K -> W_K M^{-T} (and similarly for W_O, W_V) without changing the head''s
+  function, giving each head a continuous GL(d_head) symmetry [S1]. Because a layer''s
+  heads are combined by concatenation-then-linear-projection into the residual stream,
+  permuting heads (and more generally permuting hidden units) leaves the layer''s
+  output unchanged, mirroring the discrete permutation symmetries found generally
+  in networks with interchangeable hidden units [S2]. LayerNorm adds a further scale
+  symmetry: since it normalizes its input, weights feeding into it can be rescaled
+  by any positive constant without altering downstream activations, interacting with
+  translation/rescale conservation laws during training [S3]. These per-head GL(d)
+  symmetries, per-layer permutation symmetries, and per-normalization scale symmetries
+  compose across depth via (semi)direct products, so the full transformer symmetry
+  group grows combinatorially with heads and layers rather than forming any single
+  simple group [S1][S2][S3].'
+resources:
+- url: https://transformer-circuits.pub/2021/framework/index.html
+  title: A Mathematical Framework for Transformer Circuits
+  type: visual
+  why: Shows via diagrams and matrix algebra exactly which weight transformations
+    (GL(d) on QK/OV circuits) leave an attention head's function unchanged.
+  anchor: The 'QK and OV Circuits as Matrices' section, where W_Q,W_K and W_O,W_V
+    are shown to only ever matter as products.
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: derivation
+  why: Formalizes the permutation symmetry group of interchangeable hidden units/heads
+    within and across layers, and how it composes layer-by-layer.
+  anchor: §2-3, defining the permutation symmetry group and its action across a network's
+    layers.
+- url: https://arxiv.org/abs/2012.04728
+  title: 'Neural Mechanics: Symmetry and Broken Conservation Laws in Deep Learning
+    Dynamics'
+  type: derivation
+  why: Derives the scale symmetries introduced by normalization layers and how they
+    combine with other symmetry types during training.
+  anchor: The taxonomy/derivation of 'scale symmetry' arising from normalization layers
+    (see the paper's symmetry-type table).
+unresolved:
+- The precise algebraic structure (e.g. wreath vs. semidirect product) of the composed
+  symmetry group across residual-stream-connected layers is not settled in the literature.
+- How per-head permutation symmetry interacts with the shared residual-stream basis
+  across layers, versus treating each layer's symmetry independently, is not fully
+  characterized.
+sources_consulted:
+  S1: Elhage et al., 'A Mathematical Framework for Transformer Circuits', Anthropic,
+    2021 - https://transformer-circuits.pub/2021/framework/index.html
+  S2: 'Ainsworth, Hayase & Srinivasa, ''Git Re-Basin: Merging Models modulo Permutation
+    Symmetries'', arXiv:2209.04836'
+  S3: 'Kunin, Sagastuy-Brena, Ganguli, Yamins & Tanaka, ''Neural Mechanics: Symmetry
+    and Broken Conservation Laws in Deep Learning Dynamics'', ICLR 2021, arXiv:2012.04728'

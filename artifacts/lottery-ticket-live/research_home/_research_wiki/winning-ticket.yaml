@@ -1,0 +1,51 @@
+concept: winning-ticket
+status: complete
+synthesis: 'A winning ticket is a sparse subnetwork that, when reset to its original
+  random initialization and trained alone, matches or beats the full network''s accuracy
+  in a comparable number of iterations [S1]. Frankle & Carbin identify such tickets
+  via iterative magnitude pruning (IMP): train the dense network, prune the lowest-magnitude
+  weights, reset the surviving weights to their original initial values, and repeat
+  — it is this reset-to-init step, not just the resulting sparse structure, that makes
+  the subnetwork trainable to full accuracy [S1]. Randomly reinitializing the same
+  sparse mask destroys the advantage, showing the specific initial values matter,
+  not sparsity alone [S1]. Zhou et al. complicate this picture: what mostly matters
+  about those initial values is their sign, not their exact magnitude — masks chosen
+  to preserve original signs while randomizing magnitudes still train well, and a
+  mask alone (a ''supermask'') can yield above-chance accuracy with no training at
+  all [S3]. So a winning ticket''s advantage comes from a sparse structure paired
+  with initial signs aligned to that structure, more than from the precise numerical
+  weight values [S3]. The open_lth framework implements this IMP prune-train-rewind
+  loop end to end [S2].'
+resources:
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: visual
+  why: the primary source's own figures are the canonical diagram of what a winning
+    ticket is and how IMP finds one
+  anchor: Figure 1 (p.2), the iterative magnitude pruning procedure diagram, and Figure
+    4, the accuracy-vs-sparsity curves comparing winning tickets to random reinitialization
+- url: https://github.com/facebookresearch/open_lth
+  title: 'OpenLTH: a research framework for Lottery Ticket Hypothesis experiments'
+  type: reference-impl
+  why: shows the concrete prune-train-rewind loop used to actually extract a winning
+    ticket from a trained network
+  anchor: the README's quick-start for running an IMP experiment, which walks through
+    the train -> prune -> reset-to-init -> retrain cycle
+- url: https://arxiv.org/abs/1905.01067
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: follow-up-paper
+  why: directly answers whether the ticket's advantage comes from its exact initial
+    values or just its structure, by isolating the role of weight sign vs. magnitude
+  anchor: §3-4, the sign-vs-magnitude ablations and the 'Supermask' experiments
+unresolved:
+- How much of the winning-ticket effect generalizes across random seeds and datasets
+  versus being tied to one specific initialization draw?
+- Why do sign patterns alone ('supermasks') produce above-chance accuracy before any
+  weight training occurs?
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. ICLR 2019. arXiv:1803.03635'
+  S2: facebookresearch/open_lth — official Lottery Ticket Hypothesis experiment framework,
+    GitHub
+  S3: 'Zhou, H., Lan, J., Liu, R., Yosinski, J. (2019). Deconstructing Lottery Tickets:
+    Zeros, Signs, and the Supermask. NeurIPS 2019. arXiv:1905.01067'

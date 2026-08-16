@@ -1,0 +1,53 @@
+concept: general-symmetry-invariant-algorithms
+status: complete
+synthesis: Natural gradient descent preconditions the gradient by the inverse Fisher
+  information metric, which transforms covariantly with the model's parameters, so
+  the update direction is invariant to any smooth reparameterization rather than tied
+  to a particular coordinate choice the way plain Euclidean gradient descent is [S1][S5].
+  This metric coincides with the expected Gauss-Newton matrix for many losses, and
+  computing and inverting it exactly costs O(n^3) for n parameters, which is intractable
+  for deep networks [S2]. K-FAC approximates the Fisher block for each layer as a
+  Kronecker product of two much smaller matrices, cutting the cost dramatically while
+  retaining most of the invariance benefit [S3]. Beyond natural gradient, other approaches
+  exploit the same idea of coordinate-invariant preconditioning, including general
+  Riemannian/second-order trust-region methods and mirror descent under Bregman divergences,
+  and recent work shows that even first-order SGD's noise settles into a symmetry-dependent
+  equilibrium under a network's parameter symmetries, underscoring why metric-aware
+  methods matter [S4].
+resources:
+- url: https://en.wikipedia.org/wiki/Fisher_information_metric
+  title: Fisher information metric
+  type: visual
+  why: shows the Riemannian-manifold picture (geodesics, curvature) that explains
+    why preconditioning by this metric makes descent invariant to reparameterization
+  anchor: the 'Relation to the relative entropy' section, which connects the metric
+    to the KL-divergence geometry natural gradient exploits
+- url: https://arxiv.org/abs/1412.1193
+  title: New insights and perspectives on the natural gradient method
+  type: derivation
+  why: derives the Fisher metric, connects it to the Gauss-Newton matrix, and discusses
+    the cost of computing it exactly
+  anchor: §2-3 for the derivation and its equivalence to Gauss-Newton, §6 for the
+    discussion of computational cost
+- url: https://arxiv.org/abs/1503.05671
+  title: Optimizing Neural Networks with Kronecker-factored Approximate Curvature
+  type: reference-impl
+  why: shows a concrete, tractable algorithm (K-FAC) that approximates the natural
+    gradient's metric to make it affordable at scale
+  anchor: §3, the Kronecker-factored approximation to each layer's Fisher block, and
+    Algorithm 1
+unresolved:
+- Whether K-FAC's block-diagonal Kronecker approximation preserves the full reparameterization-invariance
+  guarantee of exact natural gradient, or only approximates it
+- How the invariance of mirror descent under Bregman geometry relates precisely to
+  Fisher-metric invariance is not spelled out in a single canonical source
+sources_consulted:
+  S1: Amari, S. (1998). "Natural Gradient Works Efficiently in Learning." Neural Computation,
+    10(2):251-276.
+  S2: Martens, J. "New insights and perspectives on the natural gradient method."
+    arXiv:1412.1193.
+  S3: Martens, J. & Grosse, R. (2015). "Optimizing Neural Networks with Kronecker-factored
+    Approximate Curvature." arXiv:1503.05671.
+  S4: '"Parameter Symmetry and Noise Equilibrium of Stochastic Gradient Descent" (2024).
+    https://doi.org/10.52202/079017-2977'
+  S5: Wikipedia, "Fisher information metric." https://en.wikipedia.org/wiki/Fisher_information_metric

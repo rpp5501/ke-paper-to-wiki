@@ -1,0 +1,52 @@
+concept: hidden-state-extraction
+status: complete
+synthesis: 'Hidden-state extraction pulls the residual-stream vector at every token
+  position across the whole (prompt, completion) sequence, usually from one or a few
+  chosen layers such as a middle or final block''s resid_post [S1][S3]. The residual
+  stream is the transformer''s single read/write channel: every attention and MLP
+  sublayer reads from it and adds back into it, so a token''s hidden state at layer
+  l is the running sum of everything upstream has written up to that position [S1].
+  Extraction tooling like TransformerLens''s run_with_cache returns activations shaped
+  [batch, position, d_model], covering prompt tokens as well as completion tokens
+  by default [S3]. Prompt positions are kept, not discarded, because later completion
+  tokens attend back to prompt-position keys/values, so a prompt token''s residual
+  state already encodes how the model represents that context before generation even
+  starts [S1][S2]. This matters for techniques like probing and activation steering,
+  which build directions (e.g. contrastive steering vectors) from prompt-position
+  activations rather than only from generated tokens [S4]. Jay Alammar''s illustrated
+  walkthroughs visualize this per-position, per-layer vector explicitly, making the
+  shape and flow of these hidden states concrete [S2].'
+resources:
+- url: https://transformer-circuits.pub/2021/framework/index.html
+  title: A Mathematical Framework for Transformer Circuits
+  type: derivation
+  why: Establishes the residual stream as the shared read/write bus every hidden state
+    is built from, explaining why prompt-position states carry meaningful information
+  anchor: the 'Transformer Overview' section, specifically 'The Residual Stream as
+    a Communication Channel'
+- url: https://jalammar.github.io/illustrated-gpt2/
+  title: The Illustrated GPT-2
+  type: visual
+  why: Diagrams the per-position, per-layer hidden-state vector flowing through the
+    stack, making token-by-token extraction concrete
+  anchor: 'the animated diagrams under ''Part 2: Illustrated Self-Attention'' showing
+    each token''s vector at each layer'
+- url: https://github.com/TransformerLensOrg/TransformerLens
+  title: TransformerLens
+  type: reference-impl
+  why: The standard library for extracting residual-stream activations at every position
+    in one call, exactly the extraction this concept describes
+  anchor: README Quickstart, the run_with_cache example — cache['resid_post', layer]
+    has shape [batch, position, d_model], covering prompt and completion tokens
+unresolved:
+- Which layer is canonical isn't fixed by the mechanism itself — probing work often
+  uses the final layer while steering-vector work often uses a middle layer; the brief
+  doesn't specify.
+- Whether prompt-position activations should be kept per-token or pooled (e.g. mean-pooled)
+  before downstream use is a design choice not settled by the extraction step itself.
+sources_consulted:
+  S1: Elhage et al., 'A Mathematical Framework for Transformer Circuits', transformer-circuits.pub,
+    2021
+  S2: Jay Alammar, 'The Illustrated GPT-2', jalammar.github.io
+  S3: TransformerLens documentation/README, github.com/TransformerLensOrg/TransformerLens
+  S4: Turner et al., 'Steering Language Models With Activation Addition', arXiv:2308.10248

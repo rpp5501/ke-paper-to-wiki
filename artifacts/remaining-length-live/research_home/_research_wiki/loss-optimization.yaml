@@ -1,0 +1,57 @@
+concept: loss-optimization
+status: complete
+synthesis: When multiple probes are attached to a model, each probe's loss L_p(theta_p;
+  batch) is typically defined as a supervised loss over its own labels, most often
+  cross-entropy for classification-style probes trained on frozen activations [S4].
+  Probes can be trained jointly by summing per-probe losses into one scalar and backpropagating
+  through a shared frozen backbone, mirroring hard-parameter-sharing multi-task setups
+  where task-specific heads share upstream features but keep separate loss terms [S1].
+  Alternatively, probes can be trained fully independently, each with its own optimizer
+  step and no gradient interaction between probes, avoiding one probe's loss scale
+  dominating another's when task difficulty differs [S1]. In practice, probe losses
+  are minimized with a first-order stochastic optimizer such as Adam, which adapts
+  per-parameter step sizes from running estimates of the gradient's first and second
+  moments [S2][S3]. Because probes are usually shallow (often a single linear layer)
+  on frozen features, gradient descent converges quickly, so the joint-vs-independent
+  choice mainly affects wall-clock efficiency rather than the achievable minimum [S4].
+resources:
+- url: http://ruder.io/multi-task/
+  title: An Overview of Multi-Task Learning in Deep Neural Networks
+  type: visual
+  why: Explains and diagrams hard vs. soft parameter sharing, the standard pattern
+    for combining multiple per-head losses into one training objective, which is exactly
+    the joint-vs-independent probe question.
+  anchor: the 'Hard parameter sharing' section and its diagram near the top of the
+    post
+- url: https://www.youtube.com/watch?v=IHZwWFHWa-w
+  title: 3Blue1Brown - Gradient descent, how neural networks learn
+  type: lecture
+  why: Gives the intuitive picture of what minimizing a loss via gradient-based optimization
+    actually does, the backbone of any L_p(theta_p; batch) training loop.
+  anchor: 5:00-12:00, where the cost function and its minimization via gradient steps
+    are introduced
+- url: https://pytorch.org/docs/stable/generated/torch.optim.Adam.html
+  title: torch.optim.Adam
+  type: reference-impl
+  why: Canonical, minimal reference implementation of the Adam optimizer commonly
+    used to minimize per-probe losses.
+  anchor: the 'Algorithm' box in the docstring showing the moment-estimate update
+    rule
+- url: https://arxiv.org/abs/1610.01644
+  title: Understanding intermediate layers using linear classifier probes (Alain &
+    Bengio)
+  type: follow-up-paper
+  why: The canonical paper establishing linear probes on frozen activations and how
+    their per-probe loss is set up and optimized.
+  anchor: §3, the training procedure for probes
+unresolved:
+- Whether the active probes in this codebase share a single optimizer instance/step
+  or each maintains independent optimizer state is not confirmed from general sources.
+- The exact loss form per probe type (cross-entropy vs. MSE vs. other) beyond the
+  classification case is not verified against the specific implementation.
+sources_consulted:
+  S1: Ruder, S. 'An Overview of Multi-Task Learning in Deep Neural Networks', ruder.io/multi-task/
+  S2: 3Blue1Brown, 'Gradient descent, how neural networks learn', YouTube video IHZwWFHWa-w
+  S3: PyTorch documentation, torch.optim.Adam
+  S4: Alain, G. & Bengio, Y., 'Understanding intermediate layers using linear classifier
+    probes', arXiv:1610.01644

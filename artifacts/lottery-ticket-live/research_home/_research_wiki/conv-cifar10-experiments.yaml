@@ -1,0 +1,52 @@
+concept: conv-cifar10-experiments
+status: complete
+synthesis: 'Frankle & Carbin extended the lottery ticket hypothesis from fully-connected
+  LeNet on MNIST to Conv-2/4/6 (scaled-down VGG-style) networks on CIFAR10, finding
+  winning tickets at 2-8x sparsity that match or exceed original test accuracy [S1].
+  Adding dropout during iterative pruning uncovered even sparser winning tickets with
+  larger accuracy gains over the unpruned network, suggesting the two regularization
+  effects compound rather than conflict [S1]. When the authors pushed to deeper VGG-19
+  and ResNet-18 on CIFAR10, standard iterative magnitude pruning with reset-to-init
+  failed to reliably find winning tickets, indicating persistence breaks down as depth/complexity
+  grows [S1]. Follow-up work showed this failure is fixable: ''late resetting'' to
+  an early-training checkpoint (instead of iteration 0) and small warm-up periods
+  stabilize winning-ticket discovery at this larger scale [S3]. Across architectures,
+  convolutional and fully-connected layers are not pruned uniformly — later, wider
+  FC layers tolerate far more sparsity before accuracy collapses than earlier conv
+  layers, motivating global rather than per-layer pruning ratios [S1]. The official
+  code released alongside the paper implements exactly these Conv-2/4/6 and VGG/ResNet
+  CIFAR10 pipelines [S2].'
+resources:
+- url: https://arxiv.org/abs/1803.03635
+  title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
+  type: visual
+  why: The source experiments — Figure 4 shows Conv-2/4/6 test accuracy vs. remaining-weights
+    curves (with and without dropout), Figure 7 shows VGG-19/ResNet-18 results including
+    the late-resetting comparison.
+  anchor: §4 (convolutional networks, including the Dropout subsection) and §5 (VGG/ResNet);
+    Figures 3-4 and 6-7
+- url: https://github.com/google-research/lottery-ticket-hypothesis
+  title: google-research/lottery-ticket-hypothesis
+  type: reference-impl
+  why: Official TensorFlow implementation used to produce the Conv-2/4/6 and VGG/ResNet
+    CIFAR10 results in the paper.
+  anchor: top-level README for setup, then the mnist_fc/ vs cifar10_conv-equivalent
+    experiment configs to compare FC vs conv pruning code paths
+- url: https://arxiv.org/abs/1903.01611
+  title: Stabilizing the Lottery Ticket Hypothesis
+  type: follow-up-paper
+  why: Directly explains and fixes the VGG/ResNet-on-CIFAR10 failure case left open
+    in the original paper, via late resetting and learning-rate warm-up.
+  anchor: §3, the introduction of 'late resetting' and the ResNet-CIFAR10 stability
+    experiments
+unresolved:
+- Exact per-layer sparsity ratios the original paper found for Conv-6's conv vs FC
+  layers aren't pinned down to specific numbers here.
+- How much of the VGG/ResNet difficulty is architecture depth vs. the specific optimizer/learning-rate
+  schedule used is still debated between the two cited papers.
+sources_consulted:
+  S1: 'Frankle, J. & Carbin, M. (2019). The Lottery Ticket Hypothesis: Finding Sparse,
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: google-research/lottery-ticket-hypothesis, GitHub (official implementation)
+  S3: Frankle, J., Dziugaite, G.K., Roy, D.M., Carbin, M. (2019). Stabilizing the
+    Lottery Ticket Hypothesis. arXiv:1903.01611

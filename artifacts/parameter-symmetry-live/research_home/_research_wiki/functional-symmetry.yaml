@@ -1,0 +1,58 @@
+concept: functional-symmetry
+status: complete
+synthesis: 'Functional symmetry refers to parameter transformations that leave a neural
+  network''s input-output map completely unchanged, and for a standard MLP the simplest
+  instance is neuron permutation: reordering the units in a hidden layer (permuting
+  rows and columns of adjacent weight matrices) produces an identical function [S1].
+  For networks with odd, sign-symmetric activations such as tanh, an additional sign-flip
+  symmetry multiplies each hidden unit''s incoming and outgoing weights by -1, giving
+  a finite symmetry group of order M!·2^M for M hidden units [S1]. This is architecture-
+  and activation-specific: positively homogeneous activations like ReLU instead admit
+  a continuous positive rescaling symmetry (scale a unit''s fan-in weights up and
+  its fan-out weights down by the same factor) rather than sign-flips [S3]. Permutation
+  symmetry generalizes to deep, convolutional, and residual architectures, where whole
+  channels or blocks can be permuted consistently across layers without changing the
+  function, which is the basis for aligning and merging independently trained networks
+  [S2]. So permutation symmetry is closer to a universal feature of over-parameterized
+  networks, while sign-flip and scaling symmetries depend on which nonlinearity is
+  used.'
+resources:
+- url: https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf
+  title: Pattern Recognition and Machine Learning (Bishop, 2006)
+  type: derivation
+  why: Derives the exact permutation and sign-flip symmetry group of a single-hidden-layer
+    tanh MLP, the canonical worked example of functional symmetry.
+  anchor: Section 5.1.1 'Parameter symmetries', pp. 231-232, including the accompanying
+    weight-space diagram
+- url: https://arxiv.org/abs/2209.04836
+  title: 'Git Re-Basin: Merging Models modulo Permutation Symmetries'
+  type: follow-up-paper
+  why: Extends permutation symmetry from toy MLPs to deep, convolutional and residual
+    networks, showing which symmetries persist architecture to architecture.
+  anchor: Section 2, 'Neuron interchangeability' and Section 3's treatment of conv/residual
+    layers
+- url: https://github.com/samuela/git-re-basin
+  title: git-re-basin (reference implementation)
+  type: reference-impl
+  why: Runnable code that explicitly constructs permutation matrices realizing functional
+    symmetry and visualizes function-preserving weight permutations.
+  anchor: src/weight_matching.py, the permutation-finding routines
+- url: https://arxiv.org/abs/1703.04933
+  title: Sharp Minima Can Generalize For Deep Nets
+  type: follow-up-paper
+  why: Introduces the continuous positive-rescaling symmetry specific to positively
+    homogeneous activations like ReLU, contrasting it with permutation/sign-flip symmetry.
+  anchor: Section 2, the definition of the observationally equivalent reparameterization
+    for ReLU networks
+unresolved:
+- Exact scope of functional symmetry in networks with normalization layers (BatchNorm/LayerNorm)
+  or attention/softmax was not verified.
+- No dedicated visual or lecture walkthrough of weight-space symmetry was confidently
+  verified; Bishop's Fig. 5.5 diagram is the closest available.
+sources_consulted:
+  S1: Bishop, C. (2006). Pattern Recognition and Machine Learning, Section 5.1.1 'Parameter
+    symmetries'.
+  S2: 'Ainsworth, S.K., Hayase, J., Srinivasa, S. (2022). Git Re-Basin: Merging Models
+    modulo Permutation Symmetries. arXiv:2209.04836.'
+  S3: Dinh, L., Pascanu, R., Bengio, S., Bengio, Y. (2017). Sharp Minima Can Generalize
+    For Deep Nets. arXiv:1703.04933.

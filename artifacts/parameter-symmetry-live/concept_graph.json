@@ -1,0 +1,539 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2506.13018",
+  "generated": "2026-08-15",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "parameter-space-symmetry",
+   "kind": "concept",
+   "label": "Parameter Space Symmetry",
+   "level": 0,
+   "source_ref": "sec_1",
+   "page": "01_parameter-space-symmetry.md"
+  },
+  {
+   "id": "loss-invariant-transformations",
+   "kind": "concept",
+   "label": "Loss-Invariant Parameter Transformations and Symmetry",
+   "level": 1,
+   "source_ref": "sec_2_1",
+   "page": "04_loss-invariant-transformations.md"
+  },
+  {
+   "id": "functional-symmetry",
+   "kind": "concept",
+   "label": "Functional Neural Network Symmetry",
+   "level": 1,
+   "source_ref": "sec_2_2",
+   "page": "05_functional-symmetry.md"
+  },
+  {
+   "id": "symmetries-common-components",
+   "kind": "concept",
+   "label": "Symmetries in Common Neural Network Components",
+   "level": 2,
+   "source_ref": "sec_2_2_1",
+   "page": "21_symmetries-common-components.md"
+  },
+  {
+   "id": "symmetries-transformers",
+   "kind": "concept",
+   "label": "Symmetries in Transformers",
+   "level": 2,
+   "source_ref": "sec_2_2_2",
+   "page": "22_symmetries-transformers.md"
+  },
+  {
+   "id": "relaxed-symmetry-definitions",
+   "kind": "concept",
+   "label": "Relaxed Definitions of Symmetry",
+   "level": 1,
+   "source_ref": "sec_2_3",
+   "page": "07_relaxed-symmetry-definitions.md"
+  },
+  {
+   "id": "loss-symmetry",
+   "kind": "concept",
+   "label": "Loss Symmetry",
+   "level": 2,
+   "source_ref": "sec_2_3_1",
+   "page": "18_loss-symmetry.md"
+  },
+  {
+   "id": "data-dependent-symmetry",
+   "kind": "concept",
+   "label": "Data-Dependent Symmetry",
+   "level": 2,
+   "source_ref": "sec_2_3_2",
+   "page": "13_data-dependent-symmetry.md"
+  },
+  {
+   "id": "distribution-symmetry",
+   "kind": "concept",
+   "label": "Distribution Symmetry",
+   "level": 2,
+   "source_ref": "sec_2_3_3",
+   "page": "15_distribution-symmetry.md"
+  },
+  {
+   "id": "parameter-identifiability",
+   "kind": "concept",
+   "label": "Parameter Identifiability and Completeness of Symmetry",
+   "level": 1,
+   "source_ref": "sec_2_4",
+   "page": "06_parameter-identifiability.md"
+  },
+  {
+   "id": "symmetry-in-loss-landscapes",
+   "kind": "concept",
+   "label": "Role of Symmetry in Loss Landscapes",
+   "level": 1,
+   "source_ref": "sec_3",
+   "page": "08_symmetry-in-loss-landscapes.md"
+  },
+  {
+   "id": "continuous-symmetry-mode-connectivity",
+   "kind": "concept",
+   "label": "Continuous Symmetry and Mode Connectivity",
+   "level": 2,
+   "source_ref": "sec_3_1",
+   "page": "12_continuous-symmetry-mode-connectivity.md"
+  },
+  {
+   "id": "discrete-symmetry-minima-structure",
+   "kind": "concept",
+   "label": "Discrete Symmetry and Structure of Minima",
+   "level": 2,
+   "source_ref": "sec_3_2",
+   "page": "14_discrete-symmetry-minima-structure.md"
+  },
+  {
+   "id": "symmetry-removal-compression",
+   "kind": "concept",
+   "label": "Removing Symmetry: Model Compression and Reduced Search Space",
+   "level": 2,
+   "source_ref": "sec_3_3",
+   "page": "20_symmetry-removal-compression.md"
+  },
+  {
+   "id": "symmetry-in-optimization",
+   "kind": "concept",
+   "label": "Applications of Symmetry in Gradient-Based Optimization",
+   "level": 1,
+   "source_ref": "sec_4",
+   "page": "02_symmetry-in-optimization.md"
+  },
+  {
+   "id": "exploiting-orbit-differences",
+   "kind": "concept",
+   "label": "Exploiting Differences among Points in an Orbit",
+   "level": 2,
+   "source_ref": "sec_4_1",
+   "page": "16_exploiting-orbit-differences.md"
+  },
+  {
+   "id": "symmetry-invariant-algorithms",
+   "kind": "concept",
+   "label": "Symmetry Invariant Optimization Algorithms",
+   "level": 2,
+   "source_ref": "sec_4_2"
+  },
+  {
+   "id": "scaling-invariant-algorithms",
+   "kind": "concept",
+   "label": "Scaling Invariant Algorithms",
+   "level": 3,
+   "source_ref": "sec_4_2_1",
+   "page": "25_scaling-invariant-algorithms.md"
+  },
+  {
+   "id": "general-symmetry-invariant-algorithms",
+   "kind": "concept",
+   "label": "General Symmetry Invariant Algorithms",
+   "level": 3,
+   "source_ref": "sec_4_2_2",
+   "page": "24_general-symmetry-invariant-algorithms.md"
+  },
+  {
+   "id": "symmetry-learning-dynamics",
+   "kind": "concept",
+   "label": "Implications of Symmetry for Learning Dynamics",
+   "level": 1,
+   "source_ref": "sec_5",
+   "page": "03_symmetry-learning-dynamics.md"
+  },
+  {
+   "id": "symmetry-conserved-quantities",
+   "kind": "concept",
+   "label": "From Symmetry to Conserved Quantities",
+   "level": 2,
+   "source_ref": "sec_5_1",
+   "page": "17_symmetry-conserved-quantities.md"
+  },
+  {
+   "id": "conserved-quantities-convergence",
+   "kind": "concept",
+   "label": "Conserved Quantities for Convergence and Parameterization",
+   "level": 2,
+   "source_ref": "sec_5_2",
+   "page": "11_conserved-quantities-convergence.md"
+  },
+  {
+   "id": "symmetry-representations-data",
+   "kind": "concept",
+   "label": "Symmetry in Parameters, Internal Representations, and Data",
+   "level": 1,
+   "source_ref": "sec_6_1",
+   "page": "09_symmetry-representations-data.md"
+  },
+  {
+   "id": "weight-space-learning-symmetry",
+   "kind": "concept",
+   "label": "Parameter Symmetry as Data Symmetry in Weight Space Learning",
+   "level": 2,
+   "source_ref": "sec_6_2",
+   "page": "19_weight-space-learning-symmetry.md"
+  },
+  {
+   "id": "challenges-future-directions",
+   "kind": "concept",
+   "label": "Challenges and Future Directions",
+   "level": 1,
+   "source_ref": "sec_7",
+   "page": "10_challenges-future-directions.md"
+  }
+ ],
+ "edges": [
+  {
+   "src": "loss-invariant-transformations",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "functional-symmetry",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "relaxed-symmetry-definitions",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "parameter-identifiability",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-in-loss-landscapes",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-in-optimization",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-learning-dynamics",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-representations-data",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "challenges-future-directions",
+   "dst": "parameter-space-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "functional-symmetry",
+   "dst": "loss-invariant-transformations",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetries-common-components",
+   "dst": "functional-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetries-transformers",
+   "dst": "functional-symmetry",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetries-transformers",
+   "dst": "symmetries-common-components",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "relaxed-symmetry-definitions",
+   "dst": "functional-symmetry",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "loss-symmetry",
+   "dst": "relaxed-symmetry-definitions",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "data-dependent-symmetry",
+   "dst": "relaxed-symmetry-definitions",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "distribution-symmetry",
+   "dst": "relaxed-symmetry-definitions",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "distribution-symmetry",
+   "dst": "data-dependent-symmetry",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "loss-symmetry",
+   "dst": "functional-symmetry",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "parameter-identifiability",
+   "dst": "functional-symmetry",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "continuous-symmetry-mode-connectivity",
+   "dst": "symmetry-in-loss-landscapes",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "discrete-symmetry-minima-structure",
+   "dst": "symmetry-in-loss-landscapes",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-removal-compression",
+   "dst": "symmetry-in-loss-landscapes",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "continuous-symmetry-mode-connectivity",
+   "dst": "discrete-symmetry-minima-structure",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "continuous-symmetry-mode-connectivity",
+   "dst": "loss-invariant-transformations",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-removal-compression",
+   "dst": "parameter-identifiability",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "exploiting-orbit-differences",
+   "dst": "symmetry-in-optimization",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-invariant-algorithms",
+   "dst": "symmetry-in-optimization",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-invariant-algorithms",
+   "dst": "exploiting-orbit-differences",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "scaling-invariant-algorithms",
+   "dst": "symmetry-invariant-algorithms",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "general-symmetry-invariant-algorithms",
+   "dst": "symmetry-invariant-algorithms",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "general-symmetry-invariant-algorithms",
+   "dst": "scaling-invariant-algorithms",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-conserved-quantities",
+   "dst": "symmetry-learning-dynamics",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "conserved-quantities-convergence",
+   "dst": "symmetry-learning-dynamics",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "conserved-quantities-convergence",
+   "dst": "symmetry-conserved-quantities",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-conserved-quantities",
+   "dst": "continuous-symmetry-mode-connectivity",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "weight-space-learning-symmetry",
+   "dst": "symmetry-representations-data",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "symmetry-representations-data",
+   "dst": "functional-symmetry",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "challenges-future-directions",
+   "dst": "symmetry-in-optimization",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "challenges-future-directions",
+   "dst": "symmetry-learning-dynamics",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "challenges-future-directions",
+   "dst": "symmetry-representations-data",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}

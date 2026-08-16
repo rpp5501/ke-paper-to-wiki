@@ -1,0 +1,55 @@
+concept: symmetry-conserved-quantities
+status: complete
+synthesis: When a loss function is invariant under a continuous group of parameter
+  transformations (e.g. translation, rescaling between layers, or the GL(n) symmetry
+  of linear/ReLU networks), the negative-gradient vector field is always orthogonal
+  to the tangent direction of that symmetry, so the corresponding Noether-style 'charge'
+  has zero time-derivative under gradient flow dθ/dt = -∇L(θ) — an exact analog of
+  Noether's theorem applied to the gradient as a force field rather than to a Hamiltonian
+  action [S1][S2]. Concretely, translation symmetry in softmax/logit layers conserves
+  sums of bias-like parameters, scale symmetry across a ReLU or BatchNorm boundary
+  conserves the squared-norm difference between adjacent layers' weights, and GL(n)
+  rescale symmetry in deep linear networks conserves commutator-like matrix quantities
+  [S2][S1]. These conservation laws hold exactly only in the continuous-time limit;
+  discrete gradient descent breaks them by an amount controlled by the learning rate,
+  so they hold approximately for small steps and this approximation error is itself
+  analyzable [S1][S2]. A follow-up line of work connects these same conserved quantities
+  to the geometry of flat minima that gradient flow converges toward [S3].
+resources:
+- url: https://arxiv.org/abs/2105.02716
+  title: 'Noether''s Learning Dynamics: Role of Symmetry Breaking in Neural Networks'
+  type: visual
+  why: Directly derives the Noether-theorem-for-gradient-flow mechanism and tabulates
+    concrete examples (translation, scale, rescale symmetries) with their conserved
+    quantities
+  anchor: §2–3, the derivation of the learning conservation law, plus the table mapping
+    each symmetry type to its conserved quantity
+- url: https://arxiv.org/abs/2012.04728
+  title: 'Neural Mechanics: Symmetry and Broken Conservation Laws in Deep Learning
+    Dynamics'
+  type: derivation
+  why: The companion paper that introduces the translation/scale/rescale symmetry
+    taxonomy for deep nets and derives the associated conservation laws under gradient
+    flow, with illustrative Figure 1
+  anchor: §3 'Conservation Laws' and Figure 1, diagramming translation, scale, and
+    rescale symmetries and their conserved currents
+- url: https://arxiv.org/abs/2210.17216
+  title: Symmetries, Flat Minima, and the Conserved Quantities of Gradient Flow
+  type: follow-up-paper
+  why: Extends the conserved-quantity picture to characterize the flat-minima manifolds
+    gradient flow converges to, useful once the basic mechanism is understood
+  anchor: §2, which formalizes conserved quantities of gradient flow under parameter
+    symmetries and links them to minimum flatness
+unresolved:
+- How exactly does the discrete-vs-continuous gap scale with learning rate and momentum
+  for a given symmetry (only qualitatively 'small for small steps' from these sources)?
+- How do these conservation laws interact with SGD's gradient noise rather than idealized
+  gradient flow?
+sources_consulted:
+  S1: 'Tanaka, H. & Kunin, D. (2021). Noether''s Learning Dynamics: Role of Symmetry
+    Breaking in Neural Networks. arXiv:2105.02716'
+  S2: 'Kunin, D., Sagastuy-Brena, J., Ganguli, S., Yamins, D.L.K., Ganguli, S. (2021).
+    Neural Mechanics: Symmetry and Broken Conservation Laws in Deep Learning Dynamics.
+    ICLR 2021, arXiv:2012.04728'
+  S3: Zhao, B. et al. (2022). Symmetries, Flat Minima, and the Conserved Quantities
+    of Gradient Flow. arXiv:2210.17216

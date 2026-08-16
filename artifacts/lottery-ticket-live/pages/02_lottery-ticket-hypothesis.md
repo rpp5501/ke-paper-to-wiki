@@ -1,75 +1,82 @@
 # The Lottery Ticket Hypothesis
-## TL;DR {#tldr}
 
-A dense, randomly-initialized network contains a much smaller subnetwork that, trained alone from the same starting weights, matches or beats the full network's accuracy in no more iterations. Finding that subnetwork by pruning after training, then resetting the survivors to their original values, is the paper's core empirical claim.
+## TL;DR {#tldr}
+- A dense, randomly-initialized network contains a sparse subnetwork that, trained alone from the *same* initial weights, matches the full network's accuracy in no more iterations.
+- These subnetworks are called **winning tickets**; they are found by training, pruning small-magnitude weights, and resetting the survivors back to their original values.
+- Winning tickets are usually 10–20% of the original size. Reinitializing them randomly destroys the advantage — the original initialization matters, not just which connections survive.
 
 ## Intuition {#intuition}
 
-Think of a dense network's individual connections as lottery tickets: most are duds, but a few — combined with their specific starting values — are primed to learn quickly.
+Pruning shrinks a trained network after the fact, cutting away weights that contributed little to the final result. The puzzle is that the smaller architecture pruning reveals rarely trains well on its own — starting from scratch with that shape tends to learn slower and land at lower accuracy than the original dense network did.
 
-Pruning after training is how the paper finds the winning combination. Resetting those surviving weights to their original draw, rather than keeping their trained values, is what tests whether the initial values themselves were the lucky part.
+The lottery ticket hypothesis reframes the puzzle: architecture alone isn't the story. What made the dense network trainable was a lucky pairing — sparse structure with a specific starting point for its surviving weights. Reset those weights to a new random draw, and the same subnetwork stops learning well.
 
-This reframes why big networks train more easily than small ones: a bigger network holds many more ticket combinations, so it is more likely to already contain a winning one.
+The name is metaphorical but precise: each initial weight is a lottery ticket, and only some combinations are "winning" — capable of learning once isolated. This motivates a practical hope: if winning tickets could be spotted early, training could search for and prune toward them instead of training the full dense network throughout.
+
+This differs from ordinary pruning and distillation, which only ever claim a smaller network can *run* efficiently after training. The hypothesis instead claims a smaller network already sits inside the big one, ready to *train* efficiently, if only it is given back its original initialization.
 
 ## Mechanics {#mechanics}
 
-Randomly sampled sparse subnetworks are traditionally hard to train from scratch: as sparsity increases, they learn more slowly and settle for lower accuracy than the dense original [§sec_1].
+Start from a dense feed-forward network $f(x;\theta)$ with initial weights $\theta = \theta_0 \sim \mathcal{D}_\theta$, drawn from whatever initialization distribution the architecture uses. Training this network with SGD reaches its lowest validation loss $l$ at iteration $j$, with test accuracy $a$ at that point [§sec_1].
+
+Now apply a binary mask $m \in \{0,1\}^{|\theta|}$ that zeros out some weights, so the masked network $f(x; m \odot \theta)$ starts from $m \odot \theta_0$ — the *same* initial values as before, just for fewer connections. Trained the same way, it reaches loss $l'$ at iteration $j'$ with accuracy $a'$ [§sec_1].
+
+The hypothesis is three conditions on that mask holding simultaneously: the masked network trains in no more iterations ($j' \le j$), reaches at least as high accuracy ($a' \ge a$), and uses far fewer parameters ($\lVert m \rVert_0 \ll |\theta|$) [§sec_1].
+
+The paper turns this existence claim into a search procedure — its central experiment for finding one such mask [§sec_1]:
+
+```algorithm
+title: Central experiment — one-shot pruning to a winning ticket
+lines:
+  - code: "θ0 ~ D_θ; initialize f(x; θ0)"
+    intent: "Draw a fresh random initialization for the dense network [§sec_1]"
+  - code: "train f for j iterations → θj"
+    intent: "Train the full dense network to convergence, producing trained weights θj [§sec_1]"
+  - code: "m = mask pruning the smallest-magnitude p% of θj"
+    intent: "Magnitude is the pruning criterion: weights near zero are judged least useful and removed [§sec_1]"
+  - code: "reset surviving weights to θ0 → f(x; m⊙θ0)"
+    intent: "This reset — not just keeping the pruned architecture — is what turns a pruned network into a winning ticket [§sec_1]"
+```
+
+As described, this is **one-shot pruning**: train once, prune $p\%$, reset. The paper's main results instead use **iterative magnitude pruning**, which repeats the train-prune-reset cycle over $n$ rounds, removing $p^{1/n}\%$ of the surviving weights each round. Iterative pruning finds smaller winning tickets than one-shot pruning does [§sec_1].
+
+A separate ablation tests whether the *architecture* alone explains a winning ticket's success: reinitialize the surviving connections to a new random draw $\theta'_0 \sim \mathcal{D}_\theta$ instead of resetting to $\theta_0$. These randomly-reinitialized networks perform far worse, showing that the mask's sparse shape is not sufficient — the original initialization is doing real work [§sec_1].
 
 ```figure
 id: fig_1
-caption: Randomly sampled sparse subnetworks (dashed) get slower and less accurate as sparsity increases; the winning tickets this paper finds (solid) do not [§sec_1]
+caption: Sparser networks found by random pruning (dashed) learn slower and plateau lower as sparsity increases, while winning tickets (solid) at the same sparsity learn faster and reach higher accuracy [§sec_1]
 ```
-
-The hypothesis makes "a winning subnetwork exists" precise with three conditions on a mask $m$ applied to parameters $\theta_0$ of a network $f(x;\theta)$ [§sec_1]:
-
-- **Equal or faster learning:** $j' \leq j$ — the winning ticket reaches minimum validation loss in no more iterations than the original network [§sec_1]
-- **Equal or higher accuracy:** $a' \geq a$ — its test accuracy at that iteration is at least as good [§sec_1]
-- **Genuine sparsity:** $\lVert m \rVert_0 \ll |\theta|$ — the surviving mask is a small fraction of the original parameter count [§sec_1]
-
-```algorithm
-title: Central experiment — identifying a winning ticket
-lines:
-  - code: "θ0 ~ D_θ; initialize f(x; θ0)"
-    intent: "Draw the dense network's random starting weights [§sec_1]"
-  - code: "train f(x; θ0) for j iterations → θ_j"
-    intent: "Train the full dense network normally to obtain trained weights θ_j [§sec_1]"
-  - code: "m = mask pruning the smallest-magnitude p% of θ_j"
-    intent: "Magnitude pruning after training identifies which connections went unused, not which were luckiest at init [§sec_1]"
-  - code: "return f(x; m ⊙ θ0)"
-    intent: "Resetting survivors to θ0 rather than their trained values is what turns this into a test of the initialization, not just of the architecture [§sec_1]"
-```
-
-**One-shot pruning** runs this once: train, prune $p\%$, reset. **Iterative pruning** repeats it over $n$ rounds, each pruning $p^{1/n}\%$ of the weights still surviving the previous round, and finds winning tickets at smaller sizes than one-shot does for the same eventual sparsity [§sec_1].
-
-Resetting survivors to $\theta_0$ is deliberate: a control that instead reinitializes the surviving mask to fresh random weights $\theta_0' \sim \mathcal{D}_\theta$ trains far worse, showing the mask alone does not explain a winning ticket's success [§sec_1].
-
-The empirical claim is bounded to what was tested: fully-connected Lenet on MNIST, and convolutional Conv-2/4/6 on CIFAR10, across SGD, momentum, and Adam, with dropout, weight decay, batchnorm, and residual connections [§sec_1].
-
-Within that scope, winning tickets run 10-20% of the original network's size or smaller, and deeper networks need learning-rate warmup for the pruning procedure to find them [§sec_1].
 
 ## The Math {#the-math}
 
-The three inequalities above are the paper's only formal statement for this concept; the arithmetic worth doing is what the iterative rate $p^{1/n}$ implies about how much sparser iterative winning tickets end up than one-shot pruning at the same nominal $p$ [§sec_1].
+The hypothesis's three conditions are independent claims, and each can fail without the others failing — that independence is what makes "winning ticket" a nontrivial thing to find, not just "any sparse subnetwork" [§sec_1].
 
-```derivation
-shape: Why the iterative per-round rate is more aggressive than the one-shot rate it is built from.
-steps:
-  - latex: "r_1 = p^{1/1} = p"
-    why: "n = 1 recovers one-shot pruning exactly: the single round removes p of the weights [§sec_1]"
-  - latex: "r_n = p^{1/n} > p \\quad (0 < p < 1,\\ n > 1)"
-    why: "Raising a fraction between 0 and 1 to a power less than 1 makes it larger, so each iterative round removes a bigger share of survivors than the nominal one-shot rate p [§sec_1]"
-  - latex: "(1 - r_n)^n < 1 - p"
-    why: "Compounding n rounds of that larger per-round rate removes more weight in total than a single one-shot cut, leaving a sparser final network for the same p [§sec_1]"
+```annotated-eq
+latex: "\\exists\\, m : j' \\le j,\\ a' \\ge a,\\ \\lVert m \\rVert_0 \\ll |\\theta|"
+terms:
+  - tex: "m"
+    role: 1
+    words: "The binary mask defining which connections survive — the object the search procedure is trying to find [§sec_1]"
+  - tex: "j' \\le j"
+    role: 2
+    words: "Speed condition: the masked network reaches minimum validation loss in no more iterations than the original [§sec_1]"
+  - tex: "a' \\ge a"
+    role: 3
+    words: "Accuracy condition: at that point it matches or beats the original network's test accuracy [§sec_1]"
+  - tex: "\\lVert m \\rVert_0 \\ll |\\theta|"
+    role: 4
+    words: "Sparsity condition: the surviving parameter count is much smaller than the full network — without this the other two are trivially satisfiable by m = all-ones [§sec_1]"
 ```
 
-A worked case makes the gap concrete:
+Concretely: the winning tickets the paper reports for LeNet on MNIST and for its convolutional networks on CIFAR10 sit at 10–20% of the original parameter count, and often below that, while still meeting or exceeding the original test accuracy in at most as many iterations [§sec_1].
 
-- **Setup:** $p = 0.2$ (a one-shot cut that keeps 80% of weights), $n = 4$ rounds [§sec_1]
-- **Per-round rate:** each round removes $0.2^{1/4} \approx 66.9\%$ of surviving weights — far more aggressive than the nominal 20% [§sec_1]
-- **Compounded result:** after 4 rounds, $(1-0.669)^4 \approx 1.2\%$ of the original weights remain, versus 80% for a single one-shot cut at the same $p$ [§sec_1]
+There is a limit to how far this holds: winning tickets keep learning faster and matching the dense baseline as they shrink, but only down to a critical sparsity — pruned past that point, performance degrades sharply [S1].
 
-At $n=1$ the two rates coincide exactly, since one-shot pruning is iterative pruning's own single-round special case [§sec_1].
+The reinitialization ablation is the paper's own counterexample to a structure-only account: take the exact mask $m$ of a winning ticket, but draw fresh weights $\theta'_0 \sim \mathcal{D}_\theta$ instead of resetting to $\theta_0$. Conditions $j' \le j$ and $a' \ge a$ both fail — the same sparse architecture no longer trains well [§sec_1].
 
 ## Go Deeper {#go-deeper}
 
-No research note or external resources were supplied for this concept. See the related concepts in this paper — Iterative Magnitude Pruning, Winning Ticket, and the Fully-Connected Lenet/MNIST Experiments — for the mechanics and evidence this page builds on.
+- [Lottery Ticket Hypothesis (Method)](https://paperswithcode.com/method/lottery-ticket-hypothesis) — a diagram of the train-prune-rewind loop; start here if the reset step in the algorithm above isn't clicking, and it links onward to papers that apply the technique.
+- [The Lottery Ticket Hypothesis for Pre-trained BERT Networks](https://doi.org/10.48550/arxiv.2007.12223) — shows winning tickets exist inside large pretrained transformers too, not just the small vision networks this paper studies.
+- [Sparse Transfer Learning via Winning Lottery Tickets](https://doi.org/10.48550/arxiv.1905.07785) — tests whether a winning ticket found on one task stays trainable on a different task, probing what the subnetwork actually captures.
+- [Drawing Early-Bird Tickets: Towards More Efficient Training of Deep Networks](https://doi.org/10.48550/arxiv.1909.11957) — shows winning tickets can be spotted early in training rather than after full training, the training-efficiency payoff this concept's neighborhood points to.

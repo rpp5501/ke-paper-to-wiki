@@ -1,0 +1,50 @@
+concept: parameter-identifiability
+status: partial
+synthesis: 'Parameter-identifiability asks whether a proposed symmetry group (e.g.
+  neuron permutations and, for ReLU networks, positive rescalings) accounts for every
+  reparameterization that leaves the realized function unchanged, or whether ''hidden''
+  symmetries remain unaccounted for [S1]. Godfrey et al. formalize this via the group
+  of intertwiner symmetries of the parameter-to-function map and show that for generic
+  networks (no dead neurons, no duplicate rows) permutation and positive scaling generate
+  the full symmetry group, while degenerate architectures can admit extra, unaccounted
+  symmetries [S2]. Grigsby, Lindsey, Masden and Pelella show this classical group
+  can still be incomplete even for generic weights, exhibiting additional ''hidden''
+  symmetries tied to the piecewise-linear geometry of the network''s function [S1].
+  Functional dimension - the local dimension of the image of the parameter-to-function
+  map - gives a concrete tool for checking completeness: if the known symmetry group''s
+  orbits are smaller than what the functional-dimension gap requires, unaccounted
+  symmetries must exist [S3]. This ties identifiability directly to the gap between
+  raw parameter count and functional dimension.'
+resources:
+- url: https://arxiv.org/abs/2306.06179
+  title: Hidden Symmetries of ReLU Networks
+  type: derivation
+  why: Directly studies whether the known symmetry group (permutation, positive scaling)
+    is complete, and constructs examples of hidden symmetries beyond it
+  anchor: Sections 3-4, the examples of generic networks with symmetries outside the
+    permutation/scaling group
+- url: https://arxiv.org/abs/2205.14258
+  title: On the Symmetries of Deep Learning Models and their Internal Representations
+  type: follow-up-paper
+  why: Formalizes the intertwiner symmetry group of the parameter-function map and
+    proves permutation plus scaling generate it for generic ReLU networks
+  anchor: Section 3, the genericity theorem characterizing the full intertwiner group
+- url: https://arxiv.org/abs/2209.04036
+  title: Functional Dimension of Feedforward ReLU Neural Networks
+  type: derivation
+  why: Supplies the dimension-counting machinery used to detect when a symmetry characterization
+    fails to fully explain the fibers of the parameter map
+  anchor: Section 4, the functional dimension formula and its use for bounding symmetry
+unresolved:
+- No visual explainer, animation, or recorded lecture specifically covering completeness
+  of ReLU-network symmetry groups could be confidently verified; the resources above
+  are all primary papers.
+- How functional dimension bounds generalize beyond piecewise-linear (ReLU) architectures
+  to smooth activation functions is not settled in the cited sources.
+sources_consulted:
+  S1: Grigsby, J.E., Lindsey, K., Masden, M., Pelella, A. Hidden Symmetries of ReLU
+    Networks. ICML 2023. arXiv:2306.06179
+  S2: Godfrey, C., Brown, D., Emerson, T., Kvinge, H. On the Symmetries of Deep Learning
+    Models and their Internal Representations. NeurIPS 2022. arXiv:2205.14258
+  S3: Grigsby, J.E., Lindsey, K., Meyerhoff, D., Roldan, C. Functional Dimension of
+    Feedforward ReLU Neural Networks. arXiv:2209.04036

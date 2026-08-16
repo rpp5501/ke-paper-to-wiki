@@ -43,98 +43,112 @@
    "kind": "concept",
    "label": "Convolutional CIFAR10 Experiments",
    "level": 1,
-   "source_ref": "sec_3"
+   "source_ref": "sec_3",
+   "page": "10_conv-cifar10-experiments.md"
   },
   {
    "id": "vgg-resnet-cifar10-experiments",
    "kind": "concept",
    "label": "VGG/Resnet CIFAR10 Experiments",
    "level": 1,
-   "source_ref": "sec_4"
+   "source_ref": "sec_4",
+   "page": "15_vgg-resnet-cifar10-experiments.md"
   },
   {
    "id": "random-reinitialization-control",
    "kind": "concept",
    "label": "Random Reinitialization Control",
    "level": 1,
-   "source_ref": "sec_12"
+   "source_ref": "sec_12",
+   "page": "05_random-reinitialization-control.md"
   },
   {
    "id": "structured-pruning-related-work",
    "kind": "concept",
    "label": "Related Pruning/Distillation Work",
    "level": 1,
-   "source_ref": "sec_7"
+   "source_ref": "sec_7",
+   "page": "06_structured-pruning-related-work.md"
   },
   {
    "id": "implications-for-training-efficiency",
    "kind": "concept",
    "label": "Implications for Training Efficiency",
    "level": 1,
-   "source_ref": "sec_5"
+   "source_ref": "sec_5",
+   "page": "03_implications-for-training-efficiency.md"
   },
   {
    "id": "limitations-scope",
    "kind": "concept",
    "label": "Limitations and Scope",
    "level": 1,
-   "source_ref": "sec_6"
+   "source_ref": "sec_6",
+   "page": "04_limitations-scope.md"
   },
   {
    "id": "one-shot-pruning",
    "kind": "concept",
    "label": "One-Shot Pruning",
    "level": 2,
-   "source_ref": "sec_9"
+   "source_ref": "sec_9",
+   "page": "17_one-shot-pruning.md"
   },
   {
    "id": "early-stopping-iteration-metric",
    "kind": "concept",
    "label": "Early-Stopping Iteration Metric",
    "level": 2,
-   "source_ref": "sec_10"
+   "source_ref": "sec_10",
+   "page": "08_early-stopping-iteration-metric.md"
   },
   {
    "id": "winning-ticket-initialization-distribution",
    "kind": "concept",
    "label": "Winning Ticket Initialization Distribution",
    "level": 2,
-   "source_ref": "sec_13_1"
+   "source_ref": "sec_13_1",
+   "page": "19_winning-ticket-initialization-distribution.md"
   },
   {
    "id": "winning-ticket-connectivity",
    "kind": "concept",
    "label": "Winning Ticket Connectivity",
    "level": 2,
-   "source_ref": "sec_13_6"
+   "source_ref": "sec_13_6",
+   "page": "18_winning-ticket-connectivity.md"
   },
   {
    "id": "noise-robustness-of-winning-tickets",
    "kind": "concept",
    "label": "Noise Robustness of Winning Tickets",
    "level": 2,
-   "source_ref": "sec_13_7"
+   "source_ref": "sec_13_7",
+   "page": "16_noise-robustness-of-winning-tickets.md"
   },
   {
    "id": "learning-rate-warmup",
    "kind": "concept",
    "label": "Learning Rate Warmup",
    "level": 2,
-   "source_ref": "sec_16_5"
+   "source_ref": "sec_16_5",
+   "page": "14_learning-rate-warmup.md"
   },
   {
    "id": "global-pruning",
    "kind": "concept",
    "label": "Global Pruning",
    "level": 2,
-   "source_ref": "sec_16_1"
+   "source_ref": "sec_16_1",
+   "page": "11_global-pruning.md"
   },
   {
    "id": "hyperparameter-search-fc",
    "kind": "concept",
    "label": "Hyperparameter Search (Fully-Connected)",
    "level": 2,
-   "source_ref": "sec_14"
+   "source_ref": "sec_14",
+   "page": "13_hyperparameter-search-fc.md"
   },
   {
    "id": "hyperparameter-search-conv",
@@ -148,28 +162,32 @@
    "kind": "concept",
    "label": "Pruning Convolutions vs. Fully-Connected Layers",
    "level": 3,
-   "source_ref": "sec_15_6"
+   "source_ref": "sec_15_6",
+   "page": "21_pruning-convs-vs-fc-layers.md"
   },
   {
    "id": "network-size-effects",
    "kind": "concept",
    "label": "Network Size Effects",
    "level": 3,
-   "source_ref": "sec_14_6"
+   "source_ref": "sec_14_6",
+   "page": "20_network-size-effects.md"
   },
   {
    "id": "reinitializing-from-winning-init",
    "kind": "concept",
    "label": "Reinitializing from Winning Ticket Distribution",
    "level": 3,
-   "source_ref": "sec_13_3"
+   "source_ref": "sec_13_3",
+   "page": "23_reinitializing-from-winning-init.md"
   },
   {
    "id": "pruning-at-iteration-0",
    "kind": "concept",
    "label": "Pruning at Iteration 0",
    "level": 3,
-   "source_ref": "sec_13_4"
+   "source_ref": "sec_13_4",
+   "page": "22_pruning-at-iteration-0.md"
   }
  ],
  "edges": [

@@ -1,51 +1,43 @@
 concept: fc-lenet-mnist-experiments
 status: complete
-synthesis: Frankle & Carbin's original lottery ticket paper shows that on a simple
-  fully-connected LeNet-300-100 network trained on MNIST, iterative magnitude pruning
-  finds sparse 'winning ticket' subnetworks -- down to a few percent of the original
-  weights -- that train to equal or higher test accuracy than the full dense network,
-  often in fewer iterations [S1]. At moderate sparsity levels the winning tickets
-  learn faster and reach higher accuracy than the unpruned network, but as sparsity
-  increases past a certain point (roughly single-digit percentages of weights remaining)
-  both learning speed and final accuracy degrade [S1]. When the same pruned masks
-  are kept but the surviving weights are randomly reinitialized instead of reset to
-  their original initial values, performance drops sharply and no longer beats the
-  full network, showing the mask alone is not sufficient -- the paired initialization
-  matters [S1]. Follow-up work found this FC/MNIST result is relatively easy to reproduce
-  compared to deeper convolutional networks, where the plain iterative-pruning procedure
-  was unstable and a short amount of early training ('rewinding') before pruning was
-  needed to recover stable winning tickets [S2]. A learner can reproduce the sparsity-vs-accuracy
-  curves directly using the official reference code [S3] or inspect aggregated reported
-  results [S4].
+synthesis: Frankle & Carbin's original lottery ticket hypothesis paper trains a fully-connected
+  LeNet-300-100 network on MNIST and shows that iterative magnitude pruning (IMP)
+  can find winning tickets down to roughly 3.6% of the original weights that train
+  as fast or faster than the unpruned network and reach the same or higher test accuracy
+  [S1]. As sparsity increases beyond that point, winning-ticket accuracy degrades
+  and eventually falls below the full network's [S1]. When the same sparse masks are
+  kept but weights are randomly reinitialized, the resulting subnetworks learn more
+  slowly and reach lower accuracy than winning tickets, showing that the specific
+  initialization, not just the mask, matters [S1]. Follow-up analysis of these FC
+  LeNet tickets found that the sign pattern of the pruned weights at initialization
+  carries most of the benefit [S2], and that IMP outcomes can be unstable to SGD noise,
+  motivating rewinding to an early training iteration rather than to iteration 0 to
+  stabilize ticket discovery [S3].
 resources:
-- url: https://arxiv.org/abs/1803.03635v5
+- url: https://arxiv.org/abs/1803.03635
   title: 'The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks'
   type: derivation
-  why: Original paper containing the exact FC LeNet-300-100 MNIST pruning experiments
-    and random-reinit control
-- url: https://github.com/google-research/lottery-ticket-hypothesis
-  title: google-research/lottery-ticket-hypothesis
-  type: reference-impl
-  why: Official code release a learner can run to reproduce the FC MNIST winning-ticket
-    experiments
-- url: https://arxiv.org/abs/1903.01611v3
+  why: primary source for the FC LeNet-300-100 MNIST experiments, including sparsity-vs-accuracy
+    curves and the random reinitialization control
+  anchor: Section 2 and Figure 3, the LeNet-300-100 on MNIST results
+- url: https://www.uber.com/blog/deconstructing-lottery-tickets/
+  title: 'Deconstructing Lottery Tickets: Zeros, Signs, and the Supermask'
+  type: visual
+  why: gives visual diagrams of pruning masks and shows the sign pattern of winning-ticket
+    weights on the same MNIST/LeNet setup
+  anchor: the section with mask and sign visualizations for the FC LeNet MNIST experiments
+- url: https://arxiv.org/abs/1903.01611
   title: Stabilizing the Lottery Ticket Hypothesis
   type: follow-up-paper
-  why: Shows how reproducible the simple FC/MNIST result is relative to deeper networks
-    and why rewinding was later needed
-- url: https://paperswithcode.com/paper/the-lottery-ticket-hypothesis-finding-sparse
-  title: 'Papers with Code: The Lottery Ticket Hypothesis'
-  type: visual
-  why: Aggregates reported sparsity-vs-accuracy results and links so a learner can
-    see the effect visually
+  why: explains why naive IMP can be unstable and introduces rewinding, directly relevant
+    to reproducing the FC LeNet MNIST results reliably
+  anchor: §4, the small-scale MNIST/LeNet stability experiments
 unresolved:
-- Exact sparsity threshold at which LeNet-300-100 winning tickets stop outperforming
-  the full network varies slightly across replications and pruning schedules.
+- How consistent are the winning-ticket masks found by IMP across different random
+  seeds on the FC LeNet-300-100/MNIST setup without rewinding?
 sources_consulted:
   S1: 'Frankle, J. & Carbin, M. (2018). The Lottery Ticket Hypothesis: Finding Sparse,
-    Trainable Neural Networks. https://arxiv.org/abs/1803.03635v5'
-  S2: Frankle, J. et al. (2019). Stabilizing the Lottery Ticket Hypothesis. https://arxiv.org/abs/1903.01611v3
-  S3: google-research/lottery-ticket-hypothesis GitHub repository (official reference
-    implementation)
-  S4: 'Papers with Code page for ''The Lottery Ticket Hypothesis: Finding Sparse,
-    Trainable Neural Networks'''
+    Trainable Neural Networks. arXiv:1803.03635'
+  S2: 'Zhou, H., Lan, J., Liu, R., Yosinski, J. (2019). Deconstructing Lottery Tickets:
+    Zeros, Signs, and the Supermask. Uber Engineering Blog. https://www.uber.com/blog/deconstructing-lottery-tickets/'
+  S3: Frankle, J. et al. (2019). Stabilizing the Lottery Ticket Hypothesis. arXiv:1903.01611

@@ -1,0 +1,54 @@
+concept: models-datasets
+status: partial
+synthesis: 'The evaluation compares three open-weight, instruction-tuned models in
+  the 7-8B parameter band: Meta''s Llama-3.1-8B-Instruct [S1][S4], Mistral AI''s Mistral-7B-Instruct-v0.3
+  [S2], and AI2''s Olmo-3-7B-Instruct [S3]. Restricting to this size keeps inference
+  tractable on a single research GPU while still capturing models capable of complex
+  instruction-following, and all three ship fully open weights with documented training/instruction-tuning
+  recipes, which is why they are favored over closed API-only models for probing internal
+  or behavioral properties [S1][S2][S3]. Prior comparative work on similarly-sized
+  instruction-tuned checkpoints (Mistral-7B vs. Llama-2-7B) shows that model family
+  and instruction-tuning recipe produce measurably different behavior even at matched
+  parameter counts, which motivates comparing multiple checkpoints rather than relying
+  on a single model [S5]. The specific datasets or prompt domains used to elicit the
+  completions being probed are not established by these background sources and should
+  be confirmed directly from the paper''s methods section.'
+resources:
+- url: https://ai.meta.com/blog/meta-llama-3-1/
+  title: 'Introducing Llama 3.1: Our most capable models to date'
+  type: visual
+  why: Shows benchmark comparison charts placing Llama-3.1-8B-Instruct against other
+    similarly-sized open models
+  anchor: the benchmark comparison bar charts partway down the post, focused on the
+    8B-class instruct comparisons
+- url: https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
+  title: Llama-3.1-8B-Instruct model card
+  type: reference-impl
+  why: Canonical spec of the exact checkpoint, including chat template and intended-use
+    notes
+  anchor: the 'Model Information' table and 'How to use' section
+- url: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
+  title: Mistral-7B-Instruct-v0.3 model card
+  type: reference-impl
+  why: Documents what changed from v0.2 (extended vocabulary, function calling) relevant
+    to why this exact version is used
+  anchor: the 'v0.3' changelog note at the top of the card
+- url: https://allenai.org/olmo
+  title: 'OLMo: Open Language Model (AI2)'
+  type: reference-impl
+  why: Background on the fully-open OLMo model family that Olmo-3-7B-Instruct belongs
+    to, including released training data and code
+  anchor: the OLMo 3 section and release notes on the page
+unresolved:
+- Which specific datasets or prompt domains were used to generate the completions
+  being probed is not documented in these background sources — check the paper's methods/experimental-setup
+  section directly.
+- No primary AI2 technical report or arXiv page for Olmo-3-7B-Instruct was verified
+  here; confirm the exact release citation.
+sources_consulted:
+  S1: 'Meta AI, "Introducing Llama 3.1: Our most capable models to date", https://ai.meta.com/blog/meta-llama-3-1/'
+  S2: Mistral AI, Mistral-7B-Instruct-v0.3 model card, https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
+  S3: Allen Institute for AI, OLMo project page, https://allenai.org/olmo
+  S4: Hugging Face, Llama-3.1-8B-Instruct model card, https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct
+  S5: 'Comprehensive Examination of Instruction-Based Language Models: A Comparative
+    Analysis of Mistral-7B and Llama-2-7B (2023), https://doi.org/10.1109/icercs57948.2023.10434081'
