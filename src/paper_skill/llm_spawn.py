@@ -75,7 +75,12 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
         # only ever inspects the returned string. The turn ceiling it hit
         # afterwards was the symptom, not the cause.
         proc = subprocess.run(
-            ["claude", "-p", "--max-turns", str(max_turns), "--tools", tools],
+            ["claude", "-p", "--max-turns", str(max_turns), "--tools", tools]
+            # --tools makes a tool visible; it does not make it usable.
+            # With --tools alone the researcher answered "I don't have
+            # permission to use WebSearch yet -- could you grant it" for
+            # 17 of 18 concepts, each logged as `not parseable JSON`.
+            + (["--allowedTools", tools] if tools else []),
             input=prompt,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=timeout,

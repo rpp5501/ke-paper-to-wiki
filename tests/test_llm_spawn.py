@@ -243,3 +243,35 @@ def test_the_researcher_is_the_only_stage_that_gets_a_tool(monkeypatch):
 
     assert "WebSearch" in research, "P3 must be able to retrieve"
     assert "tools=" not in write, "P4 must keep the default empty toolset"
+
+
+def test_a_requested_tool_is_also_permitted(monkeypatch):
+    """--tools makes a tool VISIBLE, not USABLE. Granting P3 WebSearch with
+    --tools alone produced, on a live run, a researcher that replied "I don't
+    have permission to use WebSearch yet -- could you grant it" for 17 of 18
+    concepts, every one of them recorded as `not parseable JSON`.
+
+    The earlier probe that "confirmed" the flag asked for a url the model
+    already knew, so it answered from memory and never exercised the tool.
+    """
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    claude_spawn("research this", tools="WebSearch")
+
+    assert "--allowedTools" in fake.argv, "a visible tool is still unusable"
+    assert fake.argv[fake.argv.index("--allowedTools") + 1] == "WebSearch"
+
+
+def test_no_permission_is_granted_when_no_tool_is_asked_for(monkeypatch):
+    """The default stays a pure text transform: nothing visible, nothing
+    permitted."""
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    claude_spawn("write a page")
+
+    assert "--allowedTools" not in fake.argv
+    assert fake.argv[fake.argv.index("--tools") + 1] == ""
