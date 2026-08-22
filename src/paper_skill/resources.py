@@ -347,6 +347,16 @@ def _og_image(url: str, get) -> str | None:
     if not match:
         return None
     src = (match.group(1) or match.group(2) or "").strip()
+    if not src:
+        return None
     # Pages ship "/img/card.png" and "//cdn/card.png". Handed to an <img> in
     # the dashboard those resolve against the dashboard's own origin and 404.
-    return urljoin(url, src) if src else None
+    src = urljoin(url, src)
+    # distill.pub serves over https and writes its og:image tag as http. A
+    # browser blocks that as mixed content and the card renders blank -- the
+    # exact failure this feature exists to avoid. The page itself proved https
+    # works for this host, so the asset is upgraded to match; if the upgraded
+    # url does not answer, _is_image declines it and it stays a link.
+    if url.startswith("https://") and src.startswith("http://"):
+        src = "https://" + src[len("http://"):]
+    return src

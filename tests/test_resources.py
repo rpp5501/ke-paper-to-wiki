@@ -630,8 +630,9 @@ def test_a_real_content_image_survives_the_extra_check():
                                 'content="http://distill.pub/2017/momentum/thumbnail.jpg">'),
                       want_preview=True)
 
+    # Upgraded to https on the way out -- see the mixed-content test below.
     assert kind == {"kind": "image",
-                    "src": "http://distill.pub/2017/momentum/thumbnail.jpg"}
+                    "src": "https://distill.pub/2017/momentum/thumbnail.jpg"}
 
 
 # A refused probe is not a missing image -- the _DEAD_STATUS precedent again,
@@ -695,3 +696,38 @@ def test_a_refused_probe_on_a_url_with_no_image_extension_is_not_trusted():
                       want_preview=True)
 
     assert kind == {"kind": "link"}
+
+
+def test_an_http_og_image_on_an_https_page_is_upgraded():
+    """distill.pub serves over https but writes its og:image tag as http.
+    A browser blocks that as mixed content, so the card renders blank -- the
+    one failure mode this whole feature exists to avoid."""
+    from paper_skill.resources import embed_kind
+
+    seen = []
+
+    def head(url, *_a, **_kw):
+        seen.append(url)
+        return _head_status(200, "image/jpeg" if url.endswith(".jpg")
+                            else "text/html")()
+
+    kind = embed_kind("https://distill.pub/2017/momentum/", head=head,
+                      get=_page('<meta property="og:image" '
+                                'content="http://distill.pub/2017/thumb.jpg">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "image", "src": "https://distill.pub/2017/thumb.jpg"}
+    assert not any(u.startswith("http://") for u in seen), \
+        "the http url must not even be probed, let alone shipped"
+
+
+def test_an_http_image_from_an_http_page_is_left_alone():
+    """Only a page that proved https works gets its assets upgraded."""
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("http://ruder.io/multi-task/", head=_head_by_suffix,
+                      get=_page('<meta property="og:image" '
+                                'content="http://ruder.io/card.png">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "image", "src": "http://ruder.io/card.png"}
