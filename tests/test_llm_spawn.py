@@ -211,3 +211,35 @@ def test_the_spawned_model_gets_no_tools(monkeypatch):
 
     assert "--tools" in fake.argv
     assert fake.argv[fake.argv.index("--tools") + 1] == ""
+
+
+def test_a_caller_can_ask_for_a_specific_tool(monkeypatch):
+    """`--tools ""` was added to stop the PAGE WRITER calling Write on the
+    real artifact. It lives in claude_spawn, which P3 also uses, so a
+    P4-specific guard silently removed the researcher's ability to retrieve
+    anything -- while its prompt still says to work "from your own knowledge".
+    That recall is why 2 of 15 cited arXiv ids resolved to the wrong paper.
+
+    The default stays "": a stage has to ask before it can reach the network.
+    """
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+
+    claude_spawn("research this concept", tools="WebSearch")
+
+    assert fake.argv[fake.argv.index("--tools") + 1] == "WebSearch"
+
+
+def test_the_researcher_is_the_only_stage_that_gets_a_tool(monkeypatch):
+    """A seam-agreement check: the two real call sites, read from the modules
+    that own them, so this cannot pass while the wiring says otherwise."""
+    import inspect
+
+    from paper_skill import p3_research, p4_write
+
+    research = inspect.getsource(p3_research._spawn_claude)
+    write = inspect.getsource(p4_write._spawn_claude)
+
+    assert "WebSearch" in research, "P3 must be able to retrieve"
+    assert "tools=" not in write, "P4 must keep the default empty toolset"

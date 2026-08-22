@@ -21,9 +21,15 @@ ENRICH_LEVEL = 1
 # that follows. That killed the one research note in the chain-of-thought run,
 # twice. The parser stays yaml.safe_load, which accepts JSON as a subset -- so a
 # model that answers in YAML anyway still parses.
-RESEARCH_PROMPT = """Follow the research playbook loop for this brief, using
-your own knowledge of well-known, real, reachable resources for this concept.
+RESEARCH_PROMPT = """Follow the research playbook loop for this brief.
 Output ONLY the finished note as a JSON object — no prose, no markdown fences.
+
+You have WebSearch. USE IT for every resource you are about to cite, and cite
+only what a search actually returned. Do not name a url from memory: recalled
+urls look right and resolve to the wrong thing — two of fifteen arXiv ids
+cited this way pointed at an unrelated paper, and both returned HTTP 200.
+Search is also the only way to find what a learner needs, because the
+explainers, lectures and animations below are not in any academic index.
 
 Use EXACTLY this shape and these key names:
 {{"concept": "<the brief's concept slug>",
@@ -116,7 +122,13 @@ def _render_research_prompt(brief: dict, rejected_for: list[str] | None = None,
 
 def _spawn_claude(prompt: str) -> str:
     from .llm_spawn import claude_spawn
-    return claude_spawn(prompt, max_turns=15, timeout=900)
+    # The researcher is the one stage that must reach outside the prompt.
+    # Its own instructions still say to work from recall, and recall is why
+    # 2 of 15 cited arXiv ids resolved to a different paper than claimed --
+    # and why the explainers a learner needs (distill.pub, a lecture) are
+    # nearly absent: none of them are in the academic indexes candidates.py
+    # federates. WebSearch only: it reads, it cannot touch the artifacts.
+    return claude_spawn(prompt, max_turns=15, timeout=900, tools="WebSearch")
 
 
 def _strip_fences(raw: str) -> str:

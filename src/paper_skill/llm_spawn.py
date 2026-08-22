@@ -44,7 +44,8 @@ def parse_json_reply(raw: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
-def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
+def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
+                 tools: str = "") -> str:
     """Run one prompt through the ``claude`` CLI, or fail with guidance.
 
     Raises ``LLMUnavailable`` (never a bare ``FileNotFoundError``) when the CLI
@@ -74,7 +75,7 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600) -> str:
         # only ever inspects the returned string. The turn ceiling it hit
         # afterwards was the symptom, not the cause.
         proc = subprocess.run(
-            ["claude", "-p", "--max-turns", str(max_turns), "--tools", ""],
+            ["claude", "-p", "--max-turns", str(max_turns), "--tools", tools],
             input=prompt,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
