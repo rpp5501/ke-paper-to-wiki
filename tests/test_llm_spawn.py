@@ -275,3 +275,72 @@ def test_no_permission_is_granted_when_no_tool_is_asked_for(monkeypatch):
 
     assert "--allowedTools" not in fake.argv
     assert fake.argv[fake.argv.index("--tools") + 1] == ""
+
+
+# --- running a stage on a different subscription ----------------------------
+# Every stage takes an injectable spawn, but run_pipeline hardwires the Claude
+# one, so switching backends meant editing source. Two env vars move the whole
+# pipeline to another CLI without touching a file: the prompt still goes on
+# stdin and the reply still comes back on stdout, which is all any stage here
+# assumes.
+
+def test_the_backend_command_can_be_overridden(monkeypatch):
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setenv("KE_LLM_CMD", "gemini --yolo -p")
+
+    claude_spawn("write a page")
+
+    assert fake.argv[:3] == ["gemini", "--yolo", "-p"]
+    assert "--max-turns" not in fake.argv, "claude flags must not leak"
+
+
+def test_a_tool_stage_uses_its_own_override(monkeypatch):
+    """P3 needs web search and P4 must not have it, and no two CLIs spell that
+    the same way -- so the tool-enabled variant is configured separately."""
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setenv("KE_LLM_CMD", "gemini -p")
+    monkeypatch.setenv("KE_LLM_CMD_TOOLS", "gemini --yolo -p")
+
+    claude_spawn("research this", tools="WebSearch")
+
+    assert fake.argv[:3] == ["gemini", "--yolo", "-p"]
+
+
+def test_a_tool_stage_falls_back_to_the_plain_override(monkeypatch):
+    """One variable configured, both stages still run."""
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setenv("KE_LLM_CMD", "codex exec")
+
+    claude_spawn("research this", tools="WebSearch")
+
+    assert fake.argv[:2] == ["codex", "exec"]
+
+
+def test_a_missing_override_binary_names_itself(monkeypatch):
+    """The not-installed message must name the CLI actually being used, or it
+    sends someone to reinstall the wrong tool."""
+    monkeypatch.setattr("shutil.which", lambda name: None)
+    monkeypatch.setenv("KE_LLM_CMD", "gemini -p")
+
+    with pytest.raises(LLMUnavailable) as exc:
+        claude_spawn("x")
+
+    assert "gemini" in str(exc.value)
+
+
+def test_no_override_is_the_claude_path_exactly(monkeypatch):
+    fake = _CaptureArgv()
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+    monkeypatch.delenv("KE_LLM_CMD", raising=False)
+    monkeypatch.delenv("KE_LLM_CMD_TOOLS", raising=False)
+
+    claude_spawn("x", max_turns=6)
+
+    assert fake.argv == ["claude", "-p", "--max-turns", "6", "--tools", ""]

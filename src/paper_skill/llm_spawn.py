@@ -9,6 +9,8 @@ that failure loud and names the escape hatch: inject your own ``spawn``.
 """
 import json
 import re
+import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -44,6 +46,43 @@ def parse_json_reply(raw: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+
+def _backend_argv(max_turns: int, tools: str) -> list[str]:
+    """The command line for one spawn.
+
+    Defaults to the Claude CLI. KE_LLM_CMD replaces it wholesale so the whole
+    pipeline can run on another subscription without editing source -- every
+    stage already accepts an injectable spawn, but run_pipeline hardwires this
+    one. The contract another CLI must meet is only what the stages assume:
+    prompt on stdin, reply on stdout, non-interactive.
+
+    KE_LLM_CMD_TOOLS is the variant used when a stage asks for a tool, because
+    P3 needs web search, P4 must not have it, and no two CLIs spell that the
+    same way. Claude's own flags are deliberately not appended to an override:
+    they are claude-specific and would be rejected as unknown arguments.
+    """
+    override = os.environ.get(
+        "KE_LLM_CMD_TOOLS" if tools else "KE_LLM_CMD", "").strip()
+    if not override and tools:
+        override = os.environ.get("KE_LLM_CMD", "").strip()
+    if override:
+        return shlex.split(override)
+    # --tools "" because every stage here is a pure text transform: the
+    # context is inlined in the prompt and the answer comes back on stdout.
+    # Left with the default toolset, the page writer explored the repo and
+    # read finished sibling pages (so a page could be built from other pages
+    # instead of the supplied evidence), then called Write on the real
+    # artifact -- bypassing write_pages and the pedagogy gate, which only ever
+    # inspects the returned string.
+    #
+    # --tools makes a tool visible; it does not make it usable. With --tools
+    # alone the researcher answered "I don't have permission to use WebSearch
+    # yet -- could you grant it" for 17 of 18 concepts, each logged as `not
+    # parseable JSON`.
+    return (["claude", "-p", "--max-turns", str(max_turns), "--tools", tools]
+            + (["--allowedTools", tools] if tools else []))
+
+
 def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
                  tools: str = "") -> str:
     """Run one prompt through the ``claude`` CLI, or fail with guidance.
@@ -51,9 +90,10 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
     Raises ``LLMUnavailable`` (never a bare ``FileNotFoundError``) when the CLI
     is absent so callers cannot mistake "no model" for "empty result".
     """
-    if shutil.which("claude") is None:
+    argv = _backend_argv(max_turns, tools)
+    if shutil.which(argv[0]) is None:
         raise LLMUnavailable(
-            "the `claude` CLI is not on PATH, so this LLM stage cannot run. "
+            f"the `{argv[0]}` CLI is not on PATH, so this LLM stage cannot run. "
             "Do NOT fall back to a table-of-contents graph. Either install the "
             "CLI, or inject a working `spawn(prompt)->str` into "
             "extract_concepts / write_pages (e.g. via a subagent)."
@@ -75,12 +115,7 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
         # only ever inspects the returned string. The turn ceiling it hit
         # afterwards was the symptom, not the cause.
         proc = subprocess.run(
-            ["claude", "-p", "--max-turns", str(max_turns), "--tools", tools]
-            # --tools makes a tool visible; it does not make it usable.
-            # With --tools alone the researcher answered "I don't have
-            # permission to use WebSearch yet -- could you grant it" for
-            # 17 of 18 concepts, each logged as `not parseable JSON`.
-            + (["--allowedTools", tools] if tools else []),
+            argv,
             input=prompt,
             capture_output=True, text=True, encoding="utf-8", errors="replace",
             timeout=timeout,
@@ -96,7 +131,7 @@ def claude_spawn(prompt: str, max_turns: int = 3, timeout: int = 600,
     # Same contract as a missing CLI: "the model never ran" must not reach
     # callers as "the model returned nothing".
     raise LLMUnavailable(
-        f"`claude -p` exited {proc.returncode} on {MAX_ATTEMPTS} attempts, so "
+        f"`{argv[0]}` exited {proc.returncode} on {MAX_ATTEMPTS} attempts, so "
         f"this LLM stage did not run. Do NOT treat this as an empty result. "
         f"CLI said: {(proc.stderr or proc.stdout or '').strip()[:500]}"
     )

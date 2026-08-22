@@ -1,0 +1,366 @@
+{
+ "meta": {
+  "kind": "concept",
+  "source": "arXiv:2510.05179",
+  "generated": "2026-08-22",
+  "version": 1
+ },
+ "nodes": [
+  {
+   "id": "agentic-misalignment",
+   "kind": "concept",
+   "level": 0,
+   "source_ref": "sec_1",
+   "label": "Agentic Misalignment"
+  },
+  {
+   "id": "computer-use-demo",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_2",
+   "label": "Computer-Use Blackmail Demonstration"
+  },
+  {
+   "id": "experimental-methodology",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_3_1",
+   "label": "Scenario Construction Methodology"
+  },
+  {
+   "id": "threat-to-autonomy",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_1_1",
+   "label": "Threat to Model Autonomy"
+  },
+  {
+   "id": "goal-conflict",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_1_2",
+   "label": "Goal Conflict"
+  },
+  {
+   "id": "necessity-of-harm",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_3_1_3",
+   "label": "Making Harmful Behavior Necessary"
+  },
+  {
+   "id": "results-overview",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_4",
+   "label": "Results"
+  },
+  {
+   "id": "blackmail-across-models",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_1",
+   "label": "Blackmail Across Different Models"
+  },
+  {
+   "id": "replacement-threat-alone",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_2",
+   "label": "Blackmail from Replacement Threat Alone"
+  },
+  {
+   "id": "corporate-espionage",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_3",
+   "label": "Corporate Espionage from Goal Conflict Alone"
+  },
+  {
+   "id": "key-observations",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_4",
+   "label": "Key Observations Across Scenarios"
+  },
+  {
+   "id": "goal-directed-reasoning",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_4_1",
+   "label": "Explicit Goal-Directed Reasoning"
+  },
+  {
+   "id": "ethical-awareness-violation",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_4_2",
+   "label": "Acknowledging Ethical Violations Before Proceeding"
+  },
+  {
+   "id": "concerning-tendencies",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_4_3",
+   "label": "Concerning Tendencies Beyond the Target Behavior"
+  },
+  {
+   "id": "further-investigation",
+   "kind": "concept",
+   "level": 2,
+   "source_ref": "sec_4_5",
+   "label": "Further Investigation of Misaligned Behaviors"
+  },
+  {
+   "id": "no-spontaneous-misalignment",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_5_1",
+   "label": "No Agentic Misalignment Without Cause"
+  },
+  {
+   "id": "goal-variation",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_5_2",
+   "label": "Varying the Goals"
+  },
+  {
+   "id": "extreme-misalignment",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_5_3",
+   "label": "More Extreme Misaligned Behavior"
+  },
+  {
+   "id": "realism-effect",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_5_4",
+   "label": "Blackmail Increases When Models Believe the Scenario Is Real"
+  },
+  {
+   "id": "instruction-ineffectiveness",
+   "kind": "concept",
+   "level": 3,
+   "source_ref": "sec_4_5_5",
+   "label": "Instructions Don't Reliably Stop Bad Behaviors"
+  },
+  {
+   "id": "related-work",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_5",
+   "label": "Related Work"
+  },
+  {
+   "id": "mitigations",
+   "kind": "concept",
+   "level": 1,
+   "source_ref": "sec_6",
+   "label": "Future Work and Potential Mitigations"
+  }
+ ],
+ "edges": [
+  {
+   "src": "computer-use-demo",
+   "dst": "agentic-misalignment",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "experimental-methodology",
+   "dst": "agentic-misalignment",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "results-overview",
+   "dst": "agentic-misalignment",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "agentic-misalignment",
+   "dst": "related-work",
+   "kind": "builds-on",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "mitigations",
+   "dst": "agentic-misalignment",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "threat-to-autonomy",
+   "dst": "experimental-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "goal-conflict",
+   "dst": "experimental-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "necessity-of-harm",
+   "dst": "experimental-methodology",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "blackmail-across-models",
+   "dst": "results-overview",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "replacement-threat-alone",
+   "dst": "results-overview",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "corporate-espionage",
+   "dst": "results-overview",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "key-observations",
+   "dst": "results-overview",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "further-investigation",
+   "dst": "results-overview",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "computer-use-demo",
+   "dst": "blackmail-across-models",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "threat-to-autonomy",
+   "dst": "replacement-threat-alone",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "goal-conflict",
+   "dst": "corporate-espionage",
+   "kind": "prerequisite",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "goal-directed-reasoning",
+   "dst": "key-observations",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "ethical-awareness-violation",
+   "dst": "key-observations",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "concerning-tendencies",
+   "dst": "key-observations",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "no-spontaneous-misalignment",
+   "dst": "further-investigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "goal-variation",
+   "dst": "further-investigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "extreme-misalignment",
+   "dst": "further-investigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "realism-effect",
+   "dst": "further-investigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "instruction-ineffectiveness",
+   "dst": "further-investigation",
+   "kind": "part-of",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  },
+  {
+   "src": "instruction-ineffectiveness",
+   "dst": "mitigations",
+   "kind": "contrasts-with",
+   "weight": 1.0,
+   "confidence": "inferred",
+   "confidence_score": 0.7
+  }
+ ]
+}
