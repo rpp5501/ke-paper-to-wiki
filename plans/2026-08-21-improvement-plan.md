@@ -60,7 +60,49 @@ broken.
 
 The order matters: item 1 gates item 2, and item 2 is the expensive one.
 
-### 1. Verify P3 retrieval on one paper — before spending anything else
+### 1. Verify P3 retrieval on one paper — DONE, PASSED
+
+Run on parameter-symmetry, 18 concepts, into a scratch home. It found three
+bugs before finding the answer, every one of which would have run 13 times in
+item 2:
+
+- **`_parse_note` could not read a note wrapped in narration** (`6ce50f2`). A
+  researcher that has just run tool calls introduces its answer instead of
+  opening with a brace. `llm_spawn.parse_json_reply` already existed for exactly
+  this; P3 never adopted it. Real bug — but committed as *the* fix without
+  reading a single reply, and it changed nothing: 6/7 failures became 17/18.
+- **`--tools` exposes a tool without permitting it** (`b3d8214`). The researcher
+  was replying *"I don't have permission to use WebSearch yet — could you grant
+  it"*, logged as `not parseable JSON`. Needs `--allowedTools` alongside.
+- **The probe that "confirmed" the flag was invalid.** It asked for the
+  distill.pub momentum url, which the model knows by heart, so it answered from
+  memory and never touched the tool. A tool probe must request something the
+  model *cannot* know.
+
+Measured, 18 concepts, baseline (recall) → new (retrieval):
+
+| | recall | retrieval |
+|---|---|---|
+| notes clean under `verify_resources` | — | **18/18** |
+| resources | 61 (3.4/note) | 64 (3.6/note) |
+| `lecture` | **1** | **10** |
+| academic share (arxiv/doi) | 70% | **56%** |
+| preview cards | 4 | **7** |
+
+Non-academic domains appear for the first time: youtube.com (4), slideslive,
+neurips.cc, ai.stanford.edu. Anchors are specific and actionable — "the middle
+portion of the talk where conserved quantities are defined", "early slides
+introducing the globe-vs-map metaphor".
+
+**Cost: 2164s (36 min) of P3 for one 18-concept paper.** That is the number to
+plan item 2 against — P3 alone across 13 papers is roughly 8 hours of wall
+clock, before P1/P2/P4/P5/P6.
+
+The improved parameter-symmetry notes are in the scratch home, not installed.
+Adopting them makes its 24 pages stale (`_note_is_newer` will trigger rewrites),
+so that is a P4 rerun for that paper, not a copy.
+
+<details><summary>Original item 1 (kept for the record)</summary>
 
 The fix is committed and **has never been run**. Building 13 papers on an
 unproven researcher risks 13 papers' worth of tokens producing the same recalled
@@ -77,6 +119,8 @@ notes against the committed ones.
   count against that, and a researcher that spends 15 turns searching returns
   nothing.
 - **Cost:** one paper, ~10–13 enriched concepts (`ENRICH_LEVEL = 1`).
+
+</details>
 
 ### 2. Build the 13 unbuilt papers
 
