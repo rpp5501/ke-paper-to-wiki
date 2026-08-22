@@ -139,3 +139,99 @@ def test_same_url_across_notes_is_probed_once(tmp_path):
     assert calls == [shared_url]
     assert bundle["notes"][NODE_ID]["resources"][0]["embed"]["kind"] == "image"
     assert bundle["notes"][OTHER_NODE_ID]["resources"][0]["embed"]["kind"] == "image"
+
+
+# --- og:image previews for `visual` explainers ------------------------------
+# Every `visual` resource in the six built papers rendered as a bare link: the
+# type means "visual explainer" (distill.pub, Jay Alammar), which is an HTML
+# page, and only a direct image content-type was ever promoted. The preview
+# GET is scoped to `visual` so a follow-up paper stays a plain link.
+
+def _page(body):
+    class R:
+        status_code = 200
+        headers = {"Content-Type": "text/html"}
+        text = body
+    return lambda *_a, **_kw: R()
+
+
+def _head_by_suffix(*_a, **_kw):
+    """embed_kind confirms an og:image really is an image before promoting it,
+    so the head here has to tell a page from a picture."""
+    url = _a[0] if _a else _kw.get("url", "")
+    class R:
+        status_code = 200
+        headers = {"Content-Type":
+                   "image/png" if url.endswith((".png", ".jpg", ".svg"))
+                   else "text/html"}
+    return R()
+
+
+OG_PAGE = '<meta property="og:image" content="https://distill.pub/card.png">'
+
+
+def test_a_visual_explainer_page_gets_its_og_image(tmp_path):
+    resources = [{"url": "https://distill.pub/2016/deconv/", "title": "Deconv",
+                  "type": "visual", "why": "animates the artifact"}]
+    _write(tmp_path / "_research_wiki", "x", NODE_ID, resources)
+
+    bundle = build_bundle(FIXTURE, wiki_dir=tmp_path,
+                          embed_head=_head_by_suffix,
+                          embed_get=_page(OG_PAGE))
+
+    assert bundle["notes"][NODE_ID]["resources"][0]["embed"] == {
+        "kind": "image", "src": "https://distill.pub/card.png"}
+
+
+def test_a_non_visual_resource_is_never_fetched_for_a_preview(tmp_path):
+    """A social card on every follow-up paper is noise, and it would cost a
+    GET per resource across the whole build."""
+    def boom(*_a, **_kw):
+        raise AssertionError("only `visual` resources may be fetched")
+
+    resources = [{"url": "https://arxiv.org/abs/1234.5678", "title": "Paper",
+                  "type": "follow-up-paper", "why": "extends the result"}]
+    _write(tmp_path / "_research_wiki", "x", NODE_ID, resources)
+
+    bundle = build_bundle(FIXTURE, wiki_dir=tmp_path,
+                          embed_head=_probe(200, "text/html"), embed_get=boom)
+
+    assert bundle["notes"][NODE_ID]["resources"][0]["embed"] == {"kind": "link"}
+
+
+def test_no_embed_probe_also_skips_the_preview_fetch(tmp_path):
+    def boom(*_a, **_kw):
+        raise AssertionError("embed_probe=False must never touch the network")
+
+    resources = [{"url": "https://distill.pub/2016/deconv/", "title": "D",
+                  "type": "visual", "why": "animation"}]
+    _write(tmp_path / "_research_wiki", "x", NODE_ID, resources)
+
+    bundle = build_bundle(FIXTURE, wiki_dir=tmp_path, embed_head=boom,
+                          embed_get=boom, embed_probe=False)
+
+    assert bundle["notes"][NODE_ID]["resources"][0]["embed"] == {"kind": "link"}
+
+
+def test_the_same_url_cited_as_visual_and_as_paper_does_not_share_a_verdict(tmp_path):
+    """The cache is keyed on url alone before this change, so whichever note
+    was visited first would decide the other's embed."""
+    calls = []
+
+    def counting_get(url, *_a, **_kw):
+        calls.append(url)
+        return _page(OG_PAGE)()
+
+    url = "https://distill.pub/2016/deconv/"
+    _write(tmp_path / "_research_wiki", "a", NODE_ID,
+           [{"url": url, "title": "D", "type": "follow-up-paper", "why": "w"}])
+    _write(tmp_path / "_research_wiki", "b", OTHER_NODE_ID,
+           [{"url": url, "title": "D", "type": "visual", "why": "w"}])
+
+    bundle = build_bundle(FIXTURE, wiki_dir=tmp_path,
+                          embed_head=_head_by_suffix,
+                          embed_get=counting_get)
+
+    assert bundle["notes"][NODE_ID]["resources"][0]["embed"] == {"kind": "link"}
+    assert bundle["notes"][OTHER_NODE_ID]["resources"][0]["embed"]["kind"] == "image"
+    assert len(calls) == 1, "the visual verdict is still cached, one GET only"

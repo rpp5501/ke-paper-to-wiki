@@ -354,7 +354,16 @@ def _load_notes(wiki_dir, fallback_date):
     return notes, glossary, trace, shared
 
 
-def _attach_embeds(notes: dict, head=requests.head, probe=True) -> None:
+# `visual` means a visual *explainer* -- distill.pub, Jay Alammar, an author's
+# own post -- which is an HTML page, so the direct-image content-type check
+# never fired for one and all 42 of them across the built papers rendered as
+# bare links, indistinguishable from a follow-up paper. These hosts publish an
+# og:image; only this type pays the extra GET to borrow it.
+_PREVIEW_TYPES = frozenset({"visual"})
+
+
+def _attach_embeds(notes: dict, head=requests.head, get=requests.get,
+                   probe=True) -> None:
     """Classify every note resource's url at build time so the dashboard
     never fetches it itself (Task 2's embed_kind, called once per unique url
     -- two notes citing the same resource share one HEAD). ``probe=False``
@@ -372,9 +381,14 @@ def _attach_embeds(notes: dict, head=requests.head, probe=True) -> None:
                 item["embed"] = {"kind": "link"}
                 continue
             url = item.get("url", "") or ""
-            if url not in cache:
-                cache[url] = embed_kind(url, head=head)
-            item["embed"] = cache[url]
+            # Keyed on the preview flag too: the same url cited once as a
+            # `visual` and once as a follow-up paper must not have whichever
+            # note happened to be read first decide the other's embed.
+            want = item.get("type") in _PREVIEW_TYPES
+            if (url, want) not in cache:
+                cache[(url, want)] = embed_kind(url, head=head, get=get,
+                                                want_preview=want)
+            item["embed"] = cache[(url, want)]
 
 
 def _source_dates(plan_graph, repo_dir):
@@ -1223,7 +1237,8 @@ def _content_quality_report(pages, coverage=None, known_refs=None,
 def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
                  hotspots=None, repo_dir=None, viz_dir=None,
                  next_steps=None, quiz=None, learning_path=None, release=False,
-                 embed_head=requests.head, embed_probe=True):
+                 embed_head=requests.head, embed_get=requests.get,
+                 embed_probe=True):
     hotspots = hotspots or []
     pages, stripped = _load_pages(pages_dir, plan_graph.get("nodes"))
     code_listings, enriched_nodes = _code_listings(plan_graph, repo_dir)
@@ -1267,7 +1282,7 @@ def build_bundle(plan_graph, pack=None, pages_dir=None, wiki_dir=None,
         raise ValueError("release build requires qualityReport.releasePass=true")
     notes, glossary, trace, shared_terms = _load_notes(
         wiki_dir, plan_graph["meta"].get("generated", ""))
-    _attach_embeds(notes, head=embed_head, probe=embed_probe)
+    _attach_embeds(notes, head=embed_head, get=embed_get, probe=embed_probe)
     if shared_terms:
         # Paper-wide terms reach every concept; a concept that defines the same
         # term keeps its own, more precise sense.

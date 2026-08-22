@@ -472,3 +472,226 @@ def test_retries_are_bounded():
         arxiv_titles(["1706.03762"], get=flaky, sleep=lambda _s: None)
 
     assert flaky.calls == ARXIV_ATTEMPTS
+
+
+# --- embed_kind: og:image preview for visual explainers --------------------
+# 42 resources across the built papers are typed `visual` -- distill.pub, Jay
+# Alammar, an author's own post -- and every one of them rendered as a bare
+# link, identical to a follow-up paper. The type promises a picture and the
+# page shows a line of blue text. These hosts publish an og:image; one GET
+# turns the promise into the preview card the renderer already knows how to
+# draw. Opt-in, because a wall of arXiv social cards on every follow-up-paper
+# is worse than the plain links they are today.
+
+def _page(body, status=200, content_type="text/html"):
+    class R:
+        status_code = status
+        headers = {"Content-Type": content_type}
+        text = body
+    return lambda *_a, **_kw: R()
+
+
+def _head_by_suffix(*_a, **_kw):
+    """A head that tells pages from images, so the og:image confirmation step
+    has something real to check. Used by the preview tests below."""
+    url = _a[0] if _a else _kw.get("url", "")
+    class R:
+        status_code = 200
+        headers = {"Content-Type":
+                   "image/png" if url.rsplit("?", 1)[0].endswith(
+                       (".png", ".jpg", ".jpeg", ".gif", ".svg"))
+                   else "text/html"}
+    return R()
+
+
+OG = ('<html><head><meta property="og:image" '
+      'content="https://distill.pub/2020/card.png"></head></html>')
+
+
+def test_a_visual_explainer_becomes_a_preview_card():
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("https://distill.pub/2020/x/", head=_head_by_suffix,
+                      get=_page(OG), want_preview=True)
+
+    assert kind == {"kind": "image", "src": "https://distill.pub/2020/card.png"}
+
+
+def test_the_page_is_not_fetched_unless_a_preview_was_asked_for():
+    """Default behaviour is byte-identical to before: one HEAD, no GET."""
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise AssertionError("embed_kind must not GET without want_preview")
+
+    assert embed_kind("https://distill.pub/2020/x/",
+                      head=_probe(200, "text/html"), get=boom) == {"kind": "link"}
+
+
+def test_a_page_with_no_og_image_stays_a_link():
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("https://x/page.html", head=_probe(200, "text/html"),
+                      get=_page("<html><head><title>t</title></head></html>"),
+                      want_preview=True)
+
+    assert kind == {"kind": "link"}
+
+
+def test_a_relative_og_image_is_resolved_against_the_page():
+    """Real pages ship '/img/card.png'. Handing that to an <img src> in the
+    dashboard resolves it against the dashboard's own origin and 404s."""
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind(
+        "https://jalammar.github.io/illustrated-transformer/",
+        head=_head_by_suffix,
+        get=_page('<meta property="og:image" content="/img/card.png">'),
+        want_preview=True)
+
+    assert kind["src"] == "https://jalammar.github.io/img/card.png"
+
+
+def test_a_failing_get_degrades_to_a_link_not_an_error():
+    """Same precedent as the HEAD path: this function never turns a resource
+    into a build failure, it only declines to promote it."""
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise RuntimeError("network")
+
+    assert embed_kind("https://x/page.html", head=_probe(200, "text/html"),
+                      get=boom, want_preview=True) == {"kind": "link"}
+
+
+def test_a_direct_image_url_still_skips_the_preview_fetch():
+    """An image is already an image -- want_preview must not add a GET."""
+    from paper_skill.resources import embed_kind
+
+    def boom(*_a, **_kw):
+        raise AssertionError("no GET needed for a direct image")
+
+    assert embed_kind("https://x/plot.png", head=_probe(200, "image/png"),
+                      get=boom, want_preview=True) == {
+        "kind": "image", "src": "https://x/plot.png"}
+
+
+# --- og:image previews: what a real probe of the built papers turned up -----
+# Running this against the 27 real `visual` urls in the six built bundles,
+# 14 "worked" and several were wrong in ways no fixture caught:
+#   jacobgil.github.io  -> og:image is "http://jacobgil.github.io", the site
+#                          root, not an image -- a broken <img> in the page
+#   arxiv.org           -> the arXiv logo
+#   paperswithcode.com  -> a Hugging Face "trending papers" thumbnail
+# A generic site-wide card is worse than the plain link it replaces: it
+# occupies the space of a diagram and shows the reader nothing about the idea.
+
+GENERIC_HOSTS_SAMPLE = [
+    ("https://arxiv.org/abs/1803.03635",
+     "https://arxiv.org/static/browse/0.3.4/images/arxiv-logo-fb.png"),
+    ("https://paperswithcode.com/method/lottery-ticket-hypothesis",
+     "https://huggingface.co/front/thumbnails/trending-papers.png"),
+    ("https://github.com/samuela/git-re-basin",
+     "https://opengraph.githubassets.com/592d/samuela/git-re-basin"),
+]
+
+
+@pytest.mark.parametrize("page_url,og", GENERIC_HOSTS_SAMPLE)
+def test_a_host_with_a_generic_social_card_stays_a_link(page_url, og):
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind(page_url, head=_probe(200, "text/html"),
+                      get=_page(f'<meta property="og:image" content="{og}">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "link"}
+
+
+def test_an_og_image_that_is_not_an_image_is_rejected():
+    """jacobgil.github.io advertises its own site root as its og:image.
+    Trusting the tag would put a broken <img> on the page."""
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("https://jacobgil.github.io/deeplearning/pruning",
+                      head=_head_by_suffix,
+                      get=_page('<meta property="og:image" '
+                                'content="http://jacobgil.github.io">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "link"}
+
+
+def test_a_real_content_image_survives_the_extra_check():
+    """distill.pub's per-article thumbnail is exactly what this is for."""
+    from paper_skill.resources import embed_kind
+
+    kind = embed_kind("https://distill.pub/2017/momentum/", head=_head_by_suffix,
+                      get=_page('<meta property="og:image" '
+                                'content="http://distill.pub/2017/momentum/thumbnail.jpg">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "image",
+                    "src": "http://distill.pub/2017/momentum/thumbnail.jpg"}
+
+
+# A refused probe is not a missing image -- the _DEAD_STATUS precedent again,
+# in the og:image confirmation step. Probing the real urls: Wikipedia answered
+# 429 and Meta's CDN 403 for images that are perfectly real and load fine in a
+# browser, while cs.umd.edu's advertised logo.png genuinely 404s. Only the
+# last one is evidence of anything.
+
+def _head_status(status, content_type="text/html"):
+    class R:
+        status_code = status
+        headers = {"Content-Type": content_type}
+    return lambda *_a, **_kw: R()
+
+
+@pytest.mark.parametrize("status", [403, 429, 405])
+def test_a_refused_probe_on_an_image_shaped_url_still_counts(status):
+    from paper_skill.resources import embed_kind
+
+    def head(url, *_a, **_kw):
+        return _head_status(200, "text/html")() if url.endswith("/") \
+            else _head_status(status)()
+
+    kind = embed_kind("https://en.wikipedia.org/wiki/Noether/", head=head,
+                      get=_page('<meta property="og:image" '
+                                'content="https://upload.wikimedia.org/a/b.png">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "image",
+                    "src": "https://upload.wikimedia.org/a/b.png"}
+
+
+def test_a_404_og_image_is_still_rejected_even_though_it_looks_like_one():
+    """cs.umd.edu advertises img/logo.png and the file is not there."""
+    from paper_skill.resources import embed_kind
+
+    def head(url, *_a, **_kw):
+        return _head_status(200, "text/html")() if url.endswith("/") \
+            else _head_status(404)()
+
+    kind = embed_kind("https://www.cs.umd.edu/~tomg/landscapes/", head=head,
+                      get=_page('<meta property="og:image" '
+                                'content="https://www.cs.umd.edu/img/logo.png">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "link"}
+
+
+def test_a_refused_probe_on_a_url_with_no_image_extension_is_not_trusted():
+    """The extension is the only evidence left when the host refuses to
+    answer; without it there is nothing to go on."""
+    from paper_skill.resources import embed_kind
+
+    def head(url, *_a, **_kw):
+        return _head_status(200, "text/html")() if url.endswith("/") \
+            else _head_status(403)()
+
+    kind = embed_kind("https://jacobgil.github.io/pruning/", head=head,
+                      get=_page('<meta property="og:image" '
+                                'content="http://jacobgil.github.io">'),
+                      want_preview=True)
+
+    assert kind == {"kind": "link"}

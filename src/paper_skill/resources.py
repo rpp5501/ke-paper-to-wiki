@@ -14,7 +14,7 @@ import os
 import re
 import time
 import xml.etree.ElementTree as ET
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 
@@ -209,7 +209,36 @@ def verify_resources(note: dict, get=requests.get, head=requests.head) -> list[s
     return problems
 
 
-def embed_kind(url: str, head=requests.head) -> dict:
+# Attribute order varies (`property` before or after `content`, name= instead
+# of property=), so both orders are matched rather than assuming one. A parser
+# would be more correct on pathological markup; this is one meta tag on pages
+# that already care about their social preview, and selectolax is only an
+# optional dependency here.
+_OG_IMAGE = re.compile(
+    r"""<meta[^>]+?(?:property|name)\s*=\s*["']og:image(?::url)?["'][^>]*?"""
+    r"""content\s*=\s*["']([^"']+)["']"""
+    r"""|<meta[^>]+?content\s*=\s*["']([^"']+)["'][^>]*?"""
+    r"""(?:property|name)\s*=\s*["']og:image(?::url)?["']""",
+    re.I | re.S)
+
+# One page is enough to reach the <head>; a long article body is pure cost.
+_PREVIEW_BYTES = 200_000
+
+# Hosts whose og:image is generated per-site, not per-article. Probing the 27
+# real `visual` urls in the built papers, arxiv.org returned its own logo and
+# paperswithcode.com returned a Hugging Face "trending papers" thumbnail --
+# neither shows the reader anything about the concept, while occupying the
+# space a diagram would. github.com's card is auto-rendered repo metadata:
+# legible, but it is text about the repo, not a picture of the idea. A generic
+# card is worse than the plain link it replaces, because it makes a promise.
+_GENERIC_CARD_HOSTS = frozenset({
+    "arxiv.org", "paperswithcode.com", "github.com", "doi.org",
+    "openreview.net", "semanticscholar.org", "huggingface.co",
+})
+
+
+def embed_kind(url: str, head=requests.head, get=requests.get,
+               want_preview: bool = False) -> dict:
     """Classify a resource url at build time so the dashboard never has to
     fetch it itself. Deliberately not wired into verify_resources or
     educational_gap -- this is pure classification, called separately by
@@ -249,4 +278,75 @@ def embed_kind(url: str, head=requests.head) -> dict:
     # prefix, not the whole header value.
     if content_type.split(";", 1)[0].strip().lower().startswith("image/"):
         return {"kind": "image", "src": url}
+
+    # A `visual` resource is an explainer -- distill.pub, Jay Alammar, an
+    # author's own post -- not an image file, so the check above never fires
+    # for one and the reader gets a line of blue text where a diagram was
+    # promised. These hosts publish an og:image; borrowing it gives the
+    # renderer the preview card it already knows how to draw, still linking
+    # through to the page. Opt-in: a social card on every follow-up paper
+    # would be noise, and this costs one GET per resource.
+    if want_preview and not _has_generic_card(url):
+        src = _og_image(url, get)
+        # The tag is a claim, not a guarantee: jacobgil.github.io advertises
+        # its own site root as its og:image, which would reach the reader as
+        # a broken <img>. Confirm it before promoting.
+        if src and _is_image(src, head):
+            return {"kind": "image", "src": src}
     return {"kind": "link"}
+
+
+_IMAGE_SUFFIX = (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
+
+
+def _is_image(src: str, head) -> bool:
+    """Is this og:image url actually an image?
+
+    Same precedent as the probe above treating a 403 as "the host refused"
+    rather than "nothing is there": Wikipedia answered 429 and Meta's CDN 403
+    for images that load fine in a browser, so a refusal falls back to the
+    url's own shape. A 404 is real evidence and overrides the extension --
+    cs.umd.edu advertises an img/logo.png that is simply not there.
+    """
+    looks_like_one = urlparse(src).path.lower().endswith(_IMAGE_SUFFIX)
+    try:
+        resp = head(src, timeout=25, allow_redirects=True, headers=UA)
+    except Exception:
+        return looks_like_one
+    if resp.status_code in _DEAD_STATUS:
+        return False
+    content_type = ""
+    for key, value in (getattr(resp, "headers", None) or {}).items():
+        if key.lower() == "content-type":
+            content_type = value or ""
+            break
+    if content_type.split(";", 1)[0].strip().lower().startswith("image/"):
+        return True
+    return looks_like_one and not (200 <= resp.status_code < 300)
+
+
+def _has_generic_card(url: str) -> bool:
+    host = urlparse(url).netloc.lower().split(":")[0]
+    host = host[4:] if host.startswith("www.") else host
+    return any(host == h or host.endswith("." + h) for h in _GENERIC_CARD_HOSTS)
+
+
+def _og_image(url: str, get) -> str | None:
+    """The page's own social-preview image, absolutised against the page.
+
+    Never raises: same precedent as the HEAD path above, a resource that
+    cannot be previewed degrades to a plain link rather than failing a build.
+    """
+    try:
+        resp = get(url, timeout=25, allow_redirects=True, headers=UA)
+        if not (200 <= resp.status_code < 300):
+            return None
+        match = _OG_IMAGE.search((resp.text or "")[:_PREVIEW_BYTES])
+    except Exception:
+        return None
+    if not match:
+        return None
+    src = (match.group(1) or match.group(2) or "").strip()
+    # Pages ship "/img/card.png" and "//cdn/card.png". Handed to an <img> in
+    # the dashboard those resolve against the dashboard's own origin and 404.
+    return urljoin(url, src) if src else None
