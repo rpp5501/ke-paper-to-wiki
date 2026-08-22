@@ -144,6 +144,24 @@ def _strip_fences(raw: str) -> str:
 
 
 def _parse_note(raw: str) -> dict | None:
+    """The note out of a reply, however the model chose to introduce it.
+
+    A researcher that has just run searches narrates before it answers, and
+    _strip_fences only peels a fence sitting at position zero -- so giving P3
+    WebSearch made 6 of the first 7 concepts fail with "not parseable JSON"
+    while the notes themselves were fine. parse_json_reply already exists for
+    exactly this (its docstring records next_steps hitting the same symptom);
+    P3 had simply never adopted it.
+
+    The YAML fallback stays: the prompt asks for JSON, but a model that
+    answers in YAML anyway still parses, which is deliberate since the
+    citation-quoting incident.
+    """
+    from .llm_spawn import parse_json_reply
+
+    note = parse_json_reply(raw)
+    if note is not None:
+        return note
     try:
         doc = yaml.safe_load(_strip_fences(raw))
         return doc if isinstance(doc, dict) else None

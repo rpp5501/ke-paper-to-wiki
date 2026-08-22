@@ -1,3 +1,4 @@
+import pytest
 import yaml
 from paper_skill.p3_research import run_research
 from paper_skill.toc import write_toc
@@ -436,3 +437,49 @@ def test_the_prompt_asks_for_the_video_not_the_course_homepage():
     lowered = RESEARCH_PROMPT.lower()
     assert "watch?v=" in lowered or "watch url" in lowered
     assert "landing page" in lowered or "course index" in lowered
+
+
+# --- a searching researcher narrates before it answers ----------------------
+# Giving P3 WebSearch made 6 of the first 7 concepts fail with "not parseable
+# JSON". The notes were fine; the reader was not. A model that has just run
+# tool calls introduces its answer instead of opening with a brace, and
+# _strip_fences only peels a fence sitting at position zero.
+#
+# llm_spawn.parse_json_reply already exists for exactly this -- its docstring
+# records next_steps hitting the identical symptom with a strict json.loads.
+# P3 simply never adopted it.
+
+REAL_SHAPE = ('{"concept": "functional-symmetry", "status": "complete",'
+              ' "synthesis": "A claim [S1].", "resources": [],'
+              ' "unresolved": [], "sources_consulted": {"S1": "a citation"}}')
+
+
+@pytest.mark.parametrize("reply", [
+    f"I searched for the canonical sources. Here is the note:\n\n{REAL_SHAPE}",
+    f"Let me look that up.\n\n```json\n{REAL_SHAPE}\n```",
+    f"```json\n{REAL_SHAPE}\n```\n\nI verified each url resolves.",
+    f"Based on 3 searches:\n\n{REAL_SHAPE}\n\nAll three are reachable.",
+])
+def test_a_note_wrapped_in_narration_is_still_read(reply):
+    from paper_skill.p3_research import _parse_note
+
+    note = _parse_note(reply)
+
+    assert note is not None, "narration around the object must not lose the note"
+    assert note["concept"] == "functional-symmetry"
+
+
+def test_a_reply_that_really_has_no_note_is_still_rejected():
+    from paper_skill.p3_research import _parse_note
+
+    assert _parse_note("I could not find any reliable sources for this.") is None
+
+
+def test_a_yaml_note_still_parses():
+    """The prompt asks for JSON, but the parser has deliberately accepted YAML
+    since the citation-quoting incident. Do not regress that."""
+    from paper_skill.p3_research import _parse_note
+
+    note = _parse_note("concept: x\nstatus: complete\nsynthesis: a claim\n")
+
+    assert note["concept"] == "x"
