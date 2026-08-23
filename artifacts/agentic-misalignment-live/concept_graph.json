@@ -11,140 +11,160 @@
    "kind": "concept",
    "level": 0,
    "source_ref": "sec_1",
-   "label": "Agentic Misalignment"
+   "label": "Agentic Misalignment",
+   "page": "04_agentic-misalignment.md"
   },
   {
    "id": "computer-use-demo",
    "kind": "concept",
    "level": 1,
    "source_ref": "sec_2",
-   "label": "Computer-Use Blackmail Demonstration"
+   "label": "Computer-Use Blackmail Demonstration",
+   "page": "01_computer-use-demo.md"
   },
   {
    "id": "experimental-methodology",
    "kind": "concept",
    "level": 1,
    "source_ref": "sec_3_1",
-   "label": "Scenario Construction Methodology"
+   "label": "Scenario Construction Methodology",
+   "page": "06_experimental-methodology.md"
   },
   {
    "id": "threat-to-autonomy",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_3_1_1",
-   "label": "Threat to Model Autonomy"
+   "label": "Threat to Model Autonomy",
+   "page": "13_threat-to-autonomy.md"
   },
   {
    "id": "goal-conflict",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_3_1_2",
-   "label": "Goal Conflict"
+   "label": "Goal Conflict",
+   "page": "09_goal-conflict.md"
   },
   {
    "id": "necessity-of-harm",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_3_1_3",
-   "label": "Making Harmful Behavior Necessary"
+   "label": "Making Harmful Behavior Necessary",
+   "page": "12_necessity-of-harm.md"
   },
   {
    "id": "results-overview",
    "kind": "concept",
    "level": 1,
    "source_ref": "sec_4",
-   "label": "Results"
+   "label": "Results",
+   "page": "05_results-overview.md"
   },
   {
    "id": "blackmail-across-models",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_4_1",
-   "label": "Blackmail Across Different Models"
+   "label": "Blackmail Across Different Models",
+   "page": "07_blackmail-across-models.md"
   },
   {
    "id": "replacement-threat-alone",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_4_2",
-   "label": "Blackmail from Replacement Threat Alone"
+   "label": "Blackmail from Replacement Threat Alone",
+   "page": "14_replacement-threat-alone.md"
   },
   {
    "id": "corporate-espionage",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_4_3",
-   "label": "Corporate Espionage from Goal Conflict Alone"
+   "label": "Corporate Espionage from Goal Conflict Alone",
+   "page": "10_corporate-espionage.md"
   },
   {
    "id": "key-observations",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_4_4",
-   "label": "Key Observations Across Scenarios"
+   "label": "Key Observations Across Scenarios",
+   "page": "11_key-observations.md"
   },
   {
    "id": "goal-directed-reasoning",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_4_1",
-   "label": "Explicit Goal-Directed Reasoning"
+   "label": "Explicit Goal-Directed Reasoning",
+   "page": "18_goal-directed-reasoning.md"
   },
   {
    "id": "ethical-awareness-violation",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_4_2",
-   "label": "Acknowledging Ethical Violations Before Proceeding"
+   "label": "Acknowledging Ethical Violations Before Proceeding",
+   "page": "15_ethical-awareness-violation.md"
   },
   {
    "id": "concerning-tendencies",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_4_3",
-   "label": "Concerning Tendencies Beyond the Target Behavior"
+   "label": "Concerning Tendencies Beyond the Target Behavior",
+   "page": "17_concerning-tendencies.md"
   },
   {
    "id": "further-investigation",
    "kind": "concept",
    "level": 2,
    "source_ref": "sec_4_5",
-   "label": "Further Investigation of Misaligned Behaviors"
+   "label": "Further Investigation of Misaligned Behaviors",
+   "page": "08_further-investigation.md"
   },
   {
    "id": "no-spontaneous-misalignment",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_5_1",
-   "label": "No Agentic Misalignment Without Cause"
+   "label": "No Agentic Misalignment Without Cause",
+   "page": "21_no-spontaneous-misalignment.md"
   },
   {
    "id": "goal-variation",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_5_2",
-   "label": "Varying the Goals"
+   "label": "Varying the Goals",
+   "page": "22_goal-variation.md"
   },
   {
    "id": "extreme-misalignment",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_5_3",
-   "label": "More Extreme Misaligned Behavior"
+   "label": "More Extreme Misaligned Behavior",
+   "page": "20_extreme-misalignment.md"
   },
   {
    "id": "realism-effect",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_5_4",
-   "label": "Blackmail Increases When Models Believe the Scenario Is Real"
+   "label": "Blackmail Increases When Models Believe the Scenario Is Real",
+   "page": "16_realism-effect.md"
   },
   {
    "id": "instruction-ineffectiveness",
    "kind": "concept",
    "level": 3,
    "source_ref": "sec_4_5_5",
-   "label": "Instructions Don't Reliably Stop Bad Behaviors"
+   "label": "Instructions Don't Reliably Stop Bad Behaviors",
+   "page": "19_instruction-ineffectiveness.md"
   },
   {
    "id": "related-work",
@@ -158,7 +178,8 @@
    "kind": "concept",
    "level": 1,
    "source_ref": "sec_6",
-   "label": "Future Work and Potential Mitigations"
+   "label": "Future Work and Potential Mitigations",
+   "page": "02_mitigations.md"
   }
  ],
  "edges": [
